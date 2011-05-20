@@ -227,7 +227,7 @@ parse_image_data(ModeInfo *mi)
 
   /* Translate the XpmImage to an RGB XImage. */
   {
-    int rpos, gpos, bpos;  /* bitfield positions */
+    int rpos, gpos, bpos, apos;  /* bitfield positions */
 
     /* Note that unlike X, which is endianness-agnostic (since any XImage
        can have its own specific bit ordering, with the server reversing
@@ -235,9 +235,9 @@ parse_image_data(ModeInfo *mi)
        we need to pack things in the right order for the client machine.
      */
     if (bigendian())
-      rpos = 24, gpos = 16, bpos =  8;
+      rpos = 24, gpos = 16, bpos =  8, apos =  0;
     else
-      rpos =  0, gpos =  8, bpos = 16;
+      rpos =  0, gpos =  8, bpos = 16, apos = 24;
 
     for (y = 0; y < xpm_image.height; y++)
       {
@@ -253,7 +253,7 @@ parse_image_data(ModeInfo *mi)
 	    oline[x] = (((c->red   >> 8) << rpos) |
 			((c->green >> 8) << gpos) |
 			((c->blue  >> 8) << bpos) |
-			0xFF);
+			(0xFF            << apos));
 	  }
       }
   }
