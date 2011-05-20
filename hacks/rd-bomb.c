@@ -441,7 +441,7 @@ screenhack (Display *dpy, Window win)
     int i, di;
     mc = (unsigned char *) malloc(1<<16);
     for (i = 0; i < (1<<16); i++) {
-      di = (i + (ya_random()&255))>>8;
+      di = (i + (random()&255))>>8;
       if (di > 255) di = 255;
       mc[i] = di;
     }

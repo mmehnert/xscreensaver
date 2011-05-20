@@ -4,7 +4,7 @@
 !            a screen saver and locker for the X window system
 !                            by Jamie Zawinski
 !
-!                              version 2.17
+!                              version 2.18
 !
 ! See "man xscreensaver" for more info.  The latest version is always
 ! available at http://people.netscape.com/jwz/xscreensaver/
@@ -125,9 +125,13 @@
 		vines -root						\n\
 		kaleidescope -root					\n\
 		xjack -root						\n\
-		xlyap -root -random					\n\
+		xlyap -root -randomize					\n\
 		cynosure -root						\n\
 		flow -root						\n\
+		epicycle -root						\n\
+		interference -root					\n\
+		truchet -root -randomize				\n\
+		bsod -root						\n\
 									  \
 	mono:	rocks -root						\n\
 	color:	rocks -root -fg darksalmon				\n\

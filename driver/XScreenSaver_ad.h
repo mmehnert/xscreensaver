@@ -78,9 +78,13 @@
 		vines -root						\\n\
 		kaleidescope -root					\\n\
 		xjack -root						\\n\
-		xlyap -root -random					\\n\
+		xlyap -root -randomize					\\n\
 		cynosure -root						\\n\
 		flow -root						\\n\
+		epicycle -root						\\n\
+		interference -root					\\n\
+		truchet -root -randomize				\\n\
+		bsod -root						\\n\
 									  \
 	mono:	rocks -root						\\n\
 	color:	rocks -root -fg darksalmon				\\n\

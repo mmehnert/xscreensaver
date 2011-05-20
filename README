@@ -123,6 +123,10 @@ window, which are pointed at by the screensaver's default resource settings.
    xjack	- Simulates a schizophrenic typist.
    xlyap	- Calculates and displays Lyapunov exponents.
    flow		- More strange attractors.
+   epicycle	- Spiral patterns based on pre-Copernican cosmologies.
+   interference	- More groovy colored fields.
+   truchet	- Nonrepeating planar tilings.
+   bsod		- Simulates the system crashes of various other OSes.
    gears	- Draws interlocking rotating gears (GLX only.)
    morph3d	- Draws shiny shape-changing 3d forms (GLX only.)
    superquadrics - More shiny shape-changing 3d forms (GLX only.)
@@ -165,6 +169,12 @@ http://people.netscape.com/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 2.17:	Oops, atlantis wasn't being built by default.  Fixed.
+			Added `epicycle' hack.
+			Added `interference' hack.
+			Added `truchet' hack.
+			Added `bsod' hack.
+			Added some new modes to `vidwhacker'.
 Changes since 2.16:	Added a -window-id argument to most hacks, so that they
 			can draw on arbitrary externally-provided windows.
 			Synched with xlockmore 4.11a01.

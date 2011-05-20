@@ -68,7 +68,7 @@ OBJS		= atlantis.o buildlwo.o cage.o dolphin.o gears.o moebius.o \
 		  xlock-gl.o
 
 GL_EXES		= cage gears moebius pipes sproingies stairs superquadrics \
-		  morph3d rubik
+		  morph3d rubik atlantis
 EXES		= @GL_EXES@
 
 HACK_OBJS	= screenhack-gl.o xlock-gl.o $(HACK_BIN)/xlockmore.o \
@@ -196,7 +196,7 @@ screenhack-gl.o: $(HACK_SRC)/screenhack.c
 
 CC_HACK		= $(CC) $(LDFLAGS)
 
-atlantis:	atlantis.o	$(HACK_OBJS)
+atlantis:	atlantis.o	$(HACK_OBJS) dolphin.o shark.o swim.o whale.o
 	$(CC_HACK) -o $@ $@.o	$(HACK_OBJS) dolphin.o shark.o swim.o whale.o \
 				$(HACK_LIBS)
 

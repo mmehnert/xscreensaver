@@ -785,7 +785,6 @@ init_data(void)
   if (show)
     show_defaults();
   InitBuffer();
-  ya_rand_init(0);
 }
 
 static void
@@ -1969,5 +1968,5 @@ setforcing(void)
 {
   static int i;
   for (i=0;i<MAXINDEX;i++)
-    forcing[i] = (ya_random() > prob) ? 0 : 1;
+    forcing[i] = (random() > prob) ? 0 : 1;
 }
