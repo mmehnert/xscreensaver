@@ -344,7 +344,7 @@ make_splash_dialog (saver_info *si)
 
   {
     int sx, sy, w, h;
-    get_screen_viewport (si->default_screen, &sx, &sy, &w, &h);
+    get_screen_viewport (si->default_screen, &sx, &sy, &w, &h, False);
     if (si->prefs.debug_p) w /= 2;
     x = sx + (((w + sp->width)  / 2) - sp->width);
     y = sy + (((h + sp->height) / 2) - sp->height);

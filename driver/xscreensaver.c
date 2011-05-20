@@ -924,7 +924,12 @@ main_loop (saver_info *si)
 
       /* Don't start the cycle timer in demo mode. */
       if (!si->demoing_p && p->cycle)
-	si->cycle_id = XtAppAddTimeOut (si->app, p->cycle, cycle_timer,
+	si->cycle_id = XtAppAddTimeOut (si->app,
+                                        (si->selection_mode
+                                         /* see comment in cycle_timer() */
+                                         ? 1000 * 60 * 60
+                                         : p->cycle),
+                                        cycle_timer,
 					(XtPointer) si);
 
 

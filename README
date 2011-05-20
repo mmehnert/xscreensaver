@@ -77,6 +77,10 @@ http://www.jwz.org/xscreensaver/.
 
                               ============
 
+Changes since 3.11:   * Made it so that you can't scroll the screen while the
+                        lock dialog is up (with XFree86 virtual viewports.)
+                      * Fixed a bug in `flag' that caused bob's chin to get cut
+                        off after a few iterations.
 Changes since 3.10:   * Made `xjack' be black-on-white-ish, so that it looks
                         less like a computer screen and more like the
                         typewritten paper it's supposed to be.

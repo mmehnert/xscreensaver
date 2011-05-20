@@ -88,8 +88,11 @@ struct pam_closure {
 #endif /* !HAVE_PAM_FAIL_DELAY */
 
 
-/* On Linux 2.0 and SunOS 5.6, pam_strerror() takes two args.
-   On Linux 2.2, it takes one.  You losers!
+/* On SunOS 5.6, and on Linux with PAM 0.64, pam_strerror() takes two args.
+   On some other Linux systems with some other version of PAM (e.g.,
+   whichever Debian release comes with a 2.2.5 kernel) it takes one arg.
+   I can't tell which is more "recent" or "correct" behavior, so configure
+   figures out which is in use for us.  Shoot me!
  */
 #ifdef PAM_STRERROR_TWO_ARGS
 # define PAM_STRERROR(pamh, status) pam_strerror((pamh), (status))

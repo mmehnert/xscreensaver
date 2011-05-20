@@ -63,7 +63,8 @@ Atom XA_SCREENSAVER, XA_DEMO, XA_PREFS;
 void
 get_screen_viewport (saver_screen_info *ssi,
                      int *x_ret, int *y_ret,
-                     int *w_ret, int *h_ret)
+                     int *w_ret, int *h_ret,
+                     Bool verbose_p)
 {
   *x_ret = 0;
   *y_ret = 0;

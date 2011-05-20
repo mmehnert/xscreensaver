@@ -139,7 +139,7 @@ grab_mouse (saver_info *si, Window w, Cursor cursor)
 {
   saver_preferences *p = &si->prefs;
   int status = XGrabPointer (si->dpy, w, True, ALL_POINTER_EVENTS,
-			     GrabModeAsync, GrabModeAsync, None,
+			     GrabModeAsync, GrabModeAsync, w,
 			     cursor, CurrentTime);
   if (status == GrabSuccess)
     si->mouse_grab_window = w;
@@ -210,6 +210,50 @@ ungrab_keyboard_and_mouse (saver_info *si)
 {
   ungrab_mouse (si);
   ungrab_kbd (si);
+}
+
+
+int
+move_mouse_grab (saver_info *si, Window to, Cursor cursor)
+{
+  Window old = si->mouse_grab_window;
+
+  if (old == 0)
+    return grab_mouse (si, to, cursor);
+  else
+    {
+      saver_preferences *p = &si->prefs;
+      int status;
+
+      XSync (si->dpy, False);
+      XGrabServer (si->dpy);			/* ############ DANGER! */
+      XSync (si->dpy, False);
+
+      if (p->verbose_p)
+        fprintf(stderr, "%s: grabbing server...\n", blurb());
+
+      ungrab_mouse (si);
+      status = grab_mouse (si, to, cursor);
+
+      if (status != GrabSuccess)   /* Augh! */
+        {
+          sleep (1);               /* Note dramatic evil of sleeping
+                                      with server grabbed. */
+          XSync (si->dpy, False);
+          status = grab_mouse (si, to, cursor);
+        }
+
+      if (status != GrabSuccess)   /* Augh!  Try to get the old one back... */
+        grab_mouse (si, to, cursor);
+
+      XUngrabServer (si->dpy);
+      XSync (si->dpy, False);			/* ###### (danger over) */
+
+      if (p->verbose_p)
+        fprintf(stderr, "%s: ungrabbing server.\n", blurb());
+
+      return status;
+    }
 }
 
 
@@ -768,7 +812,8 @@ store_saver_id (saver_screen_info *ssi)
 void
 get_screen_viewport (saver_screen_info *ssi,
                      int *x_ret, int *y_ret,
-                     int *w_ret, int *h_ret)
+                     int *w_ret, int *h_ret,
+                     Bool verbose_p)
 {
   int w = WidthOfScreen (ssi->screen);
   int h = HeightOfScreen (ssi->screen);
@@ -785,15 +830,18 @@ get_screen_viewport (saver_screen_info *ssi,
       XF86VidModeGetModeLine (si->dpy, screen_no, &dot, &ml) &&
       XF86VidModeGetViewPort (si->dpy, screen_no, &x, &y))
     {
+      char msg[512];
       *x_ret = x;
       *y_ret = y;
       *w_ret = ml.hdisplay;
       *h_ret = ml.vdisplay;
 
-      if (si->prefs.verbose_p &&
-          (*x_ret != 0 || *y_ret != 0 || *w_ret != w || *h_ret != h))
-        fprintf (stderr, "%s: current viewport is %dx%d+%d+%d.\n",
-                 blurb(), *w_ret, *h_ret, *x_ret, *y_ret);
+      if (*x_ret == 0 && *y_ret == 0 && *w_ret == w && *h_ret == h)
+        /* There is no viewport -- the screen does not scroll. */
+        return;
+
+      sprintf (msg, "%s: vp is %dx%d+%d+%d",
+               blurb(), *w_ret, *h_ret, *x_ret, *y_ret);
 
 
       /* Apparently, though the server stores the X position in increments of
@@ -811,27 +859,38 @@ get_screen_viewport (saver_screen_info *ssi,
          He also confirms that this behavior is server-dependent, so the
          actual scroll position cannot be reliably determined by the client.
          So... that means the only solution is to provide a ``sandbox''
-         around the blackout window -- we make the window be N pixels larger
-         than the viewport on both the left and right sides.  That means some
-         part of the outer edges of each hack might not be visible, but screw
-         it.
+         around the blackout window -- we make the window be up to N pixels
+         larger than the viewport on both the left and right sides.  That
+         means some part of the outer edges of each hack might not be
+         visible, but screw it.
 
-         I'm going to guess that 32 pixels is enough, and that the Y dimension
+         I'm going to guess that 16 pixels is enough, and that the Y dimension
          doesn't have this problem.
-       */
-# define FUDGE 32
-      if (x > 0)
+
+         The drawback of doing this, of course, is that some of the screenhacks
+         will still look pretty stupid -- for example, "slidescreen" will cut
+         off the left and right edges of the grid, etc.
+      */
+# define FUDGE 16
+      if (x > 0 && x < w - ml.hdisplay)  /* not at left edge or right edge */
         {
-          *x_ret -= FUDGE;
+          /* Round X position down to next lower multiple of FUDGE.
+             Increase width by 2*FUDGE in case some server rounds up.
+           */
+          *x_ret = ((x - 1) / FUDGE) * FUDGE;
           *w_ret += (FUDGE * 2);
-          if (*x_ret < 0) *x_ret = 0;
         }
 # undef FUDGE
 
-      if (si->prefs.verbose_p &&
-          (*x_ret != 0 || *y_ret != 0 || *w_ret != w || *h_ret != h))
-        fprintf (stderr, "%s: (fudged viewport to %dx%d+%d+%d.)\n",
-                 blurb(), *w_ret, *h_ret, *x_ret, *y_ret);
+      if (*x_ret != x ||
+          *y_ret != y ||
+          *w_ret != ml.hdisplay ||
+          *h_ret != ml.vdisplay)
+        sprintf (msg + strlen(msg), "; fudged to %dx%d+%d+%d",
+                 *w_ret, *h_ret, *x_ret, *y_ret);
+
+      if (verbose_p)
+        fprintf (stderr, "%s.\n", msg);
 
       return;
     }
@@ -863,7 +922,8 @@ initialize_screensaver_window_1 (saver_screen_info *ssi)
   int x, y, width, height;
   static Bool printed_visual_info = False;  /* only print the message once. */
 
-  get_screen_viewport (si->default_screen, &x, &y, &width, &height);
+  get_screen_viewport (si->default_screen, &x, &y, &width, &height,
+                       (p->verbose_p && !si->screen_blanked_p));
 
   black.red = black.green = black.blue = 0;
 
@@ -1066,7 +1126,9 @@ raise_window (saver_info *si,
   if (si->emergency_lock_p)
     inhibit_fade = True;
 
-  initialize_screensaver_window (si);
+  if (!dont_clear)
+    initialize_screensaver_window (si);
+
   reset_watchdog_timer (si, True);
 
   if (p->fade_p && si->fading_possible_p && !inhibit_fade)
@@ -1192,6 +1254,17 @@ blank_screen (saver_info *si)
       store_vroot_property (si->dpy,
 			    ssi->screensaver_window,
 			    ssi->screensaver_window);
+
+#ifdef HAVE_XF86VMODE
+      {
+        int ev, er;
+        if (!XF86VidModeQueryExtension (si->dpy, &ev, &er) ||
+            !XF86VidModeGetViewPort (si->dpy, i,
+                                     &ssi->blank_vp_x,
+                                     &ssi->blank_vp_y))
+          ssi->blank_vp_x = ssi->blank_vp_y = -1;
+      }
+#endif /* HAVE_XF86VMODE */
     }
   store_activate_time (si, si->screen_blanked_p);
   raise_window (si, False, False, False);

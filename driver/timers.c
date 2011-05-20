@@ -215,6 +215,16 @@ cycle_timer (XtPointer closure, XtIntervalId *id)
   saver_info *si = (saver_info *) closure;
   saver_preferences *p = &si->prefs;
   Time how_long = p->cycle;
+
+  if (si->selection_mode > 0 &&
+      screenhack_running_p (si))
+    /* If we're in "SELECT n" mode, the cycle timer going off will just
+       restart this same hack again.  There's not much point in doing this
+       every 5 or 10 minutes, but on the other hand, leaving one hack running
+       for days is probably not a great idea, since they tend to leak and/or
+       crash.  So, restart the thing once an hour. */
+    how_long = 1000 * 60 * 60;
+
   if (si->dbox_up_p)
     {
       if (p->verbose_p)

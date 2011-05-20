@@ -7890,15 +7890,17 @@ int main() {
 struct icmp i;
                   struct sockaddr s;
                   struct sockaddr_in si;
+                  struct ip ip;
                   i.icmp_type = ICMP_ECHO;
                   i.icmp_code = 0;
                   i.icmp_cksum = 0;
                   i.icmp_id = 0;
                   i.icmp_seq = 0;
                   si.sin_family = AF_INET;
+                  ip.ip_hl = 0;
 ; return 0; }
 EOF
-if { (eval echo configure:7913: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:7915: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_have_icmp=yes
 else
@@ -7914,12 +7916,12 @@ ac_have_icmp=$ac_cv_have_icmp
 echo "$ac_t""$ac_cv_have_icmp" 1>&6
 
 echo $ac_n "checking for struct icmphdr""... $ac_c" 1>&6
-echo "configure:7929: checking for struct icmphdr" >&5
+echo "configure:7931: checking for struct icmphdr" >&5
 if eval "test \"`echo '$''{'ac_cv_have_icmphdr'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 7934 "configure"
+#line 7936 "configure"
 #include "confdefs.h"
 #include <stdlib.h>
                   #include <stdio.h>
@@ -7944,15 +7946,17 @@ int main() {
 struct icmphdr i;
                   struct sockaddr s;
                   struct sockaddr_in si;
+                  struct ip ip;
                   i.type = ICMP_ECHO;
                   i.code = 0;
                   i.cksum = 0;
                   i.un.echo.id = 0;
                   i.un.echo.sequence = 0;
                   si.sin_family = AF_INET;
+                  ip.ip_hl = 0;
 ; return 0; }
 EOF
-if { (eval echo configure:7967: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:7971: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_have_icmphdr=yes
 else

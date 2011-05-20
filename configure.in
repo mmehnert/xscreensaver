@@ -1958,12 +1958,14 @@ AC_CACHE_VAL(ac_cv_have_icmp,
                  [struct icmp i;
                   struct sockaddr s;
                   struct sockaddr_in si;
+                  struct ip ip;
                   i.icmp_type = ICMP_ECHO;
                   i.icmp_code = 0;
                   i.icmp_cksum = 0;
                   i.icmp_id = 0;
                   i.icmp_seq = 0;
-                  si.sin_family = AF_INET;],
+                  si.sin_family = AF_INET;
+                  ip.ip_hl = 0;],
                  [ac_cv_have_icmp=yes],
                  [ac_cv_have_icmp=no])])
 ac_have_icmp=$ac_cv_have_icmp
@@ -1993,12 +1995,14 @@ AC_CACHE_VAL(ac_cv_have_icmphdr,
                  [struct icmphdr i;
                   struct sockaddr s;
                   struct sockaddr_in si;
+                  struct ip ip;
                   i.type = ICMP_ECHO;
                   i.code = 0;
                   i.cksum = 0;
                   i.un.echo.id = 0;
                   i.un.echo.sequence = 0;
-                  si.sin_family = AF_INET;],
+                  si.sin_family = AF_INET;
+                  ip.ip_hl = 0;],
                  [ac_cv_have_icmphdr=yes],
                  [ac_cv_have_icmphdr=no])])
 ac_have_icmphdr=$ac_cv_have_icmphdr

@@ -202,6 +202,13 @@ struct saver_screen_info {
 				   real root window. */
   unsigned long black_pixel;	/* Black, allocated from `cmap'. */
 
+  int blank_vp_x, blank_vp_y;   /* Where the virtual-scrolling viewport was
+                                   when the screen went blank.  We need to
+                                   prevent the X server from letting the mouse
+                                   bump the edges to scroll while the screen
+                                   is locked, so we reset to this when it has
+                                   moved, and the lock dialog is up... */
+
 # ifdef HAVE_MIT_SAVER_EXTENSION
   Window server_mit_saver_window;
 # endif
@@ -284,7 +291,8 @@ extern void unblank_screen (saver_info *si);
 
 extern void get_screen_viewport (saver_screen_info *ssi,
                                  int *x_ret, int *y_ret,
-                                 int *w_ret, int *h_ret);
+                                 int *w_ret, int *h_ret,
+                                 Bool verbose_p);
 
 
 /* =======================================================================
@@ -296,14 +304,10 @@ extern Bool unlock_p (saver_info *si);
 extern Bool lock_priv_init (int argc, char **argv, Bool verbose_p);
 extern Bool lock_init (int argc, char **argv, Bool verbose_p);
 extern Bool passwd_valid_p (const char *typed_passwd, Bool verbose_p);
-
-extern void make_passwd_window (saver_info *si);
-extern void draw_passwd_window (saver_info *si);
-extern void update_passwd_window (saver_info *si, const char *printed_passwd,
-				  float ratio);
-extern void destroy_passwd_window (saver_info *si);
-
 #endif /* NO_LOCKING */
+
+extern int move_mouse_grab (saver_info *si, Window to, Cursor cursor);
+
 
 /* =======================================================================
    runtime privileges
