@@ -44,15 +44,29 @@ static const char sccsid[] = "@(#)flag.c	4.02 97/04/01 xlockmore";
 # define DEF_BITMAP					""
 # define DEF_TEXT					""
 # include "xlockmore.h"				/* from the xscreensaver distribution */
+
 #ifdef HAVE_XMU
-# include <X11/Xmu/Drawing.h>
-#endif
-# include "bob.xbm"
-# include <sys/utsname.h>
+# ifndef VMS
+#  include <X11/Xmu/Drawing.h>
+# else  /* VMS */
+#  include <Xmu/Drawing.h>
+# endif /* VMS */
+#endif /* HAVE_XMU */
+
+#include "bob.xbm"
+
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */
 # include "flag.h"
 #endif /* !STANDALONE */
+
+
+#if defined(VMS) && !defined(HAVE_UNAME)
+# if (__VMS_VER >= 70000000)
+#  include <sys/utsname.h>
+#  define HAVE_UNAME 1
+# endif
+#endif /* VMS */
 
 ModeSpecOpt flag_opts = {
   0, NULL, 0, NULL, NULL };
@@ -212,6 +226,7 @@ make_flag_bits(ModeInfo *mi)
 
 	  if (!strcmp(text, "(default)"))
 		{
+# ifdef HAVE_UNAME
 		  struct utsname uts;
 		  if (uname (&uts) < 0)
 			{
@@ -228,6 +243,13 @@ make_flag_bits(ModeInfo *mi)
 			  sprintf(text, "%s\n%s %s",
 					  uts.nodename, uts.sysname, uts.release);
 			}
+#else	/* !HAVE_UNAME */
+# ifdef VMS
+		  text = strdup(getenv("SYS$NODE"));
+# else
+		  text = strdup("X\nScreen\nSaver");
+# endif
+#endif	/* !HAVE_UNAME */
 		}
 
 	  while (*text &&

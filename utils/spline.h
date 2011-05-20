@@ -27,6 +27,16 @@
 #ifndef _SPLINE_H_
 #define _SPLINE_H_
 
+#ifdef VMS
+# ifndef __DECC
+   typedef unsigned int u_int;
+# else
+#  if __DECC_VER < 50200000
+    typedef unsigned int u_int;
+#  endif
+# endif
+#endif
+
 typedef struct _spline
 {
   /* input */

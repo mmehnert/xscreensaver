@@ -32,8 +32,10 @@ HDRS		= alpha.h colors.h fade.h grabscreen.h hsv.h resources.h \
 		  spline.h usleep.h utils.h version.h visual.h vroot.h xmu.h \
 		  yarandom.h
 EXTRAS		= README Makefile.in ad2c
+VMSFILES	= compile_axp.com compile_decc.com vms-gtod.c vms-gtod.h \
+		  vms-strdup.c
 
-TARFILES	= $(EXTRAS) $(SRCS) $(HDRS)
+TARFILES	= $(EXTRAS) $(VMSFILES) $(SRCS) $(HDRS)
 
 
 all: $(OBJS)

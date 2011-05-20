@@ -45,7 +45,9 @@
 # include "config.h"
 #endif
 
-#include <unistd.h>   /* for getpid() */
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>  /* for getpid() */
+#endif
 #include <sys/time.h> /* for gettimeofday() */
 
 #include "yarandom.h"

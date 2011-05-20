@@ -26,8 +26,26 @@
 #endif
 
 #include <sys/time.h>		/* sys/resource.h needs this for timeval */
-#include <sys/resource.h>	/* for setpriority() and PRIO_PROCESS */
-#include <sys/wait.h>		/* for waitpid() and associated macros */
+
+#ifndef VMS
+
+# include <sys/resource.h>	/* for setpriority() and PRIO_PROCESS */
+# include <sys/wait.h>		/* for waitpid() and associated macros */
+
+#else  /* VMS */
+
+# if __DECC_VER >= 50200000
+#  include <sys/wait.h>
+# endif
+
+# include <processes.h>
+# include <unixio.h>		/* for close */
+# include <unixlib.h>		/* for getpid */
+# define pid_t    int
+# define fork     vfork
+
+#endif /* VMS */
+
 #include <signal.h>		/* for the signal names */
 
 #ifndef NO_SETUID
@@ -39,7 +57,9 @@
 #define SIGCHLD SIGCLD
 #endif
 
+#ifdef HAVE_PUTENV
 extern int putenv (/* const char * */);	/* getenv() is in stdlib.h... */
+#endif
 extern int kill (pid_t, int);		/* signal() is in sys/signal.h... */
 
 /* This file doesn't need the Xt headers, so stub these types out... */
@@ -94,6 +114,8 @@ nice_subproc (int nice_level)
 }
 
 
+#ifndef VMS
+
 static void
 exec_simple_command (const char *command)
 {
@@ -114,7 +136,6 @@ exec_simple_command (const char *command)
     sprintf (buf, "%s: could not execute \"%s\"", progname, av[0]);
     perror (buf);
 
-#ifndef VMS
     if (errno == ENOENT &&
 	(token = getenv("PATH")))
       {
@@ -144,7 +165,6 @@ exec_simple_command (const char *command)
 	  }
 	fprintf (stderr, "\n");
       }
-#endif
   }
   fflush(stderr);
   fflush(stdout);
@@ -178,6 +198,19 @@ exec_complex_command (const char *shell, const char *command)
     exit (1);	/* Note that this only exits a child fork.  */
   }
 }
+
+#else  /* VMS */
+
+static void
+exec_vms_command (const char *command)
+{
+  system (command);
+  fflush (stderr);
+  fflush (stdout);
+  exit (1);	/* Note that this only exits a child fork.  */
+}
+
+#endif /* !VMS */
 
 
 static void
@@ -218,6 +251,8 @@ exec_screenhack (saver_info *si, const char *command)
      portable.)
    */
   saver_preferences *p = &si->prefs;
+
+#ifndef VMS
   Bool hairy_p = !!strpbrk (command, "*?$&!<>[];`'\\\"");
 
   if (p->verbose_p)
@@ -232,6 +267,12 @@ exec_screenhack (saver_info *si, const char *command)
   else
     /* Otherwise, we can just exec the program directly. */
     exec_simple_command (command);
+
+#else /* VMS */
+  if (p->verbose_p)
+    printf ("%s: spawning \"%s\" in pid %lu.\n", progname, command, getpid());
+  exec_vms_command (command);
+#endif /* VMS */
 
   abort();	/* that shouldn't have returned. */
 }
@@ -372,8 +413,9 @@ find_job (pid_t pid)
 }
 
 static void await_dying_children (saver_info *si);
+#ifndef VMS
 static void describe_dead_child (saver_info *, pid_t, int wait_status);
-
+#endif
 
 
 /* Semaphore to temporarily turn the SIGCHLD handler into a no-op. */
@@ -407,17 +449,26 @@ kill_job (saver_info *si, pid_t pid, int signal)
 
   switch (signal) {
   case SIGTERM: job->status = job_killed;  break;
+#ifdef SIGSTOP
+    /* #### there must be a way to do this on VMS... */
   case SIGSTOP: job->status = job_stopped; break;
   case SIGCONT: job->status = job_running; break;
+#endif /* SIGSTOP */
   default: abort();
   }
 
+#ifdef SIGSTOP
   if (p->verbose_p)
     fprintf (stderr, "%s: %s pid %lu.\n", progname,
 	     (signal == SIGTERM ? "killing" :
 	      signal == SIGSTOP ? "suspending" :
 	      signal == SIGCONT ? "resuming" : "signalling"),
 	     (unsigned long) job->pid);
+#else  /* !SIGSTOP */
+  if (p->verbose_p)
+    fprintf (stderr, "%s: %s pid %lu.\n", progname, "killing",
+	     (unsigned long) job->pid);
+#endif /* !SIGSTOP */
 
   status = kill (job->pid, signal);
 
@@ -473,6 +524,7 @@ sigchld_handler (int sig)
 #endif
 
 
+#ifndef VMS
 static void
 await_dying_children (saver_info *si)
 {
@@ -579,6 +631,10 @@ describe_dead_child (saver_info *si, pid_t kid, int wait_status)
 	  ssi->pid = 0;
       }
 }
+
+#else  /* VMS */
+static void await_dying_children (saver_info *si) { return; }
+#endif /* VMS */
 
 
 void
@@ -766,6 +822,7 @@ kill_screenhack (saver_info *si)
 void
 suspend_screenhack (saver_info *si, Bool suspend_p)
 {
+#ifdef SIGSTOP	/* older VMS doesn't have it... */
   int i;
   for (i = 0; i < si->nscreens; i++)
     {
@@ -773,6 +830,7 @@ suspend_screenhack (saver_info *si, Bool suspend_p)
       if (ssi->pid)
 	kill_job (si, ssi->pid, (suspend_p ? SIGSTOP : SIGCONT));
     }
+#endif /* SIGSTOP */
 }
 
 
@@ -893,8 +951,10 @@ hack_environment (saver_screen_info *ssi)
 
   /* Allegedly, BSD 4.3 didn't have putenv(), but nobody runs such systems
      any more, right?  It's not Posix, but everyone seems to have it. */
+#ifdef HAVE_PUTENV
   if (putenv (ndpy))
     abort ();
+#endif /* HAVE_PUTENV */
 }
 
 

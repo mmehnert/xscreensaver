@@ -23,7 +23,11 @@
 #include <X11/Xutil.h>
 
 #ifdef HAVE_XMU
-# include <X11/Xmu/WinUtil.h>
+# ifndef VMS
+#  include <X11/Xmu/WinUtil.h>
+# else  /* VMS */
+#  include <Xmu/WinUtil.h>
+# endif /* VMS */
 #endif
 
 #include "usleep.h"

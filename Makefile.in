@@ -7,8 +7,9 @@ VPATH		= @srcdir@
 
 SHELL		= /bin/sh
 SUBDIRS		= utils driver hacks hacks/glx
-TARFILES	= README INSTALL configure configure.in Makefile.in \
-		  config.h.in install-sh config.guess config.sub \
+TARFILES	= README README.VMS INSTALL configure configure.in \
+		  Makefile.in config.h.in config.h-vms install-sh \
+		  setup.com config.guess config.sub makevms.com \
 		  screenblank.txt cde.txt
 TAR		= gtar
 COMPRESS	= gzip --verbose --best

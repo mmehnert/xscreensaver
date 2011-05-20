@@ -13,7 +13,7 @@
 #define __XSCREENSAVER_H__
 
 #include <stdlib.h>
-#ifdef __unix
+#ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
 

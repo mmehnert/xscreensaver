@@ -120,19 +120,15 @@ ModeSpecOpt bouboule_opts = {
 				 */
 
 #ifdef USE_XVMSUTILS
-#if 0
-#include "../xvmsutils/unix_time.h"
-#else
-#include <X11/unix_time.h>
+# if 0
+#  include "../xvmsutils/unix_time.h"
+# else
+#  include <X11/unix_time.h>
+# endif
 #endif
-#endif
-#if HAVE_SYS_TIME_H
+
 #include <sys/time.h>
-#else
-#if HAVE_SYS_SELECT_H
-#include <sys/select.h>
-#endif
-#endif
+
 #define ADAPT_CHECKS 50
 #define ADAPT_ARC_PREFERED 150	/* Maybe the value that is the most important
 				   * for adapting to a system */

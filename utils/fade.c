@@ -13,6 +13,10 @@
 
 #include <sys/time.h> /* for gettimeofday() */
 
+#ifdef VMS
+# include "vms-gtod.h"
+#endif /* VMS */
+
 #include "visual.h"
 #include "usleep.h"
 #include "fade.h"

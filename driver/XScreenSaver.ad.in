@@ -1,6 +1,6 @@
 ! app-defaults file for XScreenSaver by Jamie Zawinski.
 ! See "man xscreensaver" for more info.  The latest version is always
-! available at http://www.netscape.com/people/jwz/xscreensaver/
+! available at http://people.netscape.com/jwz/xscreensaver/
 
 *timeout:		10
 *cycle:			10

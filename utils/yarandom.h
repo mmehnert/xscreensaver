@@ -20,6 +20,10 @@
 #undef srand48
 #undef frand
 
+#ifdef VMS
+# include "vms-gtod.h"
+#endif
+
 #define random()   ya_random()
 #define srandom(i) ya_rand_init(0)
 

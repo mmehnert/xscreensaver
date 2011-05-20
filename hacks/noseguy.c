@@ -365,7 +365,7 @@ talk(int force_erase)
     walk(FRONT);
     p = strcpy(buf, words);
 
-    if (!(p2 = index(p, '\n')) || !p2[1])
+    if (!(p2 = strchr(p, '\n')) || !p2[1])
       {
 	total = strlen (words);
 	strcpy (args[0], words);
@@ -389,7 +389,7 @@ talk(int force_erase)
 	      break;
 	    }
 	  p = p2 + 1;
-	  if (!(p2 = index(p, '\n')))
+	  if (!(p2 = strchr(p, '\n')))
 	    break;
 	}
     height++;
@@ -527,6 +527,7 @@ get_words (void)
     switch (getwordsfrom)
     {
     case FROM_PROGRAM:
+#ifndef VMS
 	if ((pp = popen(program, "r")))
 	{
 	    while (fgets(p, sizeof(buf) - strlen(buf), pp))
@@ -569,6 +570,7 @@ get_words (void)
 	    p = def_words;
 	}
 	break;
+#endif /* VMS */
     case FROM_FILE:
 	if ((pp = fopen(filename, "r")))
 	{
@@ -610,7 +612,11 @@ char *progclass = "Noseguy";
 char *defaults [] = {
   "Noseguy.background:	black",		/* to placate SGI */
   "Noseguy.foreground:	gray80",
+#ifndef VMS
   "*mode:		program",
+#else
+  "*mode:		string",
+#endif
   "*program:		" ZIPPY_PROGRAM,
   "noseguy.font:	-*-new century schoolbook-*-r-*-*-*-180-*-*-*-*-*-*",
   0

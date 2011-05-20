@@ -17,14 +17,18 @@
 #ifndef NO_LOCKING  /* whole file */
 
 #include <stdlib.h>
-#ifdef __unix
+#ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
 
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-#include <pwd.h>
+#ifndef VMS
+# include <pwd.h>
+#else /* VMS */
+# include "vms-pwd.h"
+#endif /* VMS */
 
 
 #ifdef __bsdi__
@@ -96,6 +100,8 @@ static char *encrypted_user_passwd = 0;
 
 
 
+#ifndef VMS
+
 static char *
 user_name (void)
 {
@@ -122,6 +128,17 @@ user_name (void)
 
   return (u ? strdup(u) : 0);
 }
+
+#else  /* VMS */
+
+static char *
+user_name (void)
+{
+  char *u = getenv("USER");
+  return (u ? strdup(u) : 0);
+}
+
+#endif /* VMS */
 
 
 static Bool
@@ -165,6 +182,9 @@ get_encrypted_passwd(const char *user)
    Returns false if we weren't able to get any passwords, and therefore,
    locking isn't possible.  (It will also have written to stderr.)
  */
+
+#ifndef VMS
+
 Bool
 lock_init (int argc, char **argv)
 {
@@ -209,5 +229,10 @@ passwd_valid_p (const char *typed_passwd)
   else
     return False;
 }
+
+#else  /* VMS */
+Bool lock_init (int argc, char **argv) { return True; }
+#endif /* VMS */
+
 
 #endif /* NO_LOCKING -- whole file */

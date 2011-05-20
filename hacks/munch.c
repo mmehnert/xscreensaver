@@ -20,14 +20,12 @@
  * implied warranty.
  */
 
-/* Munching Squares is this simplistic, silly screen hack (according to
-   HAKMEM, discovered by Jackson Wright in 1962) where you take
-   Y = X XOR T and graph it over and over.  This is a little more
-   complicated than that, mostly X's fault, but it does some other random
-   things.
-
-   According to HAKMEM, it takes 5 instructions of PDP-1 assembly.  This is
-   a little more on that.
+/* Munching Squares is this simplistic, silly screen hack (according
+   to HAKMEM, discovered by Jackson Wright in 1962) where you take
+   Y = X XOR T and graph it over and over.  According to HAKMEM, it 
+   takes 5 instructions of PDP-1 assembly.  This is a little more
+   complicated than that, mostly X's fault, but it does some other
+   random things.
 
    http://www.inwap.com/pdp10/hbaker/hakmem/hacks.html#item146
  */
@@ -36,16 +34,12 @@
 /*#include <assert.h>*/
 #include "screenhack.h"
 
-/* flags for random things.  Must be < log2(ya_random's maximum),
-   incidentially.
-   */
+/* flags for random things.  Must be < log2(random's maximum), incidentially.
+ */
 #define SHIFT_KX (0x01)
 #define SHIFT_KT (0x02)
 #define SHIFT_KY (0x04)
 #define GRAV     (0x08)
-
-#define rnd() ya_random()
-#define seed_rnd(x) ya_rand_init(x)
 
 char *progclass = "Munch";
 
@@ -101,9 +95,9 @@ static void munchOnce (Display* dpy, Window w,
 	/* XXX there are probably bugs with this. */
 	cmap = xgwa.colormap;
    
-	fgc.red = rnd() % 65535;
-	fgc.green = rnd() % 65535;
-	fgc.blue = rnd() % 65535;
+	fgc.red = random() % 65535;
+	fgc.green = random() % 65535;
+	fgc.blue = random() % 65535;
     
 	if (XAllocColor(dpy, cmap, &fgc)) {
 	    XSetForeground(dpy, gc, fgc.pixel);
@@ -166,7 +160,6 @@ screenhack (dpy, w) Display *dpy; Window w;
     XWindowAttributes xgwa;
     Colormap cmap;
     XGCValues gcv;
-    time_t t;   /* random seed */
     int n = 0;  /* number of squares before we have to clear */
     int randflags;
     int thiswidth;
@@ -201,9 +194,6 @@ screenhack (dpy, w) Display *dpy; Window w;
     
     gc = XCreateGC(dpy, w, GCForeground|GCBackground, &gcv);
     
-/*    assert(time(&t));*/
-    seed_rnd((unsigned) t);
-    
     delay = get_integer_resource ("delay", "Integer");
     if (delay < 0) delay = 0;
     
@@ -227,27 +217,27 @@ screenhack (dpy, w) Display *dpy; Window w;
 
     for(;;) {
 	/* saves some calls to random.  big deal */
-	randflags = rnd();
+	randflags = random();
 
 	/* choose size -- power of two */
 	thiswidth = 1 << (logminwidth +
-			  (rnd() % (1 + logmaxwidth - logminwidth)));
+			  (random() % (1 + logmaxwidth - logminwidth)));
 
 	munchOnce(dpy, w,
 		  thiswidth, /* Width, in pixels */
 		  
 		  /* draw at this location */
-		  rnd() % (xgwa.width - thiswidth),
-		  rnd() % (xgwa.height - thiswidth),
+		  random() % (xgwa.width - thiswidth),
+		  random() % (xgwa.height - thiswidth),
 		  
 		  /* wrap-around by these values; no need to %
 		     as we end up doing that later anyway*/
 		  ((shiftk && randflags & SHIFT_KX) ?
-		   rnd() % thiswidth: 0),
+		   random() % thiswidth: 0),
 		  ((shiftk && randflags & SHIFT_KT) ?
-		   rnd() % thiswidth: 0),
+		   random() % thiswidth: 0),
 		  ((shiftk && randflags & SHIFT_KY) ?
-		   rnd() % thiswidth : 0),
+		   random() % thiswidth : 0),
 		  
 		  /* set the gravity of the munch, or rather,
 		     which direction we draw stuff in. */

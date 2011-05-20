@@ -18,7 +18,7 @@
 #ifndef NO_LOCKING  /* whole file */
 
 #include <stdlib.h>
-#ifdef __unix
+#ifdef HAVE_UNISTD_H
 # include <unistd.h>
 #endif
 

@@ -236,29 +236,11 @@
 /* Define if you have the getcwd function.  */
 #undef HAVE_GETWD
 
-/* Define if you have the strdup function.  */
-#undef HAVE_STRDUP
-
-/* Define if you have the strstr function.  */
-#undef HAVE_STRSTR
-
 /* Define if you have the uname function.  */
 #undef HAVE_UNAME
 
-/* Define if you have the <dirent.h> header file.  */
-#undef HAVE_DIRENT_H
-
-/* Define if you have the <fcntl.h> header file.  */
-#undef HAVE_FCNTL_H
-
-/* Define if you have the <limits.h> header file.  */
-#undef HAVE_LIMITS_H
-
-/* Define if you have the <ndir.h> header file.  */
-#undef HAVE_NDIR_H
-
-/* Define if you have the <sys/time.h> header file.  */
-#undef HAVE_SYS_TIME_H
+/* Define if you have the fcntl function.  */
+#undef HAVE_FCNTL
 
 /* Define if you have the <unistd.h> header file.  */
 #undef HAVE_UNISTD_H

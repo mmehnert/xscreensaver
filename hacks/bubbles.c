@@ -1,6 +1,6 @@
 /* bubbles.c - frying pan / soft drink in a glass simulation */
 
-/*$Id: bubbles.c,v 1.7 1997/06/08 11:10:43 jwz Exp $*/
+/*$Id: bubbles.c,v 1.8 1997/07/26 19:16:33 jwz Exp $*/
 
 /*
  *  Copyright (C) 1995-1996 James Macnicol
@@ -46,9 +46,9 @@
 #include "bubbles.h"
 
 #ifdef BUBBLES_IO
-#include <dirent.h>
-#include <fcntl.h>
-#include <sys/types.h>
+# include <dirent.h>
+# include <fcntl.h>
+# include <sys/types.h>
 #endif /* BUBBLES_IO */
 
 #include <limits.h>
@@ -56,8 +56,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <sys/wait.h>
-#include <unistd.h>
+
+#ifndef VMS
+# include <sys/wait.h>
+#else /* VMS */
+# if __DECC_VER >= 50200000
+#  include <sys/wait.h>
+# endif
+#endif /* VMS */
+
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
 #include "yarandom.h"
 
 #ifdef HAVE_XPM

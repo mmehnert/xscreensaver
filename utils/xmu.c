@@ -34,8 +34,12 @@
 #ifndef NEED_EVENTS
 # define NEED_EVENTS		/* to make Xproto.h define xEvent */
 #endif
-#include <X11/Xproto.h>		/* for xEvent (used by Xlibint.h) */
-#include <X11/Xlibint.h>	/* for _XExtension */
+#ifndef VMS
+# include <X11/Xproto.h>	/* for xEvent (used by Xlibint.h) */
+# include <X11/Xlibint.h>	/* for _XExtension */
+#else /* VMS */
+# include <X11/Xlib.h>
+#endif /* VMS */
 #include <X11/Intrinsic.h>	/* for XtSpecificationRelease */
 
 /*

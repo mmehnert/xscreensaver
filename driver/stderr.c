@@ -18,11 +18,17 @@
 #endif
 
 #include <stdlib.h>
-#include <unistd.h>
 
 #include <stdio.h>
-#include <fcntl.h>
 #include <time.h>
+
+#ifdef HAVE_UNISTD_H
+# include <unistd.h>
+#endif
+
+#ifdef HAVE_FCNTL
+# include <fcntl.h>
+#endif
 
 #include <X11/Intrinsic.h>
 
@@ -341,7 +347,7 @@ initialize_stderr (saver_info *si)
   int new_stdout, new_stderr;
   int stdout_fd = 1;
   int stderr_fd = 2;
-  int flags;
+  int flags = 0;
   Boolean stderr_dialog_p, stdout_dialog_p;
 
   if (done) return;
@@ -365,15 +371,15 @@ initialize_stderr (saver_info *si)
   in = fds [0];
   out = fds [1];
 
-# ifdef O_NONBLOCK
-  flags = O_NONBLOCK;
-# else
-#  ifdef O_NDELAY
-  flags = O_NDELAY;
+# ifdef HAVE_FCNTL
+
+#  if defined(O_NONBLOCK)
+   flags = O_NONBLOCK;
+#  elif defined(O_NDELAY)
+   flags = O_NDELAY;
 #  else
-  ERROR!! neither O_NONBLOCK nor O_NDELAY are defined.
+   ERROR!! neither O_NONBLOCK nor O_NDELAY are defined.
 #  endif
-# endif
 
     /* Set both sides of the pipe to nonblocking - this is so that
        our reads (in stderr_callback) will terminate, and so that
@@ -389,6 +395,8 @@ initialize_stderr (saver_info *si)
       perror ("fcntl:");
       return;
     }
+
+# endif /* !HAVE_FCNTL */
 
   if (stderr_dialog_p)
     {

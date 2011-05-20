@@ -14,94 +14,37 @@
 # include "config.h"
 #endif
 
-#include <sys/time.h>	/* for struct timeval */
+#if defined(VMS)
+# include <descrip.h>
+# include <stdio.h>
+# include <lib$routines.h>
+#elif defined(HAVE_SELECT)
+# include <sys/time.h>		/* for struct timeval */
+#endif
 
 
 #ifdef __SCREENHACK_USLEEP_H__
 ERROR, do not include that here
 #endif
 
-/* usleep() doesn't exist everywhere, and select() is faster anyway.
- */
-
-#ifndef VMS
-
-#ifndef HAVE_SELECT
-  /* If you don't have select() or usleep(), I guess you lose...
-     Maybe you have napms() instead?  Let me know.
-   */
 void
 screenhack_usleep (unsigned long usecs)
 {
-  usleep (usecs);
-}
+# if defined(VMS)
+  float seconds = ((float) usecs)/1000000.0;
+  unsigned long int statvms = lib$wait(&seconds);
 
-#else /* HAVE_SELECT */
-
-void
-screenhack_usleep (unsigned long usecs)
-{
+#elif defined(HAVE_SELECT)
+  /* usleep() doesn't exist everywhere, and select() is faster anyway. */
   struct timeval tv;
   tv.tv_sec  = usecs / 1000000L;
   tv.tv_usec = usecs % 1000000L;
   (void) select (0, 0, 0, 0, &tv);
+
+#else /* !VMS && !HAVE_SELECT */
+  /* If you don't have select() or usleep(), I guess you lose...
+     Maybe you have napms() instead?  Let me know. */
+  usleep (usecs);
+
+#endif /* !VMS && !HAVE_SELECT */
 }
-
-#endif /* HAVE_SELECT */
-
-#else /* VMS */
-
-extern char *progname;
-#include <stdio.h>
-#include <descrip.h>
-#define SEC_DELTA  "0000 00:00:01.00"
-#define TICK_DELTA "0000 00:00:00.08"
-#define TICK_INTERVAL	80000L    /* 8/100th second */
-static int bin_sec_delta[2], bin_tick_delta[2], deltas_set = 0;
-
-extern int SYS$BINTIM ();
-extern int SYS$SCHDWK ();
-extern int SYS$HIBER (); 
-
-static void
-set_deltas ()
-{
-  int status;
-  $DESCRIPTOR (str_sec_delta,  SEC_DELTA);
-  $DESCRIPTOR (str_tick_delta, TICK_DELTA);
-  if (!deltas_set)
-    {
-      status = SYS$BINTIM (&str_sec_delta, &bin_sec_delta);
-      if (!(status & 1))
-	{
-	  fprintf (stderr, "%s: cannot convert delta time ", progname);
-	  fprintf (stderr, SEC_DELTA);
-	  fprintf (stderr, "; status code = %d\n", status);
-	  exit (status);
-	}
-      status = SYS$BINTIM (&str_tick_delta, &bin_tick_delta);
-      if (!(status & 1))
-	{
-	  fprintf (stderr, "%s: cannot convert delta time ", progname);
-	  fprintf (stderr, TICK_DELTA);
-	  fprintf (stderr, "; status code = %d\n", status);
-	  exit (status);
-	}
-      deltas_set = 1;
-    }
-}
-
-void
-screenhack_usleep (usecs)
-     unsigned long usecs;
-{
-  int status, *bin_delta;
-  if (!deltas_set) set_deltas ();
-  bin_delta = (int *) ((usecs == TICK_INTERVAL)
-		       ? &bin_tick_delta
-		       : &bin_sec_delta);
-  status = SYS$SCHDWK (0, 0, bin_delta, 0);
-  if ((status & 1)) (void) SYS$HIBER ();
-}
-
-#endif /* VMS */

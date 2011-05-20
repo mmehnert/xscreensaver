@@ -38,7 +38,11 @@
 #include <X11/Shell.h>
 #include <X11/StringDefs.h>
 #ifdef HAVE_XMU
-# include <X11/Xmu/Error.h>
+# ifndef VMS
+#  include <X11/Xmu/Error.h>
+# else /* VMS */
+#  include <Xmu/Error.h>
+# endif
 #else
 # include "xmu.h"
 #endif
@@ -140,7 +144,7 @@ extern void pre_merge_options (void);
 
 
 
-void
+int
 main (int argc, char **argv)
 {
   XtAppContext app;
@@ -184,8 +188,7 @@ main (int argc, char **argv)
       Bool help_p = !strcmp(argv[1], "-help");
       fprintf (stderr, "%s\n", version);
       for (s = progclass; *s; s++) fprintf(stderr, " ");
-      fprintf (stderr,
-	       "  http://www.netscape.com/people/jwz/xscreensaver/\n\n");
+      fprintf (stderr, "  http://people.netscape.com/jwz/xscreensaver/\n\n");
 
       if (!help_p)
 	fprintf(stderr, "Unrecognised option: %s\n", argv[1]);
@@ -317,5 +320,6 @@ main (int argc, char **argv)
 
   XSync (dpy, False);
   srandom ((int) time ((time_t *) 0));
-  screenhack (dpy, window);
+  screenhack (dpy, window); /* doesn't return */
+  return 0;
 }

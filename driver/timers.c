@@ -21,10 +21,14 @@
 #include <X11/Intrinsic.h>
 #include <X11/Xos.h>
 #ifdef HAVE_XMU
-# include <X11/Xmu/Error.h>
-#else
+# ifndef VMS
+#  include <X11/Xmu/Error.h>
+# else /* VMS */
+#  include <Xmu/Error.h>
+# endif /* VMS */
+# else /* !HAVE_XMU */
 # include "xmu.h"
-#endif
+#endif /* !HAVE_XMU */
 
 #ifdef HAVE_XIDLE_EXTENSION
 #include <X11/extensions/xidle.h>

@@ -35,7 +35,11 @@
 #endif
 
 #ifdef HAVE_XMU
-# include <X11/Xmu/Drawing.h>
+# ifndef VMS
+#  include <X11/Xmu/Drawing.h>
+#else  /* VMS */
+#  include <Xmu/Drawing.h>
+# endif /* VMS */
 #endif
 
 #include "default.xbm"

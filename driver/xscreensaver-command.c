@@ -55,7 +55,7 @@ static char *usage = "usage: %s -<switch>\n\
   -time         Prints the time at which the screensaver turned on.\n\
 \n\
   See the man page for more details.\n\
-  For updates, check http://www.netscape.com/people/jwz/xscreensaver/\n\
+  For updates, check http://people.netscape.com/jwz/xscreensaver/\n\
 \n";
 
 static Window
@@ -105,7 +105,7 @@ find_screensaver_window (Display *dpy, char *progname, char **version)
 #define USAGE() \
  { fprintf (stderr, usage, argv[0], screensaver_version); exit (1); }
 
-void
+int
 main (int argc, char **argv)
 {
   Display *dpy;

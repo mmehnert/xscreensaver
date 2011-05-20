@@ -604,7 +604,7 @@ to get the name of a resource file that overrides the global resources
 stored in the RESOURCE_MANAGER property.
 .SH UPGRADES
 The latest version can always be found at 
-http://www.netscape.com/people/jwz/xscreensaver/
+http://people.netscape.com/jwz/xscreensaver/
 .SH SEE ALSO
 .BR X (1),
 .BR xscreensaver\-command (1),
@@ -684,6 +684,8 @@ Thanks to Martin Kraemer for adding support for shadow passwords and
 locking-disabled diagnostics.
 
 Thanks to the many people who have contributed graphics demos to the package.
+
+Thanks to Patrick Moreau for the VMS port.
 
 And huge thanks to Jon A. Christopher for implementing the Athena dialog
 support, so that locking and demo-mode work even if you don't have Motif.

@@ -14,6 +14,26 @@
 # include "config.h"
 #endif
 
+#ifdef VMS
+# include <unixlib.h>		/* for getpid() */
+# include "vms-gtod.h"		/* for gettimeofday() */
+
+/* Is this needed? */
+/*
+# if !defined(__DECC) || (__DECC_VER < 50200000)
+   typedef char * caddr_t;
+# endif
+*/
+
+# ifndef HAVE_UNAME
+#  if (__VMS_VER >= 70000000)
+#   include <sys/utsname.h>	/* for uname() */
+#   define HAVE_UNAME 1
+#  endif
+# endif /* !HAVE_UNAME */
+
+#endif /* VMS */
+
 #include <stdio.h>
 #include <X11/Xproto.h>		/* for CARD32 */
 #include <X11/Xlib.h>
@@ -21,7 +41,6 @@
 #include <X11/Xatom.h>
 #include <X11/Xos.h>		/* for time() */
 #include <signal.h>		/* for the signal names */
-# include <sys/utsname.h>	/* for uname() */
 
 #ifdef HAVE_MIT_SAVER_EXTENSION
 # include <X11/extensions/scrnsaver.h>
@@ -359,7 +378,9 @@ signal_name(int signal)
   case SIGQUIT:	  return "SIGQUIT";
   case SIGILL:	  return "SIGILL";
   case SIGTRAP:	  return "SIGTRAP";
+#ifdef SIGABRT
   case SIGABRT:	  return "SIGABRT";
+#endif
   case SIGFPE:	  return "SIGFPE";
   case SIGKILL:	  return "SIGKILL";
   case SIGBUS:	  return "SIGBUS";
@@ -367,10 +388,18 @@ signal_name(int signal)
   case SIGPIPE:	  return "SIGPIPE";
   case SIGALRM:	  return "SIGALRM";
   case SIGTERM:	  return "SIGTERM";
+#ifdef SIGSTOP
   case SIGSTOP:	  return "SIGSTOP";
+#endif
+#ifdef SIGCONT
   case SIGCONT:	  return "SIGCONT";
+#endif
+#ifdef SIGUSR1
   case SIGUSR1:	  return "SIGUSR1";
+#endif
+#ifdef SIGUSR2
   case SIGUSR2:	  return "SIGUSR2";
+#endif
 #ifdef SIGEMT
   case SIGEMT:	  return "SIGEMT";
 #endif
@@ -736,6 +765,8 @@ initialize_screensaver_window_1 (saver_screen_info *ssi)
 		       strlen (si->version));
 
       sprintf (id, "%lu on host ", (unsigned long) getpid ());
+
+# if defined(HAVE_UNAME)
       {
 	struct utsname uts;
 	if (uname (&uts) < 0)
@@ -743,6 +774,12 @@ initialize_screensaver_window_1 (saver_screen_info *ssi)
 	else
 	  strcat (id, uts.nodename);
       }
+# elif defined(VMS)
+      strcat (id, getenv("SYS$NODE"));
+# else  /* !HAVE_UNAME && !VMS */
+      strcat (id, "???");
+# endif /* !HAVE_UNAME && !VMS */
+
       XChangeProperty (si->dpy, ssi->screensaver_window,
 		       XA_SCREENSAVER_ID, XA_STRING,
 		       8, PropModeReplace, (unsigned char *) id, strlen (id));

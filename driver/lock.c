@@ -19,12 +19,17 @@
 
 #ifndef NO_LOCKING   /* whole file */
 
+#include <X11/StringDefs.h>
 #include <X11/Intrinsic.h>
 #include "xscreensaver.h"
 
 #ifndef VMS
 # include <pwd.h>
-#endif
+#else /* VMS */
+extern char *getenv(const char *name);
+extern int validate_user(char *name, char *password);
+static char * user_vms;
+#endif /* VMS */
 
 
 #ifdef HAVE_ATHENA
@@ -92,13 +97,23 @@ static void
 passwd_done_cb (Widget button, XtPointer client_data, XtPointer call_data)
 {
   if (passwd_state != pw_read) return; /* already done */
-#ifdef HAVE_ATHENA
+#ifndef VMS
+
+# ifdef HAVE_ATHENA
   strncpy(typed_passwd, XawDialogGetValueString(passwd_form), PASSWDLEN);
-#endif /* HAVE_ATHENA */
+# endif /* HAVE_ATHENA */
   if (passwd_valid_p (typed_passwd))
     passwd_state = pw_ok;
   else
     passwd_state = pw_fail;
+
+#else	/* VMS */
+  user_vms = getenv("USER");
+  if (validate_user(user_vms,typed_passwd) == 1) 
+    passwd_state = pw_ok;
+  else 
+    passwd_state = pw_fail;
+#endif /* VMS */
 }
 
 #if defined(HAVE_MOTIF) && defined(VERIFY_CALLBACK_WORKS)

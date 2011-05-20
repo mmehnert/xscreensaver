@@ -74,6 +74,10 @@
 # define M_PI 3.1415926535
 #endif
 
+#ifndef M_PI_2
+# define M_PI_2 1.5707963267
+#endif
+
 #include "yarandom.h"
 #include "usleep.h"
 #include "resources.h"

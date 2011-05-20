@@ -16,5 +16,4 @@ extern Colormap copy_colormap (Screen *, Visual *, Colormap from, Colormap to);
 extern void blacken_colormap (Screen *, Colormap cmap);
 extern void fade_screens (Display *dpy, Colormap *cmaps,
 			  int seconds, int ticks, Bool out_p);
-
 #endif /* __FADE_H__ */

@@ -132,10 +132,14 @@
 #include <X11/Shell.h>
 #include <X11/Xos.h>
 #ifdef HAVE_XMU
-# include <X11/Xmu/Error.h>
-#else
+# ifndef VMS
+#  include <X11/Xmu/Error.h>
+# else  /* !VMS */
+#  include <Xmu/Error.h>
+# endif /* !VMS */
+#else  /* !HAVE_XMU */
 # include "xmu.h"
-#endif
+#endif /* !HAVE_XMU */
 
 #ifdef HAVE_XIDLE_EXTENSION
 #include <X11/extensions/xidle.h>
@@ -216,7 +220,7 @@ Use the `xscreensaver-command' program to control a running screensaver.\n\
 \n\
 The *programs resource controls which graphics demos will be launched by the\n\
 screensaver.  See the man page for more details.  For updates, check\n\
-http://www.netscape.com/people/jwz/xscreensaver/\n\n",
+http://people.netscape.com/jwz/xscreensaver/\n\n",
 	  si->version);
 
 #ifdef NO_LOCKING
@@ -499,14 +503,15 @@ timestring (void)
 static void initialize (saver_info *si, int argc, char **argv);
 static void main_loop (saver_info *si);
 
-void
+int
 main (int argc, char **argv)
 {
   saver_info si;
   memset(&si, 0, sizeof(si));
   global_si_kludge = &si;	/* I hate C so much... */
   initialize (&si, argc, argv);
-  main_loop (&si);
+  main_loop (&si);		/* doesn't return */
+  return 0;
 }
 
 
@@ -549,7 +554,9 @@ initialize_connection (saver_info *si, int argc, char **argv)
       exit (1);
     }
   get_resources (si);
+#ifndef NO_SETUID
   hack_uid_warn (si);
+#endif /* NO_SETUID */
   XA_VROOT = XInternAtom (si->dpy, "__SWM_VROOT", False);
   XA_SCREENSAVER = XInternAtom (si->dpy, "SCREENSAVER", False);
   XA_SCREENSAVER_VERSION = XInternAtom (si->dpy, "_SCREENSAVER_VERSION",False);
@@ -630,7 +637,10 @@ initialize (saver_info *si, int argc, char **argv)
     }
 #endif
 
+#ifndef NO_SETUID
   hack_uid (si);
+#endif
+
   progclass = "XScreenSaver";
 
   /* remove -demo switch before saving argv */
