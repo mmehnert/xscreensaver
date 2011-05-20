@@ -136,7 +136,9 @@
 #if defined(SVR4) || defined(SYSV)
 # define srandom(i) srand((unsigned int)(i))
 #else
+# ifndef __linux
 extern void srandom P((int));		/* srand() is in stdlib.h... */
+# endif
 #endif
 
 extern char *get_string_resource P((char *, char *));
@@ -672,14 +674,15 @@ main_loop ()
 	  blank_screen ();
 	  spawn_screenhack (True);
 	  if (cycle)
-	    cycle_id = XtAppAddTimeOut (app, cycle, cycle_timer, 0);
+	    cycle_id = XtAppAddTimeOut (app, cycle, (XtPointer)cycle_timer, 0);
 
 #ifndef NO_LOCKING
 	  if (lock_p && lock_timeout == 0)
 	    locked_p = True;
 	  if (lock_p && !locked_p)
 	    /* locked_p might be true already because of ClientMessage */
-	    lock_id = XtAppAddTimeOut (app,lock_timeout,activate_lock_timer,0);
+	    lock_id = XtAppAddTimeOut (app,lock_timeout,
+				       (XtPointer)activate_lock_timer,0);
 #endif
 
 	PASSWD_INVALID:

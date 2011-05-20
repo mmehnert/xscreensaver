@@ -125,6 +125,8 @@ extern void make_color_ramp P((int h1, double s1, double v1,
 			       XColor *pixels, int npixels));
 
 extern Pixmap grab_screen_image P((Display *dpy, Window window, int root_p));
+extern void copy_default_colormap_contents P((Display *dpy, Colormap to_cmap,
+					      Visual *to_visual));
 
 static double _frand_tmp_;
 #define frand(f)							\

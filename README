@@ -85,6 +85,9 @@ The latest version of xscreensaver is on FTP.X.ORG.
 	-- Jamie Zawinski <jwz@mcom.com>
 
 
+Changes since 1.23:	Fixed some private-colormap oddities in slidescreen,
+			decayscreen, and xroger.  Fixed apparent conservation-
+			of-mass problem in pyro; made the shrapnel round.
 Changes since 1.22:	Minor tweaks for IRIX5; fixed locking race condition.
 Changes since 1.21:	Minor tweaks for X11R6.
 			Fixes for non-default visuals.

@@ -405,7 +405,9 @@ handle_signals (on_p)
   catch_signal (SIGFPE,  "SIGFPE",  on_p);
   catch_signal (SIGBUS,  "SIGBUS",  on_p);
   catch_signal (SIGSEGV, "SIGSEGV", on_p);
+#ifdef SIGSYS
   catch_signal (SIGSYS,  "SIGSYS",  on_p);
+#endif
   catch_signal (SIGTERM, "SIGTERM", on_p);
 #ifdef SIGXCPU
   catch_signal (SIGXCPU, "SIGXCPU", on_p);
