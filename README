@@ -77,6 +77,12 @@ http://www.jwz.org/xscreensaver/.
 
                               ============
 
+Changes since 3.00:   * Some fixes to `reflect'.
+		      * Configure tweaks.
+		      * Made it log unsuccessful attempts to unlock the screen
+			to syslog.
+		      * Fixed a bug where `xscreensaver-demo' could be seeing
+			a different programs list than `xscreensaver' did.
 Changes since 2.34:   * The xscreensaver daemon no longer links against Motif
 			or Athena: demo-mode and the preferences panel are no
 			longer built in to the daemon, but are now handled by

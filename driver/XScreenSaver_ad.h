@@ -42,6 +42,7 @@
 		jigsaw -root						\\n\
 		blitspin -root -grab					\\n\
 		slip -root						\\n\
+		distort -root						\\n\
 		hypercube -root						\\n\
 		halo -root						\\n\
 		maze -root						\\n\
@@ -95,6 +96,8 @@
 		crystal -root						\\n\
 		discrete -root						\\n\
 		kumppa -root						\\n\
+		rd-bomb -root						\\n\
+		rd-bomb -root -speed 1 -size 0.1			\\n\
 									  \
 	mono:	rocks -root						\\n\
 	color:	rocks -root -fg darksalmon				\\n\
@@ -106,9 +109,6 @@
 	color:	attraction -root -mode filled-splines -segments 0	\\n\
 	color:	attraction -root -glow -points 10			\\n\
 	color:	bubbles -root						\\n\
-									  \
-        color:  rd-bomb -root						\\n\
-        color:  rd-bomb -root -speed 1 -size 0.1			\\n\
 									  \
   PseudoColor:	qix -root -count 4 -solid -transparent			\\n\
   PseudoColor:	qix -root -count 5 -solid -transparent -linear		  \
@@ -177,7 +177,7 @@
 "*XmDialogShell.title:		XScreenSaver",
 "*versionWarning_popup.title:	XScreenSaver Warning",
 "*demoForm_popup.title:		XScreenSaver Demo",
-"*resourcesForm_popup.title:	XScreenSaver Preferences",
+"*preferencesForm_popup.title:	XScreenSaver Preferences",
 "*allowShellResize:		True",
 "*autoUnmanage:			False",
 "*demoDialog.maxWidth:		600",
@@ -192,31 +192,31 @@
 "*edit.labelString:		Preferences",
 "*restart.labelString:		Reinitialize",
 "*done.labelString:		Quit",
-"*resourcesLabel.labelString:	XScreenSaver Parameters",
+"*preferencesLabel.labelString:	XScreenSaver Parameters",
 "*timeoutLabel.labelString:	Saver Timeout",
 "*cycleLabel.labelString:	Cycle Timeout",
 "*fadeSecondsLabel.labelString:	Fade Duration",
 "*fadeTicksLabel.labelString:	Fade Ticks",
 "*lockLabel.labelString:		Lock Timeout",
 "*passwdLabel.labelString:	Password Timeout",
-"*resourcesForm*XmTextField.columns:	8",
+"*preferencesForm*XmTextField.columns:	8",
 "*verboseToggle.labelString:	Verbose",
 "*cmapToggle.labelString:	Install Colormap",
 "*fadeToggle.labelString:	Fade Colormap",
 "*unfadeToggle.labelString:	Unfade Colormap",
 "*lockToggle.labelString:	Require Password",
-"*resourcesDone.labelString:	OK",
-"*resourcesCancel.labelString:	Cancel",
+"*preferencesDone.labelString:	OK",
+"*preferencesCancel.labelString:	Cancel",
 "XScreenSaver*dragInitiatorProtocolStyle: DRAG_NONE",
 "XScreenSaver*dragReceiverProtocolStyle:  DRAG_NONE",
 "*demo_dialog.title:		XScreenSaver Demo",
-"*resources_dialog.title:	XScreenSaver Preferences",
+"*preferences_dialog.title:	XScreenSaver Preferences",
 "*warning_dialog.title:		XScreenSaver Warning",
 "*demo_dialog.geometry:		=640x400",
 "*demo_dialog*font:		*-helvetica-bold-r-*-*-*-120-*-*-*-iso8859-1",
-"*resources_dialog*font:		*-helvetica-bold-r-*-*-*-120-*-*-*-iso8859-1",
+"*preferences_dialog*font:	*-helvetica-bold-r-*-*-*-120-*-*-*-iso8859-1",
 "*demo_dialog*label1.font:	*-helvetica-bold-r-*-*-*-140-*-*-*-iso8859-1",
-"*resources_dialog*label1.font:	*-helvetica-bold-r-*-*-*-140-*-*-*-iso8859-1",
+"*preferences_dialog*label1.font:*-helvetica-bold-r-*-*-*-140-*-*-*-iso8859-1",
 "XScreenSaver*warning_dialog*label0.font:	\
 				*-helvetica-bold-r-*-*-*-140-*-*-*-iso8859-1",
 "XScreenSaver*warning_dialog*Label.font:	\
@@ -233,21 +233,21 @@
 "XScreenSaver.demo_dialog*Scrollbar.background:		#D9D9D9",
 "XScreenSaver.demo_dialog*Command.background:		#D9D9D9",
 "XScreenSaver.demo_dialog*Text*background:		#FFFFFF",
-"XScreenSaver.resources_dialog*foreground:		#000000",
-"XScreenSaver.resources_dialog*background:		#E5E5E5",
-"XScreenSaver.resources_dialog*Command.background:	#D9D9D9",
-"XScreenSaver.resources_dialog*Toggle.background:	#D9D9D9",
-"XScreenSaver.resources_dialog*Text*background:		#FFFFFF",
+"XScreenSaver.preferences_dialog*foreground:		#000000",
+"XScreenSaver.preferences_dialog*background:		#E5E5E5",
+"XScreenSaver.preferences_dialog*Command.background:	#D9D9D9",
+"XScreenSaver.preferences_dialog*Toggle.background:	#D9D9D9",
+"XScreenSaver.preferences_dialog*Text*background:	#FFFFFF",
 "XScreenSaver.warning_dialog*foreground:			#000000",
 "XScreenSaver.warning_dialog*background:			#E5E5E5",
 "XScreenSaver.warning_dialog*Command.background:		#D9D9D9",
-"*resources_dialog*Dialog.value.translations: #override\\n\
+"*preferences_dialog*Dialog.value.translations: #override\\n\
 	<Key>Return: beginning-of-line()\\n",
 "*demo_dialog*viewport.height:			200",
 "*Form.borderWidth:				0",
 "*Box.borderWidth:				0",
 "*Label.borderWidth:				0",
-"*resources_dialog*Dialog.borderWidth:		0",
+"*preferences_dialog*Dialog.borderWidth:		0",
 "*demo_dialog*next.label:			Run Next",
 "*demo_dialog*prev.label:			Run Previous",
 "*demo_dialog*edit.label:			Preferences",
@@ -255,22 +255,22 @@
 "*demo_dialog*done.label:			Quit",
 "XScreenSaver.demo_dialog*Command.internalWidth:  10",
 "XScreenSaver.demo_dialog*Command.internalHeight: 4",
-"*resources_dialog*timeout.label:		Saver Timeout:",
-"*resources_dialog*cycle.label:			Cycle Timeout:",
-"*resources_dialog*fade.label:			Fade Duration:",
-"*resources_dialog*ticks.label:			Fade Ticks:",
-"*resources_dialog*lockTime.label:		Lock Timeout:",
-"*resources_dialog*passwdTime.label:		Password Timeout:",
-"XScreenSaver.resources_dialog*Command.internalWidth:  10",
-"XScreenSaver.resources_dialog*Command.internalHeight: 4",
-"*resources_dialog*label1.label:			XScreenSaver Parameters",
-"*resources_dialog*buttonbox.verbose.label:	Verbose",
-"*resources_dialog*buttonbox.cmap.label:		Install Colormap",
-"*resources_dialog*buttonbox.fade.label:		Fade Colormap",
-"*resources_dialog*buttonbox.unfade.label:	Unfade Colormap",
-"*resources_dialog*buttonbox.lock.label:		Require Password",
-"*resources_dialog*done.label:			Ok",
-"*resources_dialog*cancel.label:			Cancel",
+"*preferences_dialog*timeout.label:		Saver Timeout:",
+"*preferences_dialog*cycle.label:		Cycle Timeout:",
+"*preferences_dialog*fade.label:			Fade Duration:",
+"*preferences_dialog*ticks.label:		Fade Ticks:",
+"*preferences_dialog*lockTime.label:		Lock Timeout:",
+"*preferences_dialog*passwdTime.label:		Password Timeout:",
+"XScreenSaver.preferences_dialog*Command.internalWidth:  10",
+"XScreenSaver.preferences_dialog*Command.internalHeight: 4",
+"*preferences_dialog*label1.label:		XScreenSaver Parameters",
+"*preferences_dialog*buttonbox.verbose.label:	Verbose",
+"*preferences_dialog*buttonbox.cmap.label:	Install Colormap",
+"*preferences_dialog*buttonbox.fade.label:	Fade Colormap",
+"*preferences_dialog*buttonbox.unfade.label:	Unfade Colormap",
+"*preferences_dialog*buttonbox.lock.label:	Require Password",
+"*preferences_dialog*done.label:			Ok",
+"*preferences_dialog*cancel.label:		Cancel",
 "*warning_dialog*ok.label:			Ok",
 "*warning_dialog*horizDistance:			30",
 "*warning_dialog*vertDistance:			0",

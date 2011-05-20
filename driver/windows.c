@@ -179,31 +179,34 @@ ungrab_mouse(saver_info *si)
 }
 
 
-void
+Bool
 grab_keyboard_and_mouse (saver_info *si, Window window, Cursor cursor)
 {
-  Status status;
+  Status mstatus, kstatus;
   XSync (si->dpy, False);
 
-  status = grab_kbd (si, window);
-  if (status != GrabSuccess)
+  kstatus = grab_kbd (si, window);
+  if (kstatus != GrabSuccess)
     {	/* try again in a second */
       sleep (1);
-      status = grab_kbd (si, window);
-      if (status != GrabSuccess)
+      kstatus = grab_kbd (si, window);
+      if (kstatus != GrabSuccess)
 	fprintf (stderr, "%s: couldn't grab keyboard!  (%s)\n",
-		 blurb(), grab_string(status));
+		 blurb(), grab_string(kstatus));
     }
 
-  status = grab_mouse (si, window, cursor);
-  if (status != GrabSuccess)
+  mstatus = grab_mouse (si, window, cursor);
+  if (mstatus != GrabSuccess)
     {	/* try again in a second */
       sleep (1);
-      status = grab_mouse (si, window, cursor);
-      if (status != GrabSuccess)
+      mstatus = grab_mouse (si, window, cursor);
+      if (mstatus != GrabSuccess)
 	fprintf (stderr, "%s: couldn't grab pointer!  (%s)\n",
-		 blurb(), grab_string(status));
+		 blurb(), grab_string(mstatus));
     }
+
+  return (kstatus == GrabSuccess ||
+	  mstatus == GrabSuccess);
 }
 
 void

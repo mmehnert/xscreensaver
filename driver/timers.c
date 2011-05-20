@@ -190,7 +190,7 @@ cycle_timer (XtPointer closure, XtIntervalId *id)
     }
   else
     {
-      maybe_reload_init_file (p);
+      maybe_reload_init_file (si);
       if (p->verbose_p)
 	fprintf (stderr, "%s: changing graphics hacks.\n", blurb());
       kill_screenhack (si);
@@ -500,11 +500,9 @@ sleep_until_idle (saver_info *si, Bool until_idle_p)
 	    if (sevent->state == ScreenSaverOn)
 	      {
 		int i = 0;
-# ifdef DEBUG_TIMERS
 		if (p->verbose_p)
-		  fprintf (stderr, "%s: ScreenSaverOn event received at %s\n",
-			   blurb(), timestring ());
-# endif /* DEBUG_TIMERS */
+		  fprintf (stderr, "%s: MIT ScreenSaverOn event received.\n",
+			   blurb());
 
 		/* Get the "real" server window(s) out of the way as soon
 		   as possible. */
@@ -519,11 +517,9 @@ sleep_until_idle (saver_info *si, Bool until_idle_p)
 
 		if (sevent->kind != ScreenSaverExternal)
 		  {
-# ifdef DEBUG_TIMERS
 		    fprintf (stderr,
 			 "%s: ScreenSaverOn event wasn't of type External!\n",
 			     blurb());
-# endif /* DEBUG_TIMERS */
 		  }
 
 		if (until_idle_p)
@@ -531,20 +527,16 @@ sleep_until_idle (saver_info *si, Bool until_idle_p)
 	      }
 	    else if (sevent->state == ScreenSaverOff)
 	      {
-# ifdef DEBUG_TIMERS
 		if (p->verbose_p)
-		  fprintf (stderr, "%s: ScreenSaverOff event received at %s\n",
-			   blurb(), timestring ());
-# endif /* DEBUG_TIMERS */
+		  fprintf (stderr, "%s: MIT ScreenSaverOff event received.\n",
+			   blurb());
 		if (!until_idle_p)
 		  goto DONE;
 	      }
-# ifdef DEBUG_TIMERS
-	    else if (p->verbose_p)
+	    else
 	      fprintf (stderr,
-		       "%s: unknown MIT-SCREEN-SAVER event received at %s\n",
-		       blurb(), timestring ());
-# endif /* DEBUG_TIMERS */
+		       "%s: unknown MIT-SCREEN-SAVER event %d received!\n",
+		       blurb(), sevent->state);
 	  }
 	else
 
@@ -554,11 +546,9 @@ sleep_until_idle (saver_info *si, Bool until_idle_p)
 #ifdef HAVE_SGI_SAVER_EXTENSION
 	if (event.type == (si->sgi_saver_ext_event_number + ScreenSaverStart))
 	  {
-# ifdef DEBUG_TIMERS
 	    if (p->verbose_p)
-	      fprintf (stderr, "%s: ScreenSaverStart event received at %s\n",
-		       blurb(), timestring ());
-# endif /* DEBUG_TIMERS */
+	      fprintf (stderr, "%s: SGI ScreenSaverStart event received.\n",
+		       blurb());
 
 	    if (until_idle_p)
 	      goto DONE;
@@ -566,11 +556,9 @@ sleep_until_idle (saver_info *si, Bool until_idle_p)
 	else if (event.type == (si->sgi_saver_ext_event_number +
 				ScreenSaverEnd))
 	  {
-# ifdef DEBUG_TIMERS
 	    if (p->verbose_p)
-	      fprintf (stderr, "%s: ScreenSaverEnd event received at %s\n",
-		       blurb(), timestring ());
-# endif /* DEBUG_TIMERS */
+	      fprintf (stderr, "%s: SGI ScreenSaverEnd event received.\n",
+		       blurb());
 	    if (!until_idle_p)
 	      goto DONE;
 	  }

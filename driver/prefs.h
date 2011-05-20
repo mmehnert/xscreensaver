@@ -79,7 +79,8 @@ struct saver_preferences {
 
 
 extern void load_init_file (saver_preferences *p);
-extern void maybe_reload_init_file (saver_preferences *p);
+extern Bool init_file_changed_p (saver_preferences *p);
 extern void write_init_file (saver_preferences *p, const char *version_string);
+const char *init_file_name (void);
 
 #endif /* __XSCREENSAVER_PREFS_H__ */

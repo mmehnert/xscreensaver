@@ -245,7 +245,8 @@ exec_screenhack (saver_info *si, const char *command)
   saver_preferences *p = &si->prefs;
 
 #ifndef VMS
-  Bool hairy_p = !!strpbrk (command, "*?$&!<>[];`'\\\"");
+  Bool hairy_p = !!strpbrk (command, "*?$&!<>[];`'\\\"=");
+  /* note: = is in the above because of the sh syntax "FOO=bar cmd". */
 
   if (p->verbose_p)
     fprintf (stderr, "%s: spawning \"%s\" in pid %lu%s.\n",

@@ -177,7 +177,7 @@ install-program: $(EXES)
  $$e "           must run 'make install' as 'root', not as '$$me'."	     ;\
  $$e ""									     ;\
  $$e "           For now, xscreensaver will be installed non-setuid, which"  ;\
- $$e "           means that locking might not work."			     ;\
+ $$e "           means that locking might not work.  (Try it and see.)"	     ;\
  $$e ""									     ;\
 	   fi ; 							\
 	fi ;								\

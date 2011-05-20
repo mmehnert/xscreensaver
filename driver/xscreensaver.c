@@ -229,7 +229,8 @@ The standard Xt command-line options are accepted; other options include:\n\
 See the manual for other options and X resources.\n\
 \n\
 The `xscreensaver' program should be left running in the background.\n\
-Use the `xscreensaver-command' program to manipulate a running xscreensaver.\n\
+Use the `xscreensaver-demo' and `xscreensaver-command' programs to\n\
+manipulate a running xscreensaver.\n\
 \n\
 The `*programs' resource controls which graphics demos will be launched by\n\
 the screensaver.  See `man xscreensaver' or the web page for more details.\n\
@@ -237,7 +238,7 @@ the screensaver.  See `man xscreensaver' or the web page for more details.\n\
 Just getting started?  Try this:\n\
 \n\
         xscreensaver &\n\
-        xscreensaver-command -demo\n\
+        xscreensaver-demo\n\
 \n\
 For updates, check http://www.jwz.org/xscreensaver/\n\
 \n",
@@ -456,13 +457,20 @@ process_command_line (saver_info *si, int *argc, char **argv)
 	      !strcmp (s, "-version") ||
 	      !strcmp (s, "-time"))
 	    {
-	      fprintf (stderr, "\n\
-    However, %s is an option to the `xscreensaver-command' program.\n\
+
+	      if (!strcmp (s, "-demo") || !strcmp (s, "-prefs"))
+		fprintf (stderr, "\n\
+    Perhaps you meant to run the `xscreensaver-demo' program instead?\n");
+	      else
+		fprintf (stderr, "\n\
+    However, `%s' is an option to the `xscreensaver-command' program.\n", s);
+
+	      fprintf (stderr, "\
     The `xscreensaver' program is a daemon that runs in the background.\n\
     You control a running xscreensaver process by sending it messages\n\
-    with `xscreensaver-command'.  See the man pages for details,\n\
-    or check the web page: http://www.jwz.org/xscreensaver/\n\n",
-		       s);
+    with `xscreensaver-demo' or `xscreensaver-command'.\n\
+.   See the man pages for details, or check the web page:\n\
+    http://www.jwz.org/xscreensaver/\n\n");
 
 	      /* Since version 1.21 renamed the "-lock" option to "-lock-mode",
 		 suggest that explicitly. */
@@ -471,6 +479,7 @@ process_command_line (saver_info *si, int *argc, char **argv)
     Or perhaps you meant either the \"-lock-mode\" or the\n\
     \"-lock-timeout <minutes>\" options to xscreensaver?\n\n");
 	    }
+
 	  exit (1);
 	}
     }
@@ -721,6 +730,25 @@ select_events (saver_info *si)
 }
 
 
+void
+maybe_reload_init_file (saver_info *si)
+{
+  saver_preferences *p = &si->prefs;
+  if (init_file_changed_p (p))
+    {
+      if (p->verbose_p)
+	fprintf (stderr, "%s: file \"%s\" has changed, reloading.\n",
+		 blurb(), init_file_name());
+
+      load_init_file (p);
+
+      /* If a server extension is in use, and p->timeout has changed,
+	 we need to inform the server of the new timeout. */
+      disable_builtin_screensaver (si, False);
+    }
+}
+
+
 /* Loop forever:
 
        - wait until the user is idle;
@@ -734,101 +762,93 @@ static void
 main_loop (saver_info *si)
 {
   saver_preferences *p = &si->prefs;
+  Bool ok_to_unblank;
+
   while (1)
     {
       sleep_until_idle (si, True);
 
-      maybe_reload_init_file (p);
-
-      if (si->demoing_p)
+      if (p->verbose_p)
 	{
-	  if (p->verbose_p)
+	  if (si->demoing_p)
 	    fprintf (stderr, "%s: demoing %d at %s.\n", blurb(),
 		     si->selection_mode, timestring());
-	  maybe_reload_init_file (p);
-	  blank_screen (si);
-	  kill_screenhack (si);
-	  spawn_screenhack (si, True);
-
-	  sleep_until_idle (si, False); /* until not idle */
-
-	  if (p->verbose_p)
-	    fprintf (stderr, "%s: done demoing %d at %s.\n", blurb(),
-		     si->selection_mode, timestring ());
-
-	  kill_screenhack (si);
-	  unblank_screen (si);
-	  si->selection_mode = 0;
-	  si->demoing_p = 0;
+	  else
+	    if (p->verbose_p)
+	      fprintf (stderr, "%s: blanking screen at %s.\n", blurb(),
+		       timestring());
 	}
-      else
-	{
-	  if (p->verbose_p)
-	    fprintf (stderr, "%s: user is idle; waking up at %s.\n", blurb(),
-		     timestring());
-	  maybe_reload_init_file (p);
-	  blank_screen (si);
-	  spawn_screenhack (si, True);
-	  if (p->cycle)
-	    si->cycle_id = XtAppAddTimeOut (si->app, p->cycle, cycle_timer,
-					    (XtPointer) si);
+
+      maybe_reload_init_file (si);
+
+      blank_screen (si);
+      kill_screenhack (si);
+      spawn_screenhack (si, True);
+
+      /* Don't start the cycle timer in demo mode. */
+      if (!si->demoing_p && p->cycle)
+	si->cycle_id = XtAppAddTimeOut (si->app, p->cycle, cycle_timer,
+					(XtPointer) si);
+
 
 #ifndef NO_LOCKING
-	  if (p->lock_p &&
-	      !si->locking_disabled_p &&
-	      p->lock_timeout == 0)
-	    si->locked_p = True;
+      if (!si->demoing_p &&		/* if not going into demo mode */
+	  p->lock_p &&			/* and locking is enabled */
+	  !si->locking_disabled_p &&	/* and locking is possible */
+	  p->lock_timeout == 0)		/* and locking is not timer-deferred */
+	si->locked_p = True;		/* then lock right now. */
 
-	  if (p->lock_p && !si->locked_p)
-	    /* locked_p might be true already because of ClientMessage */
-	    si->lock_id = XtAppAddTimeOut (si->app, p->lock_timeout,
-					   activate_lock_timer,
-					   (XtPointer) si);
+      /* locked_p might be true already because of the above, or because of
+	 the LOCK ClientMessage.  But if not, and if we're supposed to lock
+	 after some time, set up a timer to do so.
+       */
+      if (p->lock_p &&
+	  !si->locked_p &&
+	  p->lock_timeout > 0)
+	si->lock_id = XtAppAddTimeOut (si->app, p->lock_timeout,
+				       activate_lock_timer,
+				       (XtPointer) si);
 #endif /* !NO_LOCKING */
 
-	PASSWD_INVALID:
 
-	  sleep_until_idle (si, False); /* until not idle */
-	  maybe_reload_init_file (p);
+      ok_to_unblank = True;
+      do {
+
+	sleep_until_idle (si, False);		/* until not idle */
+	maybe_reload_init_file (si);
 
 #ifndef NO_LOCKING
-	  if (si->locked_p)
-	    {
-	      Bool val;
-	      if (si->locking_disabled_p) abort ();
-	      si->dbox_up_p = True;
+	if (si->locked_p)
+	  {
+	    saver_screen_info *ssi = si->default_screen;
+	    if (si->locking_disabled_p) abort ();
 
-	      {
-		saver_screen_info *ssi = si->default_screen;
-		suspend_screenhack (si, True);
-		XUndefineCursor (si->dpy, ssi->screensaver_window);
-		if (p->verbose_p)
-		  fprintf (stderr, "%s: prompting for password.\n", blurb());
-		val = unlock_p (si);
-		if (p->verbose_p && val == False)
-		  fprintf (stderr, "%s: password incorrect!\n", blurb());
-		si->dbox_up_p = False;
-		XDefineCursor (si->dpy, ssi->screensaver_window, ssi->cursor);
-		suspend_screenhack (si, False);
-	      }
+	    si->dbox_up_p = True;
+	    suspend_screenhack (si, True);
+	    XUndefineCursor (si->dpy, ssi->screensaver_window);
 
-	      if (! val)
-		goto PASSWD_INVALID;
-	      si->locked_p = False;
-	    }
+	    ok_to_unblank = unlock_p (si);
+
+	    si->dbox_up_p = False;
+	    XDefineCursor (si->dpy, ssi->screensaver_window, ssi->cursor);
+	    suspend_screenhack (si, False);	/* resume */
+	  }
 #endif /* !NO_LOCKING */
 
-	  if (p->verbose_p)
-	    fprintf (stderr, "%s: user is active at %s.\n",
-		     blurb(), timestring ());
+	} while (!ok_to_unblank);
 
-	  /* Let's kill it before unblanking, to get it to stop drawing as
-	     soon as possible... */
-	  kill_screenhack (si);
-	  unblank_screen (si);
-	  si->selection_mode = 0;
-	  si->demoing_p = 0;
-	}
+
+      if (p->verbose_p)
+	fprintf (stderr, "%s: unblanking screen at %s.\n",
+		 blurb(), timestring ());
+
+      /* Kill before unblanking, to stop drawing as soon as possible. */
+      kill_screenhack (si);
+      unblank_screen (si);
+
+      si->locked_p = False;
+      si->demoing_p = 0;
+      si->selection_mode = 0;
 
       if (si->cycle_id)
 	{
@@ -843,10 +863,11 @@ main_loop (saver_info *si)
 	}
 
       if (p->verbose_p)
-	fprintf (stderr, "%s: going to sleep.\n", blurb());
+	fprintf (stderr, "%s: awaiting idleness.\n", blurb());
     }
 }
 
+static void analyze_display (saver_info *si);
 
 int
 main (int argc, char **argv)
@@ -877,11 +898,12 @@ main (int argc, char **argv)
     if (ensure_no_screensaver_running (si->dpy, si->screens[i].screen))
       exit (1);
 
-  load_init_file (&si->prefs);
+  load_init_file (p);
 
   if (p->xsync_p) XSynchronize (si->dpy, True);
   blurb_timestamp_p = p->timestamp_p;  /* kludge */
 
+  if (p->verbose_p) analyze_display (si);
   initialize_server_extensions (si);
   initialize_screensaver_window (si);
   select_events (si);
@@ -930,7 +952,7 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
   Window window = event->xclient.window;
 
   /* Preferences might affect our handling of client messages. */
-  maybe_reload_init_file (p);
+  maybe_reload_init_file (si);
 
   if (event->xclient.message_type != XA_SCREENSAVER)
     {
@@ -1219,4 +1241,73 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
       clientmessage_response (si, window, True, buf, buf);
     }
   return False;
+}
+
+
+/* Some random diagnostics printed in -verbose mode.
+ */
+
+static void
+analyze_display (saver_info *si)
+{
+  int i, j;
+  static const char *exts[][2] = {
+    { "SCREEN_SAVER",	   "SGI Screen-Saver" },
+    { "SCREEN-SAVER",	   "SGI Screen-Saver" },
+    { "MIT-SCREEN-SAVER",  "MIT Screen-Saver" },
+    { "XIDLE",		   "XIdle" },
+    { "SGI-VIDEO-CONTROL", "SGI Video-Control" },
+    { "READDISPLAY",	   "SGI Read-Display" },
+    { "MIT-SHM",	   "Shared Memory" },
+    { "DOUBLE-BUFFER",	   "Double-Buffering" },
+    { "DPMS",		   "Power Management" },
+    { "GLX",		   "GLX" }
+  };
+
+  fprintf (stderr, "%s: running on display \"%s\"\n", blurb(),
+	   DisplayString(si->dpy));
+  fprintf (stderr, "%s: vendor is %s, %d\n", blurb(),
+	   ServerVendor(si->dpy), VendorRelease(si->dpy));
+
+  fprintf (stderr, "%s: useful extensions:\n", blurb());
+  for (i = 0; i < countof(exts); i++)
+    {
+      int op = 0, event = 0, error = 0;
+      if (XQueryExtension (si->dpy, exts[i][0], &op, &event, &error))
+	fprintf (stderr, "%s:   %s\n", blurb(), exts[i][1]);
+    }
+
+  for (i = 0; i < si->nscreens; i++)
+    {
+      unsigned long colormapped_depths = 0;
+      unsigned long non_mapped_depths = 0;
+      XVisualInfo vi_in, *vi_out;
+      int out_count;
+      vi_in.screen = i;
+      vi_out = XGetVisualInfo (si->dpy, VisualScreenMask, &vi_in, &out_count);
+      if (!vi_out) continue;
+      for (j = 0; j < out_count; j++)
+	if (vi_out[j].class == PseudoColor)
+	  colormapped_depths |= (1 << vi_out[j].depth);
+	else
+	  non_mapped_depths  |= (1 << vi_out[j].depth);
+      XFree ((char *) vi_out);
+
+      if (colormapped_depths)
+	{
+	  fprintf (stderr, "%s: screen %d colormapped depths:", blurb(), i);
+	  for (j = 0; j < 32; j++)
+	    if (colormapped_depths & (1 << j))
+	      fprintf (stderr, " %d", j);
+	  fprintf (stderr, "\n");
+	}
+      if (non_mapped_depths)
+	{
+	  fprintf (stderr, "%s: screen %d non-mapped depths:", blurb(), i);
+	  for (j = 0; j < 32; j++)
+	    if (non_mapped_depths & (1 << j))
+	      fprintf (stderr, " %d", j);
+	  fprintf (stderr, "\n");
+	}
+    }
 }

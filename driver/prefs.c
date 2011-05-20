@@ -75,7 +75,7 @@ extern const char *blurb (void);
 static void get_screenhacks (saver_preferences *p);
 
 
-static const char *
+const char *
 init_file_name (void)
 {
   static char *file = 0;
@@ -345,29 +345,21 @@ parse_init_file (saver_preferences *p)
 }
 
 
-void
-maybe_reload_init_file (saver_preferences *p)
+Bool
+init_file_changed_p (saver_preferences *p)
 {
   const char *name = init_file_name();
   struct stat st;
 
-  if (!name) return;
+  if (!name) return False;
 
   if (stat(name, &st) != 0)
-    return;
+    return False;
 
   if (p->init_file_date == st.st_mtime)
-    return;
+    return False;
 
-  if (p->verbose_p)
-    fprintf (stderr, "%s: file \"%s\" has changed, reloading.\n",
-	     blurb(), name);
-
-  if (parse_init_file (p) != 0)
-    return;
-
-  if (p->init_file_date == 0) abort();
-  load_init_file (p);
+  return True;
 }
 
 
@@ -752,10 +744,12 @@ write_init_file (saver_preferences *p, const char *version_string)
 void
 load_init_file (saver_preferences *p)
 {
-  if (p->init_file_date == 0)
-    /* The date will be 0 the first time this is called; and when this is
-       called subsequent times, the file will have already been reloaded. */
-    parse_init_file (p);
+  static Bool first_time = True;
+  
+  if (parse_init_file (p) != 0)		/* file might have gone away */
+    if (!first_time) return;
+
+  first_time = False;
 
   p->xsync_p	    = get_boolean_resource ("synchronous", "Synchronous");
   p->verbose_p	    = get_boolean_resource ("verbose", "Boolean");

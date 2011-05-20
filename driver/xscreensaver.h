@@ -104,6 +104,9 @@ struct saver_info {
   Window passwd_dialog;		/* The password dialog, if its up. */
   passwd_dialog_data *pw_data;	/* Other info necessary to draw it. */
 
+  int unlock_failures;		/* Counts failed login attempts while the
+				   screen is locked. */
+
 
   /* =======================================================================
      demoing
@@ -231,7 +234,7 @@ struct saver_screen_info {
    ======================================================================= */
 
 extern void restore_real_vroot (saver_info *si);
-extern void disable_builtin_screensaver (saver_info *si, Bool turn_off_p);
+extern void disable_builtin_screensaver (saver_info *, Bool unblank_screen_p);
 extern Bool ensure_no_screensaver_running (Display *, Screen *);
 
 #ifdef HAVE_MIT_SAVER_EXTENSION
@@ -259,7 +262,7 @@ extern void raise_window (saver_info *si,
 			    Bool dont_clear);
 extern void blank_screen (saver_info *si);
 extern void unblank_screen (saver_info *si);
-extern void grab_keyboard_and_mouse (saver_info *si, Window, Cursor);
+extern Bool grab_keyboard_and_mouse (saver_info *si, Window, Cursor);
 extern void ungrab_keyboard_and_mouse (saver_info *si);
 
 /* =======================================================================
@@ -319,6 +322,7 @@ extern void sleep_until_idle (saver_info *si, Bool until_idle_p);
    ======================================================================= */
 
 extern Bool handle_clientmessage (saver_info *, XEvent *, Bool);
+extern void maybe_reload_init_file (saver_info *);
 
 /* =======================================================================
    subprocs
