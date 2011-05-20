@@ -712,7 +712,6 @@ tetra(ModeInfo *mi, Bool wire)
 	  0.0, 0.0,	 0.5, -0.5,  0.5,
 	  0.0, 0.0,	 0.5,  0.5, -0.5,
 	  0.0, 0.0,	-0.5, -0.5, -0.5);
-    glEnd();
   }
   glEndList();
 
@@ -2025,6 +2024,48 @@ gl_init(ModeInfo *mi)
 }
 
 
+# ifdef HAVE_MESA_GL
+
+# include <signal.h>
+
+static RETSIGTYPE
+lament_signal_kludge (int sig)
+{
+  signal (sig, SIG_DFL);
+  fprintf (stderr,
+           "\n"
+           "%s: dying with signal %d (%s).\n"
+           "\n"
+           "\tThis is almost certainly a bug in the MesaGL library,\n"
+           "\tespecially if the stack trace in the core file mentions\n"
+           "\t`lambda_textured_triangle' or `render_quad'.\n"
+           "\n"
+           "\tI encourage you to report this to the Mesa maintainers\n"
+           "\tat <http://www.mesa3d.org/>.  I reported this bug more\n"
+           "\tthan a year ago, and it is trivially reproducible.\n"
+           "\tI do not know a workaround.\n"
+           "\n",
+           progname,
+           sig,
+           (sig == SIGILL ? "SIGILL" :
+            sig == SIGFPE ? "SIGFPE" :
+            sig == SIGBUS ? "SIGBUS" :
+            sig == SIGSEGV ? "SIGSEGV" : "???"));
+  fflush (stderr);
+  kill (getpid (), sig);
+}
+
+static void
+handle_signals (void)
+{
+  signal (SIGILL,  lament_signal_kludge);
+  signal (SIGFPE,  lament_signal_kludge);
+  signal (SIGBUS,  lament_signal_kludge);
+  signal (SIGSEGV, lament_signal_kludge);
+}
+# endif /* HAVE_MESA_GL */
+
+
 void
 init_lament(ModeInfo *mi)
 {
@@ -2069,6 +2110,10 @@ init_lament(ModeInfo *mi)
       reshape(MI_WIDTH(mi), MI_HEIGHT(mi));
       gl_init(mi);
     }
+
+# ifdef HAVE_MESA_GL
+  handle_signals ();
+# endif /* HAVE_MESA_GL */
 }
 
 

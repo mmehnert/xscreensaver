@@ -369,7 +369,7 @@ make_passwd_window (saver_info *si)
 }
 
 
-void
+static void
 draw_passwd_window (saver_info *si)
 {
   passwd_dialog_data *pw = si->pw_data;
@@ -558,7 +558,7 @@ draw_passwd_window (saver_info *si)
 }
 
 
-void
+static void
 update_passwd_window (saver_info *si, const char *printed_passwd, float ratio)
 {
   passwd_dialog_data *pw = si->pw_data;
@@ -642,7 +642,7 @@ update_passwd_window (saver_info *si, const char *printed_passwd, float ratio)
 }
 
 
-void
+static void
 destroy_passwd_window (saver_info *si)
 {
   passwd_dialog_data *pw = si->pw_data;

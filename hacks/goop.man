@@ -39,8 +39,7 @@ Default 100000, or about 1/10th second.
 .TP 8
 .B \-transparent
 If \fI\-layers\fP is greater than 1, then each layer will be drawn in one
-color, and when they overlap, the colors will be mixed. This only works
-on \fBPseudoColor\fP displays.  This is the default.
+color, and when they overlap, the colors will be mixed. This is the default.
 .TP 8
 .B \-non\-transparent
 Turns off \fI\-transparent\fP.

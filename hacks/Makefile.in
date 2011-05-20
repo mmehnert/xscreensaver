@@ -155,6 +155,7 @@ VMSFILES	= compile_axp.com compile_decc.com link_axp.com link_decc.com \
 TARFILES	= $(SRCS) $(HDRS) $(MEN) $(EXTRAS) $(VMSFILES)
 
 
+default: all
 all: $(EXES)
 
 install:   install-program   install-man

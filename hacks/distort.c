@@ -377,7 +377,7 @@ static void init_round_lense(void)
 
 
 /* generate an XImage of from[][][] and draw it on the screen */
-void plain_draw(int k)
+static void plain_draw(int k)
 {
 	int i, j;
 	for(i = 0 ; i < 2*radius+speed+2; i++) {
@@ -403,7 +403,7 @@ void plain_draw(int k)
  * it should be possible to use the from[][] to speed it up
  * (once I figure out the algorithm used :)
  */
-void reflect_draw(int k)
+static void reflect_draw(int k)
 {
 	int i, j;
 	int	cx, cy;
@@ -511,7 +511,7 @@ static void move_lense(int k)
 }
 
 /* make xy_coo[k] grow/shrink */
-void swamp_thing(int k)
+static void swamp_thing(int k)
 {
 	if (xy_coo[k].r >= radius)
 		xy_coo[k].r_change = -abs(xy_coo[k].r_change);

@@ -73,6 +73,23 @@ allocate_writable_colors (Display *dpy, Colormap cmap,
 }
 
 
+static void
+complain (int wanted_colors, int got_colors,
+	  Bool wanted_writable, Bool got_writable)
+{
+  if (wanted_writable && !got_writable)
+    fprintf(stderr,
+	    "%s: wanted %d writable colors; got %d read-only colors.\n",
+	    progname, wanted_colors, got_colors);
+
+  else if (wanted_colors > (got_colors + 10))
+    /* don't bother complaining if we're within ten pixels. */
+    fprintf(stderr, "%s: wanted %d%s colors; got %d.\n",
+	    progname, wanted_colors, (got_writable ? " writable" : ""),
+	    got_colors);
+}
+
+
 
 void
 make_color_ramp (Display *dpy, Colormap cmap,
@@ -83,8 +100,11 @@ make_color_ramp (Display *dpy, Colormap cmap,
 		 Bool allocate_p,
 		 Bool writable_p)
 {
+  Bool verbose_p = True;  /* argh. */
   int i;
   int ncolors = *ncolorsP;
+  int wanted = ncolors;
+  Bool wanted_writable = (allocate_p && writable_p);
   double dh, ds, dv;		/* deltas */
 
  AGAIN:
@@ -154,7 +174,7 @@ make_color_ramp (Display *dpy, Colormap cmap,
 	}
     }
 
-  return;
+  goto WARN;
 
  FAIL:
   /* we weren't able to allocate all the colors we wanted;
@@ -170,6 +190,11 @@ make_color_ramp (Display *dpy, Colormap cmap,
   *ncolorsP = ncolors;
   if (ncolors > 0)
     goto AGAIN;
+
+ WARN:
+  
+  if (verbose_p)
+    complain (wanted, ncolors, wanted_writable, wanted_writable && writable_p);
 }
 
 
@@ -425,23 +450,6 @@ make_color_loop (Display *dpy, Colormap cmap,
 		  3, h, s, v,
 		  colors, ncolorsP,
 		  allocate_p, writable_p);
-}
-
-
-static void
-complain (int wanted_colors, int got_colors,
-	  Bool wanted_writable, Bool got_writable)
-{
-  if (wanted_writable && !got_writable)
-    fprintf(stderr,
-	    "%s: wanted %d writable colors; got %d read-only colors.\n",
-	    progname, wanted_colors, got_colors);
-
-  else if (wanted_colors > (got_colors + 10))
-    /* don't bother complaining if we're within ten pixels. */
-    fprintf(stderr, "%s: wanted %d%s colors; got %d.\n",
-	    progname, wanted_colors, (got_writable ? " writable" : ""),
-	    got_colors);
 }
 
 

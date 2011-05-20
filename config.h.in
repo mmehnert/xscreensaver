@@ -119,7 +119,11 @@
  */
 #undef HAVE_MOTIF
 
-/*  Define this if you don't have Motif, but you have Athena (-Xaw).
+/*  Define this if you have Gtk.
+ */
+#undef HAVE_GTK
+
+/*  Define this if you have Athena (-Xaw).
  */
 #undef HAVE_ATHENA
 
@@ -317,6 +321,9 @@
 
 /* Define if you have the getcwd function.  */
 #undef HAVE_GETWD
+
+/* Define if you have the realpath function.  */
+#undef HAVE_REALPATH
 
 /* Define if you have the uname function.  */
 #undef HAVE_UNAME

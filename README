@@ -77,6 +77,21 @@ http://www.jwz.org/xscreensaver/.
 
                               ============
 
+Changes since 3.12:   * Ported `xscreensaver-demo' to GTK.
+                      * Made it possible to build Motif, Gtk, and Athena
+                        versions of `xscreensaver-demo' in the same directory
+                        without reconfiguring.
+                      * Made `xscreensaver-demo' chase symlinks before writing
+                        the .xscreensaver file, so that if .xscreensaver is
+                        itself a symlink, the underlying file will be replaced
+                        instead.
+                      * Some Makefile and configure tweaks for Solaris and
+                        FreeBSD.
+                      * Made it possible to set the fire color in `xflame'.
+                      * Made transparency work in TrueColor (for `goop' and
+                        `qix'.)
+                      * Fixed a multi-head bug introduced by the virtual
+                        viewports stuff.
 Changes since 3.11:   * Made it so that you can't scroll the screen while the
                         lock dialog is up (with XFree86 virtual viewports.)
                       * Fixed a bug in `flag' that caused bob's chin to get cut

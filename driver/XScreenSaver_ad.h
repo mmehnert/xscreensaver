@@ -29,6 +29,9 @@
 "*loadURL: netscape -remote 'openURL(%s)' || netscape '%s'",
 "*installColormap:	True",
 "*programs:	qix -root -solid -delay 0 -segments 100			\\n\
+		qix -root -count 4 -solid -transparent			\\n\
+		qix -root -count 5 -solid -transparent -linear		  \
+			-segments 250 -size 100				\\n\
 		attraction -root -mode balls				\\n\
 		attraction -root -mode lines -points 3 -segments 200	\\n\
 		attraction -root -mode splines -segments 300		\\n\
@@ -130,10 +133,6 @@
 	color:	attraction -root -mode filled-splines -segments 0	\\n\
 	color:	attraction -root -glow -points 10			\\n\
 	color:	bubbles -root						\\n\
-									  \
-  PseudoColor:	qix -root -count 4 -solid -transparent			\\n\
-  PseudoColor:	qix -root -count 5 -solid -transparent -linear		  \
-			-segments 250 -size 100				\\n\
 									  \
 	   GL:	gears -root					  	\\n\
 	   GL:	superquadrics -root				  	\\n\
@@ -272,6 +271,7 @@
 "*Box.borderWidth:				0",
 "*Label.borderWidth:				0",
 "*preferences_dialog*Dialog.borderWidth:		0",
+"*demo_dialog*run.label:				Run",
 "*demo_dialog*next.label:			Run Next",
 "*demo_dialog*prev.label:			Run Previous",
 "*demo_dialog*edit.label:			Preferences",

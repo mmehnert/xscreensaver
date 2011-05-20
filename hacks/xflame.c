@@ -77,6 +77,7 @@ static int             height;
 static Colormap        colormap;
 static Visual          *visual;
 static Bool            shared;
+static Bool            bloom;
 static XImage          *xim;
 #ifdef HAVE_XSHM_EXTENSION
 static XShmSegmentInfo shminfo;
@@ -155,13 +156,27 @@ MakeImage(void)
 static void
 InitColors(void)
 {
-  int i = 0, j = 0;
+  int i = 0, j = 0, red = 0, green = 0, blue = 0;
+  XColor fg;
+
+  /* Make it possible to set the color of the flames, 
+     by Raymond Medeiros <ray@stommel.marine.usf.edu> and jwz.
+  */
+  fg.pixel = get_pixel_resource ("foreground", "Foreground",
+                                 display, colormap);
+  XQueryColor (display, colormap, &fg);
+
+  red   = 255 - (fg.red   >> 8);
+  green = 255 - (fg.green >> 8);
+  blue  = 255 - (fg.blue  >> 8);
+
+
   for (i = 0; i < 256 * 2; i += 2)
     {
       XColor xcl;
-      int r = (i -   0) * 3;
-      int g = (i -  80) * 3;
-      int b = (i - 160) * 3;
+      int r = (i - red)   * 3;
+      int g = (i - green) * 3;
+      int b = (i - blue)  * 3;
     
       if (r < 0)   r = 0;
       if (r > 255) r = 255;
@@ -216,6 +231,7 @@ InitFlame(void)
   iresidual = get_integer_resource("residual", "Integer");
   variance  = get_integer_resource("variance", "Integer");
   vartrend  = get_integer_resource("vartrend", "Integer");
+  bloom     = get_boolean_resource("bloom",    "Boolean");
 
 # define THROTTLE(VAR,NAME) \
   if (VAR < 0 || VAR > 255) { \
@@ -388,13 +404,16 @@ FlameActive(void)
       *ptr1++ = v1 % 255;
     }
 
-  v1= (random() % 100);
-  if (v1 == 10)
-    residual += (random()%10);
-  else if (v1 == 20)
-    hspread += (random()%15);
-  else if (v1 == 30)
-    vspread += (random()%20);
+  if (bloom)
+    {
+      v1= (random() % 100);
+      if (v1 == 10)
+	residual += (random()%10);
+      else if (v1 == 20)
+	hspread += (random()%15);
+      else if (v1 == 30)
+	vspread += (random()%20);
+    }
 
   residual = ((iresidual* 10) + (residual *90)) / 100;
   hspread  = ((ihspread * 10) + (hspread  *90)) / 100;
@@ -651,7 +670,7 @@ char *progclass = "XFlame";
 
 char *defaults [] = {
   ".background:     black",
-  ".foreground:     red",
+  ".foreground:     #FFAF5F",
   "*bitmap:         none",
   "*bitmapBaseline: 20",
   "*delay:          10000",
@@ -660,6 +679,7 @@ char *defaults [] = {
   "*residual:       99",
   "*variance:       50",
   "*vartrend:       20",
+  "*bloom:          True",   
 
 #ifdef HAVE_XSHM_EXTENSION
   "*useSHM: False",   /* xshm turns out not to help. */
@@ -676,6 +696,8 @@ XrmOptionDescRec options [] = {
   { "-residual",  ".residual",       XrmoptionSepArg, 0 },
   { "-variance",  ".variance",       XrmoptionSepArg, 0 },
   { "-vartrend",  ".vartrend",       XrmoptionSepArg, 0 },
+  { "-bloom",     ".bloom",          XrmoptionNoArg, "True" },
+  { "-no-bloom",  ".bloom",          XrmoptionNoArg, "False" },
 #ifdef HAVE_XSHM_EXTENSION
   { "-shm",       ".useSHM",         XrmoptionNoArg, "True" },
   { "-no-shm",    ".useSHM",         XrmoptionNoArg, "False" },

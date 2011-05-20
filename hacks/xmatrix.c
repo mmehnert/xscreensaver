@@ -176,7 +176,7 @@ init_matrix (Display *dpy, Window window)
     {
       if (insert && *insert)
         fprintf (stderr,
-                 "%s: `insert' must be `top', `bottom', or `both', not \%s'\n",
+                 "%s: `insert' must be `top', `bottom', or `both', not `%s'\n",
                  progname, insert);
       state->insert_top_p = False;
       state->insert_bottom_p = True;

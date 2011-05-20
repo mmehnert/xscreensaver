@@ -93,6 +93,7 @@ EXTRAS		= README Makefile.in
 TARFILES	= $(SRCS) $(HDRS) $(MEN) $(EXTRAS)
 
 
+default: all
 all: $(EXES)
 
 install:   install-program   install-man

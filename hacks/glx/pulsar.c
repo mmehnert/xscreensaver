@@ -254,7 +254,7 @@ struct quad *quads;
 int checkError(int line, char *file)
 {
   if((errCode = glGetError()) != GL_NO_ERROR) {
-    errString = (char *)gluErrorString(errCode);
+    errString = (GLubyte *)gluErrorString(errCode);
     fprintf(stderr, "OpenGL error: %s detected at line %d in file %s\n", errString, line, file);
     exit(1);
   }

@@ -45,6 +45,9 @@ static int delay;
 static int count;
 static Colormap cmap;
 static int npoly;
+static Bool additive_p;
+static Bool cmap_p;
+
 
 static GC *gcs[2];
 
@@ -192,15 +195,18 @@ init_qix (Display *dpy, Window window)
   gcv.foreground = default_fg_pixel =
     get_pixel_resource ("foreground", "Foreground", dpy, cmap);
 
+  additive_p = get_boolean_resource ("additive", "Boolean");
+  cmap_p = has_writable_cells (xgwa.screen, xgwa.visual);
+
   if (transparent_p)
     {
-      Bool additive_p = get_boolean_resource ("additive", "Boolean");
       unsigned long *plane_masks = 0;
       unsigned long base_pixel;
       int nplanes = count;
       int i;
 
-      allocate_alpha_colors (dpy, cmap, &nplanes, additive_p, &plane_masks,
+      allocate_alpha_colors (xgwa.screen, xgwa.visual, cmap,
+                             &nplanes, additive_p, &plane_masks,
 			     &base_pixel);
 
       if (nplanes <= 1)
@@ -230,6 +236,12 @@ init_qix (Display *dpy, Window window)
 	{
 	  gcv.plane_mask = plane_masks [i];
 	  gcv.foreground = ~0;
+
+/*  argh, I'm not sure how to make "-subtractive" work in truecolor...
+          if (!cmap_p && !additive_p)
+            gcv.function = GXclear;
+ */
+
 	  if (xor_p)
 	    {
 	      gcv.function = GXxor;

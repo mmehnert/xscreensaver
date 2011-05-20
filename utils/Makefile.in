@@ -116,6 +116,7 @@ VMSFILES	= compile_axp.com compile_decc.com vms-gtod.c vms-gtod.h \
 TARFILES	= $(EXTRAS) $(VMSFILES) $(SRCS) $(HDRS)
 
 
+default: all
 all: $(OBJS)
 
 install:   install-program   install-man
@@ -207,6 +208,7 @@ distdepend:: compile_axp.com compile_decc.com
 alpha.o: $(srcdir)/utils.h
 alpha.o: ../config.h
 alpha.o: $(srcdir)/alpha.h
+alpha.o: $(srcdir)/visual.h
 alpha.o: $(srcdir)/hsv.h
 alpha.o: $(srcdir)/yarandom.h
 alpha.o: $(srcdir)/resources.h

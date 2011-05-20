@@ -922,7 +922,7 @@ initialize_screensaver_window_1 (saver_screen_info *ssi)
   int x, y, width, height;
   static Bool printed_visual_info = False;  /* only print the message once. */
 
-  get_screen_viewport (si->default_screen, &x, &y, &width, &height,
+  get_screen_viewport (ssi, &x, &y, &width, &height,
                        (p->verbose_p && !si->screen_blanked_p));
 
   black.red = black.green = black.blue = 0;

@@ -15,9 +15,12 @@
 
 #include "utils.h"
 #include "alpha.h"
+#include "visual.h"
 #include "hsv.h"
 #include "yarandom.h"
 #include "resources.h"
+
+#include <X11/Xutil.h>
 
 #ifndef countof
 # define countof(x) (sizeof(*(x))/sizeof((x)))
@@ -90,7 +93,7 @@ permute_colors (XColor *pcolors, XColor *colors,
 }
 
 
-int
+static int
 allocate_color_planes (Display *dpy, Colormap cmap,
 		       int nplanes, unsigned long *plane_masks,
 		       unsigned long *base_pixel_ret)
@@ -104,7 +107,7 @@ allocate_color_planes (Display *dpy, Colormap cmap,
 }
 		       
 
-void
+static void
 initialize_transparency_colormap (Display *dpy, Colormap cmap,
 				  int nplanes,
 				  unsigned long base_pixel,
@@ -134,44 +137,79 @@ initialize_transparency_colormap (Display *dpy, Colormap cmap,
 
 
 Bool
-allocate_alpha_colors (Display *dpy, Colormap cmap,
+allocate_alpha_colors (Screen *screen, Visual *visual, Colormap cmap,
 		       int *nplanesP, Bool additive_p,
 		       unsigned long **plane_masks,
 		       unsigned long *base_pixelP)
 {
+  Display *dpy = DisplayOfScreen (screen);
   XColor *colors;
   int nplanes = *nplanesP;
   int i;
 
-  if (nplanes > 31) nplanes = 31;
-  *plane_masks = (unsigned long *) malloc(sizeof(unsigned long) * nplanes);
+  if (!has_writable_cells (screen, visual))
+    cmap = 0;
 
-  nplanes = allocate_color_planes (dpy, cmap, nplanes, *plane_masks,
+  if (!cmap)            /* A TrueColor visual, or similar. */
+    {
+      int depth = visual_depth (screen, visual);
+      unsigned long masks;
+      XVisualInfo vi_in, *vi_out;
+
+      /* Find out which bits the R, G, and B components actually occupy
+         on this visual. */
+      vi_in.screen = screen_number (screen);
+      vi_in.visualid = XVisualIDFromVisual (visual);
+      vi_out = XGetVisualInfo (dpy, VisualScreenMask|VisualIDMask,
+                               &vi_in, &i);
+      if (! vi_out) abort ();
+      masks = vi_out[0].red_mask | vi_out[0].green_mask | vi_out[0].blue_mask;
+      XFree ((char *) vi_out);
+
+      if (nplanes > depth)
+        nplanes = depth;
+      *nplanesP = nplanes;
+      *base_pixelP = 0;
+      *plane_masks = (unsigned long *) calloc(sizeof(unsigned long), nplanes);
+
+      /* Pick the planar values randomly, but constrain them to fall within
+         the bit positions of the R, G, and B fields. */
+      for (i = 0; i < nplanes; i++)
+        (*plane_masks)[i] = random() & masks;
+
+    }
+  else                  /* A PseudoColor visual, or similar. */
+    {
+      if (nplanes > 31) nplanes = 31;
+      *plane_masks = (unsigned long *) malloc(sizeof(unsigned long) * nplanes);
+
+      nplanes = allocate_color_planes (dpy, cmap, nplanes, *plane_masks,
 				   base_pixelP);
-  *nplanesP = nplanes;
+      *nplanesP = nplanes;
 
-  if (nplanes <= 1)
-    {
-      free(*plane_masks);
-      *plane_masks = 0;
-      return False;
-    }
+      if (nplanes <= 1)
+        {
+          free(*plane_masks);
+          *plane_masks = 0;
+          return False;
+        }
 
-  colors = (XColor *) calloc (nplanes, sizeof (XColor));
-  for (i = 0; i < nplanes; i++)
-    {
-      /* pick the base colors. If we are in subtractive mode, pick higher
-	 intensities. */
-      hsv_to_rgb (random () % 360,
-		  frand (1.0),
-		  frand (0.5) + (additive_p ? 0.2 : 0.5),
-		  &colors[i].red,
-		  &colors[i].green,
-		  &colors[i].blue);
+      colors = (XColor *) calloc (nplanes, sizeof (XColor));
+      for (i = 0; i < nplanes; i++)
+        {
+          /* pick the base colors. If we are in subtractive mode, pick higher
+             intensities. */
+          hsv_to_rgb (random () % 360,
+                      frand (1.0),
+                      frand (0.5) + (additive_p ? 0.2 : 0.5),
+                      &colors[i].red,
+                      &colors[i].green,
+                      &colors[i].blue);
+        }
+      initialize_transparency_colormap (dpy, cmap, nplanes,
+                                        *base_pixelP, *plane_masks, colors,
+                                        additive_p);
+      XFree ((XPointer) colors);
     }
-  initialize_transparency_colormap (dpy, cmap, nplanes,
-				    *base_pixelP, *plane_masks, colors,
-				    additive_p);
-  XFree ((XPointer) colors);
   return True;
 }

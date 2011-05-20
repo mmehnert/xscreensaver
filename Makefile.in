@@ -20,6 +20,8 @@ COMPRESS_EXT	= gz
 
 MAKE_SUBDIR = for dir in $(SUBDIRS); do (cd $$dir; $(MAKE) $@) || exit 5; done
 
+default::
+	@$(MAKE_SUBDIR)
 all::
 	@$(MAKE_SUBDIR)
 install:
@@ -197,18 +199,9 @@ test-tar::
   chmod -R a-w . ;							    \
   chmod u+w . ;								    \
   mkdir BIN ;								    \
-  mkdir BIN/athena ;							    \
   mkdir BIN/motif ;							    \
   mkdir BIN/lesstif ;							    \
   chmod a-w . ;								    \
-									    \
-  ( cd BIN/athena ;							    \
-    CC=cc ;								    \
-    export CC ;								    \
-    ../../configure --with-athena ;					    \
-    echo --------------------------------------------------------------- ;  \
-    gmake ;								    \
-    echo --------------------------------------------------------------- ); \
 									    \
   ( cd BIN/motif ;							    \
     CC=cc ;								    \
@@ -216,8 +209,7 @@ test-tar::
     ../../configure --without-xpm --without-xdbe --without-xshm 	    \
 		    --with-motif=/usr/local/motif ;			    \
     echo --------------------------------------------------------------- ;  \
-    gmake ;								    \
-    ( cd driver; gmake xscreensaver-demo-Xaw ) ;			    \
+    gmake all ;								    \
     echo --------------------------------------------------------------- ); \
 									    \
   ( cd BIN/lesstif ;							    \
@@ -225,9 +217,9 @@ test-tar::
     export CC ;								    \
     ../../configure --with-motif=/usr/local/lesstif ;			    \
     echo --------------------------------------------------------------- ;  \
-    ( cd utils; gmake ) ;						    \
-    ( cd driver; gmake ) ;						    \
-    ( cd driver; gmake xscreensaver-demo-Xaw ) ;			    \
+    ( cd utils; gmake all ) ;						    \
+    ( cd driver; gmake all ) ;						    \
+    ( cd driver; gmake all ) ;						    \
     echo --------------------------------------------------------------- ); \
 									    \
   chmod -R u+w .

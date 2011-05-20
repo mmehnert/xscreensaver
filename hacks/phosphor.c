@@ -28,6 +28,7 @@ extern XtAppContext app;
 #define FLARE  1
 #define NORMAL 2
 #define FADE   3
+#define STATE_MAX FADE
 
 #define CURSOR_INDEX 128
 
@@ -144,7 +145,7 @@ init_phosphor (Display *dpy, Window window)
 
   font = state->font;
   state->scale = get_integer_resource ("scale", "Integer");
-  state->ticks = 3 + get_integer_resource ("ticks", "Integer");
+  state->ticks = STATE_MAX + get_integer_resource ("ticks", "Integer");
 
 #if 0
   for (i = 0; i < font->n_properties; i++)
@@ -199,6 +200,9 @@ init_phosphor (Display *dpy, Window window)
                      colors, &ncolors,
                      False, True, False);
 
+    /* Adjust to the number of colors we actually got. */
+    state->ticks = ncolors + STATE_MAX;
+
     /* Now, GCs all around.
      */
     state->gcv.font = font->fid;
@@ -233,8 +237,8 @@ init_phosphor (Display *dpy, Window window)
     for (i = 0; i < ncolors; i++)
       {
         state->gcv.foreground = colors[i].pixel;
-        state->gcs[FADE + i] = XCreateGC (state->dpy, state->window,
-                                          flags, &state->gcv);
+        state->gcs[STATE_MAX + i] = XCreateGC (state->dpy, state->window,
+                                               flags, &state->gcv);
       }
   }
 
@@ -527,7 +531,7 @@ scroll (p_state *state)
   int x, y;
   for (x = 0; x < state->grid_width; x++)
     {
-      p_cell *from, *to;
+      p_cell *from = 0, *to = 0;
       for (y = 1; y < state->grid_height; y++)
         {
           from = &state->cells[state->grid_width * y     + x];
@@ -640,9 +644,10 @@ update_display (p_state *state, Bool changed_only)
             GC gc2 = ((cell->state + 2) < state->ticks
                       ? state->gcs[cell->state + 2]
                       : 0);
-            XCopyPlane (state->dpy, cell->p_char->pixmap, state->window,
-                        (gc2 ? gc2 : gc1),
-                        0, 0, width, height, tx, ty, 1L);
+            GC gc3 = (gc2 ? gc2 : gc1);
+            if (gc3)
+              XCopyPlane (state->dpy, cell->p_char->pixmap, state->window, gc3,
+                          0, 0, width, height, tx, ty, 1L);
             if (gc2)
               {
                 XSetClipMask (state->dpy, gc1, cell->p_char->pixmap2);

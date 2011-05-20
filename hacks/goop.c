@@ -89,6 +89,8 @@ struct goop {
   Pixmap pixmap;
   GC pixmap_gc;
   GC window_gc;
+  Bool additive_p;
+  Bool cmap_p;
 };
 
 
@@ -270,9 +272,6 @@ static void
 draw_layer_plane (Display *dpy, struct layer *layer, int width, int height)
 {
   int i;
-  XSetForeground (dpy, layer->gc, 1L);
-  XFillRectangle (dpy, layer->pixmap, layer->gc, 0, 0, width, height);
-  XSetForeground (dpy, layer->gc, 0L);
   for (i = 0; i < layer->nblobs; i++)
     {
       throb_blob (layer->blobs[i]);
@@ -290,17 +289,18 @@ draw_layer_blobs (Display *dpy, Drawable drawable, GC gc,
   int i;
   for (i = 0; i < layer->nblobs; i++)
     {
+      draw_blob (dpy, drawable, gc, layer->blobs[i], fill_p);
       throb_blob (layer->blobs[i]);
       move_blob (layer->blobs[i], width, height);
-      draw_blob (dpy, drawable, gc, layer->blobs[i], fill_p);
     }
 }
 
 
 static struct goop *
-make_goop (Display *dpy, Window window, Colormap cmap,
+make_goop (Screen *screen, Visual *visual, Window window, Colormap cmap,
 	   int width, int height, long depth)
 {
+  Display *dpy = DisplayOfScreen (screen);
   int i;
   struct goop *goop = (struct goop *) calloc(1, sizeof(*goop));
   XGCValues gcv;
@@ -324,6 +324,8 @@ make_goop (Display *dpy, Window window, Colormap cmap,
     goop->nlayers = (random() % (depth-2)) + 2;
   goop->layers = (struct layer **) malloc(sizeof(*goop->layers)*goop->nlayers);
 
+  goop->additive_p = get_boolean_resource ("additive", "Additive");
+  goop->cmap_p = has_writable_cells (screen, visual);
 
   if (mono_p && goop->mode == transparent)
     goop->mode = opaque;
@@ -332,9 +334,9 @@ make_goop (Display *dpy, Window window, Colormap cmap,
    */
   if (goop->mode == transparent)
     {
-      Bool additive_p = get_boolean_resource ("additive", "Additive");
       int nplanes = goop->nlayers;
-      allocate_alpha_colors (dpy, cmap, &nplanes, additive_p, &plane_masks,
+      allocate_alpha_colors (screen, visual, cmap,
+                             &nplanes, goop->additive_p, &plane_masks,
 			     &base_pixel);
       if (nplanes > 1)
 	goop->nlayers = nplanes;
@@ -409,14 +411,14 @@ init_goop (Display *dpy, Window window)
   XWindowAttributes xgwa;
   XGetWindowAttributes (dpy, window, &xgwa);
 
-  return make_goop (dpy, window, xgwa.colormap,
+  return make_goop (xgwa.screen, xgwa.visual, window, xgwa.colormap,
 		    xgwa.width, xgwa.height, xgwa.depth);
 }
 
 static void
 run_goop (Display *dpy, Window window, struct goop *goop)
 {
-  int i;
+  int i, j;
 
   switch (goop->mode)
     {
@@ -426,19 +428,25 @@ run_goop (Display *dpy, Window window, struct goop *goop)
 	draw_layer_plane (dpy, goop->layers[i], goop->width, goop->height);
 
       XSetForeground (dpy, goop->pixmap_gc, goop->background);
+      XSetFunction (dpy, goop->pixmap_gc, GXcopy);
       XSetPlaneMask (dpy, goop->pixmap_gc, AllPlanes);
       XFillRectangle (dpy, goop->pixmap, goop->pixmap_gc, 0, 0,
 		      goop->width, goop->height);
+
       XSetForeground (dpy, goop->pixmap_gc, ~0L);
+
+      if (!goop->cmap_p && !goop->additive_p)
+        {
+          for (i = 0; i < goop->nlayers; i++)
+            for (j = 0; j < goop->layers[i]->nblobs; j++)
+              draw_blob (dpy, goop->pixmap, goop->pixmap_gc,
+                         goop->layers[i]->blobs[j], True);
+          XSetFunction (dpy, goop->pixmap_gc, GXclear);
+        }
+
       for (i = 0; i < goop->nlayers; i++)
 	{
 	  XSetPlaneMask (dpy, goop->pixmap_gc, goop->layers[i]->pixel);
-/*
-	  XSetForeground (dpy, goop->pixmap_gc, ~0L);
-	  XFillRectangle (dpy, goop->pixmap, goop->pixmap_gc, 0, 0,
-			  goop->width, goop->height);
-	  XSetForeground (dpy, goop->pixmap_gc, 0L);
- */
 	  draw_layer_blobs (dpy, goop->pixmap, goop->pixmap_gc,
 			    goop->layers[i], goop->width, goop->height,
 			    True);

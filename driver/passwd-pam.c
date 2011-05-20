@@ -150,6 +150,8 @@ struct pam_closure {
 /* On SunOS 5.6, the `pam_conv.appdata_ptr' slot seems to be ignored, and
    the `closure' argument to pc.conv always comes in as random garbage.
    So we get around this by using a global variable instead.  Shoot me!
+
+   (I've been told this is bug 4092227, and is fixed in Solaris 7.)
  */
 static void *suns_pam_implementation_blows = 0;
 

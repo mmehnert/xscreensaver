@@ -75,6 +75,24 @@ extern const char *blurb (void);
 static void get_screenhacks (saver_preferences *p);
 
 
+static char *
+chase_symlinks (const char *file)
+{
+# ifdef HAVE_REALPATH
+  if (file)
+    {
+      char buf [2048];
+      if (realpath (file, buf))
+        return strdup (buf);
+
+      sprintf (buf, "%s: realpath", blurb());
+      perror(buf);
+    }
+# endif /* HAVE_REALPATH */
+  return 0;
+}
+
+
 const char *
 init_file_name (void)
 {
@@ -123,6 +141,10 @@ init_file_tmp_name (void)
     {
       const char *name = init_file_name();
       const char *suffix = ".tmp";
+
+      char *n2 = chase_symlinks (name);
+      if (n2) name = n2;
+
       if (!name || !*name)
 	file = "";
       else
@@ -131,6 +153,8 @@ init_file_tmp_name (void)
 	  strcpy(file, name);
 	  strcat(file, suffix);
 	}
+
+      if (n2) free (n2);
     }
 
   if (file && *file)
@@ -492,6 +516,7 @@ write_init_file (saver_preferences *p, const char *version_string)
 {
   const char *name = init_file_name();
   const char *tmp_name = init_file_tmp_name();
+  char *n2 = chase_symlinks (name);
   struct stat st;
   int i, j;
 
@@ -504,7 +529,9 @@ write_init_file (saver_preferences *p, const char *version_string)
   char *stderr_font;
   FILE *out;
 
-  if (!name) return;
+  if (!name) goto END;
+
+  if (n2) name = n2;
 
   if (p->verbose_p)
     fprintf (stderr, "%s: writing \"%s\".\n", blurb(), name);
@@ -517,7 +544,7 @@ write_init_file (saver_preferences *p, const char *version_string)
       sprintf(buf, "%s: error writing \"%s\"", blurb(), name);
       perror(buf);
       free(buf);
-      return;
+      goto END;
     }
 
   /* Give the new .xscreensaver file the same permissions as the old one;
@@ -536,7 +563,7 @@ write_init_file (saver_preferences *p, const char *version_string)
 		   tmp_name, (unsigned int) mode);
 	  perror(buf);
 	  free(buf);
-	  return;
+	  goto END;
 	}
     }
 
@@ -698,7 +725,7 @@ write_init_file (saver_preferences *p, const char *version_string)
 	  perror(buf);
 	  unlink (tmp_name);
 	  free(buf);
-	  return;
+	  goto END;
 	}
 
       if (rename (tmp_name, name) != 0)
@@ -709,7 +736,7 @@ write_init_file (saver_preferences *p, const char *version_string)
 	  perror(buf);
 	  unlink (tmp_name);
 	  free(buf);
-	  return;
+	  goto END;
 	}
       else
 	{
@@ -727,8 +754,11 @@ write_init_file (saver_preferences *p, const char *version_string)
       perror(buf);
       free(buf);
       unlink (tmp_name);
-      return;
+      goto END;
     }
+
+ END:
+  if (n2) free (n2);
 }
 
 

@@ -1,7 +1,7 @@
 Name: xscreensaver
 Summary: X screen saver and locker
 Vendor: Jamie Zawinski <jwz@jwz.org>
-Version: 3.12
+Version: 3.13
 Release: 1
 URL: http://www.jwz.org/xscreensaver/
 Source: xscreensaver-%{version}.tar.gz
@@ -23,7 +23,7 @@ More than 90 display modes are included in this package.
 
 ./configure --prefix=/usr/X11R6 \
      --enable-subdir=/usr/X11R6/lib/xscreensaver
-make
+make all
 
 %install
 
@@ -48,6 +48,27 @@ install -m 4755 driver/xscreensaver $RPM_BUILD_ROOT/usr/X11R6/bin
 # the PAM module file in the RPM anyway, just in case.
 #
 ( cd driver; make PAM_DIR=$RPM_BUILD_ROOT/etc/pam.d install-pam )
+
+# If we built multiple versions of xscreensaver-demo (because multiple
+# toolkits were available) then install them all.
+#
+( cd driver;
+  exes=`echo xscreensaver-demo-*`
+  count=`echo $exes | wc -w`
+  if [ $count -gt 1 ]; then
+    for exe in $exes; do
+      install -c -s $exe $RPM_BUILD_ROOT/usr/X11R6/bin
+    done
+    cd $RPM_BUILD_ROOT/usr/X11R6/bin
+    if [ -x xscreensaver-demo-Xaw3d ]; then target=Xaw3d; fi
+    if [ -x xscreensaver-demo-Xaw   ]; then target=Xaw;   fi
+    if [ -x xscreensaver-demo-Gtk   ]; then target=Gtk;   fi
+    if [ -x xscreensaver-demo-Xm    ]; then target=Xm;    fi
+    rm -f xscreensaver-demo
+    ln -s xscreensaver-demo-$target xscreensaver-demo
+  fi
+ )
+
 
 # This is for wmconfig, a tool that generates init files for window managers.
 #

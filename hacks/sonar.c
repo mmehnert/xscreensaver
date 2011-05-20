@@ -37,7 +37,7 @@
  * software for any purpose.  It is provided "as is" without express or 
  * implied warranty.
  *
- * $Revision: 1.9 $
+ * $Revision: 1.10 $
  *
  * Version 1.0 April 27, 1998.
  * - Initial version
@@ -982,7 +982,13 @@ getping(sonar_info *si, ping_info *pi, int ttl)
 
 	gettimeofday(&now, (struct timezone *) 0);
 	ip = (struct ip *) packet;
+
 	iphdrlen = ip->ip_hl << 2;
+        /* On DEC OSF1 4.0, the preceeding line needs to be
+           iphdrlen = (ip->ip_vhl & 0x0F) << 2;
+           but I don't know how to do this portably.  -- jwz.
+         */
+
 	icmph = (struct ICMP *) &packet[iphdrlen];
 
 	/* Was the packet a reply?? */

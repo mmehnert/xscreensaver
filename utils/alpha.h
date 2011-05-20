@@ -13,20 +13,10 @@
 #ifndef __XSCREENSAVER_ALPHA_H__
 #define __XSCREENSAVER_ALPHA_H__
 
-extern int allocate_color_planes (Display *dpy, Colormap cmap,
-				  int nplanes, unsigned long *plane_masks,
-				  unsigned long *base_pixel_ret);
-
-extern void initialize_transparency_colormap (Display *dpy, Colormap cmap,
-					      int nplanes,
-					      unsigned long base_pixel,
-					      unsigned long *plane_masks,
-					      XColor *colors,
-					      Bool additive_p);
-
-extern Bool allocate_alpha_colors (Display *dpy, Colormap cmap,
-				   int *nplanesP, Bool additive_p,
-				   unsigned long **plane_masks,
-				   unsigned long *base_pixelP);
+extern Bool allocate_alpha_colors (Screen *screen, Visual *visual,
+                                   Colormap cmap,
+                                   int *nplanesP, Bool additive_p,
+                                   unsigned long **plane_masks,
+                                   unsigned long *base_pixelP);
 
 #endif /* __XSCREENSAVER_ALPHA_H__ */
