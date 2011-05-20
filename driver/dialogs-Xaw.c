@@ -75,8 +75,6 @@ create_resources_dialog(Widget parent, Visual *visual, Colormap colormap)
 
   resources_dialog = 
     XtVaCreatePopupShell("resources_dialog", transientShellWidgetClass, parent,
-			 XtNtitle, NULL,
-			 XtNoverrideRedirect, TRUE,
 			 XtNvisual, visual,
 			 XtNcolormap, colormap,
 			 XtNdepth, depth,
@@ -186,8 +184,6 @@ create_demo_dialog(Widget parent, Visual *visual, Colormap colormap)
 
   demo_dialog = 
     XtVaCreatePopupShell("demo_dialog", transientShellWidgetClass, parent,
-			 XtNtitle, NULL,
-			 XtNoverrideRedirect, TRUE,
 			 XtNvisual, visual,
 			 XtNcolormap, colormap,
 			 XtNdepth, depth,
@@ -252,6 +248,8 @@ create_demo_dialog(Widget parent, Visual *visual, Colormap colormap)
   next = XtVaCreateManagedWidget("next", commandWidgetClass, box, NULL);
   prev = XtVaCreateManagedWidget("prev", commandWidgetClass, box, NULL);
   edit = XtVaCreateManagedWidget("edit", commandWidgetClass, box, NULL);
+#if 0
   restart = XtVaCreateManagedWidget("restart", commandWidgetClass, box, NULL);
+#endif
   done = XtVaCreateManagedWidget("done", commandWidgetClass, box, NULL);
 }

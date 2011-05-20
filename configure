@@ -4614,7 +4614,7 @@ if eval "test \"`echo '$ac_cv_header_'$ac_safe`\" = yes"; then
 #define HAVE_MOTIF 1
 EOF
 
-		     SAVER_LIBS="-lXm $SAVER_LIBS"
+		     TOOLKIT_LIBS="-lXm $TOOLKIT_LIBS"
 else
   echo "$ac_t""no" 1>&6
 fi
@@ -4725,9 +4725,9 @@ fi
   LDFLAGS="$ac_save_LDFLAGS"
 
   if test $have_athena3d = yes; then
-    SAVER_LIBS="-lXaw3d $SAVER_LIBS"
+    TOOLKIT_LIBS="-lXaw3d $TOOLKIT_LIBS"
   elif test $have_athena = yes; then
-    SAVER_LIBS="-lXaw $SAVER_LIBS"
+    TOOLKIT_LIBS="-lXaw $TOOLKIT_LIBS"
   fi
 }
 
@@ -4976,7 +4976,7 @@ LIBS="$ac_save_LIBS"
 fi
 if eval "test \"`echo '$ac_cv_lib_'$ac_lib_var`\" = yes"; then
   echo "$ac_t""yes" 1>&6
-  have_xp_ext=yes; SAVER_LIBS="$SAVER_LIBS -lXp"
+  have_xp_ext=yes; TOOLKIT_LIBS="$TOOLKIT_LIBS -lXp"
 else
   echo "$ac_t""no" 1>&6
 fi
@@ -6036,8 +6036,8 @@ fi
 
 if test $enable_vt_locking = yes; then
 
-  echo $ac_n "checking for VT_LOCKSWITCH ioctl""... $ac_c" 1>&6
-echo "configure:6052: checking for VT_LOCKSWITCH ioctl" >&5
+  echo $ac_n "checking for the VT_LOCKSWITCH ioctl""... $ac_c" 1>&6
+echo "configure:6052: checking for the VT_LOCKSWITCH ioctl" >&5
   if eval "test \"`echo '$''{'ac_cv_vt_lockswitch'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6079,7 +6079,8 @@ if test $ac_vt_lockswitch = yes; then
 EOF
 
   # the VT_LOCKSWITCH ioctl can only be used when running as root.
-  need_setuid=yes
+  # #### but it doesn't work yet, so don't worry about that for now.
+#  need_setuid=yes
 fi
 
 
@@ -6104,7 +6105,7 @@ fi
 
     /*)
      echo $ac_n "checking for Kerberos headers""... $ac_c" 1>&6
-echo "configure:6119: checking for Kerberos headers" >&5
+echo "configure:6120: checking for Kerberos headers" >&5
      d=$with_kerberos/include
      if test -d $d; then
        X_CFLAGS="-I$d $X_CFLAGS"
@@ -6114,7 +6115,7 @@ echo "configure:6119: checking for Kerberos headers" >&5
      fi
 
      echo $ac_n "checking for Kerberos libs""... $ac_c" 1>&6
-echo "configure:6129: checking for Kerberos libs" >&5
+echo "configure:6130: checking for Kerberos libs" >&5
      d=$with_kerberos/lib
      if test -d $d; then
        X_LIBS="-L$d $X_LIBS"
@@ -6145,7 +6146,7 @@ echo "configure:6129: checking for Kerberos libs" >&5
 
   if test $with_kerberos = yes; then
     echo $ac_n "checking for Kerberos""... $ac_c" 1>&6
-echo "configure:6160: checking for Kerberos" >&5
+echo "configure:6161: checking for Kerberos" >&5
 if eval "test \"`echo '$''{'ac_cv_kerberos'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6156,14 +6157,14 @@ else
   fi
   CPPFLAGS="$CPPFLAGS $X_CFLAGS"
   cat > conftest.$ac_ext <<EOF
-#line 6171 "configure"
+#line 6172 "configure"
 #include "confdefs.h"
 #include <krb.h>
 int main() {
 
 ; return 0; }
 EOF
-if { (eval echo configure:6178: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:6179: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_kerberos=yes
 else
@@ -6187,12 +6188,12 @@ EOF
       # from Tim Showalter <tjs+@andrew.cmu.edu>
       PASSWD_LIBS="$PASSWD_LIBS -lkrb -ldes"
       echo $ac_n "checking for res_search""... $ac_c" 1>&6
-echo "configure:6202: checking for res_search" >&5
+echo "configure:6203: checking for res_search" >&5
 if eval "test \"`echo '$''{'ac_cv_func_res_search'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
   cat > conftest.$ac_ext <<EOF
-#line 6207 "configure"
+#line 6208 "configure"
 #include "confdefs.h"
 /* System header to define __stub macros and hopefully few prototypes,
     which can conflict with char res_search(); below.  */
@@ -6215,7 +6216,7 @@ res_search();
 
 ; return 0; }
 EOF
-if { (eval echo configure:6230: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
+if { (eval echo configure:6231: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
   rm -rf conftest*
   eval "ac_cv_func_res_search=yes"
 else
@@ -6233,7 +6234,7 @@ if eval "test \"`echo '$ac_cv_func_'res_search`\" = yes"; then
 else
   echo "$ac_t""no" 1>&6
 echo $ac_n "checking for res_search in -lresolv""... $ac_c" 1>&6
-echo "configure:6248: checking for res_search in -lresolv" >&5
+echo "configure:6249: checking for res_search in -lresolv" >&5
 ac_lib_var=`echo resolv'_'res_search | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -6241,7 +6242,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lresolv  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 6256 "configure"
+#line 6257 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -6252,7 +6253,7 @@ int main() {
 res_search()
 ; return 0; }
 EOF
-if { (eval echo configure:6267: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
+if { (eval echo configure:6268: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -6302,7 +6303,7 @@ fi
 
     /*)
      echo $ac_n "checking for shadow password headers""... $ac_c" 1>&6
-echo "configure:6317: checking for shadow password headers" >&5
+echo "configure:6318: checking for shadow password headers" >&5
      d=$with_shadow/include
      if test -d $d; then
        X_CFLAGS="-I$d $X_CFLAGS"
@@ -6312,7 +6313,7 @@ echo "configure:6317: checking for shadow password headers" >&5
      fi
 
      echo $ac_n "checking for shadow password libs""... $ac_c" 1>&6
-echo "configure:6327: checking for shadow password libs" >&5
+echo "configure:6328: checking for shadow password libs" >&5
      d=$with_shadow/lib
      if test -d $d; then
        X_LIBS="-L$d $X_LIBS"
@@ -6353,7 +6354,7 @@ echo "configure:6327: checking for shadow password libs" >&5
   #
   if test $passwd_cruft_done = no ; then
     echo $ac_n "checking for Sun-style shadow passwords""... $ac_c" 1>&6
-echo "configure:6368: checking for Sun-style shadow passwords" >&5
+echo "configure:6369: checking for Sun-style shadow passwords" >&5
 if eval "test \"`echo '$''{'ac_cv_sun_adjunct'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6364,7 +6365,7 @@ else
   fi
   CPPFLAGS="$CPPFLAGS $X_CFLAGS"
   cat > conftest.$ac_ext <<EOF
-#line 6379 "configure"
+#line 6380 "configure"
 #include "confdefs.h"
 #include <stdlib.h>
 				      #include <unistd.h>
@@ -6377,7 +6378,7 @@ struct passwd_adjunct *p = getpwanam("nobody");
 			 const char *pw = p->pwa_passwd;
 ; return 0; }
 EOF
-if { (eval echo configure:6392: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:6393: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_sun_adjunct=yes
 else
@@ -6406,7 +6407,7 @@ EOF
   #
   if test $passwd_cruft_done = no ; then
     echo $ac_n "checking for DEC-style shadow passwords""... $ac_c" 1>&6
-echo "configure:6421: checking for DEC-style shadow passwords" >&5
+echo "configure:6422: checking for DEC-style shadow passwords" >&5
 if eval "test \"`echo '$''{'ac_cv_enhanced_passwd'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6417,7 +6418,7 @@ else
   fi
   CPPFLAGS="$CPPFLAGS $X_CFLAGS"
   cat > conftest.$ac_ext <<EOF
-#line 6432 "configure"
+#line 6433 "configure"
 #include "confdefs.h"
 #include <stdlib.h>
 				      #include <unistd.h>
@@ -6434,7 +6435,7 @@ struct pr_passwd *p;
 			 pw = p->ufld.fd_encrypt;
 ; return 0; }
 EOF
-if { (eval echo configure:6449: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:6450: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_enhanced_passwd=yes
 else
@@ -6460,7 +6461,7 @@ EOF
       # On SCO, getprpwnam() is in -lprot (which uses nap() from -lx)
       # (I'm told it needs -lcurses too, but I don't understand why.)
       echo $ac_n "checking for getprpwnam in -lprot""... $ac_c" 1>&6
-echo "configure:6475: checking for getprpwnam in -lprot" >&5
+echo "configure:6476: checking for getprpwnam in -lprot" >&5
 ac_lib_var=`echo prot'_'getprpwnam | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -6468,7 +6469,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lprot -lx $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 6483 "configure"
+#line 6484 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -6479,7 +6480,7 @@ int main() {
 getprpwnam()
 ; return 0; }
 EOF
-if { (eval echo configure:6494: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
+if { (eval echo configure:6495: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -6499,7 +6500,7 @@ else
   echo "$ac_t""no" 1>&6
 # On DEC, getprpwnam() is in -lsecurity
 		    echo $ac_n "checking for getprpwnam in -lsecurity""... $ac_c" 1>&6
-echo "configure:6514: checking for getprpwnam in -lsecurity" >&5
+echo "configure:6515: checking for getprpwnam in -lsecurity" >&5
 ac_lib_var=`echo security'_'getprpwnam | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -6507,7 +6508,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lsecurity  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 6522 "configure"
+#line 6523 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -6518,7 +6519,7 @@ int main() {
 getprpwnam()
 ; return 0; }
 EOF
-if { (eval echo configure:6533: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
+if { (eval echo configure:6534: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -6547,7 +6548,7 @@ fi
   #
   if test $passwd_cruft_done = no ; then
     echo $ac_n "checking for HP-style shadow passwords""... $ac_c" 1>&6
-echo "configure:6562: checking for HP-style shadow passwords" >&5
+echo "configure:6563: checking for HP-style shadow passwords" >&5
 if eval "test \"`echo '$''{'ac_cv_hpux_passwd'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6558,7 +6559,7 @@ else
   fi
   CPPFLAGS="$CPPFLAGS $X_CFLAGS"
   cat > conftest.$ac_ext <<EOF
-#line 6573 "configure"
+#line 6574 "configure"
 #include "confdefs.h"
 #include <stdlib.h>
 				      #include <unistd.h>
@@ -6571,7 +6572,7 @@ struct s_passwd *p = getspwnam("nobody");
 			 const char *pw = p->pw_passwd;
 ; return 0; }
 EOF
-if { (eval echo configure:6586: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:6587: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_hpux_passwd=yes
 else
@@ -6596,7 +6597,7 @@ EOF
 
       # on HPUX, bigcrypt is in -lsec
       echo $ac_n "checking for bigcrypt in -lsec""... $ac_c" 1>&6
-echo "configure:6611: checking for bigcrypt in -lsec" >&5
+echo "configure:6612: checking for bigcrypt in -lsec" >&5
 ac_lib_var=`echo sec'_'bigcrypt | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -6604,7 +6605,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lsec  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 6619 "configure"
+#line 6620 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -6615,7 +6616,7 @@ int main() {
 bigcrypt()
 ; return 0; }
 EOF
-if { (eval echo configure:6630: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
+if { (eval echo configure:6631: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -6642,7 +6643,7 @@ fi
   #
   if test $passwd_cruft_done = no ; then
     echo $ac_n "checking for generic shadow passwords""... $ac_c" 1>&6
-echo "configure:6657: checking for generic shadow passwords" >&5
+echo "configure:6658: checking for generic shadow passwords" >&5
 if eval "test \"`echo '$''{'ac_cv_shadow'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6653,7 +6654,7 @@ else
   fi
   CPPFLAGS="$CPPFLAGS $X_CFLAGS"
   cat > conftest.$ac_ext <<EOF
-#line 6668 "configure"
+#line 6669 "configure"
 #include "confdefs.h"
 #include <stdlib.h>
 				      #include <unistd.h>
@@ -6665,7 +6666,7 @@ struct spwd *p = getspnam("nobody");
 			 const char *pw = p->sp_pwdp;
 ; return 0; }
 EOF
-if { (eval echo configure:6680: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
+if { (eval echo configure:6681: \"$ac_compile\") 1>&5; (eval $ac_compile) 2>&5; }; then
   rm -rf conftest*
   ac_cv_shadow=yes
 else
@@ -6691,7 +6692,7 @@ EOF
       # On some systems (UnixWare 2.1), getspnam() is in -lgen instead of -lc.
       have_getspnam=no
       echo $ac_n "checking for getspnam in -lc""... $ac_c" 1>&6
-echo "configure:6706: checking for getspnam in -lc" >&5
+echo "configure:6707: checking for getspnam in -lc" >&5
 ac_lib_var=`echo c'_'getspnam | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -6699,7 +6700,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lc  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 6714 "configure"
+#line 6715 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -6710,7 +6711,7 @@ int main() {
 getspnam()
 ; return 0; }
 EOF
-if { (eval echo configure:6725: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
+if { (eval echo configure:6726: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -6732,7 +6733,7 @@ fi
 
       if test $have_getspnam = no ; then
         echo $ac_n "checking for getspnam in -lgen""... $ac_c" 1>&6
-echo "configure:6747: checking for getspnam in -lgen" >&5
+echo "configure:6748: checking for getspnam in -lgen" >&5
 ac_lib_var=`echo gen'_'getspnam | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -6740,7 +6741,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lgen  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 6755 "configure"
+#line 6756 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -6751,7 +6752,7 @@ int main() {
 getspnam()
 ; return 0; }
 EOF
-if { (eval echo configure:6766: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
+if { (eval echo configure:6767: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -6782,7 +6783,7 @@ fi
   #
   if test $passwd_cruft_done = no ; then
     echo $ac_n "checking for FreeBSD-style shadow passwords""... $ac_c" 1>&6
-echo "configure:6797: checking for FreeBSD-style shadow passwords" >&5
+echo "configure:6798: checking for FreeBSD-style shadow passwords" >&5
 if eval "test \"`echo '$''{'ac_cv_master_passwd'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
 else
@@ -6803,7 +6804,7 @@ echo "$ac_t""$ac_cv_master_passwd" 1>&6
   # On some systems (UnixWare 2.1), crypt() is in -lcrypt instead of -lc.
   have_crypt=no
   echo $ac_n "checking for crypt in -lc""... $ac_c" 1>&6
-echo "configure:6818: checking for crypt in -lc" >&5
+echo "configure:6819: checking for crypt in -lc" >&5
 ac_lib_var=`echo c'_'crypt | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -6811,7 +6812,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lc  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 6826 "configure"
+#line 6827 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -6822,7 +6823,7 @@ int main() {
 crypt()
 ; return 0; }
 EOF
-if { (eval echo configure:6837: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
+if { (eval echo configure:6838: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -6844,7 +6845,7 @@ fi
 
   if test $have_crypt = no ; then
     echo $ac_n "checking for crypt in -lcrypt""... $ac_c" 1>&6
-echo "configure:6859: checking for crypt in -lcrypt" >&5
+echo "configure:6860: checking for crypt in -lcrypt" >&5
 ac_lib_var=`echo crypt'_'crypt | sed 'y%./+-%__p_%'`
 if eval "test \"`echo '$''{'ac_cv_lib_$ac_lib_var'+set}'`\" = set"; then
   echo $ac_n "(cached) $ac_c" 1>&6
@@ -6852,7 +6853,7 @@ else
   ac_save_LIBS="$LIBS"
 LIBS="-lcrypt  $LIBS"
 cat > conftest.$ac_ext <<EOF
-#line 6867 "configure"
+#line 6868 "configure"
 #include "confdefs.h"
 /* Override any gcc2 internal prototype to avoid an error.  */
 /* We use char because int might match the return type of a gcc2
@@ -6863,7 +6864,7 @@ int main() {
 crypt()
 ; return 0; }
 EOF
-if { (eval echo configure:6878: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
+if { (eval echo configure:6879: \"$ac_link\") 1>&5; (eval $ac_link) 2>&5; } && test -s conftest; then
   rm -rf conftest*
   eval "ac_cv_lib_$ac_lib_var=yes"
 else
@@ -6924,18 +6925,18 @@ if test $have_motif = yes; then
 #define HAVE_MOTIF 1
 EOF
 
-  DIALOG_SRCS='$(MOTIF_SRCS)'
-  DIALOG_OBJS='$(MOTIF_OBJS)'
+  TOOLKIT_SRCS='$(MOTIF_SRCS)'
+  TOOLKIT_OBJS='$(MOTIF_OBJS)'
 elif test $have_athena = yes; then
   cat >> confdefs.h <<\EOF
 #define HAVE_ATHENA 1
 EOF
 
-  DIALOG_SRCS='$(ATHENA_SRCS)'
-  DIALOG_OBJS='$(ATHENA_OBJS)'
+  TOOLKIT_SRCS='$(ATHENA_SRCS)'
+  TOOLKIT_OBJS='$(ATHENA_OBJS)'
 else
-  DIALOG_SRCS=''
-  DIALOG_OBJS=''
+  TOOLKIT_SRCS=''
+  TOOLKIT_OBJS=''
 fi
 
 if test $have_kerberos = yes; then
@@ -6965,11 +6966,9 @@ fi
 tab='	'
 if test $have_gl = yes; then
   GL_EXES='$(GL_EXES)'
-  GL_KLUDGE_1=${tab}${tab}${tab}${tab}${tab}${tab}${tab}${tab}${tab}'  \'
-  GL_KLUDGE_2=${tab}
+  GL_KLUDGE=${tab}
 else
-  GL_KLUDGE_1=${tab}${tab}${tab}${tab}${tab}${tab}${tab}${tab}${tab}'\n'
-  GL_KLUDGE_2='!'${tab}
+  GL_KLUDGE='  -'${tab}
 fi
 
 
@@ -7355,6 +7354,7 @@ s%@xemacs_exe@%$xemacs_exe%g
 s%@fortune@%$fortune%g
 s%@INCLUDES@%$INCLUDES%g
 s%@SAVER_LIBS@%$SAVER_LIBS%g
+s%@TOOLKIT_LIBS@%$TOOLKIT_LIBS%g
 s%@HACK_LIBS@%$HACK_LIBS%g
 s%@XPM_LIBS@%$XPM_LIBS%g
 s%@GL_LIBS@%$GL_LIBS%g
@@ -7364,8 +7364,8 @@ s%@INSTALL_DIRS@%$INSTALL_DIRS%g
 s%@NEED_SETUID@%$NEED_SETUID%g
 s%@SGI_VIDEO_OBJS@%$SGI_VIDEO_OBJS%g
 s%@SGI_VIDEO_LIBS@%$SGI_VIDEO_LIBS%g
-s%@DIALOG_SRCS@%$DIALOG_SRCS%g
-s%@DIALOG_OBJS@%$DIALOG_OBJS%g
+s%@TOOLKIT_SRCS@%$TOOLKIT_SRCS%g
+s%@TOOLKIT_OBJS@%$TOOLKIT_OBJS%g
 s%@PASSWD_SRCS@%$PASSWD_SRCS%g
 s%@PASSWD_OBJS@%$PASSWD_OBJS%g
 s%@XMU_SRCS@%$XMU_SRCS%g
@@ -7373,8 +7373,7 @@ s%@XMU_OBJS@%$XMU_OBJS%g
 s%@LOCK_SRCS@%$LOCK_SRCS%g
 s%@LOCK_OBJS@%$LOCK_OBJS%g
 s%@GL_EXES@%$GL_EXES%g
-s%@GL_KLUDGE_1@%$GL_KLUDGE_1%g
-s%@GL_KLUDGE_2@%$GL_KLUDGE_2%g
+s%@GL_KLUDGE@%$GL_KLUDGE%g
 s%@HACKDIR@%$HACKDIR%g
 s%@APPDEFAULTS@%$APPDEFAULTS%g
 s%@DEPEND@%$DEPEND%g

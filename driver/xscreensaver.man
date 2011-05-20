@@ -11,7 +11,7 @@
 .if n .sp 1
 .if t .sp .5
 ..
-.TH XScreenSaver 1 "08-Oct-98 (2.34)" "X Version 11"
+.TH XScreenSaver 1 "20-Oct-98 (2.35)" "X Version 11"
 .SH NAME
 xscreensaver - graphics hack and screen locker, launched when the user is idle
 .SH SYNOPSIS
@@ -60,69 +60,21 @@ mode.
 For the impatient, try this:
 .EX
 xscreensaver &
-xscreensaver-command -demo
+xscreensaver-demo
 .EE
-After a few seconds, the screen should go black, and a dialog box should
-appear in the upper right corner.  This is \fIDemo Mode\fP.
+The \fIxscreensaver\-demo\fP program should pop up a dialog box
+that lets you experiment with the xscreensaver settings and graphics
+modes.
 
 .B Note:
 unlike
 .BR xlock (1),
-xscreensaver has a client-server model: the xscreensaver process is a
+xscreensaver has a client-server model: the \fIxscreensaver\fP program is a
 daemon that runs in the background; it is controlled by the foreground
+.BR xscreensaver-demo (1)
+and
 .BR xscreensaver-command (1)
-program.
-.SH DEMO MODE
-If \fIxscreensaver\fP receives the \fBDEMO\fP ClientMessage, which is done
-by running the
-.BR xscreensaver\-command (1)
-program with the \fB\-demo\fP option, the screensaver will black the screen
-and pop up a dialog box from which you can examine and experiment with the
-client programs.
-
-The dialog box contains a scrolling list, a text field, and a number of 
-buttons.  
-
-Double-clicking on one of the programs in the list will run it.  The dialog
-box will disappear, allowing the program access to the full screen.  Clicking
-the mouse again will bring the dialog box back.
-
-Single-clicking in the list will place the indicated program and its args
-in the text field to be edited.  Edit the arguments and hit return to run
-the program with the parameters you have specified.  (Note that these are
-one-time changes and won't be remembered; to make the changes permanent,
-you need to edit your \fI~/.xscreensaver\fP file by hand.)
-
-The buttons are:
-.TP 8
-.B Run Next
-Clicking this button will run the next program in the list after the 
-currently-selected one, and will wrap around to the top when it reaches
-the bottom.
-.TP 8
-.B Run Previous
-Opposite of Run Next; at the top, it wraps around to the bottom.
-.TP 8
-.B Preferences
-This pops up a second dialog box, in which you have the option to 
-interactively change most of the screensaver's operational parameters,
-such as its timeouts, and whether it should lock the screen.  When you
-click OK, your chosen settings will take effect immediately, and will
-also be saved to the \fI~/.xscreensaver\fP file in your home directory,
-so that the settings will persist next time.  (For more details, see
-the \fIConfiguration\fP section, below.)
-.TP 8
-.B Exit Demo Mode
-Returns to normal screensaver operation.
-.TP 8
-.B Reinitialize
-This causes the X resource database to be re-read, to pick up any changes
-you might have made.  This works by causing the screensaver process to exit
-and then restart itself with the same command-line arguments.  This is just
-like the \fI\-restart\fP argument to 
-.BR xscreensaver\-command (1)
-except that when executed from this button, the screensaver will 
-automatically return to Demo Mode after restarting.
+programs.
 .SH CONFIGURATION
 Options to \fIxscreensaver\fP are specified in one of two places: in 
 a \fI.xscreensaver\fP file in your home directory; or in the X resource
@@ -1097,6 +1049,7 @@ The latest version can always be found at
 http://www.jwz.org/xscreensaver/
 .SH SEE ALSO
 .BR X (1),
+.BR xscreensaver\-demo (1),
 .BR xscreensaver\-command (1),
 .BR xdm (1),
 .BR xset (1),

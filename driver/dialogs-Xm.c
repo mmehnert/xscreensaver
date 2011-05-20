@@ -522,12 +522,16 @@ create_demo_dialog(Widget parent, Visual *visual, Colormap colormap)
   prev = XmCreatePushButton ( real_dialog, "prev", al, ac );
   edit = XmCreatePushButton ( real_dialog, "edit", al, ac );
   done = XmCreatePushButton ( real_dialog, "done", al, ac );
+#if 0
   restart = XmCreatePushButton ( real_dialog, "restart", al, ac );
+#endif
   XtManageChild(next);
   XtManageChild(prev);
   XtManageChild(edit);
   XtManageChild(done);
+#if 0
   XtManageChild(restart);
+#endif
 
   ac = 0;
   XtSetArg(al[ac], XmNtopAttachment, XmATTACH_FORM); ac++;

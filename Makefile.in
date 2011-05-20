@@ -204,7 +204,7 @@ test-tar::
     ( cd driver; gmake ) ;						    \
     echo --------------------------------------------------------------- ); \
 									    \
-  chmod -R u+w . ;							    \
+  chmod -R u+w .
 
 
 www::
@@ -251,6 +251,7 @@ www::
 									    \
   (cd ..; $(MAKE) xscreensaver/changelog.html );			    \
   cvs diff -u0 changelog.html ;						    \
+  set +x ;								    \
 									    \
   echo -n "Ok? ";							    \
   read line;								    \

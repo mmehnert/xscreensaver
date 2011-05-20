@@ -138,6 +138,25 @@ init_sgi_saver_extension (saver_info *si)
 #endif /* HAVE_SGI_SAVER_EXTENSION */
 
 
+/* XIDLE server extension hackery.
+ */
+
+#ifdef HAVE_XIDLE_EXTENSION
+
+# include <X11/extensions/xidle.h>
+
+Bool
+query_xidle_extension (saver_info *si)
+{
+  int event_number;
+  int error_number;
+  return XidleQueryExtension (si->dpy, &event_number, &error_number);
+}
+
+#endif /* HAVE_XIDLE_EXTENSION */
+
+
+
 /* Figuring out what the appropriate XSetScreenSaver() parameters are
    (one wouldn't expect this to be rocket science.)
  */

@@ -73,6 +73,23 @@ http://www.jwz.org/xscreensaver/.
 
                               ============
 
+Changes since 2.34:   * Made it possible to disable specific modes in `bsod'.
+		      * Fixed a short race condition where it was possible for
+			xscreensaver to die with a BadWindow error if it was
+			blanking the screen just as another window was being
+			deleted.
+		      * The xscreensaver daemon no longer links against Motif
+			or Athena -- demo-mode and the preferences panel are no
+			longer built in to the daemon, but are now handled by
+			an external program (`xscreensaver-demo') that is
+			merely a GUI on top of the `.xscreensaver' file.
+		      * Lines in the `*programs' resource may now begin with
+			the character "-", meaning "don't run this hack."
+			In this way, it's possible to disable a hack without
+			throwing away the information about it (making it 
+			easier to change your mind later.)  Eventually the
+			preferences/demo mode GUI should represent this as a
+			checkbox or something.
 Changes since 2.33:   * Fixed a bug that was making `pipes' generate way too
 			many valves.  Made the viewpoint in `pipes' be selected
 			randomly instead of always being -10 degrees.

@@ -20,10 +20,11 @@
 #include <string.h>
 #include <stdio.h>
 
+#include "prefs.h"
+
 extern char *progname;
 extern char *progclass;
 
-typedef struct saver_preferences saver_preferences;
 typedef struct saver_info saver_info;
 typedef struct saver_screen_info saver_screen_info;
 typedef struct passwd_dialog_data passwd_dialog_data;
@@ -34,53 +35,12 @@ typedef struct splash_dialog_data splash_dialog_data;
 
 
 
-/* This structure holds all the user-specified parameters, read from the
-   command line, the resource database, or entered through a dialog box.
- */
-struct saver_preferences {
-  Bool verbose_p;		/* whether to print out lots of status info */
-  Bool timestamp_p;		/* whether to mark messages with a timestamp */
-  Bool debug_p;			/* pay no mind to the man behind the curtain */
-  Bool xsync_p;			/* whether XSynchronize has been called */
-
-  Bool lock_p;			/* whether to lock as well as save */
-  Bool lock_vt_p;		/* whether to lock VTs too, if possible */
-  Bool fade_p;			/* whether to fade to black, if possible */
-  Bool unfade_p;		/* whether to fade from black, if possible */
-  int fade_seconds;		/* how long that should take */
-  int fade_ticks;		/* how many ticks should be used */
-
-  Bool install_cmap_p;		/* whether we should use our own colormap
-				   when using the screen's default visual. */
-
-  char **screenhacks;		/* the programs to run */
-  int screenhacks_count;
-
-  int nice_inferior;		/* nice value for subprocs */
-
-  Time initial_delay;		/* how long to sleep after launch */
-  Time splash_duration;		/* how long the splash screen stays up */
-  Time timeout;			/* how much idle time before activation */
-  Time lock_timeout;		/* how long after activation locking starts */
-  Time cycle;			/* how long each hack should run */
-  Time passwd_timeout;		/* how much time before pw dialog goes down */
-  Time pointer_timeout;		/* how often to check mouse position */
-  Time notice_events_timeout;	/* how long after window creation to select */
-  Time watchdog_timeout;	/* how often to re-raise and re-blank screen */
-
-  Bool use_xidle_extension;	/* which extension to use, if possible */
-  Bool use_mit_saver_extension;
-  Bool use_sgi_saver_extension;
-
-  char *shell;			/* where to find /bin/sh */
-
-  char *help_url;		/* Where the help document resides. */
-  char *load_url_command;	/* How one loads URLs. */
-};
-
-
 /* This structure holds all the data that applies to the program as a whole,
    or to the non-screen-specific parts of the display connection.
+
+   The saver_preferences structure (prefs.h) holds all the user-specified
+   parameters, read from the command line, the resource database, or entered
+   through a dialog box.
  */
 struct saver_info {
   char *version;
@@ -90,9 +50,6 @@ struct saver_info {
   saver_screen_info *screens;
   saver_screen_info *default_screen;	/* ...on which dialogs will appear. */
 
-  time_t init_file_date;	/* The date (from stat()) of the .xscreensaver
-				   file the last time this process read or
-				   wrote it. */
 
   /* =======================================================================
      global connection info
@@ -100,7 +57,6 @@ struct saver_info {
 
   XtAppContext app;
   Display *dpy;
-  XrmDatabase db;
 
   /* =======================================================================
      server extension info
@@ -123,7 +79,6 @@ struct saver_info {
   Bool screen_blanked_p;	/* Whether the saver is currently active. */
   Window mouse_grab_window;	/* Window holding our mouse grab */
   Window keyboard_grab_window;	/* Window holding our keyboard grab */
-  Bool fading_possible_p;	/* Whether fading to/from black is possible. */
 
 
   /* =======================================================================
@@ -154,9 +109,8 @@ struct saver_info {
      demoing
      ======================================================================= */
 
-  Bool demo_mode_p;		/* Whether demo-mode is active */
-  char *demo_hack;		/* The hack that has been selected from the
-				   dialog box, which should be run next. */
+  Bool demoing_p;		/* Whether we are demoing a single hack
+				   (without UI.) */
 
   Window splash_dialog;		/* The splash dialog, if its up. */
   splash_dialog_data *sp_data;	/* Other info necessary to draw it. */
@@ -182,8 +136,9 @@ struct saver_info {
 
   int selection_mode;		/* Set to -1 if the NEXT ClientMessage has just
 				   been received; set to -2 if PREV has just
-				   been received; set to N if SELECT has
-				   been received.  (This is kind of nasty.) */
+				   been received; set to N if SELECT or DEMO N
+				   has been received.  (This is kind of nasty.)
+				 */
 
   /* =======================================================================
      subprocs
@@ -285,6 +240,9 @@ extern Bool query_mit_saver_extension (saver_info *);
 #ifdef HAVE_SGI_SAVER_EXTENSION
 extern Bool query_sgi_saver_extension (saver_info *);
 #endif
+#ifdef HAVE_XIDLE_EXTENSION
+extern Bool query_xidle_extension (saver_info *);
+#endif
 
 /* Display Power Management System (DPMS) interface. */
 extern Bool monitor_powered_on_p (saver_info *si);
@@ -340,20 +298,6 @@ extern void draw_shaded_rectangle (Display *dpy, Window window,
 				   unsigned long bottom_color);
 extern int string_width (XFontStruct *font, char *s);
 
-
-#ifndef NO_DEMO_MODE
-extern void demo_mode (saver_info *si);
-extern void demo_mode_restart_process (saver_info *si);
-extern void create_demo_dialog (Widget, Visual *, Colormap);
-extern void create_resources_dialog (Widget, Visual *, Colormap);
-#endif
-
-#if !defined(NO_LOCKING) || !defined(NO_DEMO_MODE)
-extern void pop_up_dialog_box (Widget dialog, Widget form, int where);
-extern void format_into_label (Widget label, const char *arg);
-extern void steal_focus_and_colormap (Widget dialog);
-#endif
-
 extern void make_splash_dialog (saver_info *si);
 extern void handle_splash_event (saver_info *si, XEvent *e);
 extern void skull (Display *, Window, GC, GC, int, int, int, int);
@@ -381,6 +325,7 @@ extern Bool handle_clientmessage (saver_info *, XEvent *, Bool);
    ======================================================================= */
 
 extern void hack_environment (saver_info *si);
+extern void hack_subproc_environment (saver_screen_info *ssi);
 extern void init_sigchld (void);
 extern void spawn_screenhack (saver_info *si, Bool first_time_p);
 extern void kill_screenhack (saver_info *si);
@@ -399,15 +344,6 @@ extern FILE *real_stdout;
 extern void initialize_stderr (saver_info *si);
 extern void reset_stderr (saver_screen_info *ssi);
 extern void clear_stderr (saver_screen_info *ssi);
-
-/* =======================================================================
-   the .xscreensaver file
-   ======================================================================= */
-
-extern int read_init_file (saver_info *si);
-extern int write_init_file (saver_info *si);
-extern int maybe_reload_init_file (saver_info *si);
-extern void get_resources (saver_info *si);
 
 
 /* =======================================================================
