@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992, 1993, 1994 
+/* xscreensaver, Copyright (c) 1992, 1993, 1994, 1996 
  * Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -37,9 +37,13 @@ static int delay;
 static GC gc;
 
 static void
+#ifdef __STDC__
+init_decay (Display *dpy, Window window)
+#else /* ! __STDC__ */
 init_decay (dpy, window)
      Display *dpy;
      Window window;
+#endif /* ! __STDC__ */
 {
   XGCValues gcv;
   XWindowAttributes xgwa;
@@ -69,9 +73,13 @@ init_decay (dpy, window)
  * perform one iteration of decay
  */
 static void
+#ifdef __STDC__
+decay1 (Display *dpy, Window window)
+#else /* ! __STDC__ */
 decay1 (dpy, window)
      Display *dpy;
      Window window;
+#endif /* ! __STDC__ */
 {
     int left, top, width, height;
 
@@ -134,9 +142,11 @@ XrmOptionDescRec options [] = {
 int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
-screenhack (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+screenhack (Display *dpy, Window window)
+#else /* ! __STDC__ */
+screenhack (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
     init_decay (dpy, window);
     while (1) {

@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1992, 1995 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992, 1995, 1996
+ *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -8,6 +9,9 @@
  * software for any purpose.  It is provided "as is" without express or 
  * implied warranty.
  */
+
+/* Algorithm from a Mac program by Chris Tate, written in 1988 or so. */
+
 
 #include <math.h>
 #include "screenhack.h"
@@ -19,9 +23,13 @@ static GC draw_gc, erase_gc;
 static unsigned int default_fg_pixel;
 
 static void
+#ifdef __STDC__
+init_helix (Display *dpy, Window window)
+#else /* ! __STDC__ */
 init_helix (dpy, window)
      Display *dpy;
      Window window;
+#endif /* ! __STDC__ */
 {
   int i;
   XGCValues gcv;
@@ -43,8 +51,11 @@ init_helix (dpy, window)
 }
 
 static int
-gcd (a, b)
-     int a, b;
+#ifdef __STDC__
+gcd (int a, int b)
+#else /* ! __STDC__ */
+gcd (a, b) int a, b;
+#endif /* ! __STDC__ */
 {
   while (b > 0)
     {
@@ -57,6 +68,11 @@ gcd (a, b)
 }
 
 static void
+#ifdef __STDC__
+helix (Display *dpy, Window window,
+       int radius1, int radius2, int d_angle,
+       int factor1, int factor2, int factor3, int factor4)
+#else /* ! __STDC__ */
 helix (dpy, window,
        radius1, radius2, d_angle,
        factor1, factor2, factor3, factor4)
@@ -64,6 +80,7 @@ helix (dpy, window,
      Window window;
      int radius1, radius2, d_angle;
      int factor1, factor2, factor3, factor4;
+#endif /* ! __STDC__ */
 {
   XWindowAttributes xgwa;
   int width, height;
@@ -103,9 +120,13 @@ helix (dpy, window,
 #define min(a,b) ((a)<(b)?(a):(b))
 
 static void
+#ifdef __STDC__
+random_helix (Display *dpy, Window window)
+#else /* ! __STDC__ */
 random_helix (dpy, window)
      Display *dpy;
      Window window;
+#endif /* ! __STDC__ */
 {
   Colormap cmap;
   int width, height;
@@ -198,9 +219,11 @@ XrmOptionDescRec options [] = { { 0, } };
 int options_size = 0;
 
 void
-screenhack (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+screenhack (Display *dpy, Window window)
+#else /* ! __STDC__ */
+screenhack (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   init_helix (dpy, window);
   while (1)

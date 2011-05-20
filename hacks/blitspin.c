@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992-1996 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992-1997 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -49,7 +49,7 @@ static Pixmap bitmap;
 static int depth;
 static unsigned int fg, bg;
 
-static void rotate(), init (), display ();
+static void display P((Pixmap));
 
 #define copy_all_to(from, xoff, yoff, to, gc)		\
   XCopyArea (dpy, (from), (to), (gc), 0, 0,		\
@@ -60,7 +60,7 @@ static void rotate(), init (), display ();
 	     size-(xoff), size-(yoff), 0, 0)
 
 static void
-rotate ()
+rotate P((void))
 {
   int qwad; /* fuckin' C, man... who needs namespaces? */
   XFillRectangle (dpy, mask, CLR, 0, 0, size, size);
@@ -88,20 +88,40 @@ rotate ()
 }
 
 static void
+#ifdef __STDC__
+read_bitmap (char *bitmap_name, int *widthP, int *heightP)
+#else /* ! __STDC__ */
 read_bitmap (bitmap_name, widthP, heightP)
      char *bitmap_name;
      int *widthP, *heightP;
+#endif /* ! __STDC__ */
 {
 #ifdef HAVE_XPM
+  XWindowAttributes xgwa;
+  Colormap cmap;
   XpmAttributes xpmattrs;
   int result;
   xpmattrs.valuemask = 0;
   bitmap = 0;
 
-#ifdef XpmCloseness
+  XGetWindowAttributes (dpy, window, &xgwa);
+
+# ifdef XpmCloseness
   xpmattrs.valuemask |= XpmCloseness;
   xpmattrs.closeness = 40000;
+# endif
+# ifdef XpmVisual
+  xpmattrs.valuemask |= XpmVisual;
+  xpmattrs.visual = xgwa.visual;
 #endif
+# ifdef XpmDepth
+  xpmattrs.valuemask |= XpmDepth;
+  xpmattrs.depth = xgwa.depth;
+# endif
+# ifdef XpmColormap
+  xpmattrs.valuemask |= XpmColormap;
+  xpmattrs.colormap = xgwa.colormap;
+# endif
 
   result = XpmReadFileToPixmap (dpy, window, bitmap_name, &bitmap, 0,
 				&xpmattrs);
@@ -150,7 +170,7 @@ read_bitmap (bitmap_name, widthP, heightP)
 }
 
 static void
-init ()
+init P((void))
 {
   XWindowAttributes xgwa;
   Colormap cmap;
@@ -216,8 +236,11 @@ init ()
 }
 
 static void
-display (pixmap)
-     Pixmap pixmap;
+#ifdef __STDC__
+display (Pixmap pixmap)
+#else /* ! __STDC__ */
+display (pixmap) Pixmap pixmap;
+#endif /* ! __STDC__ */
 {
   XWindowAttributes xgwa;
   static int last_w = 0, last_h = 0;
@@ -264,9 +287,11 @@ XrmOptionDescRec options [] = {
 int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
-screenhack (d, w)
-     Display *d;
-     Window w;
+#ifdef __STDC__
+screenhack (Display *d, Window w)
+#else /* ! __STDC__ */
+screenhack (d, w) Display *d; Window w;
+#endif /* ! __STDC__ */
 {
   dpy = d;
   window = w;

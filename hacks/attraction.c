@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1992, 1995 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992, 1995, 1996
+ *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -41,6 +42,16 @@
    unless you make about 200 points.... set the viscosity to about .8
    and drag the mouse through it.   it makes a nice wave which travels
    through the field.
+
+   And (always the troublemaker) Joe Keane <jgk@jgk.org> sez:
+
+   Despite what John sez, the field being simulated is always conservative.
+   The real problem is that it uses a simple hack, computing acceleration
+   *based only on the starting position*, instead of a real differential
+   equation solver.  Thus you'll always have energy coming out of nowhere,
+   although it's most blatant when balls get close together.  If it were
+   done right, you wouldn't need viscosity or artificial limits on how
+   close the balls can get.
  */
 
 #include <stdio.h>
@@ -94,9 +105,13 @@ static GC draw_gc, erase_gc;
 #define max(a,b) ((a)>(b)?(a):(b))
 
 static void
+#ifdef __STDC__
+init_balls (Display *dpy, Window window)
+#else /* ! __STDC__ */
 init_balls (dpy, window)
      Display *dpy;
      Window window;
+#endif /* ! __STDC__ */
 {
   int i;
   XWindowAttributes xgwa;
@@ -285,9 +300,13 @@ init_balls (dpy, window)
 }
 
 static void
+#ifdef __STDC__
+compute_force (int i, float *dx_ret, float *dy_ret)
+#else /* ! __STDC__ */
 compute_force (i, dx_ret, dy_ret)
      int i;
      float *dx_ret, *dy_ret;
+#endif /* ! __STDC__ */
 {
   int j;
   float x_dist, y_dist, dist, dist2;
@@ -342,9 +361,13 @@ compute_force (i, dx_ret, dy_ret)
 }
 
 static void
+#ifdef __STDC__
+run_balls (Display *dpy, Window window)
+#else /* ! __STDC__ */
 run_balls (dpy, window)
      Display *dpy;
      Window window;
+#endif /* ! __STDC__ */
 {
   int last_point_stack_fp = point_stack_fp;
   static int tick = 500, xlim, ylim;
@@ -353,7 +376,7 @@ run_balls (dpy, window)
 
   /*flip mods for mouse interaction*/
   Window  root1, child1;
-  int mask;
+  unsigned int mask;
   if (mouse_p)
     {
       XQueryPointer(dpy, window, &root1, &child1,
@@ -672,9 +695,11 @@ XrmOptionDescRec options [] = {
 int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
-screenhack (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+screenhack (Display *dpy, Window window)
+#else /* ! __STDC__ */
+screenhack (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   init_balls (dpy, window);
   while (1)

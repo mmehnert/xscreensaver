@@ -9,7 +9,7 @@
  * implied warranty.
  */
 
-#if __STDC__
+#ifdef __STDC__
 # include <stdlib.h>
 #endif
 
@@ -17,7 +17,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xos.h>
 
-#if __STDC__
+#ifdef __STDC__
 # define P(x)x
 #else
 # define P(x)()
@@ -125,6 +125,9 @@ fade_colormap (dpy, cmap, cmap2, seconds, ticks, out_p, install_p)
       int j;
       for (j = 0; j < ncolors; j++)
 	{
+	  /* This doesn't take into account the relative luminance of the
+	     RGB components (0.299, 0.587, and 0.114 at gamma 2.2) but
+	     the difference is imperceptible for this application... */
 	  current_colors[j].red   = orig_colors[j].red   * i / steps;
 	  current_colors[j].green = orig_colors[j].green * i / steps;
 	  current_colors[j].blue  = orig_colors[j].blue  * i / steps;

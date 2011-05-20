@@ -1,4 +1,4 @@
-/* xscreensaver-command, Copyright (c) 1991-1995 
+/* xscreensaver-command, Copyright (c) 1991-1995, 1996 
  * Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -15,7 +15,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xos.h>
-#if __STDC__
+#ifdef __STDC__
 # include <stdlib.h>
 #endif
 
@@ -50,9 +50,13 @@ static char *usage = "usage: %s -<switch>\n\
   See the man page for more details.\n\n";
 
 static Window
+#ifdef __STDC__
+find_screensaver_window (Display *dpy, char *progname)
+#else /* ! __STDC__ */
 find_screensaver_window (dpy, progname)
      Display *dpy;
      char *progname;
+#endif /* ! __STDC__ */
 {
   int i;
   Window root = RootWindowOfScreen (DefaultScreenOfDisplay (dpy));
@@ -93,9 +97,13 @@ find_screensaver_window (dpy, progname)
  { fprintf (stderr, usage, argv[0], screensaver_version); exit (1); }
 
 void
+#ifdef __STDC__
+main (int argc, char **argv)
+#else /* ! __STDC__ */
 main (argc, argv)
      int argc;
      char **argv;
+#endif /* ! __STDC__ */
 {
   Display *dpy;
   Window window;

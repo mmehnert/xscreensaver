@@ -7,6 +7,7 @@
 
 #include "config.h"
 
+  SUB_MAKEFILES = utils/Makefile driver/Makefile hacks/Makefile
        TARFILES = README Imakefile config.h screenblank.txt
             TAR = tar
        COMPRESS = compress
@@ -14,17 +15,33 @@
 /**/#      COMPRESS = gzip --verbose --best
 /**/#  COMPRESS_EXT = gz
 
-all:: utils/Makefile driver/Makefile hacks/Makefile
+all::
+	@echo "" ; \
+  echo "" ; \
+  echo "                               ALERT!" ; \
+  echo "" ; \
+  echo "        ==========================================================" ; \
+  echo "" ; \
+  echo "        Did you read and edit config.h?  config.h is your friend." ; \
+  echo "        If you didn't, and you get compilation errors, that's why." ; \
+  echo "" ; \
+  echo "        ==========================================================" ; \
+  echo ""
+
+all:: $(SUB_MAKEFILES)
 	cd utils  ; $(MAKE) $@ CC="$(CC)" CCOPTIONS="$(CCOPTIONS)" CDEBUGFLAGS="$(CDEBUGFLAGS)"
 	cd driver ; $(MAKE) $@ CC="$(CC)" CCOPTIONS="$(CCOPTIONS)" CDEBUGFLAGS="$(CDEBUGFLAGS)"
 	cd hacks  ; $(MAKE) $@ CC="$(CC)" CCOPTIONS="$(CCOPTIONS)" CDEBUGFLAGS="$(CDEBUGFLAGS)"
 
-clean install install.man:: utils/Makefile driver/Makefile hacks/Makefile
+clean depend install install.man:: $(SUB_MAKEFILES)
 	cd utils  ; $(MAKE) $@ BINDIR=$(BINDIR) XAPPLOADDIR=$(XAPPLOADDIR)
 	cd driver ; $(MAKE) $@ BINDIR=$(BINDIR) XAPPLOADDIR=$(XAPPLOADDIR)
 	cd hacks  ; $(MAKE) $@ BINDIR=$(BINDIR) XAPPLOADDIR=$(XAPPLOADDIR)
 
-Makefiles:: utils/Makefile driver/Makefile hacks/Makefile
+clean::
+	$(RM) $(SUB_MAKEFILES)
+
+Makefiles:: $(SUB_MAKEFILES)
 
 utils/Makefile: utils/Imakefile config.h
 	cd utils  ; $(IMAKE_CMD) -DTOPDIR=$(TOP) -DCURDIR=$(CURRENT_DIR)/utils

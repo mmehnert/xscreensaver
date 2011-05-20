@@ -7,11 +7,6 @@
 
 #include "../config.h"
 
-/* #### If anyone ever finishes the Athena locking code, remove this. */
-#if defined(NO_MOTIF) && !defined(NO_LOCKING)
-# define NO_LOCKING
-#endif
-
 #ifdef NO_LOCKING
 # undef INSTALL_SETUID
 #endif
@@ -52,11 +47,16 @@
 # define SHADOW_DEF
 #endif
 
+#ifdef HAVE_DEC_ENHANCED
+# undef SHADOW_DEF
+# define SHADOW_DEF -DHAVE_DEC_ENHANCED
+#endif
+
 #ifdef NO_MOTIF
 # define MOTIF_DEF -DNO_MOTIF
-# define MOTIF_SRC
-# define MOTIF_OBJ
-# define MOTIF_LIB
+# define MOTIF_SRC $(UTILS)/xroger.c
+# define MOTIF_OBJ $(UTILS)/xroger.o
+# define MOTIF_LIB -lXaw
 # define MOTIF_INC
 #else
 # define MOTIF_DEF
@@ -69,16 +69,16 @@
          UTILS = ../utils
       INCLUDES = -I$(UTILS) MOTIF_INC
        DEFINES = SETUID_DEF XIDLE_DEF MIT_SAVER_DEF SGI_SAVER_DEF MOTIF_DEF LOCKING_DEF SHADOW_DEF R5ISMS
-     SAVERLIBS = $(XMULIB) $(XTOOLLIB) $(EXTENSIONLIB) $(XLIB)
+     SAVERLIBS = $(XMULIB) $(XTOOLLIB) $(XSSLIB) $(EXTENSIONLIB) $(XLIB) $(DEC_ENHANCED_LIB)
       COMMLIBS = $(XLIB)
      UTIL_SRCS = $(UTILS)/resources.c $(UTILS)/fade.c $(UTILS)/visual.c $(UTILS)/usleep.c $(UTILS)/yarandom.c
      UTIL_OBJS = $(UTILS)/resources.o $(UTILS)/fade.o $(UTILS)/visual.o $(UTILS)/usleep.o $(UTILS)/yarandom.o
-     DBOX_SRCS = dialogs.c demo.c
-     DBOX_OBJS = dialogs.o demo.o
+     DBOX_SRCS = dialogs.c
+     DBOX_OBJS = dialogs.o
      LOCK_SRCS = lock.c
      LOCK_OBJS = lock.o
-     SAVERSRCS = xscreensaver.c timers.c subprocs.c windows.c stderr.c
-     SAVEROBJS = xscreensaver.o timers.o subprocs.o windows.o stderr.o
+     SAVERSRCS = xscreensaver.c timers.c subprocs.c windows.c stderr.c demo.c
+     SAVEROBJS = xscreensaver.o timers.o subprocs.o windows.o stderr.o demo.o
          SRCS1 = $(SAVERSRCS) MOTIF_SRC $(LOCK_SRCS) $(UTIL_SRCS)
          OBJS1 = $(SAVEROBJS) MOTIF_OBJ $(LOCK_OBJS) $(UTIL_OBJS)
       COMMSRCS = xscreensaver-command.c
@@ -102,12 +102,19 @@ EXTRA_LIBRARIES = -lcrypt
 EXTRA_LIBRARIES = -lintl -lprot -lx -lcrypt_i
 #endif
 
+#if defined(HAVE_DEC_ENHANCED)
+EXTRA_LIBRARIES = -lsecurity -lm
+#endif
+
 all:: xscreensaver xscreensaver-command
 
 echo_tarfiles:
 	@echo $(TARFILES)
 
 PROGRAMS = xscreensaver xscreensaver-command
+
+/* build this before calling makedepend */
+depend:: XScreenSaver.ad.h
 
 #ifdef INSTALL_SETUID
 #undef  InstallProgram
@@ -130,9 +137,6 @@ xscreensaver-command.o: $(UTILS)/version.h
 
 demo.o: $(UTILS)/version.h
 lock.o: $(UTILS)/version.h
-
-/* build this before calling makedepend */
-depend:: XScreenSaver.ad.h
 
 XScreenSaver.ad.h: XScreenSaver.ad
 	$(UTILS)/ad2c XScreenSaver.ad > XScreenSaver.ad.h

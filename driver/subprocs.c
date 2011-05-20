@@ -46,10 +46,10 @@
      work of the shell?  (Because it's Unix, that's why!  Bend over.)
  */
 
-#if __STDC__
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
+#ifdef __STDC__
+# include <stdlib.h>
+# include <unistd.h>
+# include <string.h>
 #endif
 
 #include <stdio.h>
@@ -76,7 +76,7 @@ extern char **environ;		/* why isn't this in some header file? */
 #define SIGCHLD SIGCLD
 #endif
 
-#if __STDC__
+#ifdef __STDC__
 extern int putenv (/* const char * */);	/* getenv() is in stdlib.h... */
 extern int kill (pid_t, int);		/* signal() is in sys/signal.h... */
 #endif
@@ -99,7 +99,7 @@ int nice_inferior = 0;
 extern Bool demo_mode_p;
 
 static void
-#if __STDC__
+#ifdef __STDC__
 exec_screenhack (char *command)
 #else
 exec_screenhack (command)
@@ -201,7 +201,7 @@ static Bool suspending = False;
 static char *current_hack_name P((void));
 
 static void
-#if __STDC__
+#ifdef __STDC__
 await_child_death (Bool killed)
 #else
 await_child_death (killed)

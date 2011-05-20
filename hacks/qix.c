@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1992, 1995 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992, 1995, 1996, 1997
+ *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -12,13 +13,16 @@
 #include "screenhack.h"
 #include <stdio.h>
 
+#define MAXPOLY	16
+#define SCALE	6
+
 struct qpoint {
-  int x, y;
-  int dx, dy;
+  long x, y;
+  long dx, dy;
 };
 
 struct qline {
-  struct qpoint p1, p2;
+  struct qpoint *p;
   XColor color;
   Bool dead;
 };
@@ -27,42 +31,58 @@ struct qix {
   int id;
   int fp;
   int nlines;
+  int npoly;
   struct qline *lines;
 };
 
 static GC draw_gc, erase_gc;
 static unsigned int default_fg_pixel;
-static int maxx, maxy, max_spread, max_size, color_shift;
-static Bool random_p, solid_p, xor_p, transparent_p;
+static long maxx, maxy, max_spread, max_size;
+static int color_shift;
+static Bool random_p, solid_p, xor_p, transparent_p, gravity_p;
 static int delay;
 static int count;
 static Colormap cmap;
 static unsigned long base_pixel;
+static int npoly;
 
 static GC *gcs[2];
 
 static void
+#ifdef __STDC__
+get_geom (Display *dpy, Window window)
+#else /* ! __STDC__ */
 get_geom (dpy, window)
      Display *dpy;
      Window window;
+#endif /* ! __STDC__ */
 {
   XWindowAttributes xgwa;
   XGetWindowAttributes (dpy, window, &xgwa);
-  maxx = xgwa.width;
-  maxy = xgwa.height;
+  maxx = ((long)(xgwa.width+1)<<SCALE)  - 1;
+  maxy = ((long)(xgwa.height+1)<<SCALE) - 1;
 }
 
 static struct qix *
-init_one_qix (dpy, window, nlines)
+#ifdef __STDC__
+init_one_qix (Display *dpy, Window window, int nlines, int npoly)
+#else /* ! __STDC__ */
+init_one_qix (dpy, window, nlines, npoly)
      Display *dpy;
      Window window;
      int nlines;
+     int npoly;
+#endif /* ! __STDC__ */
 {
-  int i;
+  int i, j;
   struct qix *qix = (struct qix *) calloc (1, sizeof (struct qix));
   qix->nlines = nlines;
   qix->lines = (struct qline *) calloc (qix->nlines, sizeof (struct qline));
-  
+  qix->npoly = npoly;
+  for (i = 0; i < qix->nlines; i++)
+    qix->lines[i].p = (struct qpoint *)
+      calloc(qix->npoly, sizeof(struct qpoint));
+
   if (!mono_p && !transparent_p)
     {
       hsv_to_rgb (random () % 360, frand (1.0), frand (0.5) + 0.5,
@@ -76,28 +96,40 @@ init_one_qix (dpy, window, nlines)
 	    abort ();
 	}
     }
-  qix->lines[0].p1.x = random () % maxx;
-  qix->lines[0].p1.y = random () % maxy;
+
   if (max_size == 0)
     {
-      qix->lines[0].p2.x = random () % maxx;
-      qix->lines[0].p2.y = random () % maxy;
+      for (i = 0; i < qix->npoly; i++)
+	{
+	  qix->lines[0].p[i].x = random () % maxx;
+	  qix->lines[0].p[i].y = random () % maxy;
+	}
     }
   else
     {
-      qix->lines[0].p2.x = qix->lines[0].p1.x + (random () % (max_size/2));
-      qix->lines[0].p2.y = qix->lines[0].p1.y + (random () % (max_size/2));
-      if (qix->lines[0].p2.x > maxx) qix->lines[0].p2.x = maxx;
-      if (qix->lines[0].p2.y > maxy) qix->lines[0].p2.y = maxy;
+      /*assert(qix->npoly == 2);*/
+      qix->lines[0].p[0].x = random () % maxx;
+      qix->lines[0].p[0].y = random () % maxy;
+      qix->lines[0].p[1].x = qix->lines[0].p[0].x + (random () % (max_size/2));
+      qix->lines[0].p[1].y = qix->lines[0].p[0].y + (random () % (max_size/2));
+      if (qix->lines[0].p[1].x > maxx) qix->lines[0].p[1].x = maxx;
+      if (qix->lines[0].p[1].y > maxy) qix->lines[0].p[1].y = maxy;
     }
-  qix->lines[0].p1.dx = (random () % (max_spread + 1)) - (max_spread / 2);
-  qix->lines[0].p1.dy = (random () % (max_spread + 1)) - (max_spread / 2);
-  qix->lines[0].p2.dx = (random () % (max_spread + 1)) - (max_spread / 2);
-  qix->lines[0].p2.dy = (random () % (max_spread + 1)) - (max_spread / 2);
+
+  for (i = 0; i < qix->npoly; i++)
+    {
+      qix->lines[0].p[i].dx = (random () % (max_spread + 1)) - (max_spread /2);
+      qix->lines[0].p[i].dy = (random () % (max_spread + 1)) - (max_spread /2);
+    }
   qix->lines[0].dead = True;
+
   for (i = 1; i < qix->nlines; i++)
     {
-      qix->lines[i] = qix->lines[0];
+      for(j=0; j<qix->npoly; j++)
+	qix->lines[i].p[j] = qix->lines[0].p[j];
+      qix->lines[i].color = qix->lines[0].color;
+      qix->lines[i].dead = qix->lines[0].dead;
+  
       if (!mono_p && !transparent_p)
 	if (!XAllocColor (dpy, cmap, &qix->lines[i].color))
 	  abort ();
@@ -107,8 +139,12 @@ init_one_qix (dpy, window, nlines)
 
 /* I don't believe this fucking language doesn't have builtin exponentiation.
    I further can't believe that the fucking ^ character means fucking XOR!! */
-static int i_exp(i,j)
-     int i, j;
+static int 
+#ifdef __STDC__
+i_exp (int i, int j)
+#else /* ! __STDC__ */
+i_exp (i,j) int i, j;
+#endif /* ! __STDC__ */
 {
   int k = 1;
   while (j--) k *= i;
@@ -117,12 +153,17 @@ static int i_exp(i,j)
 
 
 static void
+#ifdef __STDC__
+merge_colors (int argc, XColor **argv, XColor *into_color, int mask,
+	      Bool increment_p)
+#else /* ! __STDC__ */
 merge_colors (argc, argv, into_color, mask, increment_p)
      int argc;
      XColor **argv;
      XColor *into_color;
      int mask;
      Bool increment_p;
+#endif /* ! __STDC__ */
 {
   int j;
   *into_color = *argv [0];
@@ -149,11 +190,18 @@ merge_colors (argc, argv, into_color, mask, increment_p)
 /* fill in all the permutations of colors that XAllocColorCells() has 
    allocated for us.  Thanks Ron, you're an additive kind of guy. */
 static void
+#ifdef __STDC__
+permute_colors (XColor *pcolors, XColor *colors,
+		int count,
+		unsigned long *plane_masks,
+		Bool increment_p)
+#else /* ! __STDC__ */
 permute_colors (pcolors, colors, count, plane_masks, increment_p)
      XColor *pcolors, *colors;
      int count;
      unsigned long *plane_masks;
      Bool increment_p;
+#endif /* ! __STDC__ */
 {
   int out = 0;
   int max = i_exp (2, count);
@@ -176,9 +224,13 @@ permute_colors (pcolors, colors, count, plane_masks, increment_p)
 
 
 static struct qix **
+#ifdef __STDC__
+init_qix (Display *dpy, Window window)
+#else /* ! __STDC__ */
 init_qix (dpy, window)
      Display *dpy;
      Window window;
+#endif /* ! __STDC__ */
 {
   int nlines;
   struct qix **qixes;
@@ -190,19 +242,41 @@ init_qix (dpy, window)
   if (count <= 0) count = 1;
   nlines = get_integer_resource ("segments", "Integer");
   if (nlines <= 0) nlines = 20;
+  npoly = get_integer_resource("poly", "Integer");
+  if (npoly <= 2) npoly = 2;
+  if (npoly > MAXPOLY) npoly = MAXPOLY;
   get_geom (dpy, window);
   max_spread = get_integer_resource ("spread", "Integer");
   if (max_spread <= 0) max_spread = 10;
+  max_spread <<= SCALE;
   max_size = get_integer_resource ("size", "Integer");
   if (max_size < 0) max_size = 0;
+  max_size <<= SCALE;
   random_p = get_boolean_resource ("random", "Boolean");
   solid_p = get_boolean_resource ("solid", "Boolean");
   xor_p = get_boolean_resource ("xor", "Boolean");
   transparent_p = get_boolean_resource ("transparent", "Boolean");
+  gravity_p = get_boolean_resource("gravity", "Boolean");
   delay = get_integer_resource ("delay", "Integer");
   color_shift = get_integer_resource ("colorShift", "Integer");
   if (color_shift < 0 || color_shift >= 360) color_shift = 5;
   if (delay < 0) delay = 0;
+
+  /* Clear up ambiguities regarding npoly */
+  if (solid_p) 
+    {
+      if (npoly != 2)
+	fprintf(stderr, "%s: Can't have -solid and -poly; using -poly 2\n",
+		progname);
+      npoly = 2;
+    }      
+  if (npoly > 2)
+    {
+      if (max_size)
+	fprintf(stderr, "%s: Can't have -poly and -size; using -size 0\n",
+		progname);
+      max_size = 0;
+    }
 
   if (count == 1 && transparent_p)
     transparent_p = False; /* it's a no-op */
@@ -323,35 +397,59 @@ init_qix (dpy, window)
   qixes [count] = 0;
   while (count--)
     {
-      qixes [count] = init_one_qix (dpy, window, nlines);
+      qixes [count] = init_one_qix (dpy, window, nlines, npoly);
       qixes [count]->id = count;
     }
   return qixes;
 }
 
 static void
+#ifdef __STDC__
+free_qline (Display *dpy, Window window, Colormap cmap,
+	    struct qline *qline,
+	    struct qline *prev,
+	    struct qix *qix)
+#else /* ! __STDC__ */
 free_qline (dpy, window, cmap, qline, prev, qix)
      Display *dpy;
      Window window;
      Colormap cmap;
      struct qline *qline, *prev;
      struct qix *qix;
+#endif /* ! __STDC__ */
 {
+  int i;
   if (qline->dead || !prev)
     ;
   else if (solid_p)
     {
       XPoint points [4];
-      points [0].x = qline->p1.x; points [0].y = qline->p1.y;
-      points [1].x = qline->p2.x; points [1].y = qline->p2.y;
-      points [2].x = prev->p2.x; points [2].y = prev->p2.y;
-      points [3].x = prev->p1.x; points [3].y = prev->p1.y;
+      /*assert(qix->npoly == 2);*/
+      points [0].x = qline->p[0].x >> SCALE; 
+      points [0].y = qline->p[0].y >> SCALE;
+      points [1].x = qline->p[1].x >> SCALE;
+      points [1].y = qline->p[1].y >> SCALE;
+      points [2].x = prev->p[1].x >> SCALE;
+      points [2].y = prev->p[1].y >> SCALE;
+      points [3].x = prev->p[0].x >> SCALE;
+      points [3].y = prev->p[0].y >> SCALE;
       XFillPolygon (dpy, window, (transparent_p ? gcs[1][qix->id] : erase_gc),
 		    points, 4, Complex, CoordModeOrigin);
     }
   else
-    XDrawLine (dpy, window, (transparent_p ? gcs[1][qix->id] : erase_gc),
-	       qline->p1.x, qline->p1.y, qline->p2.x, qline->p2.y);
+    {
+      /*  XDrawLine (dpy, window, (transparent_p ? gcs[1][qix->id] : erase_gc),
+	             qline->p1.x, qline->p1.y, qline->p2.x, qline->p2.y);*/
+      static XPoint points[MAXPOLY+1];
+      for(i = 0; i < qix->npoly; i++)
+	{
+	  points[i].x = qline->p[i].x >> SCALE;
+	  points[i].y = qline->p[i].y >> SCALE;
+	}
+      points[qix->npoly] = points[0];
+      XDrawLines(dpy, window, (transparent_p ? gcs[1][qix->id] : erase_gc),
+		 points, qix->npoly+1, CoordModeOrigin);
+    }
 
   if (!mono_p && !transparent_p)
     XFreeColors (dpy, cmap, &qline->color.pixel, 1, 0);
@@ -360,41 +458,59 @@ free_qline (dpy, window, cmap, qline, prev, qix)
 }
 
 static void
+#ifdef __STDC__
+add_qline (Display *dpy, Window window, Colormap cmap,
+	   struct qline *qline,
+	   struct qline *prev_qline,
+	   struct qix *qix)
+#else /* ! __STDC__ */
 add_qline (dpy, window, cmap, qline, prev_qline, qix)
      Display *dpy;
      Window window;
      Colormap cmap;
      struct qline *qline, *prev_qline;
      struct qix *qix;
+#endif /* ! __STDC__ */
 {
-  *qline = *prev_qline;
+  int i;
+
+  for(i=0; i<qix->npoly; i++)
+    qline->p[i] = prev_qline->p[i];
+  qline->color = prev_qline->color;
+  qline->dead = prev_qline->dead;
 
 #define wiggle(point,delta,max)						\
-  if (random_p) delta += (random () % 3) - 1;				\
+  if (random_p) delta += (random () % (1 << SCALE+1)) - (1 << SCALE);	\
   if (delta > max_spread) delta = max_spread;				\
   else if (delta < -max_spread) delta = -max_spread;			\
   point += delta;							\
   if (point < 0) point = 0, delta = -delta, point += delta<<1;		\
   else if (point > max) point = max, delta = -delta, point += delta<<1;
-  
-  wiggle (qline->p1.x, qline->p1.dx, maxx);
-  wiggle (qline->p1.y, qline->p1.dy, maxy);
-  wiggle (qline->p2.x, qline->p2.dx, maxx);
-  wiggle (qline->p2.y, qline->p2.dy, maxy);
+
+  if (gravity_p)
+    for(i=0; i<qix->npoly; i++)
+      qline->p[i].dy += 3;
+
+  for (i = 0; i < qix->npoly; i++)
+    {
+      wiggle (qline->p[i].x, qline->p[i].dx, maxx);
+      wiggle (qline->p[i].y, qline->p[i].dy, maxy);
+    }
 
   if (max_size)
     {
-      if (qline->p1.x - qline->p2.x > max_size)
-	qline->p1.x = qline->p2.x + max_size
+      /*assert(qix->npoly == 2);*/
+      if (qline->p[0].x - qline->p[1].x > max_size)
+	qline->p[0].x = qline->p[1].x + max_size
 	  - (random_p ? random() % max_spread : 0);
-      else if (qline->p2.x - qline->p1.x > max_size)
-	qline->p2.x = qline->p1.x + max_size
+      else if (qline->p[1].x - qline->p[0].x > max_size)
+	qline->p[1].x = qline->p[0].x + max_size
 	  - (random_p ? random() % max_spread : 0);
-      if (qline->p1.y - qline->p2.y > max_size)
-	qline->p1.y = qline->p2.y + max_size
+      if (qline->p[0].y - qline->p[1].y > max_size)
+	qline->p[0].y = qline->p[1].y + max_size
 	  - (random_p ? random() % max_spread : 0);
-      else if (qline->p2.y - qline->p1.y > max_size)
-	qline->p2.y = qline->p1.y + max_size
+      else if (qline->p[1].y - qline->p[0].y > max_size)
+	qline->p[1].y = qline->p[0].y + max_size
 	  - (random_p ? random() % max_spread : 0);
     }
 
@@ -423,15 +539,30 @@ add_qline (dpy, window, cmap, qline, prev_qline, qix)
       XSetForeground (dpy, draw_gc, qline->color.pixel);
     }
   if (! solid_p)
-    XDrawLine (dpy, window, (transparent_p ? gcs[0][qix->id] : draw_gc),
-	       qline->p1.x, qline->p1.y, qline->p2.x, qline->p2.y);
+    {
+      /*  XDrawLine (dpy, window, (transparent_p ? gcs[0][qix->id] : draw_gc),
+	             qline->p1.x, qline->p1.y, qline->p2.x, qline->p2.y);*/
+      static XPoint points[MAXPOLY+1];
+      for (i = 0; i < qix->npoly; i++)
+	{
+	  points[i].x = qline->p[i].x >> SCALE;
+	  points[i].y = qline->p[i].y >> SCALE;
+	}
+      points[qix->npoly] = points[0];
+      XDrawLines(dpy, window, (transparent_p ? gcs[0][qix->id] : draw_gc),
+		 points, qix->npoly+1, CoordModeOrigin);
+    }
   else if (!prev_qline->dead)
     {
       XPoint points [4];
-      points [0].x = qline->p1.x; points [0].y = qline->p1.y;
-      points [1].x = qline->p2.x; points [1].y = qline->p2.y;
-      points [2].x = prev_qline->p2.x; points [2].y = prev_qline->p2.y;
-      points [3].x = prev_qline->p1.x; points [3].y = prev_qline->p1.y;
+      points [0].x = qline->p[0].x >> SCALE;
+      points [0].y = qline->p[0].y >> SCALE;
+      points [1].x = qline->p[1].x >> SCALE;
+      points [1].y = qline->p[1].y >> SCALE;
+      points [2].x = prev_qline->p[1].x >> SCALE;
+      points [2].y = prev_qline->p[1].y >> SCALE;
+      points [3].x = prev_qline->p[0].x >> SCALE;
+      points [3].y = prev_qline->p[0].y >> SCALE;
       XFillPolygon (dpy, window, (transparent_p ? gcs[0][qix->id] : draw_gc),
 		    points, 4, Complex, CoordModeOrigin);
     }
@@ -440,16 +571,21 @@ add_qline (dpy, window, cmap, qline, prev_qline, qix)
 }
 
 static void
+#ifdef __STDC__
+qix1 (Display *dpy, Window window, struct qix *qix)
+#else /* ! __STDC__ */
 qix1 (dpy, window, qix)
      Display *dpy;
      Window window;
      struct qix *qix;
+#endif /* ! __STDC__ */
 {
   int ofp = qix->fp - 1;
+  int i;
   static int gtick = 0;
+  if (ofp < 0) ofp = qix->nlines - 1;
   if (gtick++ == 500)
     get_geom (dpy, window), gtick = 0;
-  if (ofp < 0) ofp = qix->nlines - 1;
   free_qline (dpy, window, cmap, &qix->lines [qix->fp],
 	      &qix->lines[(qix->fp + 1) % qix->nlines], qix);
   add_qline (dpy, window, cmap, &qix->lines[qix->fp], &qix->lines[ofp], qix);
@@ -465,6 +601,7 @@ char *defaults [] = {
   "Qix.foreground:	white",
   "*count:	1",
   "*segments:	50",
+  "*poly:	2",
   "*spread:	8",
   "*size:	0",
   "*colorShift:	3",
@@ -473,6 +610,7 @@ char *defaults [] = {
   "*random:	true",
   "*xor:	false",
   "*transparent:false",
+  "*gravity:	false",
   "*additive:	true",
   0
 };
@@ -480,6 +618,7 @@ char *defaults [] = {
 XrmOptionDescRec options [] = {
   { "-count",		".count",	XrmoptionSepArg, 0 },
   { "-segments",	".segments",	XrmoptionSepArg, 0 },
+  { "-poly",		".poly",	XrmoptionSepArg, 0 },
   { "-spread",		".spread",	XrmoptionSepArg, 0 },
   { "-size",		".size",	XrmoptionSepArg, 0 },
   { "-delay",		".delay",	XrmoptionSepArg, 0 },
@@ -492,15 +631,19 @@ XrmOptionDescRec options [] = {
   { "-no-xor",		".xor",		XrmoptionNoArg, "false" },
   { "-transparent",	".transparent",	XrmoptionNoArg, "true" },
   { "-non-transparent",	".transparent",	XrmoptionNoArg, "false" },
+  { "-gravity",		".gravity",	XrmoptionNoArg, "true" },
+  { "-no-gravity",	".gravity",	XrmoptionNoArg, "false" },
   { "-additive",	".additive",	XrmoptionNoArg, "true" },
   { "-subtractive",	".additive",	XrmoptionNoArg, "false" },
 };
 int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
-screenhack (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+screenhack (Display *dpy, Window window)
+#else /* ! __STDC__ */
+screenhack (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   struct qix **q1 = init_qix (dpy, window);
   struct qix **qn;

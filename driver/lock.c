@@ -1,4 +1,4 @@
-/*    xscreensaver, Copyright (c) 1993-1995 Jamie Zawinski <jwz@netscape.com>
+/*    xscreensaver, Copyright (c) 1993-1997 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -9,24 +9,25 @@
  * implied warranty.
  */
 
-/* #### If anyone ever finishes the Athena locking code, remove this.
-   But until then, locking requires Motif.
- */
-#if defined(NO_MOTIF) && !defined(NO_LOCKING)
-# define NO_LOCKING
-#endif
-
+/* Athena locking code contributed by Jon A. Christopher <jac8782@tamu.edu> */
+/* Copyright 1997, with the same permissions as above. */
 
 #ifndef NO_LOCKING
 
-#if __STDC__
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
+#ifdef __STDC__
+# include <stdlib.h>
+# include <unistd.h>
+# include <string.h>
 #endif
 
 #ifdef  HAVE_SHADOW
-#include <shadow.h>
+# include <shadow.h>
+#endif
+
+#ifdef HAVE_DEC_ENHANCED
+# include <sys/types.h>
+# include <sys/security.h>
+# include <prot.h>
 #endif
 
 #include <pwd.h>
@@ -50,15 +51,28 @@ extern Bool verbose_p;
 # include <prot.h>
 #endif
 
-#if !__STDC__
+#ifndef __STDC__
 # define _NO_PROTO
 #endif
 
 #ifdef NO_MOTIF
 
+# include <X11/Shell.h>
 # include <X11/StringDefs.h>
 # include <X11/Xaw/Text.h>
 # include <X11/Xaw/Label.h>
+# include <X11/Xaw/Dialog.h>
+
+static void passwd_done_cb ();
+static XtActionsRec actionsList[] =
+{
+    {"passwdentered", (XtPointer) passwd_done_cb},
+};
+
+static char Translations[] =
+"\
+<Key>Return:   passwdentered()\
+";
 
 #else /* Motif */
 
@@ -83,7 +97,8 @@ extern create_passwd_dialog P((Widget));
 extern void ungrab_keyboard_and_mouse P((void));
 
 static enum { pw_read, pw_ok, pw_fail, pw_cancel, pw_time } passwd_state;
-static char typed_passwd [1024];
+#define PASSWDLEN 80
+static char typed_passwd [PASSWDLEN];
 
 static char root_passwd [255];
 static char user_passwd [255];
@@ -92,6 +107,10 @@ static char user_passwd [255];
 # define PWTYPE struct spwd *
 # define PWSLOT sp_pwdp
 # define GETPW  getspnam
+#elif HAVE_DEC_ENHANCED
+# define PWTYPE struct pr_passwd *
+# define PWSLOT ufld.fd_encrypt
+# define GETPW  getprpwnam
 #else
 # define PWTYPE struct passwd *
 # define PWSLOT pw_passwd
@@ -103,15 +122,38 @@ static char user_passwd [255];
 # define GETPRPW getprpwnam
 #endif
 
+#ifdef NO_MOTIF
+ Widget passwd_dialog;
+ Widget passwd_form;
+ Widget roger_label;
+ Widget passwd_label1;
+ Widget passwd_label3;
+ Widget passwd_text;
+ Widget passwd_done;
+ Widget passwd_cancel;
+ static void focus_fuckus P((Widget));
+#endif /* NO_MOTIF */
+
+
 Bool
-lock_init ()
+lock_init P((int argc, char **argv))
 {
   Bool ok = True;
   char *u;
-  PWTYPE p = GETPW ("root");
+  PWTYPE p;
+#ifdef SCO
+  PRPWTYPE prpwd;
+#endif /* SCO */
+
+#ifdef HAVE_DEC_ENHANCED      /* from M.Matsumoto <matsu@yao.sharp.co.jp> */
+  set_auth_parameters(argc, argv);
+  check_auth_parameters();
+#endif /* HAVE_DEC_ENHANCED */
+
+  p = GETPW ("root");
 
 #ifdef SCO
-  PRPWTYPE prpwd = GETPRPW ("root");
+  prpwd = GETPRPW ("root");
   if (prpwd && *prpwd->ufld.fd_encrypt)
     strcpy (root_passwd, prpwd->ufld.fd_encrypt);
 #else /* !SCO */
@@ -175,19 +217,30 @@ lock_init ()
 #endif
 
 static void
+#ifdef __STDC__
+passwd_cancel_cb (Widget button, XtPointer client_data, XtPointer call_data)
+#else /* ! __STDC__ */
 passwd_cancel_cb (button, client_data, call_data)
      Widget button;
      XtPointer client_data, call_data;
+#endif /* ! __STDC__ */
 {
   passwd_state = pw_cancel;
 }
 
 static void
+#ifdef __STDC__
+passwd_done_cb (Widget button, XtPointer client_data, XtPointer call_data)
+#else /* ! __STDC__ */
 passwd_done_cb (button, client_data, call_data)
      Widget button;
      XtPointer client_data, call_data;
+#endif /* ! __STDC__ */
 {
   if (passwd_state != pw_read) return; /* already done */
+#ifdef NO_MOTIF
+  strncpy(typed_passwd, XawDialogGetValueString(passwd_form), PASSWDLEN);
+#endif /* NO_MOTIF */
   if (!strcmp ((char *) crypt (typed_passwd, user_passwd), user_passwd))
     passwd_state = pw_ok;
   /* do not allow root to have empty passwd */
@@ -211,9 +264,13 @@ passwd_done_cb (button, client_data, call_data)
    */
 
 static void 
+#ifdef __STDC__
+check_passwd_cb (Widget button, XtPointer client_data, XtPointer call_data)
+#else /* ! __STDC__ */
 check_passwd_cb (button, client_data, call_data)
      Widget button;
      XtPointer client_data, call_data;
+#endif /* ! __STDC__ */
 {
   XmTextVerifyCallbackStruct *vcb = (XmTextVerifyCallbackStruct *) call_data;
 
@@ -239,10 +296,10 @@ check_passwd_cb (button, client_data, call_data)
 
 #else /* !VERIFY_CALLBACK_WORKS */
 
-static void keypress();
-static void backspace();
-static void kill_line();
-static void done();
+static void keypress P((Widget w, XEvent *event, String *av, Cardinal *ac));
+static void backspace P((Widget w, XEvent *event, String *av, Cardinal *ac));
+static void kill_line P((Widget w, XEvent *event, String *av, Cardinal *ac));
+static void done P((Widget w, XEvent *event, String *av, Cardinal *ac));
 
 static XtActionsRec actions[] = {{"keypress",  keypress},
 				 {"backspace", backspace},
@@ -266,10 +323,14 @@ static char translations[] = "<Key>:keypress()";
 #endif
 
 static void
+#ifdef __STDC__
+text_field_set_string (Widget widget, char *text, int position)
+#else /* ! __STDC__ */
 text_field_set_string (widget, text, position)
      Widget widget;
      char *text;
      int position;
+#endif /* ! __STDC__ */
 {
 #ifdef NO_MOTIF
   XawTextBlock block;
@@ -287,11 +348,15 @@ text_field_set_string (widget, text, position)
 
 
 static void
+#ifdef __STDC__
+keypress (Widget w, XEvent *event, String *argv, Cardinal *argc)
+#else /* ! __STDC__ */
 keypress (w, event, argv, argc)
      Widget w;
      XEvent *event;
      String *argv;
      Cardinal *argc;
+#endif /* ! __STDC__ */
 {
   int i, j;
   char s [sizeof (typed_passwd)];
@@ -316,11 +381,15 @@ keypress (w, event, argv, argc)
 }
 
 static void
+#ifdef __STDC__
+backspace (Widget w, XEvent *event, String *argv, Cardinal *argc)
+#else /* ! __STDC__ */
 backspace (w, event, argv, argc)
      Widget w;
      XEvent *event;
      String *argv;
      Cardinal *argc;
+#endif /* ! __STDC__ */
 {
   char s [sizeof (typed_passwd)];
   int i = strlen (typed_passwd);
@@ -336,22 +405,30 @@ backspace (w, event, argv, argc)
 }
 
 static void
+#ifdef __STDC__
+kill_line (Widget w, XEvent *event, String *argv, Cardinal *argc)
+#else /* ! __STDC__ */
 kill_line (w, event, argv, argc)
      Widget w;
      XEvent *event;
      String *argv;
      Cardinal *argc;
+#endif /* ! __STDC__ */
 {
   memset (typed_passwd, 0, sizeof (typed_passwd));
   text_field_set_string (passwd_text, "", 0);
 }
 
 static void
+#ifdef __STDC__
+done (Widget w, XEvent *event, String *argv, Cardinal *argc)
+#else /* ! __STDC__ */
 done (w, event, argv, argc)
      Widget w;
      XEvent *event;
      String *argv;
      Cardinal *argc;
+#endif /* ! __STDC__ */
 {
   passwd_done_cb (w, 0, 0);
 }
@@ -359,18 +436,21 @@ done (w, event, argv, argc)
 #endif /* !VERIFY_CALLBACK_WORKS || NO_MOTIF */
 
 static void
+#ifdef __STDC__
+format_into_label (Widget widget, char *string)
+#else /* ! __STDC__ */
 format_into_label (widget, string)
      Widget widget;
      char *string;
+#endif /* ! __STDC__ */
 {
-  char *label;
+  char *label = 0;
   char buf [255];
   Arg av[10];
   int ac = 0;
 
 #ifdef NO_MOTIF
-  XtSetArg (av [ac], XtNlabel, &label); ac++;
-  XtGetValues (widget, av, ac);
+  XtVaGetValues (widget, XtNlabel, &label, 0);
 #else  /* Motif */
   XmString xm_label = 0;
   XmString new_xm_label;
@@ -385,7 +465,6 @@ format_into_label (widget, string)
     sprintf (buf, label, string);
 
   ac = 0;
-
 #ifdef NO_MOTIF
   XtSetArg (av [ac], XtNlabel, buf); ac++;
 #else  /* Motif */
@@ -400,14 +479,18 @@ format_into_label (widget, string)
   XtFree (label);
 }
 
-#if __STDC__
+#ifdef __STDC__
 extern void skull (Display *, Window, GC, GC, int, int, int, int);
 #endif
 
 static void
+#ifdef __STDC__
+roger (Widget button, XtPointer client_data, XtPointer call_data)
+#else /* ! __STDC__ */
 roger (button, client_data, call_data)
      Widget button;
      XtPointer client_data, call_data;
+#endif /* ! __STDC__ */
 {
   Display *dpy = XtDisplay (button);
   Screen *screen = XtScreen (button);
@@ -443,63 +526,131 @@ roger (button, client_data, call_data)
   XFreeGC (dpy, erase_gc);
 }
 
+static void
+#ifdef __STDC__
+make_passwd_dialog (Widget parent)
+#else /* ! __STDC__ */
+make_passwd_dialog (parent) Widget parent;
+#endif /* ! __STDC__ */
+{
+  char *username = 0;
+  Widget box, passwd_label2;
+
 #ifdef NO_MOTIF
 
-static void
-make_passwd_dialog (parent)
-     Widget parent;
-{
-  abort (); /* #### */
-}
+  passwd_dialog = 
+    XtVaCreatePopupShell("passwd_dialog", transientShellWidgetClass, parent,
+			 XtNtitle, NULL,
+			 XtNoverrideRedirect, TRUE,
+			 NULL);
+
+  box = XtVaCreateManagedWidget("box", formWidgetClass, passwd_dialog,
+			    XtNleft, XtChainLeft,
+			    XtNright, XtChainRight,
+			    XtNtop, XtChainTop,
+			    XtNbottom, XtChainBottom,
+			    NULL);
+
+  roger_label = XtVaCreateManagedWidget("roger", labelWidgetClass, box,
+					XtNlabel, "",
+					XtNleft, XtChainLeft,
+					XtNright, XtChainRight,
+					XtNtop, XtChainTop,
+					NULL);
+
+  passwd_label1 = XtVaCreateManagedWidget("label1", labelWidgetClass, box,
+					  XtNfromHoriz, roger_label,
+					  XtNright, XtChainRight,
+					  XtNtop, XtChainTop,
+					  NULL);
+  passwd_label2 = XtVaCreateManagedWidget("label2", labelWidgetClass, box,
+					  XtNfromHoriz, roger_label,
+					  XtNright, XtChainRight,
+					  XtNfromVert, passwd_label1,
+					  NULL);
+  passwd_label3 = XtVaCreateManagedWidget("label3", labelWidgetClass, box,
+					  XtNfromHoriz, roger_label,
+					  XtNright, XtChainRight,
+					  XtNfromVert, passwd_label2,
+					  NULL);
+  
+  passwd_form =
+    XtVaCreateManagedWidget("passwd_form", dialogWidgetClass, box,
+			    XtNvalue, typed_passwd,
+			    XtNfromHoriz, roger_label,
+			    XtNright, XtChainRight,
+			    XtNfromVert, passwd_label3,
+			    NULL);
+
+  XawDialogAddButton(passwd_form,"ok", passwd_done_cb, 0);
+  XawDialogAddButton(passwd_form,"cancel", passwd_cancel_cb, 0);
+  passwd_done = XtNameToWidget(passwd_form,"ok");
+  passwd_text = XtNameToWidget(passwd_form,"value");
+
+  XtAppAddActions(XtWidgetToApplicationContext(passwd_text), 
+		  actionsList, XtNumber(actionsList));
+  XtOverrideTranslations(passwd_text, XtParseTranslationTable(Translations));
 
 #else  /* Motif */
 
-static void
-make_passwd_dialog (parent)
-     Widget parent;
-{
-  struct passwd *pw;
   create_passwd_dialog (parent);
 
   XtAddCallback (passwd_done, XmNactivateCallback, passwd_done_cb, 0);
   XtAddCallback (passwd_cancel, XmNactivateCallback, passwd_cancel_cb, 0);
   XtAddCallback (roger_label, XmNexposeCallback, roger, 0);
 
-#ifdef VERIFY_CALLBACK_WORKS
+# ifdef VERIFY_CALLBACK_WORKS
   XtAddCallback (passwd_text, XmNmodifyVerifyCallback, check_passwd_cb, 0);
   XtAddCallback (passwd_text, XmNactivateCallback, check_passwd_cb, 0);
-#else
+# else
   XtAddCallback (passwd_text, XmNactivateCallback, passwd_done_cb, 0);
   XtOverrideTranslations (passwd_text, XtParseTranslationTable (translations));
-#endif
+# endif
 
-#if !defined(NO_MOTIF) && (XmVersion >= 1002)
+# if !defined(NO_MOTIF) && (XmVersion >= 1002)
   /* The focus stuff changed around; this didn't exist in 1.1.5. */
   XtVaSetValues (passwd_form, XmNinitialFocus, passwd_text, 0);
-#endif
+# endif
 
   /* Another random thing necessary in 1.2.1 but not 1.1.5... */
   XtVaSetValues (roger_label, XmNborderWidth, 2, 0);
 
-  pw = getpwuid (getuid ());
-  format_into_label (passwd_label3, (pw->pw_name ? pw->pw_name : "???"));
-  format_into_label (passwd_label1, screensaver_version);
-}
-
 #endif /* Motif */
 
-extern void idle_timer ();
+#ifndef VMS
+  {
+    struct passwd *pw = getpwuid (getuid ());
+    username = pw->pw_name;
+  }
+#else  /* VMS -- from "R.S.Niranjan" <U00C782%BRKVC1@navistar.com> who says
+	         that on OpenVMS 6.1, using `struct passwd' crashes... */
+  username = getenv("USER");
+#endif /* VMS */
+
+  format_into_label (passwd_label1, screensaver_version);
+  format_into_label (passwd_label3, (username ? username : "???"));
+}
+
+extern void idle_timer P((void *, XtPointer));
 
 static int passwd_idle_timer_tick;
 static XtIntervalId id;
 
 static void
+#ifdef __STDC__
+passwd_idle_timer (void *junk1, XtPointer junk2)
+#else /* ! __STDC__ */
 passwd_idle_timer (junk1, junk2)
      void *junk1;
      XtPointer junk2;
+#endif /* ! __STDC__ */
 {
   Display *dpy = XtDisplay (passwd_form);
+#ifdef NO_MOTIF
+  Window window = XtWindow (passwd_form);
+#else  /* MOTIF */
   Window window = XtWindow (XtParent(passwd_done));
+#endif /* MOTIF */
   static Dimension x, y, d, s, ss;
   static GC gc = 0;
   int max = passwd_timeout / 1000;
@@ -508,9 +659,8 @@ passwd_idle_timer (junk1, junk2)
 
   if (passwd_idle_timer_tick == max)  /* first time */
     {
-      Arg av [10];
-      int ac = 0;
       XGCValues gcv;
+#ifndef NO_MOTIF
       unsigned long fg, bg, ts, bs;
       Dimension w = 0, h = 0;
       XtVaGetValues(XtParent(passwd_done),
@@ -538,6 +688,25 @@ passwd_idle_timer (junk1, junk2)
       x -= d/2;
       y += d/2;
 
+#else  /* NO_MOTIF */
+
+      Arg av [100];
+      int ac = 0;
+      unsigned long fg, bg;
+      XtSetArg (av [ac], XtNheight, &d); ac++;
+      XtGetValues (passwd_done, av, ac);
+      ac = 0;
+      XtSetArg (av [ac], XtNwidth, &x); ac++;
+      XtSetArg (av [ac], XtNheight, &y); ac++;
+      XtSetArg (av [ac], XtNforeground, &fg); ac++;
+      XtSetArg (av [ac], XtNbackground, &bg); ac++;
+      XtGetValues (passwd_form, av, ac);
+      x -= d;
+      y -= d;
+      d -= 4;
+
+#endif /* NO_MOTIF */
+
       gcv.foreground = fg;
       if (gc) XFreeGC (dpy, gc);
       gc = XCreateGC (dpy, window, GCForeground, &gcv);
@@ -559,12 +728,94 @@ passwd_idle_timer (junk1, junk2)
     }
 }
 
-extern void pop_up_dialog_box ();
+extern void pop_up_dialog_box P((Widget, Widget, int));
 extern int BadWindow_ehandler ();
 
+#ifdef NO_MOTIF
+/* mostly copied from demo.c */
+static void
+#ifdef __STDC__
+focus_fuckus (Widget dialog)
+#else /* !__STDC__ */
+focus_fuckus (dialog)
+     Widget dialog;
+#endif /* !__STDC__ */
+{
+  XSetInputFocus (XtDisplay (dialog), XtWindow (dialog),
+		  RevertToParent, CurrentTime);
+}
+
+void
+#ifdef __STDC__
+pop_up_athena_dialog_box (Widget parent, Widget focus, Widget dialog,
+			  Widget form, int where)
+#else  /* !__STDC__ */
+pop_up_athena_dialog_box (parent, focus, dialog, form, where)
+     Widget parent, focus, dialog, form;
+     int where;
+#endif /* !__STDC__ */
+{
+  /* modified from demo.c */
+  /* I'm sure this is the wrong way to pop up a dialog box, but I can't
+     figure out how else to do it.
+
+     It's important that the screensaver dialogs not get decorated or
+     otherwise reparented by the window manager, because they need to be
+     children of the *real* root window, not the WM's virtual root, in
+     order for us to guarentee that they are visible above the screensaver
+     window itself.
+   */
+  Arg av [100];
+  int ac = 0;
+  Dimension sw, sh, x, y, w, h;
+
+  XtRealizeWidget(dialog);
+  sw = WidthOfScreen (XtScreen (dialog));
+  sh = HeightOfScreen (XtScreen (dialog));
+  ac = 0;
+  XtSetArg (av [ac], XtNwidth, &w); ac++;
+  XtSetArg (av [ac], XtNheight, &h); ac++;
+  XtGetValues (form, av, ac);
+  switch (where)
+    {
+    case 0:	/* center it in the top-right quadrant */
+      x = (sw/2 + w) / 2 + (sw/2) - w;
+      y = (sh/2 + h) / 2 - h;
+      break;
+    case 1:	/* center it in the bottom-right quadrant */
+      x = (sw/2 + w) / 2 + (sw/2) - w;
+      y = (sh/2 + h) / 2 + (sh/2) - h;
+      break;
+    case 2:	/* center it on the screen */
+      x = (sw + w) / 2 - w;
+      y = (sh + h) / 2 - h;
+      break;
+    default:
+      abort ();
+    }
+  if (x + w > sw) x = sw - w;
+  if (y + h > sh) y = sh - h;
+  ac = 0;
+  XtVaSetValues(dialog,
+		XtNx, x,
+		XtNy, y,
+		NULL);
+  XtVaSetValues(form,
+		XtNx, x,
+		XtNy, y,
+		NULL);
+  XtPopup(dialog,XtGrabNone);
+  focus_fuckus(focus);
+}
+#endif /* NO_MOTIF */
+
+
 static Bool
-pop_passwd_dialog (parent)
-     Widget parent;
+#ifdef __STDC__
+pop_passwd_dialog (Widget parent)
+#else /* ! __STDC__ */
+pop_passwd_dialog (parent) Widget parent;
+#endif /* ! __STDC__ */
 {
   Display *dpy = XtDisplay (passwd_dialog);
   Window focus;
@@ -574,7 +825,7 @@ pop_passwd_dialog (parent)
   text_field_set_string (passwd_text, "", 0);
 
   XGetInputFocus (dpy, &focus, &revert_to);
-#ifndef DESTROY_WORKS
+#if !defined(NO_MOTIF) && !defined(DESTROY_WORKS)
   /* This fucker blows up if we destroy the widget.  I can't figure
      out why.  The second destroy phase dereferences freed memory...
      So we just keep it around; but unrealizing or unmanaging it
@@ -584,8 +835,13 @@ pop_passwd_dialog (parent)
     XMapRaised (dpy, XtWindow (passwd_dialog));
 #endif
 
+#ifdef NO_MOTIF
+  pop_up_athena_dialog_box (parent, passwd_text, passwd_dialog,
+			    passwd_form, 2);
+#else
   pop_up_dialog_box (passwd_dialog, passwd_form, 2);
   XtManageChild (passwd_form);
+#endif
 
 #if !defined(NO_MOTIF) && (XmVersion < 1002)
   /* The focus stuff changed around; this causes problems in 1.2.1
@@ -596,6 +852,10 @@ pop_passwd_dialog (parent)
   passwd_idle_timer_tick = passwd_timeout / 1000;
   id = XtAppAddTimeOut (app, 1000, (XtTimerCallbackProc) passwd_idle_timer, 0);
 
+#ifdef NO_MOTIF
+  if (roger_label)
+    roger(roger_label, 0, 0);
+#endif /* NO_MOTIF */
 
   XGrabServer (dpy);				/* ############ DANGER! */
 
@@ -673,8 +933,11 @@ pop_passwd_dialog (parent)
 }
 
 Bool
-unlock_p (parent)
-     Widget parent;
+#ifdef __STDC__
+unlock_p (Widget parent)
+#else /* ! __STDC__ */
+unlock_p (parent) Widget parent;
+#endif /* ! __STDC__ */
 {
   static Bool initted = False;
   if (! initted)

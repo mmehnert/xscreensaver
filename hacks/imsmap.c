@@ -39,9 +39,13 @@ static int xmax, ymax;
 static int iterations;
 
 static void
+#ifdef __STDC__
+initwin (Display *dsp, Window win)
+#else /* ! __STDC__ */
 initwin (dsp, win)
      Display *dsp;
      Window win;
+#endif /* ! __STDC__ */
 {
   int fg_h, bg_h;
   double fg_s, fg_v, bg_s, bg_v;
@@ -220,19 +224,26 @@ initwin (dsp, win)
 	 ((int) (height)) >= npixels ? npixels - 3 : ((int) (height)))
 
 static unsigned int
+#ifdef __STDC__
+set (unsigned int l,
+     unsigned int c,
+     unsigned int size,
+     int height)
+#else /* ! __STDC__ */
 set (l, c, size, height)
      unsigned int l, c, size;
      int height;
+#endif /* ! __STDC__ */
 {
   int rang = 1 << (NSTEPS - size);
   height = height + (random () % rang) - rang / 2;
+  height = HEIGHT_TO_PIXEL(height);
   CELL (l, c) = height;
-
-  return pixels [HEIGHT_TO_PIXEL (height)];
+  return pixels [height];
 }
 
 static void
-floyd_steinberg ()
+floyd_steinberg P((void))
 {
   int x, y, err;
 
@@ -272,9 +283,13 @@ floyd_steinberg ()
 }
 
 static void
+#ifdef __STDC__
+draw (int x, int y, unsigned long pixel, int grid_size)
+#else /* ! __STDC__ */
 draw (x, y, pixel, grid_size)	/* not called in mono mode */
      int x, y, grid_size;
      unsigned long pixel;
+#endif /* ! __STDC__ */
 {
   static unsigned int last_pixel, last_valid = 0;
   if (! (last_valid && pixel == last_pixel))
@@ -288,7 +303,7 @@ draw (x, y, pixel, grid_size)	/* not called in mono mode */
 
 
 static void 
-drawmap ()
+drawmap P((void))
 {
   unsigned int x, y, i, step, nextStep, x1, x2, y1, y2;
   unsigned int pixel, qpixels [4];
@@ -364,8 +379,11 @@ drawmap ()
 }
 
 static void
-cycle (dpy)
-     Display *dpy;
+#ifdef __STDC__
+cycle (Display *dpy)
+#else /* ! __STDC__ */
+cycle (dpy) Display *dpy;
+#endif /* ! __STDC__ */
 {
   XColor *colors = (XColor *) malloc (npixels * sizeof (XColor));
   time_t stop;
@@ -416,9 +434,11 @@ int options_size = (sizeof (options) / sizeof (options[0]));
 
 
 void
-screenhack (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+screenhack (Display *dpy, Window window)
+#else /* ! __STDC__ */
+screenhack (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
     disp = dpy;
     wind = window;

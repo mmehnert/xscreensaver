@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1992-1995 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992-1995, 1996
+ *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -53,8 +54,8 @@
 #ifndef _SCREENHACK_H_
 #define _SCREENHACK_H_
 
-#if __STDC__
-#include <stdlib.h>
+#ifdef __STDC__
+# include <stdlib.h>
 #endif
 
 #ifdef __hpux
@@ -81,7 +82,7 @@ extern char *defaults [];
 
 
 #undef P
-#if __STDC__
+#ifdef __STDC__
 # define P(x)x
 #else
 # define P(x)()
@@ -135,5 +136,10 @@ static double _frand_tmp_;
 
 #endif /* not GCC2 */
 
-#undef P
+
+/* M_PI ought to have been defined in math.h, but... */
+#ifndef M_PI
+# define M_PI 3.1415926535
+#endif
+
 #endif /* _SCREENHACK_H_ */

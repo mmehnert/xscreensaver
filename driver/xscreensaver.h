@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1993-1996 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1993-1997 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -9,31 +9,20 @@
  * implied warranty.
  */
 
-#if __STDC__
+#ifdef __STDC__
 # include <stdlib.h>
 # include <unistd.h>
 #endif
 
 #include <stdio.h>
 
-#if __STDC__
+#ifdef __STDC__
 # define P(x)x
 #else
 # define P(x)()
 # ifndef const
 #  define const /**/
 # endif
-#endif
-
-#ifdef NO_MOTIF
-# define NO_DEMO_MODE
-
-  /* #### If anyone ever finishes the Athena locking code, remove this.
-     Until then, Locking requires Motif. */
-# ifndef NO_LOCKING
-#  define NO_LOCKING
-# endif
-
 #endif
 
 extern char *progname, *progclass;

@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1993, 1995 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1993, 1995, 1996
+ *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -46,6 +47,7 @@
  * 06-Jun-91: Written. (received from Scott Graves, spot@cs.cmu.edu).
  */
 
+#include <math.h>
 #include "screenhack.h"
 
 #define POINT_BUFFER_SIZE 10
@@ -70,8 +72,11 @@ static int delay, delay2;
 static int width, height;
 
 static short
-halfrandom (mv)
-     int mv;
+#ifdef __STDC__
+halfrandom (int mv)
+#else /* ! __STDC__ */
+halfrandom (mv) int mv;
+#endif /* ! __STDC__ */
 {
   static short lasthalf = 0;
   unsigned long r;
@@ -91,9 +96,11 @@ halfrandom (mv)
 
 
 static void
-init_flame (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+init_flame (Display *dpy, Window window)
+#else /* ! __STDC__ */
+init_flame (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   XGCValues gcv;
   XWindowAttributes xgwa;
@@ -150,11 +157,15 @@ init_flame (dpy, window)
 }
 
 static int
+#ifdef __STDC__
+recurse (double x, double y, int l, Display *dpy, Window win)
+#else /* ! __STDC__ */
 recurse (x, y, l, dpy, win)
      register double x, y;
      register int l;
      Display *dpy;
      Window win;
+#endif /* ! __STDC__ */
 {
   int xp, yp, i;
   double nx, ny;
@@ -199,9 +210,11 @@ recurse (x, y, l, dpy, win)
 
 
 static void
-flame (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+flame (Display *dpy, Window window)
+#else /* ! __STDC__ */
+flame (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   int i, j, k;
   static int alt = 0;
@@ -287,9 +300,11 @@ XrmOptionDescRec options [] = {
 int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
-screenhack (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+screenhack (Display *dpy, Window window)
+#else /* ! __STDC__ */
+screenhack (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   init_flame (dpy, window);
   while (1)

@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1992, 1995 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992, 1995, 1996
+ *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -80,9 +81,11 @@ static hopstruct hop;
 static XPoint *pointBuffer = 0;	/* pointer for XDrawPoints */
 
 static void
-inithop(dsp,win)
-     Display *dsp;
-    Window      win;
+#ifdef __STDC__
+inithop (Display *dsp, Window win)
+#else /* ! __STDC__ */
+inithop (dsp, win) Display *dsp; Window win;
+#endif /* ! __STDC__ */
 {
     double      range;
     XWindowAttributes xgwa;
@@ -153,9 +156,11 @@ inithop(dsp,win)
 
 
 static void
-drawhop(dsp,win)
-     Display *dsp;
-    Window      win;
+#ifdef __STDC__
+drawhop(Display *dsp, Window win)
+#else /* ! __STDC__ */
+drawhop(dsp, win) Display *dsp; Window win;
+#endif /* ! __STDC__ */
 {
     double      oldj;
     int         k = batchcount;
@@ -222,9 +227,11 @@ XrmOptionDescRec options [] = {
 int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
-screenhack (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+screenhack (Display *dpy, Window window)
+#else /* ! __STDC__ */
+screenhack (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   inithop (dpy, window);
   while (1)

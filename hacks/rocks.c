@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1992, 1995 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992, 1995, 1996
+ *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -53,13 +54,15 @@ static int nrocks;
 static Pixmap pixmaps [MAX_WIDTH];
 static int delay;
 
-static void rock_reset(), rock_tick(), rock_compute(), rock_draw();
-static void init_pixmaps(), init_rocks(), tick_rocks(), rocks_once();
-
+static void rock_compute P((struct rock *));
+static void rock_draw P((struct rock *, Bool draw_p));
 
 static void
-rock_reset (rock)
-     struct rock *rock;
+#ifdef __STDC__
+rock_reset (struct rock *rock)
+#else /* ! __STDC__ */
+rock_reset (rock) struct rock *rock;
+#endif /* ! __STDC__ */
 {
   rock->real_size = MAX_WIDTH;
   rock->r = (SIN_RESOLUTION * 0.7) + (random () % (30 * SIN_RESOLUTION));
@@ -70,9 +73,11 @@ rock_reset (rock)
 }
 
 static void
-rock_tick (rock, d)
-     struct rock *rock;
-     int d;
+#ifdef __STDC__
+rock_tick (struct rock *rock, int d)
+#else /* ! __STDC__ */
+rock_tick (rock, d) struct rock *rock; int d;
+#endif /* ! __STDC__ */
 {
   if (rock->depth > 0)
     {
@@ -97,8 +102,11 @@ rock_tick (rock, d)
 }
 
 static void
-rock_compute (rock)
-     struct rock *rock;
+#ifdef __STDC__
+rock_compute (struct rock *rock)
+#else /* ! __STDC__ */
+rock_compute (rock) struct rock *rock;
+#endif /* ! __STDC__ */
 {
   double factor = depths [rock->depth];
   rock->size = (int) ((rock->real_size * factor) + 0.5);
@@ -139,9 +147,11 @@ rock_draw (rock, draw_p)
 
 
 static void
-init_pixmaps (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+init_pixmaps (Display *dpy, Window window)
+#else /* ! __STDC__ */
+init_pixmaps (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   int i;
   XGCValues gcv;
@@ -182,9 +192,11 @@ init_pixmaps (dpy, window)
 
 
 static void
-init_rocks (d, w)
-     Display *d;
-     Window w;
+#ifdef __STDC__
+init_rocks (Display *d, Window w)
+#else /* ! __STDC__ */
+init_rocks (d, w) Display *d; Window w;
+#endif /* ! __STDC__ */
 {
   int i;
   XGCValues gcv;
@@ -229,8 +241,11 @@ init_rocks (d, w)
 
 
 static void
-tick_rocks (d)
-     int d;
+#ifdef __STDC__
+tick_rocks (int d)
+#else /* ! __STDC__ */
+tick_rocks (d) int d;
+#endif /* ! __STDC__ */
 {
   int i;
   for (i = 0; i < nrocks; i++)
@@ -238,7 +253,7 @@ tick_rocks (d)
 }
 
 static void
-rocks_once ()
+rocks_once P((void))
 {
   static int current_delta = 0;	/* observer Z rotation */
   static int window_tick = 50;
@@ -296,9 +311,11 @@ XrmOptionDescRec options [] = {
 int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
-screenhack (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+screenhack (Display *dpy, Window window)
+#else /* ! __STDC__ */
+screenhack (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   init_rocks (dpy, window);
   while (1)

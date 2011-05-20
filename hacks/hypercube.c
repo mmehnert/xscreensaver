@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1992, 1995 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992, 1995, 1996
+ *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -33,9 +34,13 @@ struct point_state {
 };
 
 static void
+#ifdef __STDC__
+move_line (struct point_state *state0, struct point_state *state1, GC gc)
+#else /* ! __STDC__ */
 move_line (state0, state1, gc)
      struct point_state *state0, *state1;
      GC gc;
+#endif /* ! __STDC__ */
 {
   if (state0->same_p && state1->same_p)
     return;
@@ -58,8 +63,11 @@ move_line (state0, state1, gc)
 }
 
 static void
-hyper (xy, xz, yz, xw, yw, zw)
-     double xy, xz, yz, xw, yw, zw;
+#ifdef __STDC__
+hyper (double xy, double xz, double yz, double xw, double yw, double zw)
+#else /* ! __STDC__ */
+hyper (xy, xz, yz, xw, yw, zw) double xy, xz, yz, xw, yw, zw;
+#endif /* ! __STDC__ */
 {
   double cos_xy = cos (xy), sin_xy = sin (xy);
   double cos_xz = cos (xz), sin_xz = sin (xz);
@@ -174,7 +182,7 @@ hyper (xy, xz, yz, xw, yw, zw)
     mixing an ANSI compiler with a non-ANSI preprocessor, or vice versa.
     Regardless, your system is broken; it's not a bug in this program.
   */
-#if __STDC__
+#if defined(__STDC__) || defined(__ANSI_CPP__)
 # define rotate(name,dim0,dim1,cos,sin) \
       _tmp0_ = ((name##dim0 * cos) + (name##dim1 * sin)); \
       _tmp1_ = ((name##dim1 * cos) - (name##dim0 * sin)); \
@@ -269,9 +277,11 @@ int options_size = (sizeof (options) / sizeof (options[0]));
 
 
 void
-screenhack (d, w)
-     Display *d;
-     Window w;
+#ifdef __STDC__
+screenhack (Display *d, Window w)
+#else /* ! __STDC__ */
+screenhack (d, w) Display *d; Window w;
+#endif /* ! __STDC__ */
 {
   XGCValues gcv;
   XWindowAttributes xgwa;

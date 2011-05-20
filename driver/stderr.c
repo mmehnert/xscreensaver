@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1991-1995 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1991-1995, 1996
+ *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -12,9 +13,9 @@
 /* stderr hackery - Why Unix Sucks, reason number 32767.
  */
 
-#if __STDC__
-#include <stdlib.h>
-#include <unistd.h>
+#ifdef __STDC__
+# include <stdlib.h>
+# include <unistd.h>
 #endif
 
 #include <stdio.h>
@@ -46,14 +47,17 @@ static int text_x = 0;
 static int text_y = 0;
 
 void
-reset_stderr ()
+reset_stderr P((void))
 {
   text_x = text_y = 0;
 }
 
 static void
-print_stderr (string)
-     char *string;
+#ifdef __STDC__
+print_stderr (char *string)
+#else /* ! __STDC__ */
+print_stderr (string) char *string;
+#endif /* ! __STDC__ */
 {
   int h_border = 20;
   int v_border = 20;
@@ -136,9 +140,13 @@ print_stderr (string)
 
 
 static void
+#ifdef __STDC__
+stderr_popup_timer_fn (XtPointer closure, XtIntervalId *id)
+#else /* ! __STDC__ */
 stderr_popup_timer_fn (closure, id)
      XtPointer closure;
      XtIntervalId *id;
+#endif /* ! __STDC__ */
 {
   char *s = stderr_buffer;
   if (*s)
@@ -159,10 +167,14 @@ stderr_popup_timer_fn (closure, id)
 
 
 static void
+#ifdef __STDC__
+stderr_callback (XtPointer closure, int *fd, XtIntervalId *id)
+#else /* ! __STDC__ */
 stderr_callback (closure, fd, id)
      XtPointer closure;
      int *fd;
      XtIntervalId *id;
+#endif /* ! __STDC__ */
 {
   char *s;
   int left;
@@ -221,7 +233,7 @@ stderr_callback (closure, fd, id)
 }
 
 void
-initialize_stderr ()
+initialize_stderr P((void))
 {
   static Boolean done = False;
   int fds [2];

@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992, 1996 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -16,7 +16,7 @@
 #include "screenhack.h"
 #include <stdio.h>
 
-#if __STDC__
+#ifdef __STDC__
 extern FILE *popen (const char *, const char *);
 extern int pclose (FILE *);
 #endif
@@ -30,13 +30,17 @@ static Display *dpy;
 static Window window;
 static int Width, Height;
 static GC fg_gc, bg_gc, text_fg_gc, text_bg_gc;
-static char *words, *get_words();
+static char *words;
+static char *get_words P((void));
 static int x, y;
 static XFontStruct *font;
 static char *def_words = "I'm out running around.";
-static void init_images(), walk(), talk();
-static int think();
-static unsigned long interval, look(); 
+static void walk P((int dir));
+static void talk P((int erase));
+static void talk_1 P((void));
+static int think P((void));
+static unsigned long interval;
+static unsigned long look P((void)); 
 static Pixmap left0, left1, right0, right1;
 static Pixmap left_front, right_front, front, down;
 
@@ -52,7 +56,7 @@ static int getwordsfrom;
 #define GET_PASSWD 2
 static int state;	/* indicates states: walking or getting passwd */
 
-static void (*next_fn) ();
+static void (*next_fn) P((void));
 
 #include "noses/nose.0.left"
 #include "noses/nose.1.left"
@@ -64,7 +68,7 @@ static void (*next_fn) ();
 #include "noses/nose.down"
 
 static void
-init_images ()
+init_images P((void))
 {
   static Pixmap *images[] = {
     &left0, &left1, &right0, &right1,
@@ -96,7 +100,7 @@ init_images ()
 #define Y_INCR 2
 
 static void
-move()
+move P((void))
 {
     static int      length,
                     dir;
@@ -171,8 +175,11 @@ move()
 }
 
 static void
-walk(dir)
-    register int    dir;
+#ifdef __STDC__
+walk(int dir)
+#else /* ! __STDC__ */
+walk(dir) int dir;
+#endif /* ! __STDC__ */
 {
     register int    incr = 0;
     static int      lastdir;
@@ -245,14 +252,14 @@ walk(dir)
 }
 
 static int
-think()
+think P((void))
 {
     if (random() & 1)
 	walk(FRONT);
     if (random() & 1)
     {
 	if (getwordsfrom == FROM_PROGRAM)
-	    words = get_words(0, (char **) 0);
+	    words = get_words();
 	return 1;
     }
     return 0;
@@ -261,8 +268,11 @@ think()
 #define MAXLINES 40
 
 static void
-talk(force_erase)
-    int             force_erase;
+#ifdef __STDC__
+talk(int force_erase)
+#else /* ! __STDC__ */
+talk(force_erase) int force_erase;
+#endif /* ! __STDC__ */
 {
     int             width = 0,
                     height,
@@ -375,11 +385,17 @@ talk(force_erase)
     }
     interval = (total / 15) * 1000;
     if (interval < 2000) interval = 2000;
-    next_fn = talk;
+    next_fn = talk_1;
 }
 
+static void talk_1 P((void)) 
+{
+  talk(0);
+}
+
+
 static unsigned long
-look()
+look P((void))
 {
     if (random() % 3)
     {
@@ -404,7 +420,7 @@ look()
 
 
 static void
-init_words()
+init_words P((void))
 {
   char *mode = get_string_resource ("mode", "Mode");
 
@@ -452,7 +468,7 @@ init_words()
 static int first_time = 1;
 
 static char *
-get_words()
+get_words P((void))
 {
     FILE           *pp;
     static char     buf[BUFSIZ];
@@ -565,9 +581,11 @@ int options_size = (sizeof (options) / sizeof (options[0]));
 
 
 static void
-noseguy_init (d, w)
-     Display *d;
-     Window w;
+#ifdef __STDC__
+noseguy_init (Display *d, Window w)
+#else /* ! __STDC__ */
+noseguy_init (d, w) Display *d; Window w;
+#endif /* ! __STDC__ */
 {
   Pixel fg, bg, text_fg, text_bg;
   XWindowAttributes xgwa;
@@ -638,15 +656,17 @@ noseguy_init (d, w)
 }
      
 void
-screenhack (d, w)
-     Display *d;
-     Window w;
+#ifdef __STDC__
+screenhack (Display *d, Window w)
+#else /* ! __STDC__ */
+screenhack (d, w) Display *d; Window w;
+#endif /* ! __STDC__ */
 {
   noseguy_init (d, w);
   next_fn = move;
   while (1)
     {
-      next_fn (0);
+      next_fn();
       XSync (dpy, True);
       usleep (interval * 1000);
     }

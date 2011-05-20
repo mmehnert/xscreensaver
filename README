@@ -59,6 +59,9 @@ window, which are pointed at by the screensaver's default resource settings.
 		  so that it works with xscreensaver.
    lmorph	- morphing line drawings.
    bubbles	- condensation forms on your monitor, then pops.
+   deco		- Generates Brady-Bunch-era wall paneling.
+   moire	- Circular interference patterns.
+   kaleidescope	- Groovy, man.
 
 All of these will pop up their own window unless given that -root option.
 See their man pages for more details.
@@ -72,7 +75,6 @@ Other reasonable things to use as screensavers, if you have them, are
   ico -r -p8 -faces -sleep 1	- it's dull, but it's there
   xv -root file.gif -quit	- they don't all have to animate!
   xsplinefun			- bouncing splines
-  kaleid -root			- qix-like kaleidescope patterns
   xfishtank -c black -d -r 1	- fish (use version 2.0 or later)
   xtacy -root			- various eye candy
 
@@ -86,6 +88,11 @@ also get it from my web page at http://www.netscape.com/people/jwz/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 1.27:	Added `deco', `moire', and `kaleidescope' hacks.
+			Merged in support for non-Motif locking and demo mode.
+			Made `blitspin' and `bubbles' work in TrueColor.
+			Fixed a stupid bug I introduced in `imsmap'.
+			Added `poly' and `gravity' options to `qix'.
 Changes since 1.26:	Added support for SGI SCREEN_SAVER extension.
 			Made `fade' and `unfade' work on 8-bit SGIs.
 			Made the dialog boxes more Motify.

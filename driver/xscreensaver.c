@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1991-1996 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1991-1997 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -118,9 +118,9 @@
  *       
  * ======================================================================== */
 
-#if __STDC__
-#include <stdlib.h>
-#include <unistd.h>
+#ifdef __STDC__
+# include <stdlib.h>
+# include <unistd.h>
 #endif
 
 #include <stdio.h>
@@ -236,11 +236,6 @@ extern Atom XA_SCREENSAVER_VERSION, XA_SCREENSAVER_ID;
 static Atom XA_SCREENSAVER;
 static Atom XA_ACTIVATE, XA_DEACTIVATE, XA_CYCLE, XA_NEXT, XA_PREV;
 static Atom XA_EXIT, XA_RESTART, XA_DEMO, XA_LOCK;
-
-#ifdef NO_MOTIF /* kludge */
-Bool demo_mode_p = 0;
-Bool dbox_up_p = 0;
-#endif
 
 
 #ifdef NO_DEMO_MODE
@@ -528,16 +523,20 @@ extern void hack_uid_warn P((void));
 
 #ifndef NO_LOCKING
 extern Bool unlock_p P((Widget));
-extern Bool lock_init P((void));
+extern Bool lock_init P((int argc, char **argv));
 #endif
 
 static void initialize P((int argc, char **argv));
 static void main_loop P((void));
 
 void
+#ifdef __STDC__
+main (int argc, char **argv)
+#else /* ! __STDC__ */
 main (argc, argv)
      int argc;
      char **argv;
+#endif /* ! __STDC__ */
 {
   initialize (argc, argv);
   main_loop ();
@@ -545,9 +544,11 @@ main (argc, argv)
 
 
 static int
-saver_ehandler (dpy, error)
-     Display *dpy;
-     XErrorEvent *error;
+#ifdef __STDC__
+saver_ehandler (Display *dpy, XErrorEvent *error)
+#else /* ! __STDC__ */
+saver_ehandler (dpy, error) Display *dpy; XErrorEvent *error;
+#endif /* ! __STDC__ */
 {
   fprintf (real_stderr, "\nX error in %s:\n", progname);
   if (XmuPrintDefaultErrorMessage (dpy, error, real_stderr))
@@ -558,7 +559,7 @@ saver_ehandler (dpy, error)
 }
 
 static void
-#if __STDC__
+#ifdef __STDC__
 initialize_connection (int argc, char **argv)
 #else
 initialize_connection (argc, argv)
@@ -604,15 +605,17 @@ initialize_connection (argc, argv)
 #ifdef HAVE_MIT_SAVER_EXTENSION
 
 static int
-ignore_all_errors_ehandler (dpy, error)
-     Display *dpy;
-     XErrorEvent *error;
+#ifdef __STDC__
+ignore_all_errors_ehandler (Display *dpy, XErrorEvent *error)
+#else /* ! __STDC__ */
+ignore_all_errors_ehandler (dpy, error) Display *dpy; XErrorEvent *error;
+#endif /* ! __STDC__ */
 {
   return 0;
 }
 
 static void
-init_mit_saver_extension ()
+init_mit_saver_extension P((void))
 {
   XID kill_id;
   Atom kill_type;
@@ -644,7 +647,7 @@ init_mit_saver_extension ()
 #ifdef HAVE_SGI_SAVER_EXTENSION
 
 static void
-init_sgi_saver_extension ()
+init_sgi_saver_extension P((void))
 {
   if (! XScreenSaverEnable (dpy, XScreenNumberOfScreen(screen)))
     {
@@ -662,9 +665,11 @@ init_sgi_saver_extension ()
 extern void init_sigchld P((void));
 
 static void
-initialize (argc, argv)
-     int argc;
-     char **argv;
+#ifdef __STDC__
+initialize (int argc, char **argv)
+#else /* ! __STDC__ */
+initialize (argc, argv) int argc; char **argv;
+#endif /* ! __STDC__ */
 {
   Bool initial_demo_mode_p = False;
   screensaver_version = (char *) malloc (5);
@@ -682,7 +687,7 @@ initialize (argc, argv)
   set_auth_parameters(argc, argv);
 #endif
 
-  if (! lock_init ())	/* before hack_uid() for proper permissions */
+  if (! lock_init (argc, argv))	/* before hack_uid() for proper permissions */
     {
       locking_disabled_p = True;
       nolock_reason = "error getting password";
@@ -871,7 +876,7 @@ initialize (argc, argv)
 extern void suspend_screenhack P((Bool suspend_p));
 
 static void
-main_loop ()
+main_loop P((void))
 {
   while (1)
     {
@@ -968,9 +973,11 @@ main_loop ()
 
 
 Bool
-handle_clientmessage (event, until_idle_p)
-     XEvent *event;
-     Bool until_idle_p;
+#ifdef __STDC__
+handle_clientmessage (XEvent *event, Bool until_idle_p)
+#else /* ! __STDC__ */
+handle_clientmessage (event, until_idle_p) XEvent *event; Bool until_idle_p;
+#endif /* ! __STDC__ */
 {
   Atom type = 0;
   if (event->xclient.message_type != XA_SCREENSAVER)

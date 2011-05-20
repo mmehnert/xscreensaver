@@ -9,7 +9,7 @@
  * implied warranty.
  */
 
-#if __STDC__
+#ifdef __STDC__
 #include <stdlib.h>
 #include <string.h>
 #endif
@@ -24,7 +24,7 @@ extern char *progname;
 extern char *progclass;
 extern XrmDatabase db;
 
-#if __STDC__
+#ifdef __STDC__
 char *get_string_resource (char *res_name, char *res_class);
 int parse_time (char *string, Bool seconds_default_p, Bool silent_p);
 static unsigned int get_time_resource (char *res_name, char *res_class,

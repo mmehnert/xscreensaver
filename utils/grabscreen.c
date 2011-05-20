@@ -16,9 +16,9 @@
    breaks down...
  */
 
-#if __STDC__
-#include <stdlib.h>
-#include <unistd.h>
+#ifdef __STDC__
+# include <stdlib.h>
+# include <unistd.h>
 #endif
 
 #include <X11/Xlib.h>
@@ -36,7 +36,7 @@ MapNotify_event_p (dpy, event, window)
 }
 
 
-#if __STDC__
+#ifdef __STDC__
 static Bool screensaver_window_p (Display *, Window);
 #endif
 

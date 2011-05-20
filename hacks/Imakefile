@@ -25,13 +25,13 @@ LOCAL_LIBRARIES = $(XMULIB) $(XTOOLLIB) XPMLIB $(EXTENSIONLIB) $(XLIB) -lm
           HACKS = attraction.c greynetic.c helix.c hopalong.c xroger-hack.c \
                   noseguy.c pyro.c qix.c rocks.c rorschach.c blitspin.c \
                   imsmap.c slidescreen.c decayscreen.c maze.c hypercube.c \
-                  halo.c flame.c pedal.c lmorph.c \
+                  halo.c flame.c pedal.c lmorph.c deco.c moire.c \
 		  bubbles.c bubbles.h bubbles_default.c
             MEN = attraction.man greynetic.man helix.man hopalong.man \
                   noseguy.man pyro.man xroger.man qix.man rocks.man \
                   rorschach.man blitspin.man imsmap.man slidescreen.man \
                   decayscreen.man maze.man hypercube.man halo.man flame.man \
-                  pedal.man lmorph.man \
+                  pedal.man lmorph.man deco.man moire.man \
 		  bubbles.man bubbles.README
        TARFILES = README Imakefile screenhack.c $(HACKS) screenhack.h \
                   vroot.h xlock.h default.xbm $(MEN) .gdbinit \
@@ -81,4 +81,11 @@ ScreenhackTarget (halo, halo, $(HOBJS) $(UTILS)/hsv.o)
 ScreenhackTarget (flame, flame, $(HOBJS) $(UTILS)/hsv.o)
 ScreenhackTarget (pedal, pedal, $(HOBJS) $(UTILS)/hsv.o)
 ScreenhackTarget (lmorph, lmorph, $(HOBJS))
+ScreenhackTarget (deco, deco, $(HOBJS))
+ScreenhackTarget (moire, moire, $(HOBJS) $(UTILS)/hsv.o)
+ScreenhackTarget (kaleidescope, kaleidescope, $(HOBJS))
 ScreenhackTarget (bubbles, bubbles, bubbles_default.o $(HOBJS))
+
+
+SRCS=$(HACKS)
+DependTarget()

@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1993, 1995 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1993, 1995, 1996
+ *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -47,9 +48,11 @@ static Colormap cmap;
 #define max(x,y) ((x)>(y)?(x):(y))
 
 static void
-init_circles_1 (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+init_circles_1 (Display *dpy, Window window)
+#else /* ! __STDC__ */
+init_circles_1 (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   int i;
   count = (global_count ? global_count
@@ -76,9 +79,11 @@ init_circles_1 (dpy, window)
 }
 
 static void
-init_circles (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+init_circles (Display *dpy, Window window)
+#else /* ! __STDC__ */
+init_circles (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   XGCValues gcv;
   XWindowAttributes xgwa;
@@ -177,9 +182,11 @@ init_circles (dpy, window)
 }
 
 static void
-run_circles (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+run_circles (Display *dpy, Window window)
+#else /* ! __STDC__ */
+run_circles (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   int i;
   static int iterations = 0;
@@ -369,9 +376,11 @@ XrmOptionDescRec options [] = {
 int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
-screenhack (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+screenhack (Display *dpy, Window window)
+#else /* ! __STDC__ */
+screenhack (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   init_circles (dpy, window);
   while (1)

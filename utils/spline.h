@@ -29,7 +29,7 @@
 
 #include <X11/Xlib.h>
 
-#if __STDC__
+#ifdef __STDC__
 # define P(x)x
 #else
 # define P(x)()

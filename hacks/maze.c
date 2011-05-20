@@ -118,7 +118,7 @@ static Pixmap	logo_map;
 static int	x = 0, y = 0, restart = 0, stop = 1, state = 1;
 
 static int
-check_events()                                  /* X event handler [ rhess ] */
+check_events P((void))                        /* X event handler [ rhess ] */
 {
   XEvent	e;
 
@@ -165,8 +165,11 @@ check_events()                                  /* X event handler [ rhess ] */
 
 
 static void
-set_maze_sizes (width, height)
-     int width, height;
+#ifdef __STDC__
+set_maze_sizes (int width, int height)
+#else /* ! __STDC__ */
+set_maze_sizes (width, height) int width, height;
+#endif /* ! __STDC__ */
 {
   maze_size_x = width / grid_width;
   maze_size_y = height / grid_height;
@@ -174,7 +177,7 @@ set_maze_sizes (width, height)
 
 
 static void
-initialize_maze()         /* draw the surrounding wall and start/end squares */
+initialize_maze P((void)) /* draw the surrounding wall and start/end squares */
 {
   register int i, j, wall;
   
@@ -278,14 +281,14 @@ initialize_maze()         /* draw the surrounding wall and start/end squares */
     logo_y = logo_x = -1;
 }
 
-static int choose_door ();
-static int backup ();
-static void draw_wall ();
-static void draw_solid_square ();
-static void enter_square ();
+static int choose_door P((void));
+static int backup P((void));
+static void draw_wall P((int, int, int));
+static void draw_solid_square P((int, int, int, GC));
+static void enter_square P((int));
 
 static void
-create_maze()             /* create a maze layout given the intiialized maze */
+create_maze P((void))    /* create a maze layout given the intiialized maze */
 {
   register int i, newdoor = 0;
   
@@ -333,7 +336,7 @@ create_maze()             /* create a maze layout given the intiialized maze */
 
 
 static int
-choose_door()                                            /* pick a new path */
+choose_door P((void))                                   /* pick a new path */
 {
   int candidates[3];
   register int num_candidates;
@@ -414,7 +417,7 @@ choose_door()                                            /* pick a new path */
 
 
 static int
-backup()                                                  /* back up a move */
+backup P((void))                                          /* back up a move */
 {
   sqnum--;
   cur_sq_x = move_list[sqnum].x;
@@ -424,7 +427,7 @@ backup()                                                  /* back up a move */
 
 
 static void
-draw_maze_border()                                  /* draw the maze outline */
+draw_maze_border P((void))                         /* draw the maze outline */
 {
   register int i, j;
   
@@ -479,8 +482,11 @@ draw_maze_border()                                  /* draw the maze outline */
 
 
 static void
-draw_wall(i, j, dir)                                   /* draw a single wall */
-     int i, j, dir;
+#ifdef __STDC__
+draw_wall(int i, int j, int dir)                      /* draw a single wall */
+#else /* ! __STDC__ */
+draw_wall(i, j, dir) int i, j, dir;
+#endif /* ! __STDC__ */
 {
   switch (dir) {
   case 0:
@@ -514,12 +520,17 @@ draw_wall(i, j, dir)                                   /* draw a single wall */
   }
 }
 
-int bw;
+static int bw;
 
 static void
-draw_solid_square(i, j, dir, gc)          /* draw a solid square in a square */
+#ifdef __STDC__
+draw_solid_square(int i, int j,          /* draw a solid square in a square */
+		  int dir, GC gc)
+#else /* ! __STDC__ */
+draw_solid_square(i, j, dir, gc)
      register int i, j, dir;
      GC	gc;
+#endif /* ! __STDC__ */
 {
   switch (dir) {
   case 0: XFillRectangle(dpy, win, gc,
@@ -548,7 +559,7 @@ draw_solid_square(i, j, dir, gc)          /* draw a solid square in a square */
 
 
 static void
-solve_maze()                             /* solve it with graphical feedback */
+solve_maze P((void))                     /* solve it with graphical feedback */
 {
   int i;
   
@@ -592,8 +603,11 @@ solve_maze()                             /* solve it with graphical feedback */
 
 
 static void
-enter_square(n)                            /* move into a neighboring square */
-     int n;
+#ifdef __STDC__
+enter_square (int n)                      /* move into a neighboring square */
+#else /* ! __STDC__ */
+enter_square(n) int n;
+#endif /* ! __STDC__ */
 {
   draw_solid_square( (int)path[n].x, (int)path[n].y, 
 		    (int)path[n].dir, tgc);
@@ -614,8 +628,6 @@ enter_square(n)                            /* move into a neighboring square */
     break;
   }
 }
-
-/* ----<eof> */
 
 
 /*
@@ -652,9 +664,12 @@ XrmOptionDescRec options[] = {
 
 int options_size = (sizeof(options)/sizeof(options[0]));
 
-void screenhack(display,window)
-     Display *display;
-     Window window;
+void
+#ifdef __STDC__
+screenhack(Display *display, Window window)
+#else /* ! __STDC__ */
+screenhack(display,window) Display *display; Window window;
+#endif /* ! __STDC__ */
 {
   Pixmap gray;
   int size, root;
@@ -719,7 +734,7 @@ void screenhack(display,window)
     int w, h;
     XGCValues gcv;
     GC draw_gc, erase_gc;
-    extern void skull ();
+    extern void skull P((Display *, Window, GC, GC, int, int, int, int));
     /* round up to grid size */
     w = ((logo_width  / grid_width) + 1)  * grid_width;
     h = ((logo_height / grid_height) + 1) * grid_height;

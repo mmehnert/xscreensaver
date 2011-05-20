@@ -1,9 +1,9 @@
-.TH XScreenSaver 1 "9-dec-92" "X Version 11"
+.TH XScreenSaver 1 "27-Apr-97" "X Version 11"
 .SH NAME
 qix - bounce colored lines around a window
 .SH SYNOPSIS
 .B qix
-[\-display \fIhost:display.screen\fP] [\-foreground \fIcolor\fP] [\-background \fIcolor\fP] [\-window] [\-root] [\-mono] [\-install] [\-visual \fIvisual\fP] [\-segments \fIint\fP] [\-spread \fIpixels\fP] [\-size \fIpixels\fP] [\-count \fIint\fP] [\-color-shift \fIdegrees\fP] [\-delay \fIusecs\fP] [\-random] [\-linear] [\-solid] [\-hollow] [\-xor] [\-no\-xor] [\-transparent] [\-non\-transparent] [\-additive] [\-subtractive]
+[\-display \fIhost:display.screen\fP] [\-foreground \fIcolor\fP] [\-background \fIcolor\fP] [\-window] [\-root] [\-mono] [\-install] [\-visual \fIvisual\fP] [\-segments \fIint\fP] [\-spread \fIpixels\fP] [\-size \fIpixels\fP] [\-count \fIint\fP] [\-color-shift \fIdegrees\fP] [\-delay \fIusecs\fP] [\-random] [\-linear] [\-solid] [\-hollow] [\-xor] [\-no\-xor] [\-transparent] [\-non\-transparent] [\-additive] [\-subtractive] [\-poly \fIint\fP] [\-gravity] [\-no\-gravity]
 .SH DESCRIPTION
 The \fIqix\fP program bounces a series of line segments around its window.
 This is truly the swiss army chainsaw of qix programs.  If you know of one
@@ -90,6 +90,19 @@ light.  This is the default.
 If \fI\-transparent\fP is specified, then this option means that the
 colors will be mixed using a subtractive color model, as if the qixes were
 translucent filters.
+.TP 8
+.B \-poly \fIint\fP
+How many vertices each qix-line should have: the default is 2, meaning the
+traditional qix line shape.  Three will yield triangles, and so on.
+.TP 8
+.B \-gravity
+.TP 8
+.B \-no\-gravity
+Whether there should be downward attraction.  For example, the
+options
+.B \-gravity \-linear
+will make everything move in nice smooth parabolas.
+Gravity is off by default.
 .SH ENVIRONMENT
 .PP
 .TP 8
@@ -112,3 +125,5 @@ suitability of this software for any purpose.  It is provided "as is" without
 express or implied warranty.
 .SH AUTHOR
 Jamie Zawinski <jwz@netscape.com>, 13-aug-92.
+
+Thanks to Ariel Scolnicov for the \-poly and \-gravity options.

@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992, 1996 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -17,9 +17,13 @@ static int iterations, offset;
 static Bool xsym, ysym;
 
 static void
+#ifdef __STDC__
+init_rorschach (Display *dpy, Window window)
+#else /* ! __STDC__ */
 init_rorschach (dpy, window)
      Display *dpy;
      Window window;
+#endif /* ! __STDC__ */
 {
   XGCValues gcv;
   Colormap cmap;
@@ -40,9 +44,11 @@ init_rorschach (dpy, window)
 }
 
 static void
-hurm (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+hurm (Display *dpy, Window window)
+#else /* ! __STDC__ */
+hurm (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   Colormap cmap;
   XWindowAttributes xgwa;
@@ -130,9 +136,11 @@ XrmOptionDescRec options [] = {
 int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
-screenhack (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+screenhack (Display *dpy, Window window)
+#else /* ! __STDC__ */
+screenhack (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   init_rorschach (dpy, window);
   while (1)

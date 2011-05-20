@@ -9,7 +9,7 @@
 #define srandom(i) ya_rand_init(0)
 
 #undef P
-#if __STDC__
+#ifdef __STDC__
 # define P(x)x
 #else
 # define P(x)()

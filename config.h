@@ -1,5 +1,13 @@
-/* Config file for xscreensaver, Copyright (c) 1991-1996 Jamie Zawinski.
+/* Config file for xscreensaver, Copyright (c) 1991-1997 Jamie Zawinski.
+ *
  * This file is included by the various Imakefiles.
+ * After editing this file, you need to execute the commands
+ *
+ *         xmkmf
+ *         make Makefiles
+ *
+ * in the top-level xscreensaver directory, or your changes to this
+ * file may not take effect.
  */
 
 /*  Uncomment the following line if you have the XPM library installed.
@@ -9,9 +17,9 @@
 
 
 /*  Uncomment the following line if you don't have Motif.  If you don't have
- *  Motif, then the screensaver won't have any dialog boxes, which means
- *  that it won't be compiled with support for demo-mode or display-locking.
- *  But other than that, it will work fine.
+ *  Motif, then the abominable Athena widgets will be used instead.  Most of
+ *  the functionality will be present, but it will look much uglier than if
+ *  you use Motif.  (I'm told that LessTif works as well.)
  */
 /* #define NO_MOTIF */
 
@@ -28,7 +36,7 @@
 /* #define NO_LOCKING */
 
 
-/*  Select supported server extensions.
+/*  Select supported server extensions.  First, some background:
  *  There are three distinct server extensions which are useful with 
  *  XScreenSaver: XIDLE, MIT-SCREEN-SAVER, and SCREEN_SAVER.
  *
@@ -84,7 +92,7 @@
 
 /*  Use the following line if you have the SGI SCREEN_SAVER extension; the
  *  default below should be correct (use it if and only if running on an SGI.)
- *  Compiling in support for this extension is recommended, if possible.
+ *  Compiling in support for this extension is recommended, if at all possible.
  */
 #ifdef SGIArchitecture
 # define HAVE_SGI_SAVER_EXTENSION
@@ -118,6 +126,13 @@
  */
 /* #define HAVE_SHADOW */
 
+/* Uncomment the following line if your system is Digital Unix with
+   so-called ``Enhanced Security'', that is, the passwords live in
+   /tcb/files/auth/<initial>/<username> instead of in /etc/passwd,
+ * and one reads them with getprpwnam() instead of getpwnam().
+ */
+/* #define HAVE_DEC_ENHANCED */
+
 
 /*  You may need to edit these to correspond to where Motif is installed,
  *  if your site has Motif installed in a nonstandard place.
@@ -136,7 +151,9 @@
     (If your system needs this, and the default below is not correct,
     please let me know.)
  */
-#if defined(HPArchitecture) || defined(AIXArchitecture) || defined(HAVE_SHADOW) || defined(NetBSDArchitecture)
+#if defined(HPArchitecture) || defined(AIXArchitecture) || \
+    defined(HAVE_SHADOW) || defined(NetBSDArchitecture) || \
+    defined(HAVE_DEC_ENHANCED)
 # define INSTALL_SETUID
 #endif
 

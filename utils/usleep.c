@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992, 1996 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -9,8 +9,8 @@
  * implied warranty.
  */
 
-#if __STDC__
-#include <stdlib.h>
+#ifdef __STDC__
+# include <stdlib.h>
 #endif
 
 #include <X11/Xlib.h>
@@ -48,15 +48,22 @@ screenhack_usleep (usecs)
 
 #else /* VMS */
 
+extern char *progname;
+#include <stdio.h>
+#include <descrip.h>
 #define SEC_DELTA  "0000 00:00:01.00"
 #define TICK_DELTA "0000 00:00:00.08"
+#define TICK_INTERVAL	80000L    /* 8/100th second */
 static int bin_sec_delta[2], bin_tick_delta[2], deltas_set = 0;
+
+extern int SYS$BINTIM ();
+extern int SYS$SCHDWK ();
+extern int SYS$HIBER (); 
 
 static void
 set_deltas ()
 {
   int status;
-  extern int SYS$BINTIM ();
   $DESCRIPTOR (str_sec_delta,  SEC_DELTA);
   $DESCRIPTOR (str_tick_delta, TICK_DELTA);
   if (!deltas_set)
@@ -86,10 +93,10 @@ screenhack_usleep (usecs)
      unsigned long usecs;
 {
   int status, *bin_delta;
-  extern int SYS$SCHWDK (), SYS$HIBER (); 
-  
   if (!deltas_set) set_deltas ();
-  bin_delta = (usecs == TICK_INTERVAL) ? &bin_tick_delta : &bin_sec_delta;
+  bin_delta = (int *) ((usecs == TICK_INTERVAL)
+		       ? &bin_tick_delta
+		       : &bin_sec_delta);
   status = SYS$SCHDWK (0, 0, bin_delta, 0);
   if ((status & 1)) (void) SYS$HIBER ();
 }

@@ -16,7 +16,7 @@
 #include <X11/Xlib.h>
 
 void
-#if __STDC__
+#ifdef __STDC__
 hsv_to_rgb (int h, double s, double v,
 	    unsigned short *r, unsigned short *g, unsigned short *b)
 #else
@@ -49,7 +49,7 @@ hsv_to_rgb (h,s,v, r,g,b)
 }
 
 void
-#if __STDC__
+#ifdef __STDC__
 rgb_to_hsv (unsigned short r, unsigned short g, unsigned short b,
 	    int *h, double *s, double *v)
 #else

@@ -26,15 +26,14 @@
 
 #include <stdio.h>
 #include "spline.h"
-#if __STDC__
-#include <stdlib.h>
+#ifdef __STDC__
+# include <stdlib.h>
 #endif
 #include <math.h>
 
-/* Lifted from InterViews */
 #define SMOOTHNESS 1.0
 
-#if __STDC__
+#ifdef __STDC__
 static void no_more_memory (void);
 static void grow_spline_points (spline* s);
 static void mid_point (double x0, double y0, double x1, double y1,

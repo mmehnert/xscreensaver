@@ -58,7 +58,7 @@
 #define _VROOT_H_
 
 #if !defined(lint) && !defined(SABER)
-static char vroot_rcsid[] = "$Id: vroot.h,v 1.1 1994/08/25 22:04:24 jwz Exp $";
+static char vroot_rcsid[] = "#Id: vroot.h,v 1.4 1991/09/30 19:23:16 stolcke Exp stolcke #";
 #endif
 
 #include <X11/X.h>
@@ -66,8 +66,11 @@ static char vroot_rcsid[] = "$Id: vroot.h,v 1.1 1994/08/25 22:04:24 jwz Exp $";
 #include <X11/Xlib.h>
 
 static Window
-VirtualRootWindowOfScreen(screen)
-	Screen *screen;
+#ifdef __STDC__ /* ANSIfication added by jwz, to avoid superfluous warnings. */
+VirtualRootWindowOfScreen(Screen *screen)
+#else /* !__STDC__ */
+VirtualRootWindowOfScreen(screen) Screen *screen;
+#endif /* !__STDC__ */
 {
 	static Screen *save_screen = (Screen *)0;
 	static Window root = (Window)0;

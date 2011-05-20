@@ -34,7 +34,7 @@ extern int sgi_saver_ext_event_number;
 
 #include "xscreensaver.h"
 
-#if __STDC__
+#ifdef __STDC__
 # define P(x)x
 #else
 #define P(x)()
@@ -63,9 +63,11 @@ XtIntervalId cycle_id = 0;
 XtIntervalId lock_id = 0;
 
 void
-idle_timer (junk1, junk2)
-     void *junk1;
-     XtPointer junk2;
+#ifdef __STDC__
+idle_timer (void *junk1, XtPointer junk2)
+#else /* ! __STDC__ */
+idle_timer (junk1, junk2) void *junk1; XtPointer junk2;
+#endif /* ! __STDC__ */
 {
   /* What an amazingly shitty design.  Not only does Xt execute timeout
      events from XtAppNextEvent() instead of from XtDispatchEvent(), but
@@ -87,7 +89,7 @@ idle_timer (junk1, junk2)
 
 
 static void
-#if __STDC__
+#ifdef __STDC__
 notice_events (Window window, Bool top_p)
 #else
 notice_events (window, top_p)
@@ -137,9 +139,11 @@ notice_events (window, top_p)
 
 
 int
-BadWindow_ehandler (dpy, error)
-     Display *dpy;
-     XErrorEvent *error;
+#ifdef __STDC__
+BadWindow_ehandler (Display *dpy, XErrorEvent *error)
+#else /* ! __STDC__ */
+BadWindow_ehandler (dpy, error) Display *dpy; XErrorEvent *error;
+#endif /* ! __STDC__ */
 {
   /* When we notice a window being created, we spawn a timer that waits
      30 seconds or so, and then selects events on that window.  This error
@@ -155,9 +159,11 @@ BadWindow_ehandler (dpy, error)
 }
 
 void
-notice_events_timer (closure, timer)
-     XtPointer closure;
-     XtIntervalId *timer;
+#ifdef __STDC__
+notice_events_timer (XtPointer closure, XtIntervalId *timer)
+#else /* ! __STDC__ */
+notice_events_timer (closure, timer) XtPointer closure; XtIntervalId *timer;
+#endif /* ! __STDC__ */
 {
   Window window = (Window) closure;
   int (*old_handler) ();
@@ -172,9 +178,11 @@ notice_events_timer (closure, timer)
    the running program.
  */
 void
-cycle_timer (junk1, junk2)
-     void *junk1;
-     XtPointer junk2;
+#ifdef __STDC__
+cycle_timer (void *junk1, XtPointer junk2)
+#else /* ! __STDC__ */
+cycle_timer (junk1, junk2) void *junk1; XtPointer junk2;
+#endif /* ! __STDC__ */
 {
   Time how_long = cycle;
   if (dbox_up_p)
@@ -202,9 +210,11 @@ cycle_timer (junk1, junk2)
 
 
 void
-activate_lock_timer (junk1, junk2)
-     void *junk1;
-     XtPointer junk2;
+#ifdef __STDC__
+activate_lock_timer (void *junk1, XtPointer junk2)
+#else /* ! __STDC__ */
+activate_lock_timer (junk1, junk2) void *junk1; XtPointer junk2;
+#endif /* ! __STDC__ */
 {
   if (verbose_p)
     printf ("%s: timed out; activating lock\n", progname);
@@ -244,9 +254,13 @@ reset_timers P((void))
    selecting motion events on every window.
  */
 static void
+#ifdef __STDC__
+check_pointer_timer (void *closure, XtPointer this_timer)
+#else /* ! __STDC__ */
 check_pointer_timer (closure, this_timer)
      void *closure;
      XtPointer this_timer;
+#endif /* ! __STDC__ */
 {
   static int last_root_x = -1;
   static int last_root_y = -1;
@@ -290,8 +304,11 @@ check_pointer_timer (closure, this_timer)
 
 
 void
-sleep_until_idle (until_idle_p)
-     Bool until_idle_p;
+#ifdef __STDC__
+sleep_until_idle (Bool until_idle_p)
+#else /* ! __STDC__ */
+sleep_until_idle (until_idle_p) Bool until_idle_p;
+#endif /* ! __STDC__ */
 {
   XEvent event;
 

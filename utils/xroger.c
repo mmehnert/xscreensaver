@@ -11,7 +11,7 @@
 
 #include <X11/Xlib.h>
 
-#if __STDC__
+#ifdef __STDC__
 static void crossbones (Display *, Window, GC, int x, int y, int w, int h);
 #endif
 

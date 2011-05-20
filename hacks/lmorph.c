@@ -102,8 +102,12 @@ int options_size = (sizeof (options) / sizeof (options[0]));
  *                                                                        *
  **************************************************************************/
 
-static void *xmalloc(size)
-	size_t size;
+static void *
+#ifdef __STDC__
+xmalloc(size_t size)
+#else /* ! __STDC__ */
+xmalloc(size) size_t size;
+#endif /* ! __STDC__ */
 {
     void *ret;
 
@@ -116,23 +120,22 @@ static void *xmalloc(size)
 
 
 
-static double frnd()
+static double frnd P((void))
 {
     /*
      *  Hm. for some reason the second line (using RAND_MAX) didn't
      *  work on some machines, so I always use the first.
      */
-#undef RAND_MAX
-#ifndef RAND_MAX
+#ifndef dont_use_RAND_MAX
     return (double) (random() & 0x7FFF) / 0x7FFF;
-#else
+#else  /* RAND_MAX */
     return ((double) random()) / RAND_MAX;
-#endif
+#endif /* RAND_MAX */
 }
 
 
 
-static void initPointArrays()
+static void initPointArrays P((void))
 {
     XWindowAttributes wa;
     int q, w,
@@ -351,7 +354,7 @@ static void initPointArrays()
 
 
 
-static void createPoints()
+static void createPoints P((void))
 {
     int    q;
     XPoint *pa = aCurr, *pa1 = aFrom, *pa2 = aTo;
@@ -369,7 +372,7 @@ static void createPoints()
 }
 
 
-static void drawImage()
+static void drawImage P((void))
 {
     register int q;
     XPoint *old0, *old1, *new0, *new1;
@@ -401,7 +404,7 @@ static void drawImage()
     XFlush(dpy);
 }
 
-static void initLMorph()
+static void initLMorph P((void))
 {
     int               steps;
     XGCValues         gcv;
@@ -433,7 +436,7 @@ static void initLMorph()
     nTo = RND(cFig);
 }
 
-static void animateLMorph()
+static void animateLMorph P((void))
 {
     if (gam > maxGamma) {
         gam = 0.0;
@@ -487,9 +490,12 @@ static void animateLMorph()
  *                                                                        *
  **************************************************************************/
 
-void screenhack(disp, win)
-	Display *disp;
-	Window win;
+void
+#ifdef __STDC__
+screenhack(Display *disp, Window win)
+#else /* ! __STDC__ */
+screenhack(disp, win) Display *disp; Window win;
+#endif /* ! __STDC__ */
 {
     dpy = disp;
     window = win;

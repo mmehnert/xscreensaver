@@ -31,7 +31,7 @@
 extern Bool use_mit_saver_extension;
 extern Bool use_sgi_saver_extension;
 
-#if __STDC__
+#ifdef __STDC__
 extern int kill (pid_t, int);		/* signal() is in sys/signal.h... */
 #endif /* __STDC__ */
 
@@ -42,7 +42,7 @@ extern Bool lock_p, demo_mode_p;
 Atom XA_VROOT, XA_XSETROOT_ID;
 Atom XA_SCREENSAVER_VERSION, XA_SCREENSAVER_ID;
 
-#if __STDC__
+#ifdef __STDC__
 extern void describe_visual (FILE *, Display *, Visual *);
 extern void reset_stderr (void);
 #endif
@@ -211,7 +211,7 @@ ERROR!  You must not include vroot.h in this file.
 #endif
 
 static void
-#if __STDC__
+#ifdef __STDC__
 store_vroot_property (Window win, Window value)
 #else
 store_vroot_property (win, value)
@@ -234,7 +234,7 @@ store_vroot_property (win, value)
 }
 
 static void
-#if __STDC__
+#ifdef __STDC__
 remove_vroot_property (Window win)
 #else
 remove_vroot_property (win)
@@ -401,7 +401,7 @@ restore_real_vroot_handler (sig)
 
 
 static void
-#if __STDC__
+#ifdef __STDC__
 catch_signal (int sig, char *signame, Bool on_p)
 #else
 catch_signal (sig, signame, on_p)

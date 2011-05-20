@@ -1,5 +1,5 @@
-/* xscreensaver, Copyright (c) 1993, 1994, 1995 
- * Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1993, 1994, 1995, 1996
+ *  by Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -11,23 +11,24 @@
  */
 
 /* This file contains some code for intelligently picking the best visual
-   (where "best" is biased in the direction of high color counts...)
+   (where "best" is biased in the direction of either: high color counts;
+   or: having writable color cells...)
  */
 
-#if __STDC__
-#include <stdlib.h>
-#include <unistd.h>
-#include <string.h>
+#ifdef __STDC__
+# include <stdlib.h>
+# include <unistd.h>
+# include <string.h>
 #endif
 
 #include <stdio.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-#if __STDC__
+#ifdef __STDC__
 # define P(x)x
 #else
-#define P(x)()
+# define P(x)()
 #endif
 
 #ifndef isupper
@@ -110,8 +111,11 @@ static Visual *
 pick_best_visual (screen)
 	Screen *screen;
 {
-  /* The "best" visual is the one on which we can allocate the largest
-     range and number of colors.
+  Visual *visual;
+
+#ifdef PREFER_COLORFUL_VISUALS
+  /* For XScreenSaver, the "best" visual is the one on which we can allocate
+     the largest range and number of colors.
 
      Therefore, a TrueColor visual which is at least 16 bits deep is best.
      (The assumption here being that a TrueColor of less than 16 bits is
@@ -120,11 +124,18 @@ pick_best_visual (screen)
      The next best thing is a PseudoColor visual of any type.  After that
      come the non-colormappable visuals, and non-color visuals.
    */
-  Display *dpy = DisplayOfScreen (screen);
-  Visual *visual;
   if ((visual = pick_best_visual_of_class (screen, TrueColor)) &&
-      get_visual_depth (dpy, visual) >= 16)
+      get_visual_depth (DisplayOfScreen(screen), visual) >= 16)
     return visual;
+
+#else  /* !PREFER_COLORFUL_VISUALS */
+
+  /* For XDaliClock, the "best" visual is any visual with writable color
+     cells (preferring color over grayscale.)  If we can't get writable
+     cells, then the choice doesn't much matter.
+   */
+#endif /* !PREFER_COLORFUL_VISUALS */
+
   if ((visual = pick_best_visual_of_class (screen, PseudoColor)))
     return visual;
   if ((visual = pick_best_visual_of_class (screen, TrueColor)))
@@ -146,6 +157,9 @@ pick_best_visual_of_class (screen, visual_class)
   /* The best visual of a class is the one which on which we can allocate
      the largest range and number of colors, which means the one with the
      greatest depth and number of cells.
+
+     (But actually, for XDaliClock, all visuals of the same class are
+     probably equivalent - either we have writable cells or we don't.)
    */
   Display *dpy = DisplayOfScreen (screen);
   XVisualInfo vi_in, *vi_out;

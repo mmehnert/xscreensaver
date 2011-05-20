@@ -14,7 +14,7 @@
  */
 
 
-#if !__STDC__
+#ifndef __STDC__
 # define _NO_PROTO
 #endif
 
@@ -578,10 +578,8 @@ void
 create_demo_dialog( parent )
 Widget parent;
 {
-  Widget children[11];      /* Children to manage */
   Arg al[64];           /* Arg List */
   register int ac = 0;      /* Arg Count */
-  XmString xmstrings[15];    /* temporary storage for XmStrings */
 
   Widget real_dialog;
   Widget w;

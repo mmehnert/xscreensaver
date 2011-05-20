@@ -25,7 +25,7 @@ XrmOptionDescRec options [] = {
 };
 int options_size = (sizeof (options) / sizeof (options[0]));
 
-#if __STDC__
+#ifdef __STDC__
 extern void skull (Display *, Window, GC, GC, int, int, int, int);
 #endif
 

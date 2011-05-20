@@ -42,8 +42,8 @@ unsigned int ya_random()
 {
   register int ret = a[i1] + a[i2];
   a[i1] = ret;
-  i1 = i1 >= VectorSize ? 0 : i1 + 1;
-  i2 = i2 >= VectorSize ? 0 : i2 + 1;
+  if (++i1 >= VectorSize) i1 = 0;
+  if (++i2 >= VectorSize) i2 = 0;
   return ret;
 }
 

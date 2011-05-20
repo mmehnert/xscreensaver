@@ -72,12 +72,12 @@ static Bool fade_p;
 #define rand_range(a, b) (a + random() % (b - a))
 
 
-static int gcd (m, n)
-    int m;
-    int n;
-/* 
- * Greatest Common Divisor (also Greates common factor).
- */
+static int
+#ifdef __STDC__
+gcd(int m, int n) /* Greatest Common Divisor (also Greates common factor). */
+#else /* ! __STDC__ */
+gcd(m, n) int m; int n;
+#endif /* ! __STDC__ */
 {
     int r;
 
@@ -89,10 +89,11 @@ static int gcd (m, n)
     }
 }
 
-static int numlines (a, b, d)
-    int a;
-    int b;
-    int d;
+#ifdef __STDC__
+static int numlines (int a, int b, int d)
+#else /* ! __STDC__ */
+static int numlines (a, b, d) int a; int b; int d;
+#endif /* ! __STDC__ */
 /*
  * Description:
  *
@@ -123,9 +124,11 @@ static int numlines (a, b, d)
 }
 
 static int
-compute_pedal(points, maxpoints)
-XPoint *points;
-int maxpoints;
+#ifdef __STDC__
+compute_pedal(XPoint *points, int maxpoints)
+#else /* ! __STDC__ */
+compute_pedal(points, maxpoints) XPoint *points; int maxpoints;
+#endif /* ! __STDC__ */
 /*
  * Description:
  *
@@ -199,9 +202,11 @@ int maxpoints;
 }
 
 static void
-init_pedal (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+init_pedal (Display *dpy, Window window)
+#else /* ! __STDC__ */
+init_pedal (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   XGCValues gcv;
   XWindowAttributes xgwa;
@@ -272,12 +277,17 @@ init_pedal (dpy, window)
 }
 
 static void
+#ifdef __STDC__
+fade_foreground (Display *dpy, Colormap cmap,
+		 XColor from, XColor to, int steps)
+#else /* ! __STDC__ */
 fade_foreground (dpy, cmap, from, to, steps)
     Display *dpy;
     Colormap cmap;
     XColor from;
     XColor to;
     int steps;
+#endif /* ! __STDC__ */
 /*
  * This routine assumes that we have a writeable colormap.
  * That means that the default colormap is not full, and that
@@ -302,9 +312,11 @@ fade_foreground (dpy, cmap, from, to, steps)
 }
 
 static void
-pedal (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+pedal (Display *dpy, Window window)
+#else /* ! __STDC__ */
+pedal (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 /*
  *    Since the XFillPolygon doesn't require that the last
  *    point == first point, the number of points is the same
@@ -391,9 +403,11 @@ XrmOptionDescRec options [] = {
 int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
-screenhack (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+screenhack (Display *dpy, Window window)
+#else /* ! __STDC__ */
+screenhack (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
     init_pedal (dpy, window);
     for (;;) {

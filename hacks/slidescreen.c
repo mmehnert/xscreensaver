@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992, 1993, 1994 
+/* xscreensaver, Copyright (c) 1992, 1993, 1994, 1996 
  * Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -22,9 +22,13 @@ static int delay, delay2;
 static GC gc;
 
 static void
+#ifdef __STDC__
+init_slide (Display *dpy, Window window)
+#else /* ! __STDC__ */
 init_slide (dpy, window)
      Display *dpy;
      Window window;
+#endif /* ! __STDC__ */
 {
   int i;
   XGCValues gcv;
@@ -142,9 +146,13 @@ init_slide (dpy, window)
 }
 
 static void
+#ifdef __STDC__
+slide1 (Display *dpy, Window window)
+#else /* ! __STDC__ */
 slide1 (dpy, window)
      Display *dpy;
      Window window;
+#endif /* ! __STDC__ */
 {
   /* this code is a total kludge, but who cares, it works... */
  int i, x, y, ix, iy, dx, dy, dir, w, h, size, inc;
@@ -240,9 +248,11 @@ XrmOptionDescRec options [] = {
 int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
-screenhack (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+screenhack (Display *dpy, Window window)
+#else /* ! __STDC__ */
+screenhack (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   init_slide (dpy, window);
   while (1)

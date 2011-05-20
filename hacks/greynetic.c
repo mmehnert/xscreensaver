@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1992, 1995 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992, 1995, 1996
+ *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -33,9 +34,13 @@ static unsigned long fg, bg, pixels [512];
 static int npixels;
 
 static void
+#ifdef __STDC__
+init_greynetic (Display *dpy, Window window)
+#else /* ! __STDC__ */
 init_greynetic (dpy, window)
      Display *dpy;
      Window window;
+#endif /* ! __STDC__ */
 {
   int i;
   XGCValues gcv;
@@ -71,9 +76,13 @@ init_greynetic (dpy, window)
 }
 
 static void
+#ifdef __STDC__
+greynetic (Display *dpy, Window window)
+#else /* ! __STDC__ */
 greynetic (dpy, window)
      Display *dpy;
      Window window;
+#endif /* ! __STDC__ */
 {
   static int tick = 500, xlim, ylim;
   static Colormap cmap;
@@ -153,9 +162,11 @@ XrmOptionDescRec options [] = {
 int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
-screenhack (dpy, window)
-     Display *dpy;
-     Window window;
+#ifdef __STDC__
+screenhack (Display *dpy, Window window)
+#else /* ! __STDC__ */
+screenhack (dpy, window) Display *dpy; Window window;
+#endif /* ! __STDC__ */
 {
   init_greynetic (dpy, window);
   while (1)

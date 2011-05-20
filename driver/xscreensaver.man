@@ -485,9 +485,6 @@ would restore both screens.  It would be nice if one could run different hacks
 on each screen simultaniously.  However, I don't have access to a multi-headed
 workstation, so it would be hard for me to implement something like this.
 .PP
-If you don't have Motif, you can't compile with support for locking or
-demo mode.
-.PP
 Locking doesn't work if the screensaver is launched by \fIxdm\fP.
 The reason for this is that when it is launched by \fIxdm\fP, the
 screensaver process is owned by some standard user id (such as \fIroot\fP
@@ -550,18 +547,21 @@ a simulation of a Lavalite (tm).
 The latest version can always be found at http://www.netscape.com/people/jwz/.
 There is also usually an up-to-date copy at ftp://ftp.x.org/.
 .SH COPYRIGHT
-Copyright \(co 1992, 1993, 1994, 1995, 1996 by Jamie Zawinski.  Permission 
-to use, copy, modify, distribute, and sell this software and its documentation
-for any purpose is hereby granted without fee, provided that the above
-copyright notice appear in all copies and that both that copyright notice 
-and this permission notice appear in supporting documentation.  No
+Copyright \(co 1992, 1993, 1994, 1995, 1996, 1997 by Jamie Zawinski.
+Permission to use, copy, modify, distribute, and sell this software and its
+documentation for any purpose is hereby granted without fee, provided that
+the above copyright notice appear in all copies and that both that copyright
+notice and this permission notice appear in supporting documentation.  No
 representations are made about the suitability of this software for any
 purpose.  It is provided "as is" without express or implied warranty.
 .SH AUTHOR
 Jamie Zawinski <jwz@netscape.com>, 13-aug-92.
 Please let me know if you find any bugs or make any improvements.
-
+.PP
 Thanks to David Wojtowicz for implementing \fIlockTimeout\fP.
-
+.PP
 Thanks to Martin Kraemer for adding support for shadow passwords and 
 locking-disabled diagnostics.
+.PP
+And huge thanks to Jon A. Christopher for implementing the Athena dialog
+support, so that locking and demo-mode work even if you don't have Motif.
