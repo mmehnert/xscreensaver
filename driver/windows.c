@@ -41,6 +41,9 @@
 # include <X11/extensions/scrnsaver.h>
 #endif /* HAVE_MIT_SAVER_EXTENSION */
 
+#ifdef HAVE_XF86VMODE
+# include <X11/extensions/xf86vmode.h>
+#endif /* HAVE_XF86VMODE */
 
 #ifdef HAVE_XHPDISABLERESET
 # include <X11/XHPlib.h>
@@ -757,6 +760,91 @@ store_saver_id (saver_screen_info *ssi)
 }
 
 
+/* Returns the area of the screen which the xscreensaver window should cover.
+   Normally this is the whole screen, but if the X server's root window is
+   actually larger than the monitor's displayable area, then we want to
+   operate in the currently-visible portion of the desktop instead.
+ */
+void
+get_screen_viewport (saver_screen_info *ssi,
+                     int *x_ret, int *y_ret,
+                     int *w_ret, int *h_ret)
+{
+  int w = WidthOfScreen (ssi->screen);
+  int h = HeightOfScreen (ssi->screen);
+
+#ifdef HAVE_XF86VMODE
+  saver_info *si = ssi->global;
+  int screen_no = screen_number (ssi->screen);
+  int event, error;
+  int dot;
+  XF86VidModeModeLine ml;
+  int x, y;
+
+  if (XF86VidModeQueryExtension (si->dpy, &event, &error) &&
+      XF86VidModeGetModeLine (si->dpy, screen_no, &dot, &ml) &&
+      XF86VidModeGetViewPort (si->dpy, screen_no, &x, &y))
+    {
+      *x_ret = x;
+      *y_ret = y;
+      *w_ret = ml.hdisplay;
+      *h_ret = ml.vdisplay;
+
+      if (si->prefs.verbose_p &&
+          (*x_ret != 0 || *y_ret != 0 || *w_ret != w || *h_ret != h))
+        fprintf (stderr, "%s: current viewport is %dx%d+%d+%d.\n",
+                 blurb(), *w_ret, *h_ret, *x_ret, *y_ret);
+
+
+      /* Apparently, though the server stores the X position in increments of
+         1 pixel, it will only make changes to the *display* in some other
+         increment.  With XF86_SVGA on a Thinkpad, the display only updates
+         in multiples of 8 pixels when in 8-bit mode, and in multiples of 4
+         pixels in 16-bit mode.  I don't know what it does in 24- and 32-bit
+         mode, because I don't have enough video memory to find out.
+
+         I consider it a bug that XF86VidModeGetViewPort() is telling me the
+         server's *target* scroll position rather than the server's *actual*
+         scroll position.  David Dawes agrees, and says they may fix this in
+         XFree86 4.0, but it's notrivial.
+
+         He also confirms that this behavior is server-dependent, so the
+         actual scroll position cannot be reliably determined by the client.
+         So... that means the only solution is to provide a ``sandbox''
+         around the blackout window -- we make the window be N pixels larger
+         than the viewport on both the left and right sides.  That means some
+         part of the outer edges of each hack might not be visible, but screw
+         it.
+
+         I'm going to guess that 32 pixels is enough, and that the Y dimension
+         doesn't have this problem.
+       */
+# define FUDGE 32
+      if (x > 0)
+        {
+          *x_ret -= FUDGE;
+          *w_ret += (FUDGE * 2);
+          if (*x_ret < 0) *x_ret = 0;
+        }
+# undef FUDGE
+
+      if (si->prefs.verbose_p &&
+          (*x_ret != 0 || *y_ret != 0 || *w_ret != w || *h_ret != h))
+        fprintf (stderr, "%s: (fudged viewport to %dx%d+%d+%d.)\n",
+                 blurb(), *w_ret, *h_ret, *x_ret, *y_ret);
+
+      return;
+    }
+
+#endif /* HAVE_XF86VMODE */
+
+  *x_ret = 0;
+  *y_ret = 0;
+  *w_ret = w;
+  *h_ret = h;
+}
+
+
 static void
 initialize_screensaver_window_1 (saver_screen_info *ssi)
 {
@@ -772,9 +860,10 @@ initialize_screensaver_window_1 (saver_screen_info *ssi)
   XColor black;
   XSetWindowAttributes attrs;
   unsigned long attrmask;
-  int width = WidthOfScreen (ssi->screen);
-  int height = HeightOfScreen (ssi->screen);
+  int x, y, width, height;
   static Bool printed_visual_info = False;  /* only print the message once. */
+
+  get_screen_viewport (si->default_screen, &x, &y, &width, &height);
 
   black.red = black.green = black.blue = 0;
 
@@ -905,8 +994,8 @@ initialize_screensaver_window_1 (saver_screen_info *ssi)
     {
       XWindowChanges changes;
       unsigned int changesmask = CWX|CWY|CWWidth|CWHeight|CWBorderWidth;
-      changes.x = 0;
-      changes.y = 0;
+      changes.x = x;
+      changes.y = y;
       changes.width = width;
       changes.height = height;
       changes.border_width = 0;
@@ -919,9 +1008,11 @@ initialize_screensaver_window_1 (saver_screen_info *ssi)
   else
     {
       ssi->screensaver_window =
-	XCreateWindow (si->dpy, RootWindowOfScreen (ssi->screen), 0, 0,
-		       width, height, 0, ssi->current_depth, InputOutput,
+	XCreateWindow (si->dpy, RootWindowOfScreen (ssi->screen),
+                       x, y, width, height,
+                       0, ssi->current_depth, InputOutput,
 		       ssi->current_visual, attrmask, &attrs);
+
       reset_stderr (ssi);
       store_activate_time(si, True);
       if (p->verbose_p)
@@ -972,10 +1063,13 @@ raise_window (saver_info *si,
   if (si->demoing_p)
     inhibit_fade = True;
 
+  if (si->emergency_lock_p)
+    inhibit_fade = True;
+
   initialize_screensaver_window (si);
   reset_watchdog_timer (si, True);
 
-  if (p->fade_p && p->fading_possible_p && !inhibit_fade)
+  if (p->fade_p && si->fading_possible_p && !inhibit_fade)
     {
       Window *current_windows = (Window *)
 	calloc(sizeof(Window), si->nscreens);
@@ -1116,6 +1210,7 @@ blank_screen (saver_info *si)
 #endif
 
   si->screen_blanked_p = True;
+  si->last_wall_clock_time = 0;
 
   return True;
 }
@@ -1124,7 +1219,7 @@ void
 unblank_screen (saver_info *si)
 {
   saver_preferences *p = &si->prefs;
-  Bool unfade_p = (p->fading_possible_p && p->unfade_p);
+  Bool unfade_p = (si->fading_possible_p && p->unfade_p);
   int i;
 
   monitor_power_on (si);
@@ -1248,6 +1343,7 @@ unblank_screen (saver_info *si)
     XUnmapWindow (si->dpy, si->screens[i].screensaver_window);
 
   si->screen_blanked_p = False;
+  si->last_wall_clock_time = 0;
 }
 
 
@@ -1278,7 +1374,7 @@ select_visual (saver_screen_info *ssi, const char *visual_name)
   saver_preferences *p = &si->prefs;
   Bool install_cmap_p = p->install_cmap_p;
   Bool was_installed_p = (ssi->cmap != DefaultColormapOfScreen(ssi->screen));
-  Visual *new_v;
+  Visual *new_v = 0;
   Bool got_it;
 
   if (visual_name && *visual_name)
@@ -1293,7 +1389,18 @@ select_visual (saver_screen_info *ssi, const char *visual_name)
 	  visual_name = "default";
 	  install_cmap_p = False;
 	}
-      new_v = get_visual (ssi->screen, visual_name, True, False);
+#ifdef DAEMON_USE_GL
+      else if (!strcmp(visual_name, "gl") ||
+               !strcmp(visual_name, "GL"))
+        {
+          new_v = get_gl_visual (ssi->screen);
+          if (!new_v && p->verbose_p)
+            fprintf (stderr, "%s: no GL visuals.\n", progname);
+        }
+#endif /* DAEMON_USE_GL */
+
+      if (!new_v)
+        new_v = get_visual (ssi->screen, visual_name, True, False);
     }
   else
     {

@@ -298,13 +298,13 @@ make_passwd_window (saver_info *si)
   attrmask |= CWEventMask; attrs.event_mask = ExposureMask|KeyPressMask;
 
   {
-    Dimension w = WidthOfScreen(screen);
-    Dimension h = HeightOfScreen(screen);
+    int x, y, w, h;
+    get_screen_viewport (si->default_screen, &x, &y, &w, &h);
     if (si->prefs.debug_p) w /= 2;
-    pw->x = ((w + pw->width) / 2) - pw->width;
-    pw->y = ((h + pw->height) / 2) - pw->height;
-    if (pw->x < 0) pw->x = 0;
-    if (pw->y < 0) pw->y = 0;
+    pw->x = x + ((w + pw->width) / 2) - pw->width;
+    pw->y = y + ((h + pw->height) / 2) - pw->height;
+    if (pw->x < x) pw->x = x;
+    if (pw->y < y) pw->y = y;
   }
 
   pw->border_width = get_integer_resource ("passwd.borderWidth",
@@ -550,6 +550,7 @@ update_passwd_window (saver_info *si, const char *printed_passwd, float ratio)
   XGCValues gcv;
   GC gc1, gc2;
   int x, y;
+  XRectangle rects[1];
 
   pw->ratio = ratio;
   gcv.foreground = pw->passwd_foreground;
@@ -567,22 +568,34 @@ update_passwd_window (saver_info *si, const char *printed_passwd, float ratio)
 
   /* the "password" text field
    */
+  rects[0].x =  pw->passwd_field_x;
+  rects[0].y =  pw->passwd_field_y;
+  rects[0].width = pw->passwd_field_width;
+  rects[0].height = pw->passwd_field_height;
+
   XFillRectangle (si->dpy, si->passwd_dialog, gc2,
-		  pw->passwd_field_x, pw->passwd_field_y,
-		  pw->passwd_field_width, pw->passwd_field_height);
+                  rects[0].x, rects[0].y, rects[0].width, rects[0].height);
+
+  XSetClipRectangles (si->dpy, gc1, 0, 0, rects, 1, Unsorted);
+
   XDrawString (si->dpy, si->passwd_dialog, gc1,
-	       pw->passwd_field_x + pw->shadow_width,
-	       pw->passwd_field_y + (pw->passwd_font->ascent +
-				     pw->passwd_font->descent),
-	       pw->passwd_string, strlen(pw->passwd_string));
+               rects[0].x + pw->shadow_width,
+               rects[0].y + (pw->passwd_font->ascent +
+                             pw->passwd_font->descent),
+               pw->passwd_string, strlen(pw->passwd_string));
+
+  XSetClipMask (si->dpy, gc1, None);
 
   /* The I-beam
    */
   if (pw->i_beam != 0)
     {
-      x = (pw->passwd_field_x + pw->shadow_width +
+      x = (rects[0].x + pw->shadow_width +
 	   string_width (pw->passwd_font, pw->passwd_string));
-      y = pw->passwd_field_y + pw->shadow_width;
+      y = rects[0].y + pw->shadow_width;
+
+      if (x > rects[0].x + rects[0].width - 1)
+        x = rects[0].x + rects[0].width - 1;
       XDrawLine (si->dpy, si->passwd_dialog, gc1, 
 		 x, y, x, y + pw->passwd_font->ascent);
     }

@@ -84,6 +84,9 @@ struct saver_info {
   Bool screen_blanked_p;	/* Whether the saver is currently active. */
   Window mouse_grab_window;	/* Window holding our mouse grab */
   Window keyboard_grab_window;	/* Window holding our keyboard grab */
+  Bool fading_possible_p;	/* Whether fading to/from black is possible. */
+  Bool throttled_p;             /* Whether we should temporarily just blank
+                                   the screen, not run hacks. */
 
 
   /* =======================================================================
@@ -135,7 +138,13 @@ struct saver_info {
   XtIntervalId check_pointer_timer_id;	/* `prefs.pointer_timeout' */
 
   time_t last_activity_time;		   /* Used only when no server exts. */
+  time_t last_wall_clock_time;             /* Used to detect laptop suspend. */
   saver_screen_info *last_activity_screen;
+
+  Bool emergency_lock_p;        /* Set when the wall clock has jumped
+                                   (presumably due to laptop suspend) and we
+                                   need to lock down right away instead of
+                                   waiting for the lock timer to go off. */
 
 
   /* =======================================================================
@@ -272,6 +281,11 @@ extern void raise_window (saver_info *si,
 			    Bool dont_clear);
 extern Bool blank_screen (saver_info *si);
 extern void unblank_screen (saver_info *si);
+
+extern void get_screen_viewport (saver_screen_info *ssi,
+                                 int *x_ret, int *y_ret,
+                                 int *w_ret, int *h_ret);
+
 
 /* =======================================================================
    locking
