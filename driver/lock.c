@@ -66,7 +66,7 @@ extern Bool verbose_p;
 static void passwd_done_cb ();
 static XtActionsRec actionsList[] =
 {
-    {"passwdentered", (XtPointer) passwd_done_cb},
+    {"passwdentered", (XtActionProc) passwd_done_cb},
 };
 
 static char Translations[] =
@@ -307,6 +307,7 @@ static XtActionsRec actions[] = {{"keypress",  keypress},
 				 {"done",      done}
 			        };
 
+#ifndef NO_MOTIF
 #if 0 /* oh fuck, why doesn't this work? */
 static char translations[] = "\
 <Key>BackSpace:		backspace()\n\
@@ -321,6 +322,7 @@ Ctrl<Key>M:		done()\n\
 #else
 static char translations[] = "<Key>:keypress()";
 #endif
+#endif /* Motif */
 
 static void
 #ifdef __STDC__
@@ -333,12 +335,23 @@ text_field_set_string (widget, text, position)
 #endif /* ! __STDC__ */
 {
 #ifdef NO_MOTIF
+  char *buf;
+  int endPos;
+
   XawTextBlock block;
   block.firstPos = 0;
   block.length = strlen (text);
   block.ptr = text;
   block.format = 0;
-  XawTextReplace (widget, 0, -1, &block);
+  if (block.length == 0)
+    {
+      buf=XawDialogGetValueString(passwd_form);
+      if (buf)
+	endPos=strlen(buf);
+      else
+	endPos=-1;
+    }
+  XawTextReplace (widget, 0, endPos, &block);
   XawTextSetInsertionPoint (widget, position);
 #else  /* !NO_MOTIF */
   XmTextFieldSetString (widget, text);
@@ -475,8 +488,8 @@ format_into_label (widget, string)
   XtSetValues (widget, av, ac);
 #ifndef NO_MOTIF
   XmStringFree (new_xm_label);
-#endif
   XtFree (label);
+#endif
 }
 
 #ifdef __STDC__
@@ -537,7 +550,6 @@ make_passwd_dialog (parent) Widget parent;
   Widget box, passwd_label2;
 
 #ifdef NO_MOTIF
-
   passwd_dialog = 
     XtVaCreatePopupShell("passwd_dialog", transientShellWidgetClass, parent,
 			 XtNtitle, NULL,
@@ -807,8 +819,23 @@ pop_up_athena_dialog_box (parent, focus, dialog, form, where)
   XtPopup(dialog,XtGrabNone);
   focus_fuckus(focus);
 }
-#endif /* NO_MOTIF */
 
+static void
+#ifdef __STDC__
+passwd_set_label (char *buf, int len)
+#else /* ! __STDC__ */
+passwd_set_label (buf,len) char *buf; int len;
+#endif /* ! __STDC__ */
+{
+  Widget label;
+  if (!passwd_text)
+    return;
+  label=XtNameToWidget(XtParent(passwd_text),"*label");
+  XtVaSetValues(label,
+		XtNlabel, buf,
+		NULL);
+}
+#endif /* NO_MOTIF */
 
 static Bool
 #ifdef __STDC__
@@ -893,7 +920,16 @@ pop_passwd_dialog (parent) Widget parent;
 #endif
       if (lose)
 	{
+#ifdef NO_MOTIF
+	  /* show the message */
+	  passwd_set_label(lose,strlen(lose)+1);
+
+	  /* and clear the password line */
+	  memset(typed_passwd, 0, PASSWDLEN);
+	  text_field_set_string (passwd_text, "", 0);
+#else
 	  text_field_set_string (passwd_text, lose, strlen (lose) + 1);
+#endif
 	  passwd_idle_timer_tick = 1;
 	  id = XtAppAddTimeOut (app, 3000,
 				(XtTimerCallbackProc) passwd_idle_timer, 0);

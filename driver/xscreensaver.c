@@ -719,7 +719,7 @@ initialize (argc, argv) int argc; char **argv;
   if (verbose_p)
     printf ("\
 %s %s, copyright (c) 1991-1996 by Jamie Zawinski <jwz@netscape.com>.\n\
- pid = %d.\n", progname, screensaver_version, getpid ());
+ pid = %d.\n", progname, screensaver_version, (int) getpid ());
   ensure_no_screensaver_running ();
 
   demo_mode_p = initial_demo_mode_p;

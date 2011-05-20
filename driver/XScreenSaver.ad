@@ -202,7 +202,7 @@
 *rogerLabel.width:		150
 
 
-! Resources for the abominable Athena dialog boxes:
+! Resources for the dialog boxes using the abominable Athena widgets:
 ! 
 *demo_dialog*font:		*-helvetica-bold-r-*-*-*-120-*-*-*-iso8859-1
 *resources_dialog*font:		*-helvetica-bold-r-*-*-*-120-*-*-*-iso8859-1
@@ -226,6 +226,9 @@
 *resources_dialog*Command.background:		gray85
 *resources_dialog*Toggle.background:		gray85
 *resources_dialog*Text*background:		white
+
+*resources_dialog*Dialog.value.translations: #override\n\
+	<Key>Return: beginning-of-line()\n
 
 *passwd_dialog*foreground:			black
 *passwd_dialog*background:			gray90
@@ -265,7 +268,7 @@
 *passwd_dialog*label3.label:		Please type %s's password to unlock it.
 *passwd_dialog*ok.label:			Done
 *passwd_dialog*cancel.label:			Cancel
-*passwd_dialog*passwd_form*label.label:		
+*passwd_dialog*passwd_form*label.label:		Enter password:
 *passwd_dialog*passwd_form*Text.width:		200
 *passwd_dialog*roger.width:			150
 *passwd_dialog*roger.height:			150

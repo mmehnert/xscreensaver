@@ -29,7 +29,8 @@ about what it means to be a screensaver.
 The XIDLE, MIT-SCREEN-SAVER, and/or SGI SCREEN_SAVER server extensions
 will be used if you have them.
 
-Unfortunately, locking doesn't work if you don't have Motif.
+The dialog boxes (for locking and demo-mode) look best using Motif, but
+can be configured to use Athena widgets instead.
 
 Also included are several graphics hacks for use as screensavers.  There's
 nothing magic about these: they're just programs that draw on the root
@@ -82,8 +83,8 @@ You can get all of these from the contrib directory on ftp.x.org.  If you
 know of (or write) any other interesting programs that can be used as
 screensavers, please let me know!
 
-The latest version of xscreensaver is always ftpable from ftp.x.org.  You can
-also get it from my web page at http://www.netscape.com/people/jwz/.
+The latest version of xscreensaver is always available by HTTP at
+http://www.netscape.com/people/jwz/xscreensaver/.
 
 	-- Jamie Zawinski <jwz@netscape.com>
 

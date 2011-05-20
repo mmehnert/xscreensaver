@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1991, 1992, 1993, 1995
+/* xscreensaver, Copyright (c) 1991, 1992, 1993, 1995, 1997
  *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -154,7 +154,8 @@ exec_screenhack (command)
   av [ac++] = 0;
   
   if (verbose_p)
-    printf ("%s: spawning \"%s\" in pid %d.\n", progname, command, getpid ());
+    printf ("%s: spawning \"%s\" in pid %lu.\n", progname, command,
+	    (unsigned long) getpid ());
 
 #if defined(SYSV) || defined(SVR4) || defined(__hpux)
   {
@@ -173,7 +174,8 @@ exec_screenhack (command)
   if (setpriority (PRIO_PROCESS, getpid(), nice_inferior) != 0)
     {
       sprintf (buf, "%s: %ssetpriority(PRIO_PROCESS, %d, %d) failed",
-	       progname, (verbose_p ? "## " : ""), getpid(), nice_inferior);
+	       progname, (verbose_p ? "## " : ""), (unsigned long) getpid(),
+	       nice_inferior);
       perror (buf);
     }
 #else /* !PRIO_PROCESS */
@@ -236,23 +238,24 @@ await_child_death (killed)
 	   */
 	  if (exit_status != 0 && (verbose_p || (! killed)))
 	    fprintf (stderr,
-		     "%s: %schild pid %d (%s) exited abnormally (code %d).\n",
+		     "%s: %schild pid %lu (%s) exited abnormally (code %d).\n",
 		    progname, (verbose_p ? "## " : ""),
-		     pid, current_hack_name (), exit_status);
+		     (unsigned long) pid, current_hack_name (), exit_status);
 	  else if (verbose_p)
-	    printf ("%s: child pid %d (%s) exited normally.\n",
-		    progname, pid, current_hack_name ());
+	    printf ("%s: child pid %lu (%s) exited normally.\n",
+		    progname, (unsigned long) pid, current_hack_name ());
 	}
       else if (WIFSIGNALED (status))
 	{
 	  if (!killed || WTERMSIG (status) != SIGTERM)
 	    fprintf (stderr,
-		     "%s: %schild pid %d (%s) terminated with signal %d!\n",
+		     "%s: %schild pid %lu (%s) terminated with signal %d!\n",
 		     progname, (verbose_p ? "## " : ""),
-		     pid, current_hack_name (), WTERMSIG (status));
+		     (unsigned long) pid, current_hack_name(),
+		     WTERMSIG(status));
 	  else if (verbose_p)
-	    printf ("%s: child pid %d (%s) terminated with SIGTERM.\n",
-		    progname, pid, current_hack_name ());
+	    printf ("%s: child pid %lu (%s) terminated with SIGTERM.\n",
+		    progname, (unsigned long) pid, current_hack_name ());
 	}
       else if (suspending)
 	{
@@ -262,20 +265,25 @@ await_child_death (killed)
       else if (WIFSTOPPED (status))
 	{
 	  suspended_p = True;
-	  fprintf (stderr, "%s: %schild pid %d (%s) stopped with signal %d!\n",
-		   progname, (verbose_p ? "## " : ""), pid,
+	  fprintf (stderr,
+		   "%s: %schild pid %lu (%s) stopped with signal %d!\n",
+		   progname, (verbose_p ? "## " : ""), (unsigned long) pid,
 		   current_hack_name (), WSTOPSIG (status));
 	}
       else
-	fprintf (stderr, "%s: %schild pid %d (%s) died in a mysterious way!",
-		 progname, (verbose_p ? "## " : ""), pid, current_hack_name());
+	fprintf (stderr, "%s: %schild pid %lu (%s) died in a mysterious way!",
+		 progname, (verbose_p ? "## " : ""), (unsigned long) pid,
+		 current_hack_name());
     }
   else if (kid <= 0)
-    fprintf (stderr, "%s: %swaitpid(%d, ...) says there are no kids?  (%d)\n",
-	     progname, (verbose_p ? "## " : ""), pid, kid);
+    fprintf (stderr,
+	     "%s: %swaitpid(%lu, ...) says there are no kids?  (%lu)\n",
+	     progname, (verbose_p ? "## " : ""),
+	     (unsigned long) pid, (unsigned long) kid);
   else
-    fprintf (stderr, "%s: %swaitpid(%d, ...) says proc %d died, not %d?\n",
-	     progname, (verbose_p ? "## " : ""), pid, kid, pid);
+    fprintf (stderr, "%s: %swaitpid(%lu, ...) says proc %lu died, not %lu?\n",
+	     progname, (verbose_p ? "## " : ""),
+	     (unsigned long) pid, (unsigned long) kid, (unsigned long) pid);
   killing = 0;
   if (suspended_p != True)
     pid = 0;
@@ -406,15 +414,15 @@ kill_screenhack ()
       else
 	{
 	  char buf [255];
-	  sprintf (buf, "%s: %scouldn't kill child process %d", progname,
-		   (verbose_p ? "## " : ""), pid);
+	  sprintf (buf, "%s: %scouldn't kill child process %lu", progname,
+		   (verbose_p ? "## " : ""), (unsigned long) pid);
 	  perror (buf);
 	}
     }
   else
     {
       if (verbose_p)
-	printf ("%s: killing pid %d.\n", progname, pid);
+	printf ("%s: killing pid %lu.\n", progname, (unsigned long) pid);
       await_child_death (True);
     }
 }
@@ -431,15 +439,15 @@ suspend_screenhack (suspend_p)
   else if (kill (pid, (suspend_p ? SIGSTOP : SIGCONT)) < 0)
     {
       char buf [255];
-      sprintf (buf, "%s: %scouldn't %s child process %d", progname,
+      sprintf (buf, "%s: %scouldn't %s child process %lu", progname,
 	       (verbose_p ? "## " : ""),
 	       (suspend_p ? "suspend" : "resume"),
-	       pid);
+	       (unsigned long) pid);
       perror (buf);
     }
   else if (verbose_p)
-    printf ("%s: %s pid %d.\n", progname,
-	    (suspend_p ? "suspending" : "resuming"), pid);
+    printf ("%s: %s pid %lu.\n", progname,
+	    (suspend_p ? "suspending" : "resuming"), (unsigned long) pid);
 }
 
 
@@ -570,8 +578,9 @@ hack_uid ()
 	{
 	  struct group *g = getgrgid (p->pw_gid);
 	  hack_uid_error = hack_uid_buf;
-	  sprintf (hack_uid_error, "changing uid/gid to %s/%s (%d/%d).",
-		   p->pw_name, (g ? g->gr_name : "???"), p->pw_uid, p->pw_gid);
+	  sprintf (hack_uid_error, "changing uid/gid to %s/%s (%ld/%ld).",
+		   p->pw_name, (g ? g->gr_name : "???"),
+		   (long) p->pw_uid, (long) p->pw_gid);
 
 	  /* Change the gid to be a safe one.  If we can't do that, then
 	     print a warning.  We change the gid before the uid so that we
@@ -579,16 +588,16 @@ hack_uid ()
 	  if (setgid (p->pw_gid) != 0)
 	    {
 	      hack_uid_errno = errno;
-	      sprintf (hack_uid_error, "couldn't set gid to %s (%d)",
-		       (g ? g->gr_name : "???"), p->pw_gid);
+	      sprintf (hack_uid_error, "couldn't set gid to %s (%ld)",
+		       (g ? g->gr_name : "???"), (long) p->pw_gid);
 	    }
 
 	  /* Now change the uid to be a safe one. */
 	  if (setuid (p->pw_uid) != 0)
 	    {
 	      hack_uid_errno = errno;
-	      sprintf (hack_uid_error, "couldn't set uid to %s (%d)",
-		       p->pw_name, p->pw_uid);
+	      sprintf (hack_uid_error, "couldn't set uid to %s (%ld)",
+		       p->pw_name, (long) p->pw_uid);
 	    }
 	}
     }

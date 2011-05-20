@@ -808,10 +808,9 @@ make_resources_dialog (Widget parent)
 make_resources_dialog (parent) Widget parent;
 #endif /* ! __STDC__ */
 {
+#ifndef NO_MOTIF
   Arg av[10];
   int ac;
-
-#ifndef NO_MOTIF
 
   create_resources_dialog (parent);
 

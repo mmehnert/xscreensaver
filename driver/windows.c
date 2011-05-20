@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1991-1996 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1991-1997 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -666,7 +666,7 @@ initialize_screensaver_window P((void))
 		       (unsigned char *) screensaver_version,
 		       strlen (screensaver_version));
 
-      sprintf (id, "%d on host ", getpid ());
+      sprintf (id, "%lu on host ", (unsigned long) getpid ());
       if (! XmuGetHostname (id + strlen (id), sizeof (id) - strlen (id) - 1))
 	strcat (id, "???");
       XChangeProperty (dpy, screensaver_window, XA_SCREENSAVER_ID, XA_STRING,
