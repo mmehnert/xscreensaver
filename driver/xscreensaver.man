@@ -11,7 +11,7 @@
 .if n .sp 1
 .if t .sp .5
 ..
-.TH XScreenSaver 1 "23-Sep-98 (2.30)" "X Version 11"
+.TH XScreenSaver 1 "02-Oct-98 (2.31)" "X Version 11"
 .SH NAME
 xscreensaver - graphics hack and screen locker, launched when the user is idle
 .SH SYNOPSIS
@@ -27,6 +27,7 @@ xscreensaver - graphics hack and screen locker, launched when the user is idle
 [\-no\-install] \
 [\-verbose] \
 [\-silent] \
+[\-timestamp] \
 [\-splash] \
 [\-no\-splash] \
 [\-nice \fIint\fP] \
@@ -243,6 +244,10 @@ the \fBdefault\-n\fP name in the section about the \fBprograms\fP resource.
 .TP 8
 .B verbose\fP (class \fBBoolean\fP)
 Whether to print diagnostics.  Default false.
+.TP 8
+.B timestamp\fP (class \fBBoolean\fP)
+Whether to print the time of day along with any other diagnostic messages.
+Default false.
 .TP 8
 .B splash\fP (class \fBBoolean\fP)
 Whether to display a splash screen at startup.  Default true.
@@ -505,6 +510,9 @@ Same as setting the \fIverbose\fP resource to \fItrue\fP.
 .TP 8
 .B \-silent
 Same as setting the \fIverbose\fP resource to \fIfalse\fP.
+.TP 8
+.B \-timestamp
+Same as setting the \fItimestamp\fP resource to \fItrue\fP.
 .TP 8
 .B \-splash
 Same as setting the \fIsplash\fP resource to \fItrue\fP.

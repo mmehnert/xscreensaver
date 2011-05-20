@@ -12,13 +12,13 @@ TARFILES	= README README.VMS README.debugging INSTALL xscreensaver.lsm \
 		  config.h-vms install-sh setup.com config.guess \
 		  config.sub makevms.com screenblank.txt \
 		  xscreensaver.lsm.sh
-TAR		= gtar
+TAR		= tar
 COMPRESS	= gzip --verbose --best
 COMPRESS_EXT	= gz
 # COMPRESS	= compress
 # COMPRESS_EXT	= Z
 
-MAKE_SUBDIR	= for dir in $(SUBDIRS) ; do ( cd $$dir ; $(MAKE) $@ ) ; done
+MAKE_SUBDIR = for dir in $(SUBDIRS); do (cd $$dir; $(MAKE) $@) || exit 5; done
 
 all::
 	@$(MAKE_SUBDIR)
@@ -135,7 +135,7 @@ bump-version::
     echo "WARNING: xscreensaver-$$MAJOR.$$NEW.tar.gz already exists.";	    \
   fi ;									    \
   echo -n "Bumping $$MAJOR.$$MINOR to $$MAJOR.$$NEW ($$D), ok? ";	    \
-  line=`line`;								    \
+  read line;								    \
   if [ "x$$line" != "xyes" -a  "x$$line" != "xy" ]; then		    \
     exit 1 ; 								    \
   fi ;									    \
@@ -162,7 +162,7 @@ www::
   fi ;									    \
   if [ -f $$DEST/$$NAME ]; then						    \
     echo -n "WARNING: $$DEST/$$NAME already exists!  Overwrite? ";	    \
-    line=`line`;							    \
+    read line;							    \
     if [ "x$$line" != "xyes" -a "x$$line" != "xy" ]; then		    \
       exit 1 ; 								    \
     fi ;								    \
@@ -180,7 +180,7 @@ www::
 									    \
   OLDEST=`ls xscreensaver*.tar.gz | head -1` ;				    \
   echo -n "Delete $$DEST/$$OLDEST? ";					    \
-  line=`line`;								    \
+  read line;								    \
   if [ "x$$line" = "xyes" -o "x$$line" = "xy" ]; then			    \
     set -x ;								    \
     rm $$OLDEST ;							    \

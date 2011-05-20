@@ -619,6 +619,7 @@ saver_exit (saver_info *si, int status, const char *dump_core_reason)
 
   if (dump_core_reason)
     {
+#if 0
       if (si->locking_disabled_p &&
 	  si->nolock_reason &&
 	  *si->nolock_reason)
@@ -632,7 +633,13 @@ saver_exit (saver_info *si, int status, const char *dump_core_reason)
 		  si->nolock_reason);
 	}
       else
+#endif
 	{
+	  /* Note that the Linux man page for setuid() says If uid is
+	     different from the old effective uid, the process will be
+	     forbidden from leaving core dumps.
+	   */
+
 	  char cwd[4096]; /* should really be PATH_MAX, but who cares. */
 	  fprintf(real_stderr, "%s: dumping core (%s)\n", blurb(),
 		  dump_core_reason);
@@ -644,7 +651,8 @@ saver_exit (saver_info *si, int status, const char *dump_core_reason)
 # else
 	  strcpy(cwd, "unknown.");
 # endif
-	  fprintf(real_stderr, "%s: current directory is %s\n", blurb(), cwd);
+	  fprintf (real_stderr, "%s: current directory is %s\n", blurb(), cwd);
+	  describe_uids (si, real_stderr);
 
 	  /* Do this to drop a core file, so that we can get a stack trace. */
 	  abort();

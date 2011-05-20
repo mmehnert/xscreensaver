@@ -49,6 +49,10 @@ extern int validate_user(char *name, char *password);
 
 #endif /* HAVE_MOTIF */
 
+#ifdef _VROOT_H_
+ERROR!  You must not include vroot.h in this file.
+#endif
+
 extern Widget passwd_dialog;
 extern Widget passwd_form;
 extern Widget roger_label;
@@ -165,16 +169,16 @@ static XtActionsRec actions[] = {{"keypress",  keypress},
 	   for all keys anyway.  So, the implementation of keypress()
 	   has BackSpace, etc, hardcoded into it instead.  FMH!
 	 */
-static char translations[] = ("<Key>BackSpace:	backspace()\n"
+static char translations[] =  "<Key>BackSpace:	backspace()\n"
 			      "<Key>Delete:	backspace()\n"
 			      "Ctrl<Key>H:	backspace()\n"
 			      "Ctrl<Key>U:	kill_line()\n"
 			      "Ctrl<Key>X:	kill_line()\n"
 			      "Ctrl<Key>J:	done()\n"
 			      "Ctrl<Key>M:	done()\n"
-			      "<Key>:		keypress()\n");
+			      "<Key>:		keypress()\n";
 # else  /* !0 */
-static char translations[] = ("<Key>:		keypress()\n");
+static char translations[] =  "<Key>:		keypress()\n";
 # endif /* !0 */
 
 
@@ -468,6 +472,7 @@ pop_passwd_dialog (saver_info *si)
   Window focus;
   int revert_to;
   int i;
+  Window grab_window = RootWindowOfScreen(si->screens[0].screen);
 
   typed_passwd [0] = 0;
   passwd_state = pw_read;
@@ -530,6 +535,29 @@ pop_passwd_dialog (saver_info *si)
     roger(roger_label, 0, 0);
 #endif /* HAVE_ATHENA */
 
+
+  /* Make sure the mouse cursor is visible.
+     Since the screensaver was already active, we had already called
+     grab_keyboard_and_mouse() with our "invisible" Cursor object.
+     Now we need to change that.  (cursor == 0 means "server default
+     cursor.")
+   */
+  if (grab_window != si->mouse_grab_window ||
+      grab_window != si->keyboard_grab_window)
+    fprintf(stderr,
+	    "%s: WARNING: expected mouse and keyboard grabs on 0x%x,\n"
+	    "\tbut mouse-grab is 0x%x and keyboard-grab is 0x%x.\n",
+	    blurb(),
+	    (unsigned long) grab_window,
+	    (unsigned long) si->mouse_grab_window,
+	    (unsigned long) si->keyboard_grab_window);
+
+  if (p->verbose_p)
+    fprintf(stderr, "%s: re-grabbing keyboard and mouse to expose cursor.\n",
+	    blurb());
+  grab_keyboard_and_mouse (si, grab_window, 0);
+
+
   if (!si->prefs.debug_p)
     XGrabServer (dpy);				/* ############ DANGER! */
 
@@ -544,6 +572,15 @@ pop_passwd_dialog (saver_info *si)
     }
   XUngrabServer (dpy);
   XSync (dpy, False);				/* ###### (danger over) */
+
+
+  /* Now turn off the mouse cursor again.
+   */
+  if (p->verbose_p)
+    fprintf(stderr, "%s: re-grabbing keyboard and mouse to hide cursor.\n",
+	    blurb());
+  grab_keyboard_and_mouse (si, grab_window, si->screens[0].cursor);
+
 
   if (passwd_state != pw_time)
     XtRemoveTimeOut (passwd_idle_id);

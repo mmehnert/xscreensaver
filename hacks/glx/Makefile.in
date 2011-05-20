@@ -63,16 +63,16 @@ SRCS		= atlantis.c buildlwo.c cage.c dolphin.c gears.c moebius.c \
 		  morph3d.c pipeobjs.c pipes.c rubik.c s1_1.c s1_2.c s1_3.c \
 		  s1_4.c s1_5.c s1_6.c s1_b.c shark.c sproingies.c \
 		  sproingiewrap.c stairs.c superquadrics.c swim.c whale.c \
-		  xlock-gl.c lament.c
+		  xlock-gl.c lament.c bubble3d.c
 
 OBJS		= atlantis.o buildlwo.o cage.o dolphin.o gears.o moebius.o \
 		  morph3d.o pipeobjs.o pipes.o rubik.o s1_1.o s1_2.o s1_3.o \
 		  s1_4.o s1_5.o s1_6.o s1_b.o shark.o sproingies.o \
 		  sproingiewrap.o stairs.o superquadrics.o swim.o whale.o \
-		  xlock-gl.o lament.o
+		  xlock-gl.o lament.o bubble3d.o
 
 GL_EXES		= cage gears moebius pipes sproingies stairs superquadrics \
-		  morph3d rubik atlantis lament
+		  morph3d rubik atlantis lament bubble3d
 EXES		= @GL_EXES@
 
 HACK_OBJS	= screenhack-gl.o xlock-gl.o $(HACK_BIN)/xlockmore.o \
@@ -240,10 +240,14 @@ sproingies: sproingies.o $(HACK_OBJS) $(SPROINGIES)
 lament:		lament.o	$(HACK_OBJS)
 	$(CC_HACK) -o $@ $@.o	$(HACK_OBJS) $(XPM_LIBS)
 
+B3D = b_sphere.o b_draw.o b_lockglue.o
+bubble3d:	bubble3d.o	$(HACK_OBJS) $(B3D)
+	$(CC_HACK) -o $@ $@.o	$(HACK_OBJS) $(B3D) $(HACK_LIBS)
 
 ##############################################################################
 #
 # DO NOT DELETE: updated by make distdepend
+# $(srcdir)/DO $(srcdir)/NOT $(srcdir)/DELETE: $(srcdir)/updated $(srcdir)/by $(srcdir)/make $(srcdir)/distdepend
 
 atlantis.o: $(HACK_SRC)/xlockmore.h
 atlantis.o: ../../config.h
@@ -430,4 +434,16 @@ lament.o: $(UTILS_SRC)/grabscreen.h
 lament.o: $(UTILS_SRC)/visual.h
 lament.o: $(UTILS_SRC)/xshm.h
 lament.o: $(HACK_SRC)/images/lament.xpm
+bubble3d.o: $(srcdir)/bubble3d.h
+bubble3d.o: $(HACK_SRC)/xlockmoreI.h
+bubble3d.o: $(HACK_SRC)/screenhack.h
+bubble3d.o: ../../config.h
+bubble3d.o: $(UTILS_SRC)/yarandom.h
+bubble3d.o: $(UTILS_SRC)/usleep.h
+bubble3d.o: $(UTILS_SRC)/resources.h
+bubble3d.o: $(UTILS_SRC)/hsv.h
+bubble3d.o: $(UTILS_SRC)/colors.h
+bubble3d.o: $(UTILS_SRC)/grabscreen.h
+bubble3d.o: $(UTILS_SRC)/visual.h
+bubble3d.o: $(UTILS_SRC)/xshm.h
 

@@ -68,6 +68,7 @@ typedef struct ModeInfo {
   long threed_none_color;
   long threed_delta;
   Bool wireframe_p;
+  Bool is_drawn;
 
 #ifdef HAVE_XSHM_EXTENSION
   Bool use_shm;

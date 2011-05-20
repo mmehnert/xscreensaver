@@ -196,6 +196,10 @@ static char *defaults[] = {
  0
 };
 
+#ifdef _VROOT_H_
+ERROR!  You must not include vroot.h in this file.
+#endif
+
 static void
 do_help (saver_info *si)
 {
@@ -479,20 +483,7 @@ get_resources (saver_info *si)
 #ifdef NO_LOCKING
   si->locking_disabled_p = True;
   si->nolock_reason = "not compiled with locking support";
-  if (p->lock_p)
-    {
-      p->lock_p = False;
-      fprintf (stderr, "%s: not compiled with support for locking.\n",
-	       blurb());
-    }
-#else  /* ! NO_LOCKING */
-  if (p->lock_p && si->locking_disabled_p)
-    {
-      fprintf (stderr, "%s: locking is disabled (%s).\n", blurb(),
-	       si->nolock_reason);
-      p->lock_p = False;
-    }
-#endif /* ! NO_LOCKING */
+#endif /* NO_LOCKING */
 
   get_screenhacks (si);
 
@@ -552,9 +543,16 @@ saver_ehandler (Display *dpy, XErrorEvent *error)
     {
       fprintf (real_stderr, "\n");
       if (si->prefs.xsync_p)
-	saver_exit (si, -1, "because of synchronous X Error");
+	{
+	  saver_exit (si, -1, "because of synchronous X Error");
+	}
       else
-	saver_exit (si, -1, 0);
+	{
+	  fprintf(real_stderr,
+		  "%s: to dump a core file, re-run with `-sync'.\n\n",
+		  blurb());
+	  saver_exit (si, -1, 0);
+	}
     }
   else
     fprintf (real_stderr, " (nonfatal.)\n");
@@ -570,8 +568,7 @@ blurb (void)
   else
     {
       static char buf[255];
-      time_t now = time ((time_t *) 0);
-      char *ct = (char *) ctime (&now);
+      char *ct = timestring();
       int n = strlen(progname);
       if (n > 100) n = 99;
       strncpy(buf, progname, n);
@@ -588,6 +585,7 @@ initialize_connection (saver_info *si, int argc, char **argv)
 {
   int i;
   Widget toplevel_shell;
+  saver_preferences *p = &si->prefs;
 
   /* The X resource database blows up if argv[0] has a "." in it. */
   {
@@ -657,9 +655,28 @@ initialize_connection (saver_info *si, int argc, char **argv)
       exit (1);
     }
   get_resources (si);
-#ifndef NO_SETUID
-  hack_uid_warn (si);
-#endif /* NO_SETUID */
+
+  if (p->lock_p && si->locking_disabled_p)
+    {
+      p->lock_p = False;
+      fprintf (stderr, "%s: locking is disabled (%s).\n", blurb(),
+	       si->nolock_reason);
+      if (strstr (si->nolock_reason, "passw"))
+	fprintf (stderr, "%s: does xscreensaver need to be setuid?  "
+		 "consult the manual.\n", blurb());
+    }
+
+  /* Defer the printing of this message until after we have loaded the
+     resources and know whether `verbose' is on.
+   */
+  if (p->verbose_p && si->uid_message)
+    {
+      if (si->orig_uid && *si->orig_uid)
+	fprintf (stderr, "%s: initial effective uid/gid was %s.\n", blurb(),
+		 si->orig_uid);
+      fprintf (stderr, "%s: %s\n", blurb(), si->uid_message);
+    }
+
   XA_VROOT = XInternAtom (si->dpy, "__SWM_VROOT", False);
   XA_SCREENSAVER = XInternAtom (si->dpy, "SCREENSAVER", False);
   XA_SCREENSAVER_VERSION = XInternAtom (si->dpy, "_SCREENSAVER_VERSION",False);

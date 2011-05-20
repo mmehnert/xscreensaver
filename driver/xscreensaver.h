@@ -122,14 +122,21 @@ struct saver_info {
 
 
   /* =======================================================================
-     locking
+     locking and runtime priveleges
      ======================================================================= */
 
-  Bool locking_disabled_p;	/* Sometimes locking is impossible. */
-  char *nolock_reason;		/* This is why. */
   Bool locked_p;		/* Whether the screen is currently locked. */
   Bool dbox_up_p;		/* Whether the demo-mode or passwd dialogs
 				   are currently visible */
+
+  Bool locking_disabled_p;	/* Sometimes locking is impossible. */
+  char *nolock_reason;		/* This is why. */
+
+  char *orig_uid;		/* What uid/gid we had at startup, before
+				   discarding priveleges. */
+  char *uid_message;		/* Any diagnostics from our attempt to
+				   discard priveleges (printed only in
+				   -verbose mode.) */
 
   /* =======================================================================
      demoing
@@ -302,6 +309,13 @@ extern Bool passwd_valid_p (const char *typed_passwd);
 #endif
 
 /* =======================================================================
+   runtime priveleges
+   ======================================================================= */
+
+extern void hack_uid (saver_info *si);
+extern void describe_uids (saver_info *si, FILE *out);
+
+/* =======================================================================
    demoing
    ======================================================================= */
 
@@ -353,18 +367,6 @@ extern Bool screenhack_running_p (saver_info *si);
 extern void emergency_kill_subproc (saver_info *si);
 extern Bool select_visual (saver_screen_info *ssi, const char *visual_name);
 extern const char *signal_name (int signal);
-
-/* =======================================================================
-   subprocs security
-   ======================================================================= */
-
-#ifdef NO_SETUID
-# define hack_uid()
-# define hack_uid_warn()
-#else /* !NO_SETUID */
- extern void hack_uid (saver_info *si);
- extern void hack_uid_warn (saver_info *si);
-#endif /* NO_SETUID */
 
 /* =======================================================================
    subprocs diagnostics

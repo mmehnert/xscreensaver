@@ -335,6 +335,14 @@ main (int argc, char **argv)
   XA_PREFS = XInternAtom (dpy, "PREFS", False);
   XA_LOCK = XInternAtom (dpy, "LOCK", False);
 
+  XSync (dpy, 0);
+
+  if (*cmd == XA_ACTIVATE || *cmd == XA_LOCK ||
+      *cmd == XA_NEXT || *cmd == XA_PREV)
+    /* People never guess that KeyRelease deactivates the screen saver too,
+       so if we're issuing an activation command, wait a second. */
+    sleep (1);
+
   xscreensaver_command(dpy, *cmd);
 
   fflush (stdout);

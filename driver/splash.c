@@ -28,6 +28,7 @@
 #endif /* HAVE_ATHENA */
 
 #include "xscreensaver.h"
+#include "visual.h"
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
@@ -72,6 +73,7 @@ roger (Widget button, XtPointer client_data, XtPointer call_data)
 }
 
 
+static Widget splash_shell;
 extern Widget splash_dialog;
 extern Widget splash_form;
 extern Widget splash_roger_label;
@@ -87,7 +89,9 @@ splash_sink(saver_info *si)
   if (si->splash_dialog)
     {
       XtDestroyWidget(si->splash_dialog);
+      XtDestroyWidget(splash_shell);
       si->splash_dialog = 0;
+      splash_shell = 0;
     }
 }
 
@@ -157,9 +161,26 @@ static void
 make_splash_dialog (saver_info *si)
 {
   saver_screen_info *ssi = si->default_screen;
-  Widget parent = ssi->toplevel_shell;
+  Visual *v = DefaultVisualOfScreen(ssi->screen);
 
-  create_splash_dialog (parent, ssi->default_visual,
+  /* The splash dialog must always be created on the default visual and
+     with the default colormap, so that it shows up in the right colors
+     when viewed along with the rest of the desktop.  The other xscreensaver
+     dialogs don't have this constraint, since they are only seen when the
+     blackout window is also exposed.
+
+     To accomplish this, we need our own ApplicationShell, since the shell
+     in si->default_screen->toplevel_shell might have a non-default visual.
+   */
+  splash_shell = XtVaAppCreateShell (progname, progclass,
+				     applicationShellWidgetClass,
+				     si->dpy,
+				     XtNscreen, ssi->screen,
+				     XtNvisual, v,
+				     XtNdepth,  visual_depth(ssi->screen, v),
+				     0);
+
+  create_splash_dialog (splash_shell, v,
 			DefaultColormapOfScreen (ssi->screen));
   si->splash_dialog = splash_dialog; /* gaaah... */
 

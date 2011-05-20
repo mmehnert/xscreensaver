@@ -30,6 +30,10 @@
 
 #include "xscreensaver.h"
 
+#ifdef _VROOT_H_
+ERROR!  You must not include vroot.h in this file.
+#endif
+
 
 /* MIT SCREEN-SAVER server extension hackery.
  */

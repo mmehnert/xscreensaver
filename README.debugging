@@ -71,7 +71,8 @@ RUNNING:
     the demos); and there are the demos themselves (independent programs
     that draw pretty pictures.)
 
-        *  Compile with `make CFLAGS=-g'.
+        *  Compile with `make CFLAGS=-g' (so that if you get a core
+	   dump, there will be debugging info in it.)
 
         *  What platform are you running on?  What does the included
            `./config.guess' shell script print?

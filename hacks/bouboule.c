@@ -32,7 +32,7 @@ static const char sccsid[] = "@(#)bouboule.c	4.00 97/01/01 xlockmore";
  * I only scale the sort of sphere you see to the whole sky and clip the stars
  * to the camera screen.
  *
- *   Code Copyright 1996 by Jeremie PETIT (petit@eurecom.fr, jpetit@essi.fr)
+ *   Code Copyright 1996 by Jeremie PETIT (jeremie_petit@geocities.com)
  *
  *   Use: batchcount is the number of stars.
  *        cycles is the maximum size for a star

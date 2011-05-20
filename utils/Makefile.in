@@ -198,6 +198,7 @@ distdepend:: compile_axp.com compile_decc.com
 ##############################################################################
 #
 # DO NOT DELETE: updated by make distdepend
+# $(srcdir)/DO $(srcdir)/NOT $(srcdir)/DELETE: $(srcdir)/updated $(srcdir)/by $(srcdir)/make $(srcdir)/distdepend
 
 alpha.o: $(srcdir)/utils.h
 alpha.o: ../config.h
@@ -259,7 +260,6 @@ sgivideo.o: ../config.h
 sgivideo.o: $(srcdir)/sgivideo.h
 sgivideo.o: $(srcdir)/resources.h
 sgivideo.o: $(srcdir)/visual.h
-sgivideo.o: $(srcdir)/usleep.h
 xshm.o: $(srcdir)/utils.h
 xshm.o: ../config.h
 xshm.o: $(srcdir)/xshm.h

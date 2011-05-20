@@ -553,6 +553,7 @@ crystal:	crystal.o		$(XLOCK_OBJS)
 ##############################################################################
 #
 # DO NOT DELETE: updated by make distdepend
+# $(srcdir)/DO $(srcdir)/NOT $(srcdir)/DELETE: $(srcdir)/updated $(srcdir)/by $(srcdir)/make $(srcdir)/distdepend
 
 attraction.o: $(srcdir)/screenhack.h
 attraction.o: ../config.h
@@ -1375,6 +1376,7 @@ bsod.o: $(UTILS_SRC)/colors.h
 bsod.o: $(UTILS_SRC)/grabscreen.h
 bsod.o: $(UTILS_SRC)/visual.h
 bsod.o: $(srcdir)/images/amiga.xpm
+bsod.o: $(srcdir)/images/atari.xbm
 bsod.o: $(srcdir)/images/mac.xbm
 crystal.o: $(srcdir)/xlockmore.h
 crystal.o: ../config.h
@@ -1410,6 +1412,7 @@ distort.o: $(UTILS_SRC)/hsv.h
 distort.o: $(UTILS_SRC)/colors.h
 distort.o: $(UTILS_SRC)/grabscreen.h
 distort.o: $(UTILS_SRC)/visual.h
+distort.o: $(UTILS_SRC)/xshm.h
 kumppa.o: $(srcdir)/screenhack.h
 kumppa.o: ../config.h
 kumppa.o: $(UTILS_SRC)/yarandom.h

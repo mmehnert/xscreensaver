@@ -26,6 +26,7 @@
 #include <sys/types.h>
 #ifndef VMS
 # include <pwd.h>
+# include <grp.h>
 #else /* VMS */
 # include "vms-pwd.h"
 #endif /* VMS */
@@ -170,7 +171,7 @@ get_encrypted_passwd(const char *user)
     }
 
   fprintf (stderr, "%s: couldn't get password of \"%s\"\n",
-	   progname, (user ? user : "(null)"));
+	   blurb(), (user ? user : "(null)"));
 
   return 0;
 }
@@ -235,6 +236,5 @@ passwd_valid_p (const char *typed_passwd)
 #else  /* VMS */
 Bool lock_init (int argc, char **argv) { return True; }
 #endif /* VMS */
-
 
 #endif /* NO_LOCKING -- whole file */

@@ -49,6 +49,10 @@
 #include <string.h>
 #include <ctype.h>
 
+#ifdef _VROOT_H_
+ERROR!  You must not include vroot.h in this file.
+#endif
+
 static void demo_mode_hack (saver_info *si, char *);
 static void demo_mode_done (saver_info *si);
 

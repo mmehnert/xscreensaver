@@ -4,8 +4,8 @@
 !            a screen saver and locker for the X window system
 !                            by Jamie Zawinski
 !
-!                              version 2.30
-!                                23-Sep-98
+!                              version 2.31
+!                                02-Oct-98
 !
 ! See "man xscreensaver" for more info.  The latest version is always
 ! available at http://www.jwz.org/xscreensaver/
@@ -174,7 +174,8 @@
 @GL_KLUDGE_2@	sproingies -root				  	\n\
 @GL_KLUDGE_2@	rubik -root					  	\n\
 @GL_KLUDGE_2@	atlantis -root					  	\n\
-@GL_KLUDGE_2@	lament -root					  	\n
+@GL_KLUDGE_2@	lament -root					  	\n\
+@GL_KLUDGE_2@	bubble3d -root					  	\n
  
 
 ! A few of the hacks require OpenGL, and will only be built if you have it.

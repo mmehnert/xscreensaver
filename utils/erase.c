@@ -289,6 +289,7 @@ squaretate (Display *dpy, Window window, GC gc,
 }
 
 
+/* from Frederick Roeber <roeber@netscape.com> */
 static void
 fizzle (Display *dpy, Window window, GC gc,
 	    int width, int height, int delay, int granularity)
@@ -370,6 +371,50 @@ fizzle (Display *dpy, Window window, GC gc,
 # undef SIZE
 }
 
+
+#undef MAX
+#undef MIN
+#define MAX(a,b) ((a)>(b)?(a):(b))
+#define MIN(a,b) ((a)<(b)?(a):(b))
+
+/* from David Bagley <bagleyd@tux.org> */
+static void
+random_squares(Display * dpy, Window window, GC gc,
+               int width, int height, int delay, int granularity)
+{
+  int randsize = MAX(1, MIN(width, height) / (16 + (random() % 32)));
+  int max = (height / randsize + 1) * (width / randsize + 1);
+  int *squares = (int *) calloc(max, sizeof (*squares));
+  int i;
+  int columns = width / randsize + 1;  /* Add an extra for roundoff */
+
+  for (i = 0; i < max; i++)
+    squares[i] = i;
+
+  for (i = 0; i < max; i++)
+    {
+      int t, r;
+      t = squares[i];
+      r = random() % max;
+      squares[i] = squares[r];
+      squares[r] = t;
+    }
+
+  for (i = 0; i < max; i++)
+    {
+      XFillRectangle(dpy, window, gc,
+		     (squares[i] % columns) * randsize,
+		     (squares[i] / columns) * randsize,
+		     randsize, randsize);
+
+      XSync(dpy, False);
+      if (delay > 0 && ((i % granularity) == 0))
+      usleep(delay * granularity);
+    }
+  free(squares);
+}
+
+
 static Eraser erasers[] = {
   random_lines,
   venetian,
@@ -379,6 +424,7 @@ static Eraser erasers[] = {
   three_circle_wipe,
   squaretate,
   fizzle,
+  random_squares,
 };
 
 
