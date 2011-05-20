@@ -320,6 +320,20 @@ check_pointer_timer (XtPointer closure, XtIntervalId *id)
 }
 
 
+static void
+dispatch_event (saver_info *si, XEvent *event)
+{
+  /* If this is for the splash dialog, pass it along.
+     Note that the password dialog is handled with its own event loop,
+     so events for that window will never come through here.
+   */
+  if (si->splash_dialog && event->xany.window == si->splash_dialog)
+    handle_splash_event (si, event);
+
+  XtDispatchEvent (event);
+}
+
+
 void
 sleep_until_idle (saver_info *si, Bool until_idle_p)
 {
@@ -451,12 +465,8 @@ sleep_until_idle (saver_info *si, Bool until_idle_p)
 	  }
 #endif /* DEBUG_TIMERS */
 
-	/* If this is for the splash dialog, pass it along. */
-	if (si->splash_dialog && event.xany.window == si->splash_dialog)
-	  handle_splash_event (si, &event);
-
 	/* If any widgets want to handle this event, let them. */
-	XtDispatchEvent (&event);
+	dispatch_event (si, &event);
 
 	/* We got a user event */
 	if (!until_idle_p)
@@ -552,7 +562,7 @@ sleep_until_idle (saver_info *si, Bool until_idle_p)
 	else
 #endif /* HAVE_SGI_SAVER_EXTENSION */
 
-	  XtDispatchEvent (&event);
+	  dispatch_event (si, &event);
       }
     }
  DONE:

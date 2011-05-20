@@ -77,7 +77,7 @@ KERBEROS_OBJS	= kpasswd.o
 LOCK_SRCS_1	= lock.c
 LOCK_OBJS_1	= lock.o
 
-TEST_SRCS	= test-passwd.c test-uid.c
+TEST_SRCS	= test-passwd.c test-uid.c test-xdpms.c
 
 DIALOG_SRCS	= @DIALOG_SRCS@
 DIALOG_OBJS	= @DIALOG_OBJS@
@@ -327,6 +327,12 @@ test-passwd.o: XScreenSaver_ad.h
 
 test-passwd: $(TEST_PASSWD_OBJS) XScreenSaver_ad.h
 	$(CC) $(LDFLAGS) -o $@ $(TEST_PASSWD_OBJS) $(SAVER_LIBS)
+
+test-uid: test-uid.o
+	$(CC) $(LDFLAGS) -o $@ test-uid.o
+
+test-xdpms: test-xdpms.o
+	$(CC) $(LDFLAGS) -o $@ test-xdpms.o $(SAVER_LIBS)
 
 ##############################################################################
 #

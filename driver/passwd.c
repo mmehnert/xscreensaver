@@ -183,7 +183,7 @@ get_encrypted_passwd(const char *user)
 
 
 /* This has to be called before we've changed our effective user ID,
-   because it might need priveleges to get at the encrypted passwords.
+   because it might need privileges to get at the encrypted passwords.
    Returns false if we weren't able to get any passwords, and therefore,
    locking isn't possible.  (It will also have written to stderr.)
  */

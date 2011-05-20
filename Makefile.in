@@ -191,7 +191,8 @@ test-tar::
     export CC ;								    \
     ../../configure --with-motif=/usr/local/motif ;			    \
     echo --------------------------------------------------------------- ;  \
-    gmake ;								    \
+    ( cd utils; gmake ) ;						    \
+    ( cd driver; gmake ) ;						    \
     echo --------------------------------------------------------------- ); \
 									    \
   ( cd BIN/lesstif ;							    \
@@ -199,7 +200,8 @@ test-tar::
     export CC ;								    \
     ../../configure --with-motif=/usr/local/lesstif ;			    \
     echo --------------------------------------------------------------- ;  \
-    gmake ;								    \
+    ( cd utils; gmake ) ;						    \
+    ( cd driver; gmake ) ;						    \
     echo --------------------------------------------------------------- ); \
 									    \
   chmod -R u+w . ;							    \
@@ -209,14 +211,16 @@ www::
 	@								    \
   DEST=$$HOME/www/xscreensaver ;					    \
   VERS=`sed -n 's/[^0-9]*\([0-9]\.[0-9][0-9]*\).*/\1/p' utils/version.h` ;  \
-  NAME="xscreensaver-$$VERS.tar.gz" ;					    \
+  HEAD="xscreensaver-$$VERS" ;						    \
+  NAME="$$HEAD.tar.gz" ;						    \
+									    \
   if [ ! -f $$NAME ]; then						    \
     echo "$$NAME does not exist!  Did you forget to \`make tar'?" ;	    \
     exit 1 ; 								    \
   fi ;									    \
   if [ -f $$DEST/$$NAME ]; then						    \
     echo -n "WARNING: $$DEST/$$NAME already exists!  Overwrite? ";	    \
-    read line;							    \
+    read line;								    \
     if [ "x$$line" != "xyes" -a "x$$line" != "xy" ]; then		    \
       exit 1 ; 								    \
     fi ;								    \
@@ -226,10 +230,9 @@ www::
   cd $$DEST ;								    \
 									    \
   TMP=/tmp/xd.$$$$ ;							    \
-  sed "s/xscreensaver-[0-9]\.[0-9][0-9]\.tar\.gz/$$NAME/g" index.html	    \
-    > $$TMP ;								    \
+  sed "s/xscreensaver-[0-9]\.[0-9][0-9]*/$$HEAD/g" download.html > $$TMP ;  \
   echo '' ;								    \
-  diff -u0 index.html $$TMP ;						    \
+  diff -u0 download.html $$TMP ;					    \
   echo '' ;								    \
 									    \
   OLDEST=`ls xscreensaver*.tar.gz | head -1` ;				    \
@@ -243,6 +246,16 @@ www::
     set -x ;								    \
   fi ;									    \
   cvs add -kb $$NAME ;							    \
-  cat $$TMP > index.html ;						    \
+  cat $$TMP > download.html ;						    \
   rm -f $$TMP ;								    \
+									    \
+  (cd ..; $(MAKE) xscreensaver/changelog.html );			    \
+  cvs diff -u0 changelog.html ;						    \
+									    \
+  echo -n "Ok? ";							    \
+  read line;								    \
+  if [ "x$$line" != "xyes" -a "x$$line" != "xy" ]; then			    \
+    exit 1 ;								    \
+  fi ;									    \
+									    \
   cvs commit -m "$$VERS"

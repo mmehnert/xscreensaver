@@ -1,4 +1,4 @@
-/* uid-test.c --- playing with setuid.
+/* test-uid.c --- playing with setuid.
  * xscreensaver, Copyright (c) 1998 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -9,8 +9,6 @@
  * software for any purpose.  It is provided "as is" without express or 
  * implied warranty.
  */
-
-#define HAVE_CONFIG_H
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"

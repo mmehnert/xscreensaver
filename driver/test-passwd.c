@@ -77,7 +77,7 @@ idle_timer (XtPointer closure, XtIntervalId *id)
 
 
 static char *
-reformat_hack(const char *hack)
+reformat_hack (const char *hack)
 {
   int i;
   const char *in = hack;
@@ -104,8 +104,40 @@ reformat_hack(const char *hack)
   for (i = strlen(h2); i < indent; i++)	/* indent */
     *out++ = ' ';
 
-  while (*in) *out++ = *in++;		/* copy rest of line */
+  /* copy the rest of the line. */
+  while (*in)
+    {
+      /* shrink all whitespace to one space, for the benefit of the "demo"
+	 mode display.  We only do this when we can easily tell that the
+	 whitespace is not significant (no shell metachars).
+       */
+      switch (*in)
+	{
+	case '\'': case '"': case '`': case '\\':
+	  {
+	    /* Metachars are scary.  Copy the rest of the line unchanged. */
+	    while (*in)
+	      *out++ = *in++;
+	  }
+	  break;
+	case ' ': case '\t':
+	  {
+	    while (*in == ' ' || *in == '\t')
+	      in++;
+	    *out++ = ' ';
+	  }
+	  break;
+	default:
+	  *out++ = *in++;
+	  break;
+	}
+    }
   *out = 0;
+
+  /* strip trailing whitespace. */
+  out = out-1;
+  while (out > h2 && (*out == ' ' || *out == '\t' || *out == '\n'))
+    *out-- = 0;
 
   return h2;
 }
@@ -116,7 +148,8 @@ get_screenhacks (saver_info *si)
 {
   saver_preferences *p = &si->prefs;
   int i = 0;
-  int hacks_size = 60;
+  int start = 0;
+  int end = 0;
   int size;
   char *d;
 
@@ -136,82 +169,68 @@ get_screenhacks (saver_info *si)
 
   d = get_string_resource ("programs", "Programs");
 
-  size = d ? strlen (d) : 0;
-  p->screenhacks = (char **) malloc (sizeof (char *) * hacks_size);
-  p->screenhacks_count = 0;
-
-  while (i < size)
+  if (p->screenhacks)
     {
-      int end, start = i;
-      if (d[i] == ' ' || d[i] == '\t' || d[i] == '\n' || d[i] == 0)
-	{
-	  i++;
-	  continue;
-	}
-      if (hacks_size <= p->screenhacks_count)
-	p->screenhacks = (char **) realloc (p->screenhacks,
-					    (hacks_size = hacks_size * 2) *
-					    sizeof (char *));
-      p->screenhacks [p->screenhacks_count++] = d + i;
-      while (d[i] != 0 && d[i] != '\n')
-	i++;
-      end = i;
-      while (i > start && (d[i-1] == ' ' || d[i-1] == '\t'))
-	i--;
-      d[i] = 0;
-      i = end + 1;
+      for (i = 0; i < p->screenhacks_count; i++)
+	if (p->screenhacks[i])
+	  free (p->screenhacks[i]);
+      free(p->screenhacks);
+      p->screenhacks = 0;
     }
 
-  /* shrink all whitespace to one space, for the benefit of the "demo"
-     mode display.  We only do this when we can easily tell that the
-     whitespace is not significant (no shell metachars).
+  if (!d || !*d)
+    {
+      p->screenhacks_count = 0;
+      p->screenhacks = 0;
+      return;
+    }
+
+  size = strlen (d);
+
+
+  /* Count up the number of newlines (which will be equal to or larger than
+     the number of hacks.)
    */
-  for (i = 0; i < p->screenhacks_count; i++)
+  i = 0;
+  for (i = 0; d[i]; i++)
+    if (d[i] == '\n')
+      i++;
+  i++;
+
+  p->screenhacks = (char **) calloc (sizeof (char *), i+1);
+
+  /* Iterate over the lines in `d' (the string with newlines)
+     and make new strings to stuff into the `screenhacks' array.
+   */
+  p->screenhacks_count = 0;
+  while (start < size)
     {
-      char *s = p->screenhacks [i];
-      char *s2;
-      int L = strlen (s);
-      int j, k;
-      for (j = 0; j < L; j++)
-	{
-	  switch (s[j])
-	    {
-	    case '\'': case '"': case '`': case '\\':
-	      goto DONE;
-	    case '\t':
-	      s[j] = ' ';
-	    case ' ':
-	      k = 0;
-	      for (s2 = s+j+1; *s2 == ' ' || *s2 == '\t'; s2++)
-		k++;
-	      if (k > 0)
-		{
-		  for (s2 = s+j+1; s2[k]; s2++)
-		    *s2 = s2[k];
-		  *s2 = 0;
-		}
-	      break;
-	    }
-	}
-    DONE:
-      p->screenhacks[i] = reformat_hack(s);  /* mallocs */
+      /* skip forward over whitespace. */
+      while (d[start] == ' ' || d[start] == '\t' || d[start] == '\n')
+	start++;
+
+      /* skip forward to newline or end of string. */
+      end = start;
+      while (d[end] != 0 && d[end] != '\n')
+	end++;
+
+      /* null terminate. */
+      d[end] = 0;
+
+      p->screenhacks[p->screenhacks_count++] = reformat_hack (d + start);
+      if (p->screenhacks_count >= i)
+	abort();
+
+      start = end+1;
     }
 
-  if (p->screenhacks_count)
-    {
-      /* Shrink down the screenhacks array to be only as big as it needs to.
-	 This doesn't really matter at all. */
-      p->screenhacks = (char **)
-	realloc (p->screenhacks, ((p->screenhacks_count + 1) *
-				  sizeof(char *)));
-      p->screenhacks [p->screenhacks_count] = 0;
-    }
-  else
+  if (p->screenhacks_count == 0)
     {
       free (p->screenhacks);
       p->screenhacks = 0;
     }
 }
+
 
 
 static char *fallback[] = {
@@ -276,9 +295,27 @@ main (int argc, char **argv)
 
   p->debug_p = True;
   p->verbose_p = True;
+  p->timestamp_p = True;
   p->lock_p = True;
+
+  p->fade_p	    = get_boolean_resource ("fade", "Boolean");
+  p->unfade_p	    = get_boolean_resource ("unfade", "Boolean");
+  p->fade_seconds   = 1000 * get_seconds_resource ("fadeSeconds", "Time");
+  p->fade_ticks	    = get_integer_resource ("fadeTicks", "Integer");
+  p->install_cmap_p = get_boolean_resource ("installColormap", "Boolean");
+  p->nice_inferior  = get_integer_resource ("nice", "Nice");
+
+  p->initial_delay   = 1000 * get_seconds_resource ("initialDelay", "Time");
+  p->splash_duration = 1000 * get_seconds_resource ("splashDuration", "Time");
+  p->timeout         = 1000 * get_minutes_resource ("timeout", "Time");
+  p->lock_timeout    = 1000 * get_minutes_resource ("lockTimeout", "Time");
+  p->cycle           = 1000 * get_minutes_resource ("cycle", "Time");
+  p->passwd_timeout  = 1000 * get_seconds_resource ("passwdTimeout", "Time");
   p->passwd_timeout = 1000 * get_seconds_resource ("passwdTimeout", "Time");
   p->splash_duration = 1000 * get_seconds_resource ("splashDuration", "Time");
+  p->shell = get_string_resource ("bourneShell", "BourneShell");
+  p->help_url = get_string_resource("helpURL", "URL");
+  p->load_url_command = get_string_resource("loadURL", "LoadURL");
 
   get_screenhacks(si);
 

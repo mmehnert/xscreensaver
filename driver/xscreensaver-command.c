@@ -202,11 +202,9 @@ send_xscreensaver_command (Display *dpy, Atom command, long argument,
       event.xclient.window = window;
       event.xclient.message_type = XA_SCREENSAVER;
       event.xclient.format = 32;
+      memset (&event.xclient.data, 0, sizeof(event.xclient.data));
       event.xclient.data.l[0] = (long) command;
       event.xclient.data.l[1] = arg1;
-      event.xclient.data.l[2] = 0L;
-      event.xclient.data.l[3] = 0L;
-      event.xclient.data.l[4] = 0L;
       if (! XSendEvent (dpy, window, False, 0L, &event))
 	{
 	  fprintf (stderr, "%s: XSendEvent(dpy, 0x%x ...) failed.\n",

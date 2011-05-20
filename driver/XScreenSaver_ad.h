@@ -4,6 +4,7 @@
 "*passwdTimeout:		30",
 "*nice:			10",
 "*lock:			False",
+"*lockVTs:		True",
 "*verbose:		False",
 "*timestamp:		False",
 "*fade:			True",
@@ -13,7 +14,6 @@
 "*splash:		True",
 "*splashDuration:	5",
 "*captureStderr: 	True",
-"*captureStdout: 	True",
 "*overlayTextForeground:	#FFFF00",
 "*overlayTextBackground:	#000000",
 "*overlayStderr:		True",
@@ -122,7 +122,8 @@
 		rubik -root					  	\\n\
 		atlantis -root					  	\\n\
 		lament -root					  	\\n\
-		bubble3d -root					  	\\n",
+		bubble3d -root					  	\\n\
+		glplanet -root					  	\\n",
 " ",
 "*Dialog.headingFont:		*-times-bold-r-*-*-*-180-*-*-*-iso8859-1",
 "*Dialog.bodyFont:		*-helvetica-bold-r-*-*-*-140-*-*-*-iso8859-1",

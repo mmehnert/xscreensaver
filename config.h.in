@@ -1,4 +1,4 @@
-/* config.h.in --- xscreensaver, Copyright (c) 1997 Jamie Zawinski.
+/* config.h.in --- xscreensaver, Copyright (c) 1998 Jamie Zawinski.
  *
  *  The best way to set these parameters is by running the included `configure'
  *  script.  That examines your system, and generates `config.h' from 
@@ -200,6 +200,14 @@
     haven't tested this one, let me know if it works.
  */
 #undef HAVE_HPUX_PASSWD
+
+/*  Define this if you are on a system that supports the VT_LOCKSWITCH and
+    VT_UNLOCKSWITCH ioctls.  If this is defined, then when the screen is
+    locked, switching to another virtual terminal will also be prevented.
+    That is, the whole console will be locked, rather than just the VT on
+    which X is running.
+ */
+#undef HAVE_VT_LOCKSWITCH
 
 
 /* *************************************************************************

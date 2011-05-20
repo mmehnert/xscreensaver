@@ -124,6 +124,7 @@ static const char * const prefs[] = {
   "timeout",
   "cycle",
   "lock",
+  "lockVTs",
   "lockTimeout",
   "passwdTimeout",
   "visualID",
@@ -140,7 +141,7 @@ static const char * const prefs[] = {
   "fadeSeconds",
   "fadeTicks",
   "captureStderr",
-  "captureStdout",
+  "captureStdout",		/* not saved -- obsolete */
   "font",
   "",
   "programs",
@@ -464,7 +465,6 @@ write_init_file (saver_info *si)
   char *visual_name;
   char *programs;
   Bool capture_stderr_p;
-  Bool capture_stdout_p;
   Bool overlay_stderr_p;
   char *stderr_font;
   FILE *out;
@@ -519,7 +519,6 @@ write_init_file (saver_info *si)
   visual_name = get_string_resource ("visualID", "VisualID");
   programs = 0;
   capture_stderr_p = get_boolean_resource ("captureStderr", "Boolean");
-  capture_stdout_p = get_boolean_resource ("captureStdout", "Boolean");
   overlay_stderr_p = get_boolean_resource ("overlayStderr", "Boolean");
   stderr_font = get_string_resource ("font", "Font");
 
@@ -575,13 +574,18 @@ write_init_file (saver_info *si)
       CHECK("timeout")		type = pref_time, t = p->timeout;
       CHECK("cycle")		type = pref_time, t = p->cycle;
       CHECK("lock")		type = pref_bool, b = p->lock_p;
+# if 0 /* #### not ready yet */
+      CHECK("lockVTs")		type = pref_bool, b = p->lock_vt_p;
+# else
+      CHECK("lockVTs")		continue;  /* don't save */
+# endif
       CHECK("lockTimeout")	type = pref_time, t = p->lock_timeout;
       CHECK("passwdTimeout")	type = pref_time, t = p->passwd_timeout;
       CHECK("visualID")		type = pref_str,  s =    visual_name;
       CHECK("installColormap")	type = pref_bool, b = p->install_cmap_p;
       CHECK("verbose")		type = pref_bool, b = p->verbose_p;
       CHECK("timestamp")	type = pref_bool, b = p->timestamp_p;
-      CHECK("splash")		continue;
+      CHECK("splash")		continue;  /* don't save */
       CHECK("splashDuration")	type = pref_time, t = p->splash_duration;
       CHECK("helpURL")		type = pref_str,  s = p->help_url;
       CHECK("loadURL")		type = pref_str,  s = p->load_url_command;
@@ -591,20 +595,18 @@ write_init_file (saver_info *si)
       CHECK("fadeSeconds")	type = pref_time, t = p->fade_seconds;
       CHECK("fadeTicks")	type = pref_int,  i = p->fade_ticks;
       CHECK("captureStderr")	type = pref_bool, b =    capture_stderr_p;
-      CHECK("captureStdout")	type = pref_bool, b =    capture_stdout_p;
+      CHECK("captureStdout")	continue;  /* don't save */
       CHECK("font")		type = pref_str,  s =    stderr_font;
       CHECK("programs")		type = pref_str,  s =    programs;
       CHECK("pointerPollTime")	type = pref_time, t = p->pointer_timeout;
       CHECK("windowCreationTimeout")type=pref_time,t= p->notice_events_timeout;
       CHECK("initialDelay")	type = pref_time, t = p->initial_delay;
-      CHECK("sgiSaverExtension")type = pref_bool,
-	b = p->use_sgi_saver_extension;
-      CHECK("mitSaverExtension")type = pref_bool,
-	b = p->use_mit_saver_extension;
+      CHECK("sgiSaverExtension")type = pref_bool, b=p->use_sgi_saver_extension;
+      CHECK("mitSaverExtension")type = pref_bool, b=p->use_mit_saver_extension;
       CHECK("xidleExtension")	type = pref_bool, b = p->use_xidle_extension;
       CHECK("overlayStderr")	type = pref_bool, b = overlay_stderr_p;
-      CHECK("overlayTextBackground") continue;
-      CHECK("overlayTextForeground") continue;
+      CHECK("overlayTextBackground") continue;  /* don't save */
+      CHECK("overlayTextForeground") continue;  /* don't save */
       CHECK("bourneShell")	continue;
       else			abort();
 # undef CHECK

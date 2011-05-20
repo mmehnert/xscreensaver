@@ -105,6 +105,7 @@ send_self_clientmessage (saver_info *si, Atom command)
   event.xclient.window = window;
   event.xclient.message_type = XA_SCREENSAVER;
   event.xclient.format = 32;
+  memset (&event.xclient.data, 0, sizeof(event.xclient.data));
   event.xclient.data.l[0] = (long) command;
   if (! XSendEvent (dpy, window, False, 0L, &event))
     fprintf (stderr, "%s: XSendEvent(dpy, 0x%x ...) failed.\n",

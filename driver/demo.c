@@ -958,7 +958,7 @@ make_resources_dialog (saver_info *si, Widget parent)
       disable_widget (lock_time_text);
       disable_widget (lock_toggle);
     }
-  if (CellsOfScreen (XtScreen (parent)) <= 2)
+  if (!si->fading_possible_p)
     {
       disable_widget (fade_text);
       disable_widget (ticks_text);
@@ -1052,6 +1052,7 @@ demo_mode (saver_info *si)
   if (p->verbose_p)
     fprintf (stderr, "%s: Demo Mode.\n", blurb());
 
+  si->selection_mode = 0;
   si->dbox_up_p = True;
   monitor_power_on (si);
   raise_window (si, True, False, False);

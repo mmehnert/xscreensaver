@@ -44,8 +44,9 @@ struct saver_preferences {
   Bool xsync_p;			/* whether XSynchronize has been called */
 
   Bool lock_p;			/* whether to lock as well as save */
-  Bool fade_p;			/* whether to fade to black */
-  Bool unfade_p;		/* whether to fade from black */
+  Bool lock_vt_p;		/* whether to lock VTs too, if possible */
+  Bool fade_p;			/* whether to fade to black, if possible */
+  Bool unfade_p;		/* whether to fade from black, if possible */
   int fade_seconds;		/* how long that should take */
   int fade_ticks;		/* how many ticks should be used */
 
@@ -62,9 +63,7 @@ struct saver_preferences {
   Time timeout;			/* how much idle time before activation */
   Time lock_timeout;		/* how long after activation locking starts */
   Time cycle;			/* how long each hack should run */
-#ifndef NO_LOCKING
   Time passwd_timeout;		/* how much time before pw dialog goes down */
-#endif
   Time pointer_timeout;		/* how often to check mouse position */
   Time notice_events_timeout;	/* how long after window creation to select */
   Time watchdog_timeout;	/* how often to re-raise and re-blank screen */
@@ -124,10 +123,11 @@ struct saver_info {
   Bool screen_blanked_p;	/* Whether the saver is currently active. */
   Window mouse_grab_window;	/* Window holding our mouse grab */
   Window keyboard_grab_window;	/* Window holding our keyboard grab */
+  Bool fading_possible_p;	/* Whether fading to/from black is possible. */
 
 
   /* =======================================================================
-     locking and runtime priveleges
+     locking and runtime privileges
      ======================================================================= */
 
   Bool locked_p;		/* Whether the screen is currently locked. */
@@ -138,13 +138,13 @@ struct saver_info {
   char *nolock_reason;		/* This is why. */
 
   char *orig_uid;		/* What uid/gid we had at startup, before
-				   discarding priveleges. */
+				   discarding privileges. */
   char *uid_message;		/* Any diagnostics from our attempt to
-				   discard priveleges (printed only in
+				   discard privileges (printed only in
 				   -verbose mode.) */
   Bool dangerous_uid_p;		/* Set to true if we're running as a user id
 				   which is known to not be a normal, non-
-				   priveleged user. */
+				   privileged user. */
 
   Window passwd_dialog;		/* The password dialog, if its up. */
   passwd_dialog_data *pw_data;	/* Other info necessary to draw it. */
@@ -322,7 +322,7 @@ extern void destroy_passwd_window (saver_info *si);
 #endif /* NO_LOCKING */
 
 /* =======================================================================
-   runtime priveleges
+   runtime privileges
    ======================================================================= */
 
 extern void hack_uid (saver_info *si);
