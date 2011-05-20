@@ -77,6 +77,14 @@ http://www.jwz.org/xscreensaver/.
 
                               ============
 
+Changes since 3.05:   * Oops, the "default-n" visual descriptor was broken;
+                        it was always installing a colormap if the
+                        `installColormap' preference was set, meaning that
+                        `xearth', `xv' and friends were using the wrong
+                        colors on 8-bit systems.
+                      * Turned off HAVE_PING in `sonar', since it compiles
+                        on some Linux systems, but not others of similar
+                        vintage...
 Changes since 3.04:   * Fixed an off-by-1 in `distort'.
                       * Added `sonar' hack.
                       * New version of `glplanet' (with stars.)

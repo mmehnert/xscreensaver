@@ -74,20 +74,6 @@
 
 /* Include Files */
 
-
-
-/* Really we ought to be using configure for this, but I really have no
-   idea what I should be testing for (besides the existence of a few of
-   these header files.  So instead, let's just enumerate the systems on
-   which this code is known to work.  For the others, it's no great loss.
- */
-#if !defined(HAVE_PING) && !defined(NO_PING)
-# if defined(__sgi) || defined(__sun) || defined(__linux)
-#  define HAVE_PING
-# endif
-#endif
-
-
 #ifdef HAVE_PING
 #include <sys/ipc.h>
 #include <sys/shm.h>
