@@ -565,7 +565,8 @@ file \fI~/.dt/errorlog\fP for error messages.
 .SH BUGS
 (This is not a bug, but) note that as of release 1.32, the \fBcolorPrograms\fP 
 and \fBmonoPrograms\fP resources are no longer used: they have been 
-supplanted by the extended syntax of the \fBprograms\fP resource (see above.)
+supplanted by the extended syntax of the \fBprograms\fP resource (which is
+described above, in the \fIresources\fP section.)
 .TP 8
 Extensions
 If you are not making use of one of the server extensions (\fBXIDLE\fP,
@@ -689,10 +690,13 @@ haven't figured a way  to get around this; it seems to be a fundamental
 property of the (mis-) design of this server extension.
 .TP 8
 LessTif (Motif Clone)
-Rumor has it that demo mode is buggy if XScreenSaver was compiled with the
-GNU LessTif reimplementation of Motif.  Since it works fine with OSF Motif
-on a variety of systems, I assume these problems are due to bugs in LessTif.
-Again, any insight would be appreciated.
+Demo mode is buggy if XScreenSaver was compiled against really old versions
+LessTif; if you use LessTif, use version 0.82 or newer.
+.TP 8
+Athena Widgets
+If you compiled against the Athena widget toolkit, the dialog boxes are
+pretty ugly, especially the password dialog.  Use Motif!  If you don't
+have OSF Motif, use GNU LessTif, it's free: http://www.lesstif.org/
 .TP 8
 Red Hot Lava
 There need to be a lot more graphics hacks.  In particular, there should be

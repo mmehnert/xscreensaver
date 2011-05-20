@@ -144,6 +144,7 @@ Other reasonable things to use as screensavers, if you have them, are
   xfishtank -c black -d -r 1	- fish (use version 2.0 or later)
   xmountains -b			- very realistic generated mountains
   xtacy -root			- various eye candy
+  xearth -wait 0 -timewarp 400	- the earth as seen from space
   /usr/demos/bin/bongo		- an SGI GL demo
   /usr/demos/bin/ep -S		- another: the stunning ElectroPaint.
 				  (Compile hacks/xscreensaver-sgigl.c
@@ -159,6 +160,13 @@ http://people.netscape.com/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 2.13:	Better fix for the Motif drag-and-die lossage.
+			Put in some kludges to work around a LessTif bug.
+			XScreenSaver is known to work with LessTif 0.82 now.
+			Made fading work on high-end SGI video hardware.
+			Fixed another SGI-specific bug in screen grabbing;
+			will the madness never cease?
+			Fixed another crash in `xlyap'.
 Changes since 2.12:	Made `decayscreen' do directions other than down.
 			Improved `puzzle'.
 			Fixed a crash in `xlyap'.

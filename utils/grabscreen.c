@@ -138,6 +138,25 @@ BadWindow_ehandler (Display *dpy, XErrorEvent *error)
 }
 
 
+/* XCopyArea seems not to work right on SGI O2s if you draw in SubwindowMode
+   on a window whose depth is not the maximal depth of the screen?  Or
+   something.  Anyway, things don't work unless we: use SubwindowMode for
+   the real root window (or a legitimate virtual root window); but do not
+   use SubwindowMode for the xscreensaver window.  I make no attempt to
+   explain.
+ */
+Bool
+use_subwindow_mode_p(Screen *screen, Window window)
+{
+  if (window != VirtualRootWindowOfScreen(screen))
+    return False;
+  else if (xscreensaver_window_p(DisplayOfScreen(screen), window))
+    return False;
+  else
+    return True;
+}
+
+
 /* Install the colormaps of all visible windows, deepest first.
    This should leave the colormaps of the topmost windows installed
    (if only N colormaps can be installed at a time, then only the
@@ -203,10 +222,18 @@ grab_screen_image_1 (Screen *screen, Window window)
 
   if (!root_p)
     {
+      double unmap = 0;
       if (saver_p)
-	unmap_time = 2500000;  /* 2 1/2 seconds */
+	{
+	  unmap = get_float_resource("grabRootDelay", "Seconds");
+	  if (unmap <= 0.00001 || unmap > 20) unmap = 2.5;
+	}
       else
-	unmap_time =  660000;  /* 2/3rd second */
+	{
+	  unmap = get_float_resource("grabWindowDelay", "Seconds");
+	  if (unmap <= 0.00001 || unmap > 20) unmap = 0.66;
+	}
+      unmap_time = unmap * 100000;
     }
 
 #ifdef DEBUG

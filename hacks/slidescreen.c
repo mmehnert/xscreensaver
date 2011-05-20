@@ -28,6 +28,7 @@ init_slide (Display *dpy, Window window)
   int i;
   XGCValues gcv;
   XWindowAttributes xgwa;
+  long gcflags;
   int border;
   unsigned long fg, bg;
   Drawable d;
@@ -146,8 +147,10 @@ init_slide (Display *dpy, Window window)
   gcv.foreground = fg;
   gcv.function = GXcopy;
   gcv.subwindow_mode = IncludeInferiors;
-  gc = XCreateGC (dpy, window, GCForeground |GCFunction | GCSubwindowMode,
-		  &gcv);
+  gcflags = GCForeground |GCFunction;
+  if (use_subwindow_mode_p(xgwa.screen, window)) /* see grabscreen.c */
+    gcflags |= GCSubwindowMode;
+  gc = XCreateGC (dpy, window, gcflags, &gcv);
 
   XGetWindowAttributes (dpy, window, &xgwa);
   bitmap_w = xgwa.width;

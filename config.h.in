@@ -85,6 +85,10 @@
  */
 #undef HAVE_SGI_SAVER_EXTENSION
 
+/*  Define this if you have the SGI-VIDEO-CONTROL extension.  This is standard
+ *  on Irix systems, and not available elsewhere.
+ */
+#undef HAVE_SGI_VC_EXTENSION
 
 
 /* *************************************************************************

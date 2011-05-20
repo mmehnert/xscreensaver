@@ -45,8 +45,13 @@ BUILDING:
 
         *  get someone to fix the gcc installation;
 
-        *  rearrange your $PATH so that the broken gcc is not on it.
-           (after doing this, you'll need to nuke `config.cache'.)
+        *  rearrange your $PATH so that the broken gcc is not on it;
+
+        *  or pass $CC in the environment, like so:
+               csh:  setenv CC cc ; ./configure
+               sh:   CC=cc ; ./configure
+
+    After doing this, you'll need to nuke `config.cache'.
 
     If you get errors about not being able to find Motif or Athena (the
     Xm/ or Xaw/ header files), and you can't find them on your system,

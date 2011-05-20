@@ -825,7 +825,7 @@ init_color(void)
 #if 1
 
   int i;
-  XColor colors[255];
+  XColor colors[256];
   int ncolors = maxcolor;
   Bool writable = False;
   make_smooth_colormap(dpy, visual, cmap,

@@ -249,7 +249,7 @@ reformat_hack(const char *hack)
   char *out = h2;
 
   while (isspace(*in)) in++;		/* skip whitespace */
-  while (!isspace(*in) && *in != ':')
+  while (*in && !isspace(*in) && *in != ':')
     *out++ = *in++;			/* snarf first token */
   while (isspace(*in)) in++;		/* skip whitespace */
 

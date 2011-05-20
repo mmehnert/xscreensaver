@@ -17,14 +17,13 @@
 #include <X11/Intrinsic.h>
 
 #ifdef DEBUG
-# include <X11/IntrinsicP.h>
+# include <X11/IntrinsicP.h>	/* just to get debug info for gdb... */
 # include <X11/ShellP.h>
 #endif
 
 #ifdef HAVE_MOTIF
 # include <Xm/Xm.h>
 # include <Xm/Text.h>
-# include <Xm/TextF.h>
 # include <Xm/List.h>
 # include <Xm/ToggleB.h>
 
@@ -369,18 +368,19 @@ next_cb (Widget button, XtPointer client_data, XtPointer call_data)
   int *pos_list;
   int pos_count;
   if (! XmListGetSelectedPos (demo_list, &pos_list, &pos_count))
-    XmListSelectPos (demo_list, 1, True);
+    {
+      XmListDeselectAllItems(demo_list);	/* LessTif lossage */
+      XmListSelectPos (demo_list, 1, True);
+    }
   else
     {
-      int pos = pos_list [0];
-      XmListSelectPos (demo_list, pos + 1, True);
-      XtFree ((char *) pos_list);
-      if (! XmListGetSelectedPos (demo_list, &pos_list, &pos_count))
-	abort ();
-      if (pos_list [0] == pos)
-	XmListSelectPos (demo_list, 1, True);
-      XtFree ((char *) pos_list);
+      int pos = pos_list[0] + 1;
+      if (pos > si->prefs.screenhacks_count)
+	pos = 1;
+      XmListDeselectAllItems(demo_list);	/* LessTif lossage */
+      XmListSelectPos (demo_list, pos, True);
     }
+  XtFree ((char *) pos_list);
   ensure_selected_item_visible (demo_list);
   demo_mode_hack (si, get_text_string (text_line));
 
@@ -415,9 +415,13 @@ prev_cb (Widget button, XtPointer client_data, XtPointer call_data)
   int *pos_list;
   int pos_count;
   if (! XmListGetSelectedPos (demo_list, &pos_list, &pos_count))
-    XmListSelectPos (demo_list, 0, True);
+    {
+      XmListDeselectAllItems(demo_list);	/* LessTif lossage */
+      XmListSelectPos (demo_list, 0, True);
+    }
   else
     {
+      XmListDeselectAllItems(demo_list);	/* LessTif lossage */
       XmListSelectPos (demo_list, pos_list [0] - 1, True);
       XtFree ((char *) pos_list);
     }
@@ -456,55 +460,6 @@ restart_cb (Widget button, XtPointer client_data, XtPointer call_data)
   saver_info *si = (saver_info *) client_data;
   demo_mode_restart_process (si);
 }
-
-
-#ifdef HAVE_MOTIF
-/* This is the DND_KLUDGE I wrote for Lucid Emacs's lwlib back in 1991...
-   Old bugs never die.
-
-   This is a kludge to disable drag-and-drop in dialog boxes.  The symptom
-   was a segv down in libXm somewhere if you used the middle button on a
-   dialog box to begin a drag; when you released the button to make a drop
-   things would lose if you were not over the button where you started the
-   drag (canceling the operation).  This was probably due to the fact that
-   the dialog boxes were not set up to handle a drag but were trying to do so
-   anyway for some reason.  This doesn't happen with the version of Motif
-   1.2.4 shipped by SGI with Irix 6.2, but not everyone is so lucky...  I
-   don't know if this was fixed by SGI, or if all versions of 1.2.4 work now.
-   So, better safe than sorry.
-
-   We disable drag-and-drop in dialog boxes by turning off the binding for
-   Btn2Down which, by default, initiates a drag.  Clearly this is a shitty
-   solution as it only works in default configurations, but I don't know how
-   else to do it.
- */
-static void
-install_translation_table(Widget widget, XtTranslations table)
-{
-  Widget *kids = 0;
-  Cardinal nkids = 0;
-
-  if (!XmIsGadget(widget) &&
-      !XtIsSubclass(widget, shellWidgetClass) &&
-      !XmIsText(widget) &&
-      !XmIsTextField(widget))
-    XtOverrideTranslations (widget, table);
-
-  XtVaGetValues(widget, XmNchildren, &kids, XmNnumChildren, &nkids, 0);
-  while (nkids-- > 0)
-    install_translation_table(kids[nkids], table);
-}
-
-void
-disable_motif_drag_and_drop(Widget w)
-{
-  static char disable_dnd_trans[] = "<Btn2Down>:";
-  XtTranslations dnd_override = XtParseTranslationTable (disable_dnd_trans);
-  install_translation_table(w, dnd_override);
-  XtFree ((char *) dnd_override);
-}
-#endif /* HAVE_MOTIF */
-
 
 
 void
@@ -579,7 +534,6 @@ pop_up_dialog_box (Widget dialog, Widget form, int where)
 #ifdef HAVE_ATHENA
   XtPopup (dialog, XtGrabNone);
 #else  /* HAVE_MOTIF */
-  disable_motif_drag_and_drop (dialog);
   XtManageChild (form);
 #endif /* HAVE_MOTIF */
 
@@ -645,12 +599,15 @@ make_screenhack_dialog (saver_info *si)
       if (top > si->prefs.screenhacks_count)
 	top = si->prefs.screenhacks_count;
 
+      XmListDeselectAllItems(demo_list);	/* LessTif lossage */
       XmListSelectPos (demo_list, bot, False);
       ensure_selected_item_visible (demo_list);
 
+      XmListDeselectAllItems(demo_list);	/* LessTif lossage */
       XmListSelectPos (demo_list, top, False);
       ensure_selected_item_visible (demo_list);
 
+      XmListDeselectAllItems(demo_list);	/* LessTif lossage */
       XmListSelectPos (demo_list, i, False);
       ensure_selected_item_visible (demo_list);
     }

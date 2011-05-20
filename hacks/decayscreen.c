@@ -57,6 +57,8 @@ init_decay (Display *dpy, Window window)
 {
   XGCValues gcv;
   XWindowAttributes xgwa;
+  long gcflags;
+
   char *s = get_string_resource("mode", "Mode");
   if      (s && !strcmp(s, "shuffle")) mode = SHUFFLE;
   else if (s && !strcmp(s, "up")) mode = UP;
@@ -81,8 +83,10 @@ init_decay (Display *dpy, Window window)
 
   gcv.function = GXcopy;
   gcv.subwindow_mode = IncludeInferiors;
-  gc = XCreateGC (dpy, window, GCForeground |GCFunction | GCSubwindowMode,
-		  &gcv);
+  gcflags = GCForeground |GCFunction;
+  if (use_subwindow_mode_p(xgwa.screen, window)) /* see grabscreen.c */
+    gcflags |= GCSubwindowMode;
+  gc = XCreateGC (dpy, window, gcflags, &gcv);
 
   XGetWindowAttributes (dpy, window, &xgwa);
   sizex = xgwa.width;

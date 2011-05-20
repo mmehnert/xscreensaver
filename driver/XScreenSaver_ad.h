@@ -159,6 +159,8 @@
 "*passwdLabel2.alignment:	ALIGNMENT_BEGINNING",
 "*passwdLabel3.alignment:	ALIGNMENT_BEGINNING",
 "*rogerLabel.width:		150",
+"XScreenSaver*dragInitiatorProtocolStyle: DRAG_NONE",
+"XScreenSaver*dragReceiverProtocolStyle:  DRAG_NONE",
 "*demo_dialog*font:		*-helvetica-bold-r-*-*-*-120-*-*-*-iso8859-1",
 "*resources_dialog*font:		*-helvetica-bold-r-*-*-*-120-*-*-*-iso8859-1",
 "*passwd_dialog*font:		*-helvetica-bold-r-*-*-*-120-*-*-*-iso8859-1",

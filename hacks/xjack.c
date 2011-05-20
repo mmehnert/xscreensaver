@@ -130,7 +130,7 @@ screenhack (Display *dpy, Window window)
 	    }
 	  else if (mode == 3 || mode == 4)
 	    {
-	      /* 3 = right margin goes southeast; 2 = southwest */
+	      /* 3 = right margin goes southeast; 4 = southwest */
 	      right += (mode == 3 ? 1 : -1);
 	      if (right >= columns)
 		{
@@ -322,8 +322,9 @@ screenhack (Display *dpy, Window window)
 	  y < rows-5)
 	{
 	  int i;
+	  int n = random() & 3;
 	  y++;
-	  for (i = 0; i < (random() & 3); i++)
+	  for (i = 0; i < n; i++)
 	    {
 	      /* See also http://catalog.com/hopkins/unix-haters/login.html */
 	      const char *n1 =

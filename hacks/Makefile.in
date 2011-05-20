@@ -306,7 +306,8 @@ COL		= $(COLOR_OBJS)
 CC_HACK		= $(CC) $(LDFLAGS)
 
 xscreensaver-sgigl: xscreensaver-sgigl.c
-	$(CC) $(LDFLAGS) -o $@ $< $(HACK_PRE) -lX11 -lXext $(X_EXTRA_LIBS) -lm
+	$(CC) $(LDFLAGS) -o $@ $< -I$(UTILS_SRC) $(HACK_PRE) \
+		-lXmu -lX11 -lXext $(X_EXTRA_LIBS) -lm
 
 
 # The rules for those hacks which follow the `screenhack.c' API.
@@ -1176,4 +1177,5 @@ puzzle.o: $(srcdir)/pieces/puzzle_b_s_f.xbm
 puzzle.o: $(srcdir)/pieces/puzzle_b_sw_f.xbm
 puzzle.o: $(srcdir)/pieces/puzzle_b_w_f.xbm
 puzzle.o: $(srcdir)/pieces/puzzle_b_nw_f.xbm
+xscreensaver-sgigl.o: $(UTILS_SRC)/vroot.h
 

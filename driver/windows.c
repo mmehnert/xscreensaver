@@ -810,12 +810,15 @@ raise_window (saver_info *si,
   if (p->fade_p && !inhibit_fade && !si->demo_mode_p)
     {
       int grabbed = -1;
+      Window *current_windows = (Window *)
+	calloc(sizeof(Window), si->nscreens);
       Colormap *current_maps = (Colormap *)
 	calloc(sizeof(Colormap), si->nscreens);
 
       for (i = 0; i < si->nscreens; i++)
 	{
 	  saver_screen_info *ssi = &si->screens[i];
+	  current_windows[i] = ssi->screensaver_window;
 	  current_maps[i] = (between_hacks_p
 			     ? ssi->cmap
 			     : DefaultColormapOfScreen (ssi->screen));
@@ -841,29 +844,24 @@ raise_window (saver_info *si,
 	    clear_stderr (ssi);
 	}
 
-      fade_screens (si->dpy, current_maps, p->fade_seconds, p->fade_ticks,
-		    True);
+      fade_screens (si->dpy, current_maps, current_windows,
+		    p->fade_seconds, p->fade_ticks, True, !dont_clear);
+      free(current_maps);
+      free(current_windows);
+      current_maps = 0;
+      current_windows = 0;
 
       if (p->verbose_p) fprintf (stderr, "fading done.\n");
 
+#ifdef HAVE_MIT_SAVER_EXTENSION
       for (i = 0; i < si->nscreens; i++)
 	{
 	  saver_screen_info *ssi = &si->screens[i];
-	  if (!dont_clear)
-	    XClearWindow (si->dpy, ssi->screensaver_window);
-	  XMapRaised (si->dpy, ssi->screensaver_window);
-
-#ifdef HAVE_MIT_SAVER_EXTENSION
 	  if (ssi->server_mit_saver_window &&
 	      window_exists_p (si->dpy, ssi->server_mit_saver_window))
 	    XUnmapWindow (si->dpy, ssi->server_mit_saver_window);
-#endif /* HAVE_MIT_SAVER_EXTENSION */
-
-	  /* Once the saver window is up, restore the colormap.
-	     (The "black" pixels of the two colormaps are compatible.) */
-	  if (ssi->cmap)
-	    XInstallColormap (si->dpy, ssi->cmap);
 	}
+#endif /* HAVE_MIT_SAVER_EXTENSION */
 
       if (grabbed == GrabSuccess)
 	XUngrabPointer (si->dpy, CurrentTime);
@@ -928,7 +926,7 @@ void
 unblank_screen (saver_info *si)
 {
   saver_preferences *p = &si->prefs;
-  int i, j;
+  int i;
 
   store_activate_time (si, True);
   reset_watchdog_timer (si, False);
@@ -936,27 +934,16 @@ unblank_screen (saver_info *si)
   if (p->unfade_p && !si->demo_mode_p)
     {
       int grabbed = -1;
-      int extra_cmaps = 4;
-      int ncmaps = si->nscreens * (extra_cmaps + 1);
-      Colormap *cmaps = (Colormap *) calloc(sizeof(Colormap), ncmaps);
+      Window *current_windows = (Window *)
+	calloc(sizeof(Window), si->nscreens);
+
+      for (i = 0; i < si->nscreens; i++)
+	{
+	  saver_screen_info *ssi = &si->screens[i];
+	  current_windows[i] = ssi->screensaver_window;
+	}
 
       if (p->verbose_p) fprintf (stderr, "%s: unfading... ", progname);
-
-      /* Fake out SGI's multi-colormap hardware; see utils/fade.c
-	 for an explanation. */
-      for (i = 0; i < ncmaps; i += (extra_cmaps + 1))
-	for (j = 0; j < (extra_cmaps + 1); j++)
-	  {
-	    cmaps[i+j] = XCreateColormap (si->dpy,
-					  RootWindow (si->dpy, i),
-					  DefaultVisual(si->dpy, i),
-					  AllocAll);
-	    if (cmaps[i+j])
-	      {
-		blacken_colormap (ScreenOfDisplay(si->dpy, i), cmaps[i+j]);
-		XInstallColormap (si->dpy, cmaps[i+j]);
-	      }
-	  }
 
       XGrabServer (si->dpy);
       for (i = 0; i < si->nscreens; i++)
@@ -965,16 +952,16 @@ unblank_screen (saver_info *si)
 	  if (grabbed != GrabSuccess)
 	    grabbed = grab_mouse (si->dpy, RootWindowOfScreen (ssi->screen),
 				  0);
-	  XUnmapWindow (si->dpy, ssi->screensaver_window);
 	  clear_stderr (ssi);
 	}
       XUngrabServer (si->dpy);
 
-      fade_screens (si->dpy, 0, p->fade_seconds, p->fade_ticks, False);
+      fade_screens (si->dpy, 0, current_windows,
+		    p->fade_seconds, p->fade_ticks,
+		    False, False);
 
-      for (i = 0; i < ncmaps; i++)
-	if (cmaps[i]) XFreeColormap (si->dpy, cmaps[i]);
-      free (cmaps);
+      free(current_windows);
+      current_windows = 0;
 
       if (p->verbose_p) fprintf (stderr, "unfading done.\n");
       if (grabbed == GrabSuccess)

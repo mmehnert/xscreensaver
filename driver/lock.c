@@ -601,7 +601,6 @@ pop_passwd_dialog (saver_info *si)
 		     (si->prefs.debug_p ? 69 : 0) +
 #endif
 		     2);
-  disable_motif_drag_and_drop (passwd_dialog);
   XtManageChild (passwd_form);
 #endif
 
