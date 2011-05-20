@@ -733,7 +733,7 @@ static void
 do_prefs (saver_info *si)
 {
   saver_preferences *p = &si->prefs;
-  fork_and_exec (si, p->demo_command, "preferences");
+  fork_and_exec (si, p->prefs_command, "preferences");
 }
 
 static void

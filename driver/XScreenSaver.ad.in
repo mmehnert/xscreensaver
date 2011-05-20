@@ -4,7 +4,7 @@
 !            a screen saver and locker for the X window system
 !                            by Jamie Zawinski
 !
-!                              version 2.35
+!                              version 3.00
 !                                20-Oct-98
 !
 ! See "man xscreensaver" for more info.  The latest version is always
@@ -351,6 +351,7 @@ XScreenSaver.bourneShell:		/bin/sh
 *fontList:                       *-helvetica-medium-r-*-*-*-120-*-*-*-iso8859-1
 *demoDialog*label1.fontList:     *-helvetica-medium-r-*-*-*-140-*-*-*-iso8859-1
 *XmTextField.fontList:             *-courier-medium-r-*-*-*-120-*-*-*-iso8859-1
+*label0.fontList:                  *-helvetica-bold-r-*-*-*-140-*-*-*-iso8859-1
 XScreenSaver*XmList.fontList:      *-courier-medium-r-*-*-*-120-*-*-*-iso8859-1
 ! Need to fully-qualify the preceeding in the case of of *sgiMode.
 
@@ -419,13 +420,22 @@ XScreenSaver*dragReceiverProtocolStyle:  DRAG_NONE
 *resources_dialog.title:	XScreenSaver Preferences
 *warning_dialog.title:		XScreenSaver Warning
 
+! For some reason, it doesn't size correctly by itself.
+*demo_dialog.geometry:		=640x400
+
 *demo_dialog*font:		*-helvetica-bold-r-*-*-*-120-*-*-*-iso8859-1
 *resources_dialog*font:		*-helvetica-bold-r-*-*-*-120-*-*-*-iso8859-1
 *demo_dialog*label1.font:	*-helvetica-bold-r-*-*-*-140-*-*-*-iso8859-1
 *resources_dialog*label1.font:	*-helvetica-bold-r-*-*-*-140-*-*-*-iso8859-1
-XScreenSaver.demo_dialog*List.font: \
+XScreenSaver*warning_dialog*label0.font:	\
+				*-helvetica-bold-r-*-*-*-140-*-*-*-iso8859-1
+XScreenSaver*warning_dialog*Label.font:	\
+				*-helvetica-bold-r-*-*-*-120-*-*-*-iso8859-1
+XScreenSaver*warning_dialog*Command.font: \
+				*-helvetica-bold-r-*-*-*-140-*-*-*-iso8859-1
+XScreenSaver.demo_dialog*List.font:	\
 				*-courier-medium-r-*-*-*-120-*-*-*-iso8859-1
-XScreenSaver.demo_dialog*Text*font: \
+XScreenSaver.demo_dialog*Text*font:	\
 				*-courier-medium-r-*-*-*-120-*-*-*-iso8859-1
 
 XScreenSaver.demo_dialog*foreground:			#000000
@@ -440,6 +450,10 @@ XScreenSaver.resources_dialog*background:		#E5E5E5
 XScreenSaver.resources_dialog*Command.background:	#D9D9D9
 XScreenSaver.resources_dialog*Toggle.background:	#D9D9D9
 XScreenSaver.resources_dialog*Text*background:		#FFFFFF
+
+XScreenSaver.warning_dialog*foreground:			#000000
+XScreenSaver.warning_dialog*background:			#E5E5E5
+XScreenSaver.warning_dialog*Command.background:		#D9D9D9
 
 *resources_dialog*Dialog.value.translations: #override\n\
 	<Key>Return: beginning-of-line()\n
@@ -464,6 +478,8 @@ XScreenSaver.demo_dialog*Command.internalHeight: 4
 *resources_dialog*ticks.label:			Fade Ticks:
 *resources_dialog*lockTime.label:		Lock Timeout:
 *resources_dialog*passwdTime.label:		Password Timeout:
+XScreenSaver.resources_dialog*Command.internalWidth:  10
+XScreenSaver.resources_dialog*Command.internalHeight: 4
 
 *resources_dialog*label1.label:			XScreenSaver Parameters
 *resources_dialog*buttonbox.verbose.label:	Verbose
@@ -471,5 +487,21 @@ XScreenSaver.demo_dialog*Command.internalHeight: 4
 *resources_dialog*buttonbox.fade.label:		Fade Colormap
 *resources_dialog*buttonbox.unfade.label:	Unfade Colormap
 *resources_dialog*buttonbox.lock.label:		Require Password
-*resources_dialog*done.label:			OK
+*resources_dialog*done.label:			Ok
 *resources_dialog*cancel.label:			Cancel
+
+*warning_dialog*ok.label:			Ok
+
+*warning_dialog*horizDistance:			30
+*warning_dialog*vertDistance:			0
+
+*warning_dialog*Label.internalWidth:		1
+*warning_dialog*Label.internalHeight:		0
+
+*warning_dialog*label0.horizDistance:		80
+*warning_dialog*label0.vertDistance:		20
+
+*warning_dialog*Command.horizDistance:		160
+*warning_dialog*Command.vertDistance:		20
+*warning_dialog*Command.internalWidth:		20
+*warning_dialog*Command.internalHeight:		5

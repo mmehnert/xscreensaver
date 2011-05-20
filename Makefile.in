@@ -193,6 +193,7 @@ test-tar::
     echo --------------------------------------------------------------- ;  \
     ( cd utils; gmake ) ;						    \
     ( cd driver; gmake ) ;						    \
+    ( cd driver; gmake xscreensaver-demo-Xaw ) ;			    \
     echo --------------------------------------------------------------- ); \
 									    \
   ( cd BIN/lesstif ;							    \
@@ -202,6 +203,7 @@ test-tar::
     echo --------------------------------------------------------------- ;  \
     ( cd utils; gmake ) ;						    \
     ( cd driver; gmake ) ;						    \
+    ( cd driver; gmake xscreensaver-demo-Xaw ) ;			    \
     echo --------------------------------------------------------------- ); \
 									    \
   chmod -R u+w .

@@ -14,6 +14,11 @@
 # include "config.h"
 #endif
 
+#ifdef HAVE_ATHENA_KLUDGE	/* don't ask */
+# undef HAVE_MOTIF
+# define HAVE_ATHENA 1
+#endif
+
 #include <stdlib.h>
 
 #ifdef HAVE_UNISTD_H
@@ -942,6 +947,7 @@ warning_dialog (Widget parent, const char *message)
   Widget dialog = 0;
   Widget label = 0;
   Widget ok = 0;
+  int i = 0;
 
 #ifdef HAVE_MOTIF
 
@@ -983,19 +989,22 @@ warning_dialog (Widget parent, const char *message)
   head = msg;
   while (head)
     {
+      char name[20];
       char *s = strchr (head, '\n');
       if (s) *s = 0;
+
+      sprintf (name, "label%d", i++);
 
 #ifdef HAVE_MOTIF
       xmstr = XmStringCreate (head, XmSTRING_DEFAULT_CHARSET);
       ac = 0;
       XtSetArg (av[ac], XmNlabelString, xmstr); ac++;
-      label = XmCreateLabelGadget (container, "label", av, ac);
+      label = XmCreateLabelGadget (container, name, av, ac);
       XtManageChild (label);
       XmStringFree (xmstr);
 #else  /* HAVE_ATHENA */
       
-      label = XtVaCreateManagedWidget ("label", labelWidgetClass,
+      label = XtVaCreateManagedWidget (name, labelWidgetClass,
 				       form,
 				       XtNleft, XtChainLeft,
 				       XtNright, XtChainRight,
@@ -1022,6 +1031,7 @@ warning_dialog (Widget parent, const char *message)
 
   ok = XtVaCreateManagedWidget ("ok", commandWidgetClass, form,
 				XtNleft, XtChainLeft,
+				XtNbottom, XtChainBottom,
 				XtNfromVert, label,
 				0);
 
@@ -1106,6 +1116,7 @@ the_network_is_not_the_computer (Widget parent)
   if (!rversion || !*rversion)
     {
       sprintf (msg,
+	       "Warning:\n\n"
 	       "xscreensaver doesn't seem to be running on display \"%s\".",
 	       d);
     }
@@ -1114,6 +1125,7 @@ the_network_is_not_the_computer (Widget parent)
       /* Warn that the two processes are running as different users.
        */
       sprintf(msg,
+	       "Warning:\n\n"
 	      "%s is running as user \"%s\" on host \"%s\".\n"
 	      "But the xscreensaver managing display \"%s\"\n"
 	      "is running as user \"%s\" on host \"%s\".\n"
@@ -1136,6 +1148,7 @@ the_network_is_not_the_computer (Widget parent)
       /* Warn that the two processes are running on different hosts.
        */
       sprintf (msg,
+	       "Warning:\n\n"
 	       "%s is running as user \"%s\" on host \"%s\".\n"
 	       "But the xscreensaver managing display \"%s\"\n"
 	       "is running as user \"%s\" on host \"%s\".\n"
@@ -1154,6 +1167,7 @@ the_network_is_not_the_computer (Widget parent)
       /* Warn that the version numbers don't match.
        */
       sprintf (msg,
+	       "Warning:\n\n"
 	       "This is %s version %s.\n"
 	       "But the xscreensaver managing display \"%s\"\n"
 	       "is version %s.  This could cause problems.",
@@ -1245,7 +1259,9 @@ main (int argc, char **argv)
       pop_resources_dialog (p);
     }
 
-  the_network_is_not_the_computer (toplevel_shell);
+  the_network_is_not_the_computer (resources_dialog
+				   ? resources_dialog
+				   : demo_dialog);
 
   XtAppMainLoop(app);
   exit (0);

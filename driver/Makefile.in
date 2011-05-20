@@ -360,6 +360,27 @@ test-xdpms: test-xdpms.o
 	$(CC) $(LDFLAGS) -o $@ test-xdpms.o $(SAVER_LIBS)
 
 
+# This kludge is so that I can build/test the Athena version of the
+# xscreensaver-demo program without having to re-run configure.
+# Normally it builds it with Motif if possible; this lets me build
+# both.
+#
+xscreensaver-demo-Xaw: $(ATHENA_OBJS) demo-Xaw.o $(DEMO_OBJS)
+	$(CC) $(LDFLAGS) -o $@ demo-Xaw.o prefs.o remote.o \
+		$(ATHENA_OBJS) $(DEMO_UTIL_OBJS) \
+		$(LIBS) $(X_LIBS) -lXaw \
+		$(X_PRE_LIBS) -lXt -lX11 -lXext $(X_EXTRA_LIBS)
+xscreensaver-demo-Xaw3d: $(ATHENA_OBJS) demo-Xaw.o $(DEMO_OBJS)
+	$(CC) $(LDFLAGS) -o $@ demo-Xaw.o prefs.o remote.o \
+		$(ATHENA_OBJS) $(DEMO_UTIL_OBJS) \
+		$(LIBS) $(X_LIBS) -lXaw3d \
+		$(X_PRE_LIBS) -lXt -lX11 -lXext $(X_EXTRA_LIBS)
+demo-Xaw.o: demo.c XScreenSaver_ad.h
+	$(CC) -o $@ -c -DHAVE_ATHENA_KLUDGE \
+	$(INCLUDES) $(DEFS2) $(CFLAGS) $(X_CFLAGS) $<
+
+
+
 ##############################################################################
 #
 # DO NOT DELETE: updated by make distdepend

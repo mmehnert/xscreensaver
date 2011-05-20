@@ -191,9 +191,12 @@ create_demo_dialog(Widget parent, Visual *visual, Colormap colormap)
 
   demo_form =
     XtVaCreateManagedWidget("demo_form", formWidgetClass, demo_dialog,
-			 XtNvisual, visual,
-			 XtNcolormap, colormap,
-			 XtNdepth, depth,
+			    XtNvisual, visual,
+			    XtNcolormap, colormap,
+			    XtNdepth, depth,
+			    XtNleft, XtChainLeft,
+			    XtNright, XtChainRight,
+			    XtNtop, XtChainTop,
 			    NULL);
 
   label1 = XtVaCreateManagedWidget("label1", labelWidgetClass, demo_form,
@@ -213,6 +216,7 @@ create_demo_dialog(Widget parent, Visual *visual, Colormap colormap)
 			    XtNleft, XtChainLeft,
 			    XtNright, XtChainRight,
 			    XtNfromVert, label2,
+			    XtNresizable, True,
 			    NULL);
   viewport =
     XtVaCreateManagedWidget("viewport", viewportWidgetClass, subform,

@@ -899,9 +899,11 @@ check_athena() {
   have_athena=no
   have_athena3d=no
   AC_CHECK_X_HEADER(X11/Xaw/Dialog.h, [have_athena=yes])
-  AC_CHECK_X_LIB(Xaw3d, Xaw3dComputeTopShadowRGB,
-		 [have_athena=yes; have_athena3d=yes], [],
-		 -lXt -lXmu -lXext -lX11)
+  if test $have_athena = yes; then
+    AC_CHECK_X_LIB(Xaw3d, Xaw3dComputeTopShadowRGB,
+		   [have_athena=yes; have_athena3d=yes], [],
+		   -lXt -lXmu -lXext -lX11)
+  fi
 
   if test $have_athena3d = yes; then
     TOOLKIT_LIBS="-lXaw3d $TOOLKIT_LIBS"
@@ -1123,6 +1125,8 @@ EOF
 
 	 mglv=`(eval "$ac_cpp conftest.$ac_ext") 2>&AC_FD_CC | sed -n \
 	      's/^#configure:.*\([0-9][0-9]*\).*\([0-9][0-9]*\).*$/\1.\2/p'`
+         rm -f conftest.$ac_ext
+
 	 if test "$mglv" = ""; then
            ac_mesagl_version=unknown
            ac_mesagl_version_string=unknown
@@ -1793,7 +1797,8 @@ fi
 
 if test $have_motif = no -a $have_athena = no ; then
   warnL "Neither Motif nor Athena widgets seem to be available;"
-  warn2 "one or the other is required."
+  warn2 "the \`xscreensaver-demo' program requires one or the"
+  warn2 "other."
   proselytize_motif=no
 
 elif test $with_motif_req = yes -a $have_motif = no ; then
@@ -1825,11 +1830,11 @@ fi
 
 if test $proselytize_motif = yes ; then
     warnL "Athena widgets are being used instead of Motif."
-    warn2 "XScreenSaver looks much better with Motif, and has"
-    warn2 "a few extra features as well.  Wouldn't you rather"
-    warn2 "be using Motif?  It is shipped by every commercial"
-    warn2 "Unix vendor; and there is a free implementation"
-    warn2 "available as well: see <http://www.lesstif.org/>."
+    warn2 "The \`xscreensaver-demo' program looks much better"
+    warn2 "with Motif.  Wouldn't you rather be using Motif?"
+    warn2 "It is shipped by every commercial Unix vendor;"
+    warn2 "and there is a free implementation available as"
+    warn2 "well: see <http://www.lesstif.org/>."
 fi
 
 
@@ -1940,9 +1945,9 @@ eval HACKDIR=${HACKDIR}
 echo ""
 echo "$warnsep"
 echo ""
-echo '      When you run "make install", the "xscreensaver" and'
-echo '      "xscreensaver-command" executables will be installed in'
-echo "      ${bindir}."
+echo '      When you run "make install", the "xscreensaver",'
+echo '      "xscreensaver-demo", and "xscreensaver-command" executables'
+echo "      will be installed in ${bindir}."
 echo ""
 echo "      The various graphics demos (80+ different executables) will"
 echo "      be installed in ${HACKDIR}."

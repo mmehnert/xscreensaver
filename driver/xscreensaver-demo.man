@@ -11,7 +11,7 @@
 .if n .sp 1
 .if t .sp .5
 ..
-.TH XScreenSaver 1 "20-Oct-98 (2.35)" "X Version 11"
+.TH XScreenSaver 1 "20-Oct-98 (3.00)" "X Version 11"
 .SH NAME
 xscreensaver-demo - interactively control the background xscreensaver daemon
 .SH SYNOPSIS
@@ -72,14 +72,14 @@ interactively change most of the screensaver's operational parameters,
 such as its timeouts, and whether it should lock the screen.  When you
 click OK, your chosen settings will take effect immediately, and will
 also be saved to the \fI~/.xscreensaver\fP file in your home directory,
-so that the settings will persist next time.  (For more details, see
-the \fIConfiguration\fP section, below.)
+so that the settings will persist next time.
 .TP 8
 .B Quit
 Exits the \fIxscreensaver-demo\fP program.  The background \fIxscreensaver\fP
 daemon will continue running as before.
 .BR xscreensaver\-command (1).
-.SH PREFERENCES
+
+.P
 The Preferences dialog box lets you change the following settings.
 
 (There are more settings available, but these are the most commonly used
