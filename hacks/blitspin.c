@@ -188,7 +188,7 @@ read_screen (dpy, window, widthP, heightP)
   *widthP = xgwa.width;
   *heightP = xgwa.height;
 
-  grab_screen_image(dpy, window);
+  grab_screen_image(xgwa.screen, window);
   p = XCreatePixmap(dpy, window, xgwa.width, xgwa.height, xgwa.depth);
   gcv.function = GXcopy;
   gc = XCreateGC (dpy, window, GCFunction, &gcv);

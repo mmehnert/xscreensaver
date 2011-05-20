@@ -61,7 +61,7 @@ init_decay (dpy, window)
   sizex = xgwa.width;
   sizey = xgwa.height;
 
-  grab_screen_image (dpy, window);
+  grab_screen_image (xgwa.screen, window);
 }
 
 

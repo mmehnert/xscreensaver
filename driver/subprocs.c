@@ -417,14 +417,12 @@ kill_job (si, pid, signal)
       goto DONE;
     }
 
-  if (signal == SIGTERM)
-    job->status = job_killed;
-  else if (signal == SIGSTOP)
-    job->status = job_stopped;
-  else if (signal == SIGCONT)
-    job->status = job_running;
-  else
-    abort();
+  switch (signal) {
+  case SIGTERM: job->status = job_killed;  break;
+  case SIGSTOP: job->status = job_stopped; break;
+  case SIGCONT: job->status = job_running; break;
+  default: abort();
+  }
 
   if (p->verbose_p)
     fprintf (stderr, "%s: %s pid %lu.\n", progname,
@@ -500,8 +498,6 @@ await_dying_children (si)
 	saver_info *si;
 #endif /* !__STDC__ */
 {
-  saver_preferences *p = &si->prefs;
-
   while (1)
     {
       int wait_status = 0;
@@ -510,7 +506,7 @@ await_dying_children (si)
       errno = 0;
       kid = waitpid (-1, &wait_status, WNOHANG|WUNTRACED);
 #ifdef DEBUG
-      if (p->debug_p)
+      if (si->prefs.debug_p)
 	if (kid < 0 && errno)
 	  fprintf (stderr, "%s: waitpid(-1) ==> %ld (%d)\n", progname,
 		   (long) kid, errno);
@@ -572,23 +568,23 @@ describe_dead_child (si, kid, wait_status)
     }
   else if (WIFSIGNALED (wait_status))
     {
-      if (!job ||
+      if (p->verbose_p ||
+	  !job ||
 	  job->status != job_killed ||
 	  WTERMSIG (wait_status) != SIGTERM)
-	fprintf (stderr, "%s: child pid %lu (%s) terminated with signal %d!\n",
-		 progname, (unsigned long) kid, name, WTERMSIG(wait_status));
-      else if (p->verbose_p)
-	printf ("%s: child pid %lu (%s) terminated with SIGTERM.\n",
-		progname, (unsigned long) kid, name);
+	fprintf (stderr, "%s: child pid %lu (%s) terminated with %s.\n",
+		 progname, (unsigned long) kid, name,
+		 signal_name (WTERMSIG(wait_status)));
 
       if (job)
 	job->status = job_dead;
     }
   else if (WIFSTOPPED (wait_status))
     {
-      if (p->verbose_p || job->status == job_stopped)
-	fprintf (stderr, "%s: child pid %lu (%s) stopped with signal %d.\n",
-		 progname, (unsigned long) kid, name, WSTOPSIG (wait_status));
+      if (p->verbose_p)
+	fprintf (stderr, "%s: child pid %lu (%s) stopped with %s.\n",
+		 progname, (unsigned long) kid, name,
+		 signal_name (WSTOPSIG (wait_status)));
 
       if (job)
 	job->status = job_stopped;

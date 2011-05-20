@@ -18,6 +18,7 @@
 #include <X11/Xlib.h>
 #include <X11/Xresource.h>
 
+#undef P
 #ifdef __STDC__
 # define P(x)x
 #else

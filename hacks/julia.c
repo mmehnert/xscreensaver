@@ -44,7 +44,7 @@ static const char sccsid[] = "@(#)julia.c	4.03 97/04/10 xlockmore";
 # define DEF_CYCLES					20
 # define DEF_DELAY					10000
 # define DEF_NCOLORS				200
-# define DEF_MOUSE					"True"
+# define DEF_MOUSE					"False"
 # define UNIFORM_COLORS
 # include "xlockmore.h"				/* in xscreensaver distribution */
 #else  /* !STANDALONE */

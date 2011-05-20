@@ -20,6 +20,7 @@
 #include <math.h>
 #include <X11/Xlib.h>
 
+#undef P
 #ifdef __STDC__
 # define P(x)x
 #else
@@ -29,6 +30,7 @@
 #include "hsv.h"
 #include "yarandom.h"
 #include "visual.h"
+#include "colors.h"
 
 extern char *progname;
 

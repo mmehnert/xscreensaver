@@ -373,11 +373,11 @@ ensure_selected_item_visible (list) Widget list;
       else
 	current_y -= margin;
 
-      if (current_y >= list_h)
-	current_y = list_h - vp_h;
+      if ((long)current_y >= (long) list_h)
+	current_y = (Position) ((long)list_h - (long)vp_h);
 
-      if (current_y < top_margin)
-	current_y = top_margin;
+      if ((long)current_y < (long)top_margin)
+	current_y = (Position)top_margin;
 
       XawViewportSetCoordinates (viewport, vp_x, current_y);
     }
@@ -815,12 +815,12 @@ res_done_cb (button, client_data, call_data)
 
 #ifdef USE_ATHENA
   /* Check all text widgets, since we don't have callbacks for these. */
-  res_min_cb (timeout_text, &res.timeout, NULL);
-  res_min_cb (cycle_text, &res.cycle, NULL);
-  res_sec_cb (fade_text, &res.secs, NULL);
-  res_int_cb (ticks_text, &res.ticks, NULL);
-  res_min_cb (lock_time_text, &res.lock_time, NULL);
-  res_sec_cb (passwd_time_text, &res.passwd_time, NULL);
+  res_min_cb (timeout_text,     (XtPointer) &res.timeout,     NULL);
+  res_min_cb (cycle_text,       (XtPointer) &res.cycle,       NULL);
+  res_sec_cb (fade_text,        (XtPointer) &res.secs,        NULL);
+  res_int_cb (ticks_text,       (XtPointer) &res.ticks,       NULL);
+  res_min_cb (lock_time_text,   (XtPointer) &res.lock_time,   NULL);
+  res_sec_cb (passwd_time_text, (XtPointer) &res.passwd_time, NULL);
 #endif /* USE_ATHENA */
 
   /* Throttle the timeouts to minimum sane values. */

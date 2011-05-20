@@ -335,6 +335,7 @@ extern void suspend_screenhack P((saver_info *si, Bool suspend_p));
 extern Bool screenhack_running_p P((saver_info *si));
 extern void emergency_kill_subproc P((saver_info *si));
 extern Bool select_visual P((saver_screen_info *ssi, const char *visual_name));
+extern const char *signal_name P((int signal));
 
 /* =======================================================================
    subprocs security

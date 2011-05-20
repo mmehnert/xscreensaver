@@ -395,7 +395,75 @@ restore_real_vroot (si)
    inconsistent state
  */
 
-static const char *sig_names [255] = { 0 };
+const char *
+#ifdef __STDC__
+signal_name(int signal)
+#else  /* !__STDC__ */
+signal_name (signal)
+	int signal;
+#endif /* !__STDC__ */
+{
+  switch (signal) {
+  case SIGHUP:	  return "SIGHUP";
+  case SIGINT:	  return "SIGINT";
+  case SIGQUIT:	  return "SIGQUIT";
+  case SIGILL:	  return "SIGILL";
+  case SIGTRAP:	  return "SIGTRAP";
+  case SIGABRT:	  return "SIGABRT";
+  case SIGFPE:	  return "SIGFPE";
+  case SIGKILL:	  return "SIGKILL";
+  case SIGBUS:	  return "SIGBUS";
+  case SIGSEGV:	  return "SIGSEGV";
+  case SIGPIPE:	  return "SIGPIPE";
+  case SIGALRM:	  return "SIGALRM";
+  case SIGTERM:	  return "SIGTERM";
+  case SIGSTOP:	  return "SIGSTOP";
+  case SIGCONT:	  return "SIGCONT";
+  case SIGUSR1:	  return "SIGUSR1";
+  case SIGUSR2:	  return "SIGUSR2";
+#ifdef SIGEMT
+  case SIGEMT:	  return "SIGEMT";
+#endif
+#ifdef SIGSYS
+  case SIGSYS:	  return "SIGSYS";
+#endif
+#ifdef SIGCHLD
+  case SIGCHLD:	  return "SIGCHLD";
+#endif
+#ifdef SIGPWR
+  case SIGPWR:	  return "SIGPWR";
+#endif
+#ifdef SIGWINCH
+  case SIGWINCH:  return "SIGWINCH";
+#endif
+#ifdef SIGURG
+  case SIGURG:	  return "SIGURG";
+#endif
+#ifdef SIGIO
+  case SIGIO:	  return "SIGIO";
+#endif
+#ifdef SIGVTALRM
+  case SIGVTALRM: return "SIGVTALRM";
+#endif
+#ifdef SIGXCPU
+  case SIGXCPU:	  return "SIGXCPU";
+#endif
+#ifdef SIGXFSZ
+  case SIGXFSZ:	  return "SIGXFSZ";
+#endif
+#ifdef SIGDANGER
+  case SIGDANGER: return "SIGDANGER";
+#endif
+  default:
+    {
+      static char buf[50];
+      sprintf(buf, "signal %d\n", signal);
+      return buf;
+    }
+  }
+}
+
+
 
 static void
 #ifdef __STDC__
@@ -409,24 +477,18 @@ restore_real_vroot_handler (sig)
 
   signal (sig, SIG_DFL);
   if (restore_real_vroot_1 (si))
-    {
-      fprintf (real_stderr, "\n%s: %s (%d) intercepted, vroot restored.\n",
-	       progname,
-	       ((sig < sizeof(sig_names) && sig >= 0 && sig_names [sig])
-		? sig_names [sig] : "unknown signal"),
-	       sig);
-    }
+    fprintf (real_stderr, "\n%s: %s intercepted, vroot restored.\n",
+	     progname, signal_name(sig));
   kill (getpid (), sig);
 }
 
 static void
 #ifdef __STDC__
-catch_signal (saver_info *si, int sig, char *signame, Bool on_p)
+catch_signal (saver_info *si, int sig, Bool on_p)
 #else  /* !__STDC__ */
-catch_signal (si, sig, signame, on_p)
+catch_signal (si, sig, on_p)
 	saver_info *si;
 	int sig;
-	char *signame;
 	Bool on_p;
 #endif /* !__STDC__ */
 {
@@ -434,11 +496,10 @@ catch_signal (si, sig, signame, on_p)
     signal (sig, SIG_DFL);
   else
     {
-      sig_names [sig] = signame;
       if (((int) signal (sig, restore_real_vroot_handler)) == -1)
 	{
 	  char buf [255];
-	  sprintf (buf, "%s: couldn't catch %s (%d)", progname, signame, sig);
+	  sprintf (buf, "%s: couldn't catch %s", progname, signal_name(sig));
 	  perror (buf);
 	  saver_exit (si, 1);
 	}
@@ -459,31 +520,31 @@ handle_signals (si, on_p)
   else printf ("unhandling signals\n");
 #endif
 
-  catch_signal (si, SIGHUP,  "SIGHUP",  on_p);
-  catch_signal (si, SIGINT,  "SIGINT",  on_p);
-  catch_signal (si, SIGQUIT, "SIGQUIT", on_p);
-  catch_signal (si, SIGILL,  "SIGILL",  on_p);
-  catch_signal (si, SIGTRAP, "SIGTRAP", on_p);
-  catch_signal (si, SIGIOT,  "SIGIOT",  on_p);
-  catch_signal (si, SIGABRT, "SIGABRT", on_p);
+  catch_signal (si, SIGHUP,  on_p);
+  catch_signal (si, SIGINT,  on_p);
+  catch_signal (si, SIGQUIT, on_p);
+  catch_signal (si, SIGILL,  on_p);
+  catch_signal (si, SIGTRAP, on_p);
+  catch_signal (si, SIGIOT,  on_p);
+  catch_signal (si, SIGABRT, on_p);
 #ifdef SIGEMT
-  catch_signal (si, SIGEMT,  "SIGEMT",  on_p);
+  catch_signal (si, SIGEMT,  on_p);
 #endif
-  catch_signal (si, SIGFPE,  "SIGFPE",  on_p);
-  catch_signal (si, SIGBUS,  "SIGBUS",  on_p);
-  catch_signal (si, SIGSEGV, "SIGSEGV", on_p);
+  catch_signal (si, SIGFPE,  on_p);
+  catch_signal (si, SIGBUS,  on_p);
+  catch_signal (si, SIGSEGV, on_p);
 #ifdef SIGSYS
-  catch_signal (si, SIGSYS,  "SIGSYS",  on_p);
+  catch_signal (si, SIGSYS,  on_p);
 #endif
-  catch_signal (si, SIGTERM, "SIGTERM", on_p);
+  catch_signal (si, SIGTERM, on_p);
 #ifdef SIGXCPU
-  catch_signal (si, SIGXCPU, "SIGXCPU", on_p);
+  catch_signal (si, SIGXCPU, on_p);
 #endif
 #ifdef SIGXFSZ
-  catch_signal (si, SIGXFSZ, "SIGXFSZ", on_p);
+  catch_signal (si, SIGXFSZ, on_p);
 #endif
 #ifdef SIGDANGER
-  catch_signal (si, SIGDANGER, "SIGDANGER", on_p);
+  catch_signal (si, SIGDANGER, on_p);
 #endif
 }
 

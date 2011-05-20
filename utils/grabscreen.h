@@ -17,6 +17,6 @@
    Beware that the colormap of the window may also be changed (to match
    the bits that were drawn.)
  */
-extern void grab_screen_image P((Display *dpy, Window window));
+extern void grab_screen_image P((Screen *, Window));
 
 #endif /* __GRABSCREEN_H__ */

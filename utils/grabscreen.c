@@ -28,6 +28,7 @@
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
 
+#undef P
 #ifdef __STDC__
 # define P(x)x
 #else
@@ -36,6 +37,7 @@
 
 #include "usleep.h"
 #include "colors.h"
+#include "grabscreen.h"
 
 #ifdef HAVE_READ_DISPLAY_EXTENSION
 # include <stdio.h>

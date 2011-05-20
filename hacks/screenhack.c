@@ -298,7 +298,6 @@ main (argc, argv)
     /* wait for it to be mapped */
     XIfEvent (dpy, &event, MapNotify_event_p, (XPointer) window);
 
-  free(version);
   XSync (dpy, False);
   srandom ((int) time ((time_t *) 0));
   screenhack (dpy, window);

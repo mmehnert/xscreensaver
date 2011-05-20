@@ -11,8 +11,8 @@
 *verbose:		False
 *fade:			True
 *unfade:		False
-*fadeSeconds:		1
-*fadeTicks:		75
+*fadeSeconds:		3
+*fadeTicks:		20
 
 *captureStderr: 	True
 *captureStdout: 	True

@@ -220,13 +220,13 @@ as well.  Default false.
 .TP 8
 .B fadeSeconds \fR(class \fBTime\fP)
 If \fIfade\fP is true, this is how long the fade will be in 
-seconds (default 1.)
+seconds (default 3.)
 .TP 8
 .B fadeTicks \fR(class \fBInteger\fP)
 If \fIfade\fP is true, this is how many times a second the colormap will
 be changed to effect a fade.  Higher numbers yield smoother fades, but
-may make the fades take longer if your server isn't fast enough to keep
-up.  Default 75.
+may make the fades take longer than the specified \fIfadeSeconds\fP if
+your server isn't fast enough to keep up.  Default 20.
 .TP 8
 .B visualID \fR(class \fBVisualID\fP)
 Same as the \fI\-visual\fP command-line option.  Default \fBdefault\fP.

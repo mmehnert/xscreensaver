@@ -53,7 +53,7 @@ init_slide (dpy, window)
   border = get_integer_resource ("internalBorderWidth", "InternalBorderWidth");
   fg = get_pixel_resource ("background", "Background", dpy, cmap);
 
-  grab_screen_image (dpy, window);
+  grab_screen_image (xgwa.screen, window);
 
 
   /* Total kludge -- if grab_screen_image() installed a new colormap, assume

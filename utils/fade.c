@@ -9,14 +9,34 @@
  * implied warranty.
  */
 
+/* Sun's compiler really blows */
+#if defined(SVR4) && !defined(__svr4__)
+# define __svr4__ 1
+#endif
+#if defined(sun) && !defined(__sun)
+# define __sun 1
+#endif
+
+#if defined(__sun) && defined(__svr4__)
+  /* Solaris 2.4 and less use gettimeofday(tp) but Solaris 2.5 and greater
+     use gettimeofday(tp,tzp) unless you define _SVID_GETTOD.  Make up your
+     fucking minds, assholes. */
+# undef  _SVID_GETTOD
+# define _SVID_GETTOD
+#endif
+
+#include <sys/time.h> /* for gettimeofday() */
+
 #ifdef __STDC__
 # include <stdlib.h>
 #endif
 
 #include <stdio.h>
+
 #include <X11/Xlib.h>
 #include <X11/Xos.h>
 
+#undef P
 #ifdef __STDC__
 # define P(x)x
 #else
@@ -115,13 +135,19 @@ fade_screens (dpy, cmaps, seconds, ticks, out_p)
 {
   int i, j, k;
   int steps = seconds * ticks;
+  long usecs_per_step = (long)(seconds * 1000000) / (long)steps;
   XEvent dummy_event;
   int cmaps_per_screen = 5;
   int nscreens = ScreenCount(dpy);
   int ncmaps = nscreens * cmaps_per_screen;
   static Colormap *fade_cmaps = 0;
+  Bool installed = False;
   int total_ncolors;
   XColor *orig_colors, *current_colors, *screen_colors, *orig_screen_colors;
+  struct timeval then, now;
+# if defined(__svr4__) && !defined(__sun)
+  struct timezone tzp;
+#endif
 
   total_ncolors = 0;
   for (i = 0; i < nscreens; i++)
@@ -158,6 +184,12 @@ fade_screens (dpy, cmaps, seconds, ticks, out_p)
 	    XCreateColormap (dpy, RootWindow (dpy, i), DefaultVisual(dpy, i),
 			     AllocAll);
     }
+
+# if defined(__svr4__) && !defined(__sun)
+  gettimeofday(&then, &tzp);
+#else
+  gettimeofday(&then);
+#endif
 
   /* Iterate by steps of the animation... */
   for (i = (out_p ? steps : 0);
@@ -201,10 +233,15 @@ fade_screens (dpy, cmaps, seconds, ticks, out_p)
 	}
 
       /* Put the maps on the screens...
+	 (only need to do this the first time through the loop.)
        */
-      for (j = 0; j < ncmaps; j++)
-	if (fade_cmaps[j])
-	  XInstallColormap (dpy, fade_cmaps[j]);
+      if (!installed)
+	{
+	  for (j = 0; j < ncmaps; j++)
+	    if (fade_cmaps[j])
+	      XInstallColormap (dpy, fade_cmaps[j]);
+	  installed = True;
+	}
 
       XSync (dpy, False);
 
@@ -225,15 +262,32 @@ fade_screens (dpy, cmaps, seconds, ticks, out_p)
 	  goto DONE;
 	}
 
-      usleep (1000000 / (ticks * 2)); /* the 2 is a hack... */
+# if defined(__svr4__) && !defined(__sun)
+      gettimeofday(&now, &tzp);
+#else
+      gettimeofday(&now);
+#endif
+
+      /* If we haven't already used up our alotted time, sleep to avoid
+	 changing the colormap too fast. */
+      {
+	long diff = (((now.tv_sec - then.tv_sec) * 1000000) +
+		     now.tv_usec - then.tv_usec);
+	then.tv_sec = now.tv_sec;
+	then.tv_usec = now.tv_usec;
+	if (usecs_per_step > diff)
+	  printf("usleep(%ld)\n",usecs_per_step - diff);
+	if (usecs_per_step > diff)
+	  usleep (usecs_per_step - diff);
+      }
     }
 
-DONE:
+ DONE:
 
   if (orig_colors)    free (orig_colors);
   if (current_colors) free (current_colors);
 
-  /* Now put the original map back, if we want to end up with it.
+  /* Now put the original maps back, if we want to end up with them.
    */
   if (!out_p)
     {
@@ -243,26 +297,27 @@ DONE:
 	  if (!cmap) cmap = DefaultColormap(dpy, i);
 	  XInstallColormap (dpy, cmap);
 	}
+
       /* We've faded to the default cmaps, so we don't need the black maps
-	 on stage any more. */
+	 on stage any more.  (We can't uninstall these maps yet if we've
+	 faded to black, because that would lead to flicker between when
+	 we uninstalled them and when the caller raised its black window.)
+       */
       for (i = 0; i < ncmaps; i++)
 	if (fade_cmaps[i])
-	  XUninstallColormap(dpy, fade_cmaps[i]);
-    }
-
-#if 0
-  if (fade_cmaps)
-    {
-      for (i = 0; i < ncmaps; i++)
-	if (fade_cmaps[i]) XFreeColormap (dpy, fade_cmaps[i]);
+	  {
+	    XFreeColormap(dpy, fade_cmaps[i]);
+	    fade_cmaps[i] = 0;
+	  }
       free(fade_cmaps);
+      fade_cmaps = 0;
     }
-#endif
 }
 
 
 #if 0
-#include "../hacks/screenhack.h"
+#include "screenhack.h"
+
 char *progclass = "foo";
 char *defaults [] = {
   0
@@ -276,11 +331,9 @@ screenhack (dpy, w)
      Display *dpy;
      Window w;
 {
-  int seconds = 1;
-  int ticks = 30 * seconds;
+  int seconds = 3;
+  int ticks = 20;
   int delay = 1;
-
-  XSynchronize (dpy, True);
 
   while (1)
     {

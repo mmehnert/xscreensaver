@@ -41,6 +41,15 @@
  */
 
 
+/* Sun's compiler really blows */
+#if defined(SVR4) && !defined(__svr4__)
+# define __svr4__ 1
+#endif
+#if defined(sun) && !defined(__sun)
+# define __sun 1
+#endif
+
+
 #if defined(__sun) && defined(__svr4__)
   /* Solaris 2.4 and less use gettimeofday(tp) but Solaris 2.5 and greater
      use gettimeofday(tp,tzp) unless you define _SVID_GETTOD.  Make up your
@@ -51,6 +60,15 @@
 
 #include <unistd.h>   /* for getpid() */
 #include <sys/time.h> /* for gettimeofday() */
+
+#undef P
+#ifdef __STDC__
+# define P(x)x
+#else
+# define P(x)()
+#endif
+
+#include "yarandom.h"
 
 
 /* The following 'random' numbers are taken from CRC, 18th Edition, page 622.

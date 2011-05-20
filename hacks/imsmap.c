@@ -16,20 +16,31 @@
 
 #include <stdio.h>
 #include <math.h>
+
+/* Sun's compiler really blows */
+#if defined(SVR4) && !defined(__svr4__)
+# define __svr4__ 1
+#endif
+#if defined(sun) && !defined(__sun)
+# define __sun 1
+#endif
+
+
+#if defined(__sun) && defined(__svr4__)
+  /* Solaris 2.4 and less use gettimeofday(tp) but Solaris 2.5 and greater
+     use gettimeofday(tp,tzp) unless you define _SVID_GETTOD.  Make up your
+     fucking minds, assholes. */
+# undef  _SVID_GETTOD
+# define _SVID_GETTOD
+#endif
+
+#include <sys/time.h> /* for gettimeofday() */
+
+
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
-#include <X11/Xos.h>		/* for X_GETTIMEOFDAY() */
 
 #include "screenhack.h"
-
-
-#ifndef X_GETTIMEOFDAY
-# if defined(SVR4) || defined(VMS)
-#  define X_GETTIMEOFDAY(t) gettimeofday((t))
-# else
-#  define X_GETTIMEOFDAY(t) gettimeofday((t), (struct timezone*)0)
-# endif
-#endif
 
 #define NSTEPS 7
 #define COUNT (1 << NSTEPS)
@@ -448,7 +459,12 @@ draw_map (dpy, window)
 		  struct timeval now;
 		  static struct timeval then = { 0, };
 		  unsigned long diff;
-		  X_GETTIMEOFDAY(&now);
+# if defined(__svr4__) && !defined(__sun)
+		  struct timezone tzp;
+		  gettimeofday(&now, &tzp);
+#else
+		  gettimeofday(&now);
+#endif
 		  diff = (((now.tv_sec - then.tv_sec)  * 1000000) +
 			  (now.tv_usec - then.tv_usec));
 		  if (diff > cycle_delay)

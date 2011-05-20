@@ -97,7 +97,7 @@ prepare_screen(ModeInfo * mi, slipstruct * s)
 #ifdef STANDALONE			  /* jwz -- sometimes hack the desktop image! */
 	if (halfrandom(5) == 0)
 	  {
-		grab_screen_image(display, MI_WINDOW(mi));
+		grab_screen_image(MI_SCREEN(mi), MI_WINDOW(mi));
 		return;
 	  }
 #endif
