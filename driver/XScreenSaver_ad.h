@@ -126,11 +126,15 @@
 		petri -root -minlifespeed 0.02 -maxlifespeed 0.03	  \
 		   -minlifespan 1 -maxlifespan 1 -instantdeathchan 0	  \
 		   -minorchan 0 -anychan 0.3				\\n\
+		shadebobs -root						\\n\
+    default-n:  webcollage -root					\\n\
+ -  default-n	webcollage -root -filter 'vidwhacker -stdin -stdout'    \\n\
+ -  default-n	vidwhacker -root					\\n\
 									  \
-	mono:	rocks -root						\\n\
+	 mono:	rocks -root						\\n\
 	color:	rocks -root -fg darksalmon				\\n\
 									  \
-	mono:	qix -root -linear -count 5 -size 200 -spread 30		  \
+	 mono:	qix -root -linear -count 5 -size 200 -spread 30		  \
 			-segments 75 -solid -xor			\\n\
 									  \
 	color:	attraction -root -mode polygons				\\n\

@@ -1,3 +1,16 @@
+.de EX		\"Begin example
+.ne 5
+.if n .sp 1
+.if t .sp .5
+.nf
+.in +.5i
+..
+.de EE
+.fi
+.in -.5i
+.if n .sp 1
+.if t .sp .5
+..
 .TH Sonar 1 "3-Nov-98" "X Version 11"
 .SH NAME
 sonar - display a sonar scope
@@ -64,17 +77,22 @@ to a ping.
 .B \-ping\-source list | file | subnet
 Th source of the list of hosts to ping. Valid values are: \fIlist\fP,
 \fIfile\fP, \fIsubnet\fP.  The first two values are described below;
-and \fIsubnet\fP indicates that the sonar should ping all hosts in the 
+and \fIsubnet\fP indicates that the sonar should ping all hosts in the
 same subnet as the current machine.  (All addresses are treated
-as class C nets, therefore this will at most ping about 256 hosts.)
+as class C nets, therefore this will at most ping 254 hosts.)
 .TP 8
 .B \-ping\-file \fIfilename\fP
-The path to a file in \fI/etc/hosts\fP format. Only used when \fIpingSource\fP 
-is set to \fIfile\fP.
+The path to a file listing the hosts to ping.  This file can be in the
+format used by \fI/etc/hosts\fP, or it can be any file that has host
+names as the first element on each line.  If you use ssh, try this:
+.EX
+sonar -mode ping -ping-file $HOME/.ssh/known_hosts
+.EE
+This is used only used when \fIpingSource\fP is set to \fBfile\fP.
 .TP 8
 .B \-ping\-list \fIlist\fP
 A comma separated list of hostnames, eg \fI"pinky,brain,dot"\fP.
-Only used when \fIpingSource\fP is set to \fIlist\fP.
+Only used when \fIpingSource\fP is set to \fBlist\fP.
 .TP 8
 .B \-team-a-name \fIstring\fP
 The name of team A, in simulation-mode.
@@ -110,29 +128,29 @@ See option \-text\-color, above; default value is \fI#ffff00\fP.
 See option \-ttl, above; default value is \fI90\fP or one sweep.
 .TP 8
 .B mode \fI(ping)\fP
-See option \-mode, above.  If set to \fIdefault\fP, it will ping hosts if
+See option \-mode, above.  If set to \fBdefault\fP, it will ping hosts if
 possible, otherwise, will run in simulation-mode.
 .TP 8
 .B font \fI(font)\fP
 See option \-font, above; default value is \fIfixed\fP.
 .TP 8
 .B pingTimeout \fI(Integer)\fP
-See option \-pingtimeout, above; default value is \fI3000\fP.
+See option \-pingtimeout, above; default value is 3000.
 .TP 8
 .B pingSource \fIlist | file | subnet\fP
-See option \-ping\-source, above.  Default value is \fIhostfile\fP.
+See option \-ping\-source, above.  Default value is \fIfile\fP.
 .TP 8
 .B pingFile \fIpathname\fP
 See option \-ping\-file, above.  Default value is \fI/etc/hosts\fP.
 .TP 8
 .B pingList \fIhost,host,host...\fP
-See option \-ping\-list, above; default value is \fI"localhost"\fP.
+See option \-ping\-list, above; default value is \fBlocalhost\fP.
 .TP 8
 .B teamAName \fIstring\fP
-See option \-team\-a\-name, above.  Default value is "F18".
+See option \-team\-a\-name, above.  Default value is \fBF18\fP.
 .TP 8
 .B teamBName \fIstring\fP
-See option \-teamBName, above.  Default value is "MIG".
+See option \-teamBName, above.  Default value is \fBMIG\fP.
 .TP 8
 .B teamACount \fIint\fP
 See option \-teamACount, above.  Default value is 4.

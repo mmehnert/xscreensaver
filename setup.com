@@ -66,6 +66,7 @@ $ rd-bomb	:== $'mydir'rd-bomb
 $ rocks		:== $'mydir'rocks
 $ rorschach	:== $'mydir'rorschach
 $ rotor		:== $'mydir'rotor
+$ shadebobs	:== $'mydir'shadebobs
 $ sierpinski	:== $'mydir'sierpinski
 $ slidescreen	:== $'mydir'slidescreen
 $ slip		:== $'mydir'slip
@@ -80,8 +81,10 @@ $ swirl		:== $'mydir'swirl
 $ t3d		:== $'mydir't3d
 $ triangle	:== $'mydir'triangle
 $ truchet	:== $'mydir'truchet
+$ vidwhacker	:== $'mydir'vidwhacker
 $ vines		:== $'mydir'vines
 $ wander	:== $'mydir'wander
+$ webcollage	:== $'mydir'webcollage
 $ worm		:== $'mydir'worm
 $ xflame	:== $'mydir'xflame
 $ xjack		:== $'mydir'xjack

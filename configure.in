@@ -8,6 +8,22 @@ echo "current directory: `pwd`"
 echo "command line was: $0 $@"
 
 
+# After checking to see that --srcdir is correct (which AC_INIT does)
+# check for some random other files that come later in the tar file,
+# to make sure everything is here.
+#
+for d in driver utils hacks hacks/glx ; do
+  f=$srcdir/$d/Makefile.in
+  if test \! -r $f ; then
+    echo ""
+    echo "ERROR: The package is incomplete: $f does not exist."
+    echo "       This probably means that your download was truncated."
+    echo ""
+    exit 1
+  fi
+done
+
+
 ###############################################################################
 #
 #       Function to figure out how to run the compiler.

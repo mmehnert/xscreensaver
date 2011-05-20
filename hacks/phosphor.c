@@ -728,7 +728,7 @@ drain_input (p_state *state)
 {
   if (state->input_available_p)
     {
-      char s[2];
+      unsigned char s[2];
       int n = read (fileno (state->pipe), (void *) s, 1);
       if (n == 1)
         {

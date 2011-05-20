@@ -37,7 +37,7 @@
  * software for any purpose.  It is provided "as is" without express or 
  * implied warranty.
  *
- * $Revision: 1.11 $
+ * $Revision: 1.12 $
  *
  * Version 1.0 April 27, 1998.
  * - Initial version
@@ -573,12 +573,28 @@ readPingHostsFile(char *fname)
 	else
 	    continue;
 
+        /* Check to see if the addr looks like an addr.  If not, assume
+           the addr is a name and there is no addr.  This way, we can
+           handle files whose lines have "xx.xx.xx.xx hostname" as their
+           first two tokens, and also files that have a hostname as their
+           first token (like .ssh/known_hosts and .rhosts.)
+         */
+        {
+          int i; char c;
+          if (4 != sscanf(addr, "%d.%d.%d.%d%c", &i, &i, &i, &i, &c))
+            {
+              name = addr;
+              addr = NULL;
+            }
+        }
+        printf ("\"%s\" \"%s\"\n", name, addr);
+
 	/* Create a new target using first the name then the address */
 
 	new = NULL;
 	if (name != NULL)
 	    new = newHost(name);
-	if (new == NULL)
+	if (new == NULL && addr != NULL)
 	    new = newHost(addr);
 
 	/* Add it to the list if we got one */

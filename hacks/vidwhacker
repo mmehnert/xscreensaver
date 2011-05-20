@@ -1,6 +1,15 @@
 #!/bin/sh
 #
-# vidwhacker, for xscreensaver.  Copyright (c) 1998 Jamie Zawinski.
+# vidwhacker, for xscreensaver.  Copyright (c) 1998, 1999 Jamie Zawinski.
+#
+# Permission to use, copy, modify, distribute, and sell this software and its
+# documentation for any purpose is hereby granted without fee, provided that
+# the above copyright notice appear in all copies and that both that
+# copyright notice and this permission notice appear in supporting
+# documentation.  No representations are made about the suitability of this
+# software for any purpose.  It is provided "as is" without express or 
+# implied warranty.
+#
 #
 # This script grabs a frame of video, then uses various pbm filters to
 # munge the image in random nefarious ways, then uses xv to put it on
@@ -17,23 +26,33 @@ onroot=false
 verbose=false
 delay=3
 use_stdin=false
+use_stdout=false
 
 pid=""
-tmp=/tmp/vd$$
+tmp=${TMPDIR:-/tmp}/vidwhacker.$$
 tmp_rgb=$tmp-00000.rgb
 tmp_ppm0=$tmp-0.ppm
 tmp_ppm1=$tmp-1.ppm
 tmp_ppm2=$tmp-2.ppm
 tmp_ppm3=$tmp-3.ppm
 tmp_ppm4=$tmp-4.ppm
+tmp_ppmS=$tmp-S.ppm
 
 
 getargs() {
 
   while [ $# != 0 ]; do
     case "$1" in
+    -display | -disp | -dis | -dpy | -d )
+      shift
+      DISPLAY="$1"
+      export DISPLAY
+      ;;
     -root )
       onroot=true
+      ;;
+    -window )
+      onroot=false
       ;;
     -verbose )
       verbose=true
@@ -41,8 +60,19 @@ getargs() {
     -stdin )
       use_stdin=true
       ;;
+    -stdout )
+      use_stdout=true
+      ;;
+    -delay)
+      shift
+      delay="$1"
+      ;;
     * )
-      echo "usage: $0 [ -root | -verbose | -stdin ]" >&2
+      echo "VidWhacker, Copyright (c) 1999 Jamie Zawinski <jwz@jwz.org>" >&2
+      echo "            http://www.jwz.org/xscreensaver/" >&2
+      echo "" >&2
+      echo "usage: $0 [-display dpy] [-verbose] [-root | -window]" >&2
+      echo "                  [-stdin] [-stdout] [-delay secs]" >&2
       exit 1
       ;;
     esac
@@ -57,7 +87,15 @@ getargs() {
     xvargs="$xvargs -geom +0+0"
   fi
 
-  screen_width=`xdpyinfo | sed -n 's/.* dimensions: *\([0-9]*\).*/\1/p'`
+
+  screen_width=''
+  if [ "$use_stdout" = false ]; then
+    screen_width=`xdpyinfo 2>/dev/null | 
+        sed -n 's/.* dimensions: *\([0-9]*\).*/\1/p'`
+    if [ "$screen_width" = "" ]; then
+      screen_width=800
+    fi
+  fi
 }
 
 
@@ -67,11 +105,11 @@ clean() {
 
 clean2() {
   clean
-  rm -f $tmp_ppm0
+  rm -f $tmp_ppm0 $tmp_ppmS
 }
 
 
-# Grab a frame of video.
+# Grab a frame of video.  leaves it in $tmp_ppm1.
 #
 grab() {
   uname=`uname`
@@ -241,12 +279,19 @@ whack() {
     if [ "$use_stdin" != true ]; then
       grab
     else
+      cp $tmp_ppmS $tmp_ppm0
       cp $tmp_ppm0 $tmp_ppm1
     fi
   done
 
   rm -f $tmp_rgb
-  frob | pnmscale -width $screen_width > $tmp_ppm3
+
+  if [ "$screen_width" != "" ]; then
+    frob | pnmscale -width $screen_width > $tmp_ppm3
+  else
+    frob > $tmp_ppm3
+  fi
+
   rm -f $tmp_ppm1 $tmp_ppm2
 }
 
@@ -265,7 +310,7 @@ kill_pid() {
 #    ( sh -c "kill $pid" ) >/dev/null 2>/dev/null </dev/null
 
     # wtf?  that doesn't work either.  Is it writing to /dev/tty??
-    kill $pid >&- >&-
+    kill $pid >/dev/null 2>&1
 
     pid=""
   fi
@@ -286,10 +331,10 @@ main() {
 
   getargs $@
 
-  trap my_trap 0 1 2 3 6 9 13 15
+  trap my_trap 1 2 3 6 9 13 15
 
   if [ "$use_stdin" = true ]; then
-   cat > $tmp_ppm0
+   cat > $tmp_ppmS
   fi
 
   while true; do
@@ -305,13 +350,20 @@ main() {
     if [ "$verbose" = true ]; then
       whack
     else
-      whack >&- 2>&-
+      whack >/dev/null 2>&1
     fi
 
     kill_pid
 
     if [ ! -s $tmp_ppm3 ]; then
       echo "$0: no image grabbed" >&2
+
+    elif [ "$use_stdout" = true ]; then
+
+      cat $tmp_ppm3
+      clean2
+      exit 0
+
     else
 
       pnmtosgi < $tmp_ppm3 > $tmp_ppm2

@@ -243,6 +243,7 @@ www::
     echo "$$NAME does not exist!  Did you forget to \`make tar'?" ;	    \
     exit 1 ; 								    \
   fi ;									    \
+  chmod a-w $$NAME ;							    \
   if [ -f $$DEST/$$NAME ]; then						    \
     echo -n "WARNING: $$DEST/$$NAME already exists!  Overwrite? ";	    \
     read line;								    \

@@ -169,9 +169,49 @@ exec_complex_command (const char *shell, const char *command)
 {
   char *av[5];
   int ac = 0;
-  char *command2 = (char *) malloc (strlen (command) + 6);
-  memcpy (command2, "exec ", 5);
-  memcpy (command2 + 5, command, strlen (command) + 1);
+  char *command2 = (char *) malloc (strlen (command) + 10);
+  const char *s;
+  int got_eq = 0;
+  const char *after_vars;
+
+  /* Skip leading whitespace.
+   */
+  while (*command == ' ' || *command == '\t')
+    command++;
+
+  /* If the string has a series of tokens with "=" in them at them, set
+     `after_vars' to point into the string after those tokens and any
+     trailing whitespace.  Otherwise, after_vars == command.
+   */
+  after_vars = command;
+  for (s = command; *s; s++)
+    {
+      if (*s == '=') got_eq = 1;
+      else if (*s == ' ')
+        {
+          if (got_eq)
+            {
+              while (*s == ' ' || *s == '\t')
+                s++;
+              after_vars = s;
+              got_eq = 0;
+            }
+          else
+            break;
+        }
+    }
+
+  *command2 = 0;
+  strncat (command2, command, after_vars - command);
+  strcat (command2, "exec ");
+  strcat (command2, after_vars);
+
+  /* We have now done these transformations:
+     "foo -x -y"               ==>  "exec foo -x -y"
+     "BLAT=foop      foo -x"   ==>  "BLAT=foop      exec foo -x"
+     "BLAT=foop A=b  foo -x"   ==>  "BLAT=foop A=b  exec foo -x"
+   */
+
 
   /* Invoke the shell as "/bin/sh -c 'exec prog -arg -arg ...'" */
   av [ac++] = (char *) shell;
@@ -334,19 +374,32 @@ make_job (pid_t pid, const char *cmd)
   static char name [1024];
   const char *in = cmd;
   char *out = name;
+  int got_eq = 0;
+  int first = 1;
 
   clean_job_list();
 
+ AGAIN:
   while (isspace(*in)) in++;		/* skip whitespace */
-  while (!isspace(*in) && *in != ':')
+  while (!isspace(*in) && *in != ':') {
+    if (*in == '=') got_eq = 1;
     *out++ = *in++;			/* snarf first token */
-  while (isspace(*in)) in++;		/* skip whitespace */
-  if (*in == ':')			/* token was a visual name; skip it. */
-    {
-      in++;
+  }
+
+  if (got_eq)				/* if the first token was FOO=bar */
+    {					/* then get the next token instead. */
+      got_eq = 0;
       out = name;
-      while (isspace(*in)) in++;		/* skip whitespace */
-      while (!isspace(*in)) *out++ = *in++;	/* snarf first token */
+      first = 0;
+      goto AGAIN;
+    }
+
+  while (isspace(*in)) in++;		/* skip whitespace */
+  if (first && *in == ':')		/* token was a visual name; skip it. */
+    {
+      out = name;
+      first = 0;
+      goto AGAIN;
     }
   *out = 0;
 

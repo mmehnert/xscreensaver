@@ -1140,6 +1140,8 @@ unlock_p (saver_info *si)
   Colormap cmap = DefaultColormapOfScreen (screen);
   Bool status;
 
+  raise_window (si, True, True, True);
+
   if (p->verbose_p)
     fprintf (stderr, "%s: prompting for password.\n", blurb());
 
@@ -1177,4 +1179,13 @@ set_locked_p (saver_info *si, Bool locked_p)
 #endif
 }
 
-#endif /* !NO_LOCKING -- whole file */
+
+#else  /*  NO_LOCKING -- whole file */
+
+void
+set_locked_p (saver_info *si, Bool locked_p)
+{
+  if (locked_p) abort();
+}
+
+#endif /* !NO_LOCKING */

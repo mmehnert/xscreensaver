@@ -83,7 +83,7 @@ SRCS		= attraction.c blitspin.c bouboule.c braid.c bubbles.c \
 		  truchet.c bsod.c crystal.c discrete.c distort.c kumppa.c \
 		  sonar.c demon.c loop.c t3d.c penetrate.c deluxe.c compass.c \
 		  squiral.c xflame.c wander.c spotlight.c critical.c \
-		  phosphor.c xmatrix.c petri.c
+		  phosphor.c xmatrix.c petri.c shadebobs.c
 
 OBJS		= attraction.o blitspin.o bouboule.o braid.o bubbles.o \
 		  bubbles-default.o decayscreen.o deco.o drift.o flag.o \
@@ -100,7 +100,7 @@ OBJS		= attraction.o blitspin.o bouboule.o braid.o bubbles.o \
 		  truchet.o bsod.o crystal.o discrete.o distort.o kumppa.o \
 		  sonar.o demon.o loop.o t3d.o penetrate.o deluxe.o compass.o \
 		  squiral.o xflame.o wander.o spotlight.o critical.o \
-		  phosphor.o xmatrix.o petri.o
+		  phosphor.o xmatrix.o petri.o shadebobs.o
 
 EXES		= attraction blitspin bouboule braid bubbles decayscreen deco \
 		  drift flag flame forest vines galaxy grav greynetic halo \
@@ -112,7 +112,8 @@ EXES		= attraction blitspin bouboule braid bubbles decayscreen deco \
 		  ant xjack xlyap jigsaw cynosure moire2 flow epicycle \
 		  interference truchet bsod crystal discrete distort kumppa \
 		  sonar demon loop t3d penetrate deluxe compass squiral \
-		  xflame wander spotlight critical phosphor xmatrix petri
+		  xflame wander spotlight critical phosphor xmatrix petri \
+		  shadebobs vidwhacker webcollage
 
 HACK_OBJS_1	= $(UTILS_BIN)/resources.o $(UTILS_BIN)/visual.o \
 		  $(UTILS_BIN)/usleep.o $(UTILS_BIN)/yarandom.o @XMU_OBJS@
@@ -137,10 +138,11 @@ MEN		= attraction.man blitspin.man bouboule.man braid.man \
 		  slip.man sphere.man spiral.man strange.man swirl.man \
 		  xroger.man goop.man starfish.man munch.man rd-bomb.man \
 		  xjack.man xlyap.man jigsaw.man epicycle.man bsod.man \
-		  sonar.man t3d.man squiral.man spotlight.man critical.man
+		  sonar.man t3d.man squiral.man spotlight.man critical.man \
+		  vidwhacker.man webcollage.man
 STAR		= *
 EXTRAS		= README Makefile.in xlock_23.h .gdbinit \
-		  vidwhacker \
+		  vidwhacker webcollage \
 		  images/$(STAR).xbm \
 		  images/$(STAR).xpm \
 		  images/bubbles/$(STAR).pov \
@@ -502,6 +504,9 @@ xmatrix:	xmatrix.o	$(HACK_OBJS)
 	$(CC_HACK) -o $@ $@.o	$(HACK_OBJS) $(HACK_LIBS) $(XPM_LIBS)
 
 petri:		petri.o		$(HACK_OBJS) $(COL) $(SPL)
+	$(CC_HACK) -o $@ $@.o	$(HACK_OBJS) $(COL) $(SPL) $(HACK_LIBS)
+
+shadebobs:	shadebobs.o	$(HACK_OBJS) $(COL) $(SPL)
 	$(CC_HACK) -o $@ $@.o	$(HACK_OBJS) $(COL) $(SPL) $(HACK_LIBS)
 
 
@@ -1637,4 +1642,13 @@ petri.o: $(UTILS_SRC)/colors.h
 petri.o: $(UTILS_SRC)/grabscreen.h
 petri.o: $(UTILS_SRC)/visual.h
 petri.o: $(UTILS_SRC)/spline.h
+shadebobs.o: $(srcdir)/screenhack.h
+shadebobs.o: ../config.h
+shadebobs.o: $(UTILS_SRC)/yarandom.h
+shadebobs.o: $(UTILS_SRC)/usleep.h
+shadebobs.o: $(UTILS_SRC)/resources.h
+shadebobs.o: $(UTILS_SRC)/hsv.h
+shadebobs.o: $(UTILS_SRC)/colors.h
+shadebobs.o: $(UTILS_SRC)/grabscreen.h
+shadebobs.o: $(UTILS_SRC)/visual.h
 

@@ -62,20 +62,24 @@
 #include "screenhack.h"
 #include "spline.h"
 
-#define RANDOUBLE (((double) (random() & 0xffff)) / ((double) 0x10000))
+#define FLOAT float
+#define RAND_FLOAT (((FLOAT) (random() & 0xffff)) / ((FLOAT) 0x10000))
 
 typedef struct cell_s 
 {
-    int x, y;
-    double speed;
-    double growth;
-    unsigned char col;
-    struct cell_s *(adj)[3][3];
-    int isnext;
-    double nextspeed;
-    unsigned char nextcol;
-    struct cell_s *next;
-    struct cell_s *prev;
+    short x;                        /*  0    */
+    short y;                        /*  2    */
+    unsigned char col;              /*  4    */
+    unsigned char isnext;           /*  5    */
+    unsigned char nextcol;          /*  6    */
+                                    /*  7    */
+    struct cell_s *next;            /*  8    */
+    struct cell_s *prev;            /* 12    */
+    struct cell_s *(adj)[3][3];     /* 16    */
+    FLOAT speed;                    /* 52    */
+    FLOAT growth;                   /* 56 60 */
+    FLOAT nextspeed;                /* 60 68 */
+                                    /* 64 76 */
 } cell;
 
 static int arr_width;
@@ -98,21 +102,21 @@ static int yOffset;
 static int xSize;
 static int ySize;
 
-static double orthlim = 1.0;
-static double diaglim;
-static double anychan;
-static double minorchan;
-static double instantdeathchan;
+static FLOAT orthlim = 1.0;
+static FLOAT diaglim;
+static FLOAT anychan;
+static FLOAT minorchan;
+static FLOAT instantdeathchan;
 static int minlifespan;
 static int maxlifespan;
-static double minlifespeed;
-static double maxlifespeed;
-static double mindeathspeed;
-static double maxdeathspeed;
+static FLOAT minlifespeed;
+static FLOAT maxlifespeed;
+static FLOAT mindeathspeed;
+static FLOAT maxdeathspeed;
 
 static int random_life_value (void)
 {
-    return (int) ((RANDOUBLE * (maxlifespan - minlifespan)) + minlifespan);
+    return (int) ((RAND_FLOAT * (maxlifespan - minlifespan)) + minlifespan);
 }
 
 static void setup_display (void)
@@ -325,6 +329,12 @@ static void setup_arr (void)
 		    windowWidth, windowHeight);
 
     arr = (cell *) calloc (sizeof(cell), arr_width * arr_height);  
+    if (!arr)
+      {
+        fprintf (stderr, "%s: out of memory allocating %dx%d grid\n",
+                 progname, arr_width, arr_height);
+        exit (1);
+      }
 
     for (y = 0; y < arr_height; y++)
     {
@@ -373,7 +383,7 @@ static void setup_arr (void)
     blastcount = random_life_value ();
 }
 
-static void newcell (cell *c, unsigned char col, double sp)
+static void newcell (cell *c, unsigned char col, FLOAT sp)
 {
     if (! c) return;
     
@@ -407,7 +417,7 @@ static void randblip (int doit)
     int b = 0;
     if (!doit 
 	&& (blastcount-- >= 0) 
-	&& (RANDOUBLE > anychan))
+	&& (RAND_FLOAT > anychan))
     {
 	return;
     }
@@ -417,7 +427,7 @@ static void randblip (int doit)
 	b = 1;
 	n = 2;
 	blastcount = random_life_value ();
-	if (RANDOUBLE < instantdeathchan)
+	if (RAND_FLOAT < instantdeathchan)
 	{
 	    /* clear everything every so often to keep from getting into a
 	     * rut */
@@ -425,7 +435,7 @@ static void randblip (int doit)
 	    b = 0;
 	}
     }
-    else if (RANDOUBLE <= minorchan) 
+    else if (RAND_FLOAT <= minorchan) 
     {
 	n = 2;
     }
@@ -439,16 +449,16 @@ static void randblip (int doit)
 	int x = random () % arr_width;
 	int y = random () % arr_height;
 	int c;
-	double s;
+	FLOAT s;
 	if (b)
 	{
 	    c = 0;
-	    s = RANDOUBLE * (maxdeathspeed - mindeathspeed) + mindeathspeed;
+	    s = RAND_FLOAT * (maxdeathspeed - mindeathspeed) + mindeathspeed;
 	}
 	else
 	{
 	    c = (random () % (count-1)) + 1;
-	    s = RANDOUBLE * (maxlifespeed - minlifespeed) + minlifespeed;
+	    s = RAND_FLOAT * (maxlifespeed - minlifespeed) + minlifespeed;
 	}
 	newcell (&arr[y * arr_width + x], c, s);
     }

@@ -67,7 +67,7 @@ Along with the xscreensaver daemon itself, this package also includes
 numerous graphics hacks for use as screensavers.  There is nothing magic
 about these: they are just programs that draw on the root window.
 
-More than 90 such programs are included.  For details, see the xscreensaver
+More than 100 such programs are included.  For details, see the xscreensaver
 web page, or the enclosed manual pages.  There are also some helpful hints
 on customization in the xscreensaver app-defaults file (normally installed
 in /usr/lib/X11/app-defaults/XScreenSaver.)
@@ -77,6 +77,10 @@ http://www.jwz.org/xscreensaver/.
 
                               ============
 
+Changes since 3.14:   * Added `webcollage' and `shadebobs' hacks.
+                      * Added a `-stdout' arg to `vidwhacker' so that it can
+                        be used in a pipeline.
+                      * Made `petri' use less memory.
 Changes since 3.13:   * Various improvements to the Gtk port.
                       * Turned off PAM by default on Solaris, since PAM seems
                         generally to be misconfigured out-of-the-box.
