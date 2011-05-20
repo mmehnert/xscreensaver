@@ -47,12 +47,119 @@ reset_stderr (si)
 	saver_info *si;
 #endif /* !__STDC__ */
 {
-  si->stderr_text_x = si->stderr_text_y = 0;
+  int i;
+  for (i = 0; i < si->nscreens; i++)
+    {
+      saver_screen_info *ssi = &si->screens[i];
 
-  if (si->stderr_gc)
-    XFreeGC (si->dpy, si->stderr_gc);
-  si->stderr_gc = 0;
+      ssi->stderr_text_x = ssi->stderr_text_y = 0;
+
+      if (ssi->stderr_gc)
+	XFreeGC (si->dpy, ssi->stderr_gc);
+      ssi->stderr_gc = 0;
+    }
 }
+
+static void
+#ifdef __STDC__
+print_stderr_1 (saver_screen_info *ssi, char *string)
+#else  /* !__STDC__ */
+print_stderr_1 (ssi, string)
+	saver_screen_info *ssi;
+	char *string;
+#endif /* !__STDC__ */
+{
+  saver_info *si = ssi->global;
+  saver_preferences *p = &si->prefs;
+  Display *dpy = si->dpy;
+  Screen *screen = ssi->screen;
+  Window window = ssi->screensaver_window;
+  Colormap cmap = ssi->cmap;
+  int h_border = 20;
+  int v_border = 20;
+  char *head = string;
+  char *tail;
+
+  /* In verbose mode, copy it to stderr as well. */
+  if (p->verbose_p)
+    fprintf (real_stderr, "%s", string);
+
+  if (! ssi->stderr_font)
+    {
+      char *font_name = get_string_resource ("font", "Font");
+      if (!font_name) font_name = "fixed";
+      ssi->stderr_font = XLoadQueryFont (dpy, font_name);
+      if (! ssi->stderr_font) ssi->stderr_font = XLoadQueryFont (dpy, "fixed");
+      ssi->stderr_line_height = (ssi->stderr_font->ascent +
+				 ssi->stderr_font->descent);
+    }
+
+  if (! ssi->stderr_gc)
+    {
+      XGCValues gcv;
+      Pixel fg, bg;
+      fg = get_pixel_resource ("textForeground", "Foreground", dpy, cmap);
+      bg = get_pixel_resource ("textBackground", "Background", dpy, cmap);
+      gcv.font = ssi->stderr_font->fid;
+      gcv.foreground = fg;
+      gcv.background = bg;
+      ssi->stderr_gc = XCreateGC (dpy, window,
+				  (GCFont | GCForeground | GCBackground),
+				  &gcv);
+    }
+
+  for (tail = string; *tail; tail++)
+    {
+      if (*tail == '\n' || *tail == '\r')
+	{
+	  int maxy = HeightOfScreen (screen) - v_border - v_border;
+	  if (tail != head)
+	    XDrawImageString (dpy, window, ssi->stderr_gc,
+			      ssi->stderr_text_x + h_border,
+			      ssi->stderr_text_y + v_border +
+			      ssi->stderr_font->ascent,
+			      head, tail - head);
+	  ssi->stderr_text_x = 0;
+	  ssi->stderr_text_y += ssi->stderr_line_height;
+	  head = tail + 1;
+	  if (*tail == '\r' && *head == '\n')
+	    head++, tail++;
+
+	  if (ssi->stderr_text_y > maxy - ssi->stderr_line_height)
+	    {
+#if 0
+	      ssi->stderr_text_y = 0;
+#else
+	      int offset = ssi->stderr_line_height * 5;
+	      XCopyArea (dpy, window, window, ssi->stderr_gc,
+			 0, v_border + offset,
+			 WidthOfScreen (screen),
+			 (HeightOfScreen (screen) - v_border - v_border
+			  - offset),
+			 0, v_border);
+	      XClearArea (dpy, window,
+			  0, HeightOfScreen (screen) - v_border - offset,
+			  WidthOfScreen (screen), offset, False);
+	      ssi->stderr_text_y -= offset;
+#endif
+	    }
+	}
+    }
+  if (tail != head)
+    {
+      int direction, ascent, descent;
+      XCharStruct overall;
+      XDrawImageString (dpy, window, ssi->stderr_gc,
+			ssi->stderr_text_x + h_border,
+			ssi->stderr_text_y + v_border
+			  + ssi->stderr_font->ascent,
+			head, tail - head);
+      XTextExtents (ssi->stderr_font, tail, tail - head,
+		    &direction, &ascent, &descent, &overall);
+      ssi->stderr_text_x += overall.width;
+    }
+}
+
 
 static void
 #ifdef __STDC__
@@ -64,91 +171,14 @@ print_stderr (si, string)
 #endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
-  Display *dpy = si->dpy;
-  Screen *screen = si->screen;
-  Window window = si->screensaver_window;
-  Colormap cmap = si->cmap;
-  int h_border = 20;
-  int v_border = 20;
-  char *head = string;
-  char *tail;
+  int i;
 
   /* In verbose mode, copy it to stderr as well. */
   if (p->verbose_p)
     fprintf (real_stderr, "%s", string);
 
-  if (! si->stderr_font)
-    {
-      char *font_name = get_string_resource ("font", "Font");
-      if (!font_name) font_name = "fixed";
-      si->stderr_font = XLoadQueryFont (dpy, font_name);
-      if (! si->stderr_font) si->stderr_font = XLoadQueryFont (dpy, "fixed");
-      si->stderr_line_height = (si->stderr_font->ascent +
-				si->stderr_font->descent);
-    }
-
-  if (! si->stderr_gc)
-    {
-      XGCValues gcv;
-      Pixel fg, bg;
-      fg = get_pixel_resource ("textForeground", "Foreground", dpy, cmap);
-      bg = get_pixel_resource ("textBackground", "Background", dpy, cmap);
-      gcv.font = si->stderr_font->fid;
-      gcv.foreground = fg;
-      gcv.background = bg;
-      si->stderr_gc = XCreateGC (dpy, window,
-				 (GCFont | GCForeground | GCBackground), &gcv);
-    }
-
-  for (tail = string; *tail; tail++)
-    {
-      if (*tail == '\n' || *tail == '\r')
-	{
-	  int maxy = HeightOfScreen (screen) - v_border - v_border;
-	  if (tail != head)
-	    XDrawImageString (dpy, window, si->stderr_gc,
-			      si->stderr_text_x + h_border,
-			      si->stderr_text_y + v_border +
-			      si->stderr_font->ascent,
-			      head, tail - head);
-	  si->stderr_text_x = 0;
-	  si->stderr_text_y += si->stderr_line_height;
-	  head = tail + 1;
-	  if (*tail == '\r' && *head == '\n')
-	    head++, tail++;
-
-	  if (si->stderr_text_y > maxy - si->stderr_line_height)
-	    {
-#if 0
-	      si->stderr_text_y = 0;
-#else
-	      int offset = si->stderr_line_height * 5;
-	      XCopyArea (dpy, window, window, si->stderr_gc,
-			 0, v_border + offset,
-			 WidthOfScreen (screen),
-			 (HeightOfScreen (screen) - v_border - v_border
-			  - offset),
-			 0, v_border);
-	      XClearArea (dpy, window,
-			  0, HeightOfScreen (screen) - v_border - offset,
-			  WidthOfScreen (screen), offset, False);
-	      si->stderr_text_y -= offset;
-#endif
-	    }
-	}
-    }
-  if (tail != head)
-    {
-      int direction, ascent, descent;
-      XCharStruct overall;
-      XDrawImageString (dpy, window, si->stderr_gc,
-			si->stderr_text_x + h_border,
-			si->stderr_text_y + v_border + si->stderr_font->ascent,
-			head, tail - head);
-      XTextExtents (si->stderr_font, tail, tail - head,
-		    &direction, &ascent, &descent, &overall);
-      si->stderr_text_x += overall.width;
-    }
+  for (i = 0; i < si->nscreens; i++)
+    print_stderr_1 (&si->screens[i], string);
 }
 
 

@@ -25,33 +25,30 @@
 
 #include "visual.h"
 #include "usleep.h"
+#include "fade.h"
 
-
-#define MAX_COLORS 4096
-static XColor orig_colors [MAX_COLORS];
-static XColor current_colors [MAX_COLORS];
-static int ncolors;
 
 Colormap
 #ifdef __STDC__
-copy_colormap (Display *dpy, Colormap cmap, Colormap into_cmap)
-#else /* !__STDC__ */
-copy_colormap (dpy, cmap, into_cmap)
-     Display *dpy;
-     Colormap cmap, into_cmap;
+copy_colormap (Screen *screen, Colormap cmap, Colormap into_cmap)
+#else  /* !__STDC__ */
+copy_colormap (screen, cmap, into_cmap)
+	Screen *screen;
+	Colormap cmap;
+	Colormap into_cmap;
 #endif /* !__STDC__ */
 {
   int i;
-  Screen *screen = DefaultScreenOfDisplay (dpy);
+  Display *dpy = DisplayOfScreen (screen);
   Visual *visual = DefaultVisualOfScreen (screen);
   Window window = RootWindowOfScreen (screen);
-  int vclass = visual_class (dpy, visual);
-
-  ncolors = CellsOfScreen (screen);
+  int vclass = visual_class (screen, visual);
+  int ncolors = CellsOfScreen (screen);
+  XColor *colors = 0;
 
   /* If this is a colormap on a mono visual, or one with insanely many
      color cells, bug out. */
-  if (ncolors <= 2 || ncolors > MAX_COLORS)
+  if (ncolors <= 2 || ncolors > 4096)
     return 0;
   /* If this is a non-writable visual, bug out. */
   if (vclass == StaticGray || vclass == StaticColor || vclass == TrueColor)
@@ -60,107 +57,154 @@ copy_colormap (dpy, cmap, into_cmap)
   if (! into_cmap)
     into_cmap = XCreateColormap (dpy, window, visual, AllocAll);
   if (! cmap)
-    cmap = DefaultColormap (dpy, DefaultScreen (dpy));
+    cmap = DefaultColormapOfScreen (screen);
+
+  colors = (XColor *) calloc(sizeof(XColor), ncolors);
   for (i = 0; i < ncolors; i++)
-    orig_colors [i].pixel = i;
-  XQueryColors (dpy, cmap, orig_colors, ncolors);
-  XStoreColors (dpy, into_cmap, orig_colors, ncolors);
+    colors [i].pixel = i;
+  XQueryColors (dpy, cmap, colors, ncolors);
+  XStoreColors (dpy, into_cmap, colors, ncolors);
+  free (colors);
   return into_cmap;
 }
 
+
 void
 #ifdef __STDC__
-blacken_colormap (Display *dpy, Colormap cmap)
-#else /* !__STDC__ */
-blacken_colormap (dpy, cmap)
-     Display *dpy;
-     Colormap cmap;
+blacken_colormap (Screen *screen, Colormap cmap)
+#else  /* !__STDC__ */
+blacken_colormap (screen, cmap)
+	Screen *screen;
+	Colormap cmap;
 #endif /* !__STDC__ */
 {
+  Display *dpy = DisplayOfScreen (screen);
+  int ncolors = CellsOfScreen (screen);
+  XColor *colors;
   int i;
+  if (ncolors > 4096)
+    return;
+  colors = (XColor *) calloc(sizeof(XColor), ncolors);
   for (i = 0; i < ncolors; i++)
-    {
-      current_colors [i].pixel = i;
-      current_colors [i].red = current_colors [i].green =
-	current_colors [i].blue = 0;
-    }
-  XStoreColors (dpy, cmap, current_colors, ncolors);
+    colors[i].pixel = i;
+  XStoreColors (dpy, cmap, colors, ncolors);
+  free (colors);
 }
 
 
-/* The business with `install_p' and `extra_cmaps' is to fake out the SGI
-   8-bit video hardware, which is capable of installing multiple (4) colormaps
+/* The business with `cmaps_per_screen' is to fake out the SGI 8-bit video
+   hardware, which is capable of installing multiple (4) colormaps
    simultaniously.  We have to install multiple copies of the same set of
    colors in order to fill up all the available slots in the hardware color
-   lookup table.
- */
+   lookup table, so we install an extra N colormaps per screen to make sure
+   that all screens really go black.  */
 
 void
 #ifdef __STDC__
-fade_colormap (Display *dpy,
-	       Colormap cmap, Colormap cmap2,
-	       int seconds, int ticks,
-	       Bool out_p, Bool install_p)
-
-#else /* !__STDC__ */
-fade_colormap (dpy, cmap, cmap2, seconds, ticks, out_p, install_p)
-     Display *dpy;
-     Colormap cmap, cmap2;
-     int seconds, ticks;
-     Bool out_p;
-     Bool install_p;
+fade_screens (Display *dpy, Colormap *cmaps,
+	      int seconds, int ticks,
+	      Bool out_p)
+#else  /* !__STDC__ */
+fade_screens (dpy, cmaps, seconds, ticks, out_p)
+	Display *dpy;
+	Colormap *cmaps;
+	int seconds;
+	int ticks;
+	Bool out_p;
 #endif /* !__STDC__ */
 {
-  int i;
+  int i, j, k;
   int steps = seconds * ticks;
   XEvent dummy_event;
+  int cmaps_per_screen = 5;
+  int nscreens = ScreenCount(dpy);
+  int ncmaps = nscreens * cmaps_per_screen;
+  static Colormap *fade_cmaps = 0;
+  int total_ncolors;
+  XColor *orig_colors, *current_colors, *screen_colors, *orig_screen_colors;
 
-  Screen *screen = DefaultScreenOfDisplay (dpy);
-  Visual *visual = DefaultVisualOfScreen (screen);
-  Window window = RootWindowOfScreen (screen);
-  static Colormap extra_cmaps[4] = { 0, };
-  int n_extra_cmaps = sizeof(extra_cmaps)/sizeof(*extra_cmaps);
+  total_ncolors = 0;
+  for (i = 0; i < nscreens; i++)
+    total_ncolors += CellsOfScreen (ScreenOfDisplay(dpy, i));
 
-  if (! cmap2)
-    return;
+  orig_colors    = (XColor *) calloc(sizeof(XColor), total_ncolors);
+  current_colors = (XColor *) calloc(sizeof(XColor), total_ncolors);
 
-  for (i = 0; i < ncolors; i++)
-    orig_colors [i].pixel = i;
-  XQueryColors (dpy, cmap, orig_colors, ncolors);
-  memcpy (current_colors, orig_colors, ncolors * sizeof (XColor));
+  /* Get the contents of the colormap we are fading from or to. */
+  screen_colors = orig_colors;
+  for (i = 0; i < nscreens; i++)
+    {
+      int ncolors = CellsOfScreen (ScreenOfDisplay (dpy, i));
+      Colormap cmap = (cmaps ? cmaps[i] : 0);
+      if (!cmap) cmap = DefaultColormap(dpy, i);
 
-  if (install_p)
-    for (i=0; i < n_extra_cmaps; i++)
-      if (!extra_cmaps[i])
-	extra_cmaps[i] = XCreateColormap (dpy, window, visual, AllocAll);
+      for (j = 0; j < ncolors; j++)
+	screen_colors[j].pixel = j;
+      XQueryColors (dpy, cmap, screen_colors, ncolors);
 
+      screen_colors += ncolors;
+    }
+
+  memcpy (current_colors, orig_colors, total_ncolors * sizeof (XColor));
+
+
+  /* Make the writable colormaps (we keep these around and reuse them.) */
+  if (!fade_cmaps)
+    {
+      fade_cmaps = (Colormap *) calloc(sizeof(Colormap), ncmaps);
+      for (i = 0; i < nscreens; i++)
+	for (j = 0; j < cmaps_per_screen; j++)
+	  fade_cmaps[(i * cmaps_per_screen) + j] =
+	    XCreateColormap (dpy, RootWindow (dpy, i), DefaultVisual(dpy, i),
+			     AllocAll);
+    }
+
+  /* Iterate by steps of the animation... */
   for (i = (out_p ? steps : 0);
        (out_p ? i > 0 : i < steps);
        (out_p ? i-- : i++))
     {
-      int j;
-      for (j = 0; j < ncolors; j++)
-	{
-	  /* This doesn't take into account the relative luminance of the
-	     RGB components (0.299, 0.587, and 0.114 at gamma 2.2) but
-	     the difference is imperceptible for this application... */
-	  current_colors[j].red   = orig_colors[j].red   * i / steps;
-	  current_colors[j].green = orig_colors[j].green * i / steps;
-	  current_colors[j].blue  = orig_colors[j].blue  * i / steps;
-	}
-      XStoreColors (dpy, cmap2, current_colors, ncolors);
 
-      if (install_p)
+      /* For each screen, compute the current value of each color...
+       */
+      orig_screen_colors = orig_colors;
+      screen_colors = current_colors;
+      for (j = 0; j < nscreens; j++)
 	{
-	  for (j=0; j < n_extra_cmaps; j++)
-	    if (extra_cmaps[j])
-	      XStoreColors (dpy, extra_cmaps[j], current_colors, ncolors);
-
-	  for (j=0; j < n_extra_cmaps; j++)
-	    if (extra_cmaps[j])
-	      XInstallColormap (dpy, extra_cmaps[j]);
-	  XInstallColormap (dpy, cmap2);
+	  int ncolors = CellsOfScreen (ScreenOfDisplay (dpy, j));
+	  for (k = 0; k < ncolors; k++)
+	    {
+	      /* This doesn't take into account the relative luminance of the
+		 RGB components (0.299, 0.587, and 0.114 at gamma 2.2) but
+		 the difference is imperceptible for this application... */
+	      screen_colors[k].red   = orig_screen_colors[k].red   * i / steps;
+	      screen_colors[k].green = orig_screen_colors[k].green * i / steps;
+	      screen_colors[k].blue  = orig_screen_colors[k].blue  * i / steps;
+	    }
+	  screen_colors      += ncolors;
+	  orig_screen_colors += ncolors;
 	}
+
+      /* Put the colors into the maps...
+       */
+      screen_colors = current_colors;
+      for (j = 0; j < nscreens; j++)
+	{
+	  int ncolors = CellsOfScreen (ScreenOfDisplay (dpy, j));
+	  for (k = 0; k < cmaps_per_screen; k++)
+	    {
+	      Colormap c = fade_cmaps[j * cmaps_per_screen + k];
+	      if (c)
+		XStoreColors (dpy, c, screen_colors, ncolors);
+	    }
+	  screen_colors += ncolors;
+	}
+
+      /* Put the maps on the screens...
+       */
+      for (j = 0; j < ncmaps; j++)
+	if (fade_cmaps[j])
+	  XInstallColormap (dpy, fade_cmaps[j]);
 
       XSync (dpy, False);
 
@@ -186,14 +230,34 @@ fade_colormap (dpy, cmap, cmap2, seconds, ticks, out_p, install_p)
 
 DONE:
 
-  if (install_p)
+  if (orig_colors)    free (orig_colors);
+  if (current_colors) free (current_colors);
+
+  /* Now put the original map back, if we want to end up with it.
+   */
+  if (!out_p)
     {
-      XInstallColormap (dpy, cmap2);
-/*      for (i=0; i < n_extra_cmaps; i++)
-	if (extra_cmaps[i])
-	  XFreeColormap (dpy, extra_cmaps[i]);
- */
+      for (i = 0; i < nscreens; i++)
+	{
+	  Colormap cmap = (cmaps ? cmaps[i] : 0);
+	  if (!cmap) cmap = DefaultColormap(dpy, i);
+	  XInstallColormap (dpy, cmap);
+	}
+      /* We've faded to the default cmaps, so we don't need the black maps
+	 on stage any more. */
+      for (i = 0; i < ncmaps; i++)
+	if (fade_cmaps[i])
+	  XUninstallColormap(dpy, fade_cmaps[i]);
     }
+
+#if 0
+  if (fade_cmaps)
+    {
+      for (i = 0; i < ncmaps; i++)
+	if (fade_cmaps[i]) XFreeColormap (dpy, fade_cmaps[i]);
+      free(fade_cmaps);
+    }
+#endif
 }
 
 
@@ -212,9 +276,6 @@ screenhack (dpy, w)
      Display *dpy;
      Window w;
 {
-  Colormap cmap = DefaultColormap (dpy, DefaultScreen (dpy));
-  Colormap cmap2 = copy_colormap (dpy, cmap, 0);
-
   int seconds = 1;
   int ticks = 30 * seconds;
   int delay = 1;
@@ -224,18 +285,17 @@ screenhack (dpy, w)
   while (1)
     {
       XSync (dpy, False);
-/*      XGrabServer (dpy); */
+
       fprintf(stderr,"out..."); fflush(stderr);
-      XInstallColormap (dpy, cmap2);
-      fade_colormap (dpy, cmap, cmap2, seconds, ticks, True, True);
+      fade_screens (dpy, 0, seconds, ticks, True);
       fprintf(stderr, "done.\n"); fflush(stderr);
+
       if (delay) sleep (delay);
+
       fprintf(stderr,"in..."); fflush(stderr);
-      fade_colormap (dpy, cmap, cmap2, seconds, ticks, False, True);
-      XInstallColormap (dpy, cmap);
+      fade_screens (dpy, 0, seconds, ticks, False);
       fprintf(stderr, "done.\n"); fflush(stderr);
-      XUngrabServer (dpy);
-      XSync (dpy, False);
+
       if (delay) sleep (delay);
     }
 }

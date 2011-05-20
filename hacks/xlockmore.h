@@ -210,6 +210,9 @@ char *defaults[] = {
 #ifdef DEF_BITMAP
   "*bitmap:	" DEF_BITMAP,
 #endif
+#ifdef DEF_MOUSE
+  "*mouse:	" DEF_MOUSE,
+#endif
   0
 };
 
@@ -274,6 +277,10 @@ XrmOptionDescRec options[] = {
 #endif
 #ifdef DEF_BITMAP
   {"-bitmap",	".bitmap",		XrmoptionSepArg, 0 },
+#endif
+#ifdef DEF_MOUSE
+  {"-mouse",	".mouse",		XrmoptionNoArg, "True" },
+  {"-nomouse",	".mouse",		XrmoptionNoArg, "False" },
 #endif
 };
 int options_size = (sizeof (options) / sizeof (options[0]));

@@ -110,11 +110,6 @@ ScreenhackTarget     (moire,		  $(UTILS)/hsv.o $(UTILS)/colors.o)
 ScreenhackTarget     (kaleidescope,	  $(NULL))
 ScreenhackTarget_XPM (bubbles,		  bubbles_default.o)
 
-/*
-ScreenhackTarget     (hsv-test,		  $(UTILS)/hsv.o $(UTILS)/colors.o)
-*/
-
-
 .knr_msg:
   @echo ""								    ; \
   echo "        ==========================================================" ; \

@@ -20,6 +20,10 @@
 
 #include <signal.h>		/* for the signal names */
 
+#ifdef HAVE_MIT_SAVER_EXTENSION
+# include <X11/extensions/scrnsaver.h>
+#endif /* HAVE_MIT_SAVER_EXTENSION */
+
 
 /* This file doesn't need the Xt headers, so stub these types out... */
 #undef XtPointer
@@ -33,9 +37,6 @@
 #include "visual.h"
 #include "fade.h"
 
-extern saver_info *global_si_kludge;	/* I hate C so much... */
-
-
 #ifdef __STDC__
 extern int kill (pid_t, int);		/* signal() is in sys/signal.h... */
 #endif /* __STDC__ */
@@ -43,6 +44,10 @@ extern int kill (pid_t, int);		/* signal() is in sys/signal.h... */
 Atom XA_VROOT, XA_XSETROOT_ID;
 Atom XA_SCREENSAVER_VERSION, XA_SCREENSAVER_ID;
 Atom XA_SCREENSAVER_TIME;
+
+
+extern saver_info *global_si_kludge;	/* I hate C so much... */
+
 
 static void store_activate_time P((saver_info *si, Bool use_last_p));
 
@@ -267,21 +272,22 @@ static void handle_signals P((saver_info *si, Bool on_p));
 
 static void
 #ifdef __STDC__
-save_real_vroot (saver_info *si)
+save_real_vroot (saver_screen_info *ssi)
 #else  /* !__STDC__ */
-save_real_vroot (si)
-	saver_info *si;
+save_real_vroot (ssi)
+	saver_screen_info *ssi;
 #endif /* !__STDC__ */
 {
+  saver_info *si = ssi->global;
   Display *dpy = si->dpy;
-  Screen *screen = si->screen;
+  Screen *screen = ssi->screen;
   int i;
   Window root = RootWindowOfScreen (screen);
   Window root2, parent, *kids;
   unsigned int nkids;
 
-  si->real_vroot = 0;
-  si->real_vroot_value = 0;
+  ssi->real_vroot = 0;
+  ssi->real_vroot_value = 0;
   if (! XQueryTree (dpy, root, &root2, &parent, &kids, &nkids))
     abort ();
   if (root != root2)
@@ -302,26 +308,55 @@ save_real_vroot (si)
 	continue;
       if (! vrootP)
 	continue;
-      if (si->real_vroot)
+      if (ssi->real_vroot)
 	{
-	  if (*vrootP == si->screensaver_window) abort ();
+	  if (*vrootP == ssi->screensaver_window) abort ();
 	  fprintf (stderr,
 	    "%s: more than one virtual root window found (0x%x and 0x%x).\n",
-		   progname, (int) si->real_vroot, (int) kids [i]);
+		   progname, (int) ssi->real_vroot, (int) kids [i]);
 	  exit (1);
 	}
-      si->real_vroot = kids [i];
-      si->real_vroot_value = *vrootP;
+      ssi->real_vroot = kids [i];
+      ssi->real_vroot_value = *vrootP;
     }
 
-  if (si->real_vroot)
+  if (ssi->real_vroot)
     {
       handle_signals (si, True);
-      remove_vroot_property (si->dpy, si->real_vroot);
+      remove_vroot_property (si->dpy, ssi->real_vroot);
       XSync (dpy, False);
     }
 
   XFree ((char *) kids);
+}
+
+
+static Bool
+#ifdef __STDC__
+restore_real_vroot_2 (saver_screen_info *ssi)
+#else  /* !__STDC__ */
+restore_real_vroot_2 (ssi)
+	saver_screen_info *ssi;
+#endif /* !__STDC__ */
+{
+  saver_info *si = ssi->global;
+  saver_preferences *p = &si->prefs;
+  if (p->verbose_p && ssi->real_vroot)
+    printf ("%s: restoring __SWM_VROOT property on the real vroot (0x%lx).\n",
+	    progname, (unsigned long) ssi->real_vroot);
+  remove_vroot_property (si->dpy, ssi->screensaver_window);
+  if (ssi->real_vroot)
+    {
+      store_vroot_property (si->dpy, ssi->real_vroot, ssi->real_vroot_value);
+      ssi->real_vroot = 0;
+      ssi->real_vroot_value = 0;
+      /* make sure the property change gets there before this process
+	 terminates!  We might be doing this because we have intercepted
+	 SIGTERM or something. */
+      XSync (si->dpy, False);
+      return True;
+    }
+  return False;
 }
 
 static Bool
@@ -332,23 +367,15 @@ restore_real_vroot_1 (si)
 	saver_info *si;
 #endif /* !__STDC__ */
 {
-  saver_preferences *p = &si->prefs;
-  if (p->verbose_p && si->real_vroot)
-    printf ("%s: restoring __SWM_VROOT property on the real vroot (0x%lx).\n",
-	    progname, (unsigned long) si->real_vroot);
-  remove_vroot_property (si->dpy, si->screensaver_window);
-  if (si->real_vroot)
+  int i;
+  Bool did_any = False;
+  for (i = 0; i < si->nscreens; i++)
     {
-      store_vroot_property (si->dpy, si->real_vroot, si->real_vroot_value);
-      si->real_vroot = 0;
-      si->real_vroot_value = 0;
-      /* make sure the property change gets there before this process
-	 terminates!  We might be doing this because we have intercepted
-	 SIGTERM or something. */
-      XSync (si->dpy, False);
-      return True;
+      saver_screen_info *ssi = &si->screens[i];
+      if (restore_real_vroot_2 (ssi))
+	did_any = True;
     }
-  return False;
+  return did_any;
 }
 
 void
@@ -524,14 +551,15 @@ window_exists_p (dpy, window)
   return (xgwa.screen != 0);
 }
 
-void
+static void
 #ifdef __STDC__
-initialize_screensaver_window (saver_info *si)
+initialize_screensaver_window_1 (saver_screen_info *ssi)
 #else  /* !__STDC__ */
-initialize_screensaver_window (si)
-	saver_info *si;
+initialize_screensaver_window_1 (ssi)
+	saver_screen_info *ssi;
 #endif /* !__STDC__ */
 {
+  saver_info *si = ssi->global;
   saver_preferences *p = &si->prefs;
 
   /* This resets the screensaver window as fully as possible, since there's
@@ -543,8 +571,8 @@ initialize_screensaver_window (si)
   XClassHint class_hints;
   XSetWindowAttributes attrs;
   unsigned long attrmask;
-  int width = WidthOfScreen (si->screen);
-  int height = HeightOfScreen (si->screen);
+  int width = WidthOfScreen (ssi->screen);
+  int height = HeightOfScreen (ssi->screen);
   char id [2048];
   static Bool printed_visual_info = False;  /* only print the message once. */
 
@@ -552,30 +580,30 @@ initialize_screensaver_window (si)
 
   black.red = black.green = black.blue = 0;
 
-  if (si->cmap == DefaultColormapOfScreen (si->screen))
-    si->cmap = 0;
+  if (ssi->cmap == DefaultColormapOfScreen (ssi->screen))
+    ssi->cmap = 0;
 
   if (p->install_cmap_p ||
-      si->current_visual != DefaultVisualOfScreen (si->screen))
+      ssi->current_visual != DefaultVisualOfScreen (ssi->screen))
     {
-      if (! si->cmap)
+      if (! ssi->cmap)
 	{
-	  si->cmap = XCreateColormap (si->dpy, RootWindowOfScreen (si->screen),
-				      si->current_visual, AllocNone);
-	  if (! XAllocColor (si->dpy, si->cmap, &black)) abort ();
-	  si->black_pixel = black.pixel;
+	  ssi->cmap = XCreateColormap (si->dpy, RootWindowOfScreen (ssi->screen),
+				      ssi->current_visual, AllocNone);
+	  if (! XAllocColor (si->dpy, ssi->cmap, &black)) abort ();
+	  ssi->black_pixel = black.pixel;
 	}
     }
   else
     {
-      if (si->cmap)
+      if (ssi->cmap)
 	{
-	  XFreeColors (si->dpy, si->cmap, &si->black_pixel, 1, 0);
-	  if (si->cmap != si->demo_cmap)
-	    XFreeColormap (si->dpy, si->cmap);
+	  XFreeColors (si->dpy, ssi->cmap, &ssi->black_pixel, 1, 0);
+	  if (ssi->cmap != ssi->demo_cmap)
+	    XFreeColormap (si->dpy, ssi->cmap);
 	}
-      si->cmap = DefaultColormapOfScreen (si->screen);
-      si->black_pixel = BlackPixelOfScreen (si->screen);
+      ssi->cmap = DefaultColormapOfScreen (ssi->screen);
+      ssi->black_pixel = BlackPixelOfScreen (ssi->screen);
     }
 
 #if 0
@@ -587,7 +615,7 @@ initialize_screensaver_window (si)
 
   if (p->fade_p)
     {
-      cmap2 = copy_colormap (si->dpy, si->cmap, 0);
+      cmap2 = copy_colormap (si->screen, ssi->cmap, 0);
       if (! cmap2)
 	p->fade_p = p->unfade_p = 0;
     }
@@ -606,10 +634,10 @@ initialize_screensaver_window (si)
 		      PointerMotionMask);
 
   attrs.backing_store = NotUseful;
-  attrs.colormap = si->cmap;
-  attrs.background_pixel = si->black_pixel;
-  attrs.backing_pixel = si->black_pixel;
-  attrs.border_pixel = si->black_pixel;
+  attrs.colormap = ssi->cmap;
+  attrs.background_pixel = ssi->black_pixel;
+  attrs.backing_pixel = ssi->black_pixel;
+  attrs.border_pixel = ssi->black_pixel;
 
 #ifdef DEBUG
   if (p->debug_p) width = width / 2;
@@ -617,17 +645,18 @@ initialize_screensaver_window (si)
 
   if (!p->verbose_p || printed_visual_info)
     ;
-  else if (si->current_visual == DefaultVisualOfScreen (si->screen))
+  else if (ssi->current_visual == DefaultVisualOfScreen (ssi->screen))
     {
       fprintf (stderr, "%s: using default visual ", progname);
-      describe_visual (stderr, si->dpy, si->current_visual);
+      describe_visual (stderr, ssi->screen, ssi->current_visual);
     }
   else
     {
       fprintf (stderr, "%s: using visual:   ", progname);
-      describe_visual (stderr, si->dpy, si->current_visual);
+      describe_visual (stderr, ssi->screen, ssi->current_visual);
       fprintf (stderr, "%s: default visual: ", progname);
-      describe_visual (stderr, si->dpy, DefaultVisualOfScreen (si->screen));
+      describe_visual (stderr, ssi->screen,
+		       DefaultVisualOfScreen (ssi->screen));
     }
   printed_visual_info = True;
 
@@ -635,7 +664,7 @@ initialize_screensaver_window (si)
   if (use_mit_saver_extension)
     {
       XScreenSaverInfo *info;
-      Window root = RootWindowOfScreen (si->screen);
+      Window root = RootWindowOfScreen (ssi->screen);
 
 #if 0
       /* This call sets the server screensaver timeouts to what we think
@@ -676,13 +705,13 @@ initialize_screensaver_window (si)
 
       info = XScreenSaverAllocInfo ();
       XScreenSaverQueryInfo (dpy, root, info);
-      si->server_mit_saver_window = info->window;
-      if (! si->server_mit_saver_window) abort ();
+      ssi->server_mit_saver_window = info->window;
+      if (! ssi->server_mit_saver_window) abort ();
       XFree (info);
     }
 #endif /* HAVE_MIT_SAVER_EXTENSION */
 
-  if (si->screensaver_window)
+  if (ssi->screensaver_window)
     {
       XWindowChanges changes;
       unsigned int changesmask = CWX|CWY|CWWidth|CWHeight|CWBorderWidth;
@@ -692,26 +721,26 @@ initialize_screensaver_window (si)
       changes.height = height;
       changes.border_width = 0;
 
-      XConfigureWindow (si->dpy, si->screensaver_window,
+      XConfigureWindow (si->dpy, ssi->screensaver_window,
 			changesmask, &changes);
-      XChangeWindowAttributes (si->dpy, si->screensaver_window,
+      XChangeWindowAttributes (si->dpy, ssi->screensaver_window,
 			       attrmask, &attrs);
     }
   else
     {
-      si->screensaver_window =
-	XCreateWindow (si->dpy, RootWindowOfScreen (si->screen), 0, 0,
-		       width, height, 0, si->current_depth, InputOutput,
-		       si->current_visual, attrmask, &attrs);
+      ssi->screensaver_window =
+	XCreateWindow (si->dpy, RootWindowOfScreen (ssi->screen), 0, 0,
+		       width, height, 0, ssi->current_depth, InputOutput,
+		       ssi->current_visual, attrmask, &attrs);
       store_activate_time(si, True);
       if (p->verbose_p)
-	fprintf (stderr, "%s: saver window is 0x%x.\n",
-		 progname, (unsigned long) si->screensaver_window);
+	fprintf (stderr, "%s: saver window is 0x%lx.\n",
+		 progname, (unsigned long) ssi->screensaver_window);
     }
 
 #ifdef HAVE_MIT_SAVER_EXTENSION
   if (!p->use_mit_saver_extension ||
-      window_exists_p (dpy, si->screensaver_window))
+      window_exists_p (dpy, ssi->screensaver_window))
     /* When using the MIT-SCREEN-SAVER extension, the window pointed to
        by screensaver_window only exists while the saver is active.
        So we must be careful to only try and manipulate it while it
@@ -723,9 +752,9 @@ initialize_screensaver_window (si)
     {
       class_hints.res_name = progname;
       class_hints.res_class = progclass;
-      XSetClassHint (si->dpy, si->screensaver_window, &class_hints);
-      XStoreName (si->dpy, si->screensaver_window, "screensaver");
-      XChangeProperty (si->dpy, si->screensaver_window, XA_SCREENSAVER_VERSION,
+      XSetClassHint (si->dpy, ssi->screensaver_window, &class_hints);
+      XStoreName (si->dpy, ssi->screensaver_window, "screensaver");
+      XChangeProperty (si->dpy, ssi->screensaver_window, XA_SCREENSAVER_VERSION,
 		       XA_STRING, 8, PropModeReplace,
 		       (unsigned char *) si->version,
 		       strlen (si->version));
@@ -733,29 +762,43 @@ initialize_screensaver_window (si)
       sprintf (id, "%lu on host ", (unsigned long) getpid ());
       if (! XmuGetHostname (id + strlen (id), sizeof (id) - strlen (id) - 1))
 	strcat (id, "???");
-      XChangeProperty (si->dpy, si->screensaver_window,
+      XChangeProperty (si->dpy, ssi->screensaver_window,
 		       XA_SCREENSAVER_ID, XA_STRING,
 		       8, PropModeReplace, (unsigned char *) id, strlen (id));
 
-      if (!si->cursor)
+      if (!ssi->cursor)
 	{
 	  Pixmap bit;
-	  bit = XCreatePixmapFromBitmapData (si->dpy, si->screensaver_window,
+	  bit = XCreatePixmapFromBitmapData (si->dpy, ssi->screensaver_window,
 					     "\000", 1, 1,
-					     BlackPixelOfScreen (si->screen),
-					     BlackPixelOfScreen (si->screen),
+					     BlackPixelOfScreen (ssi->screen),
+					     BlackPixelOfScreen (ssi->screen),
 					     1);
-	  si->cursor = XCreatePixmapCursor (si->dpy, bit, bit, &black, &black,
-					    0, 0);
+	  ssi->cursor = XCreatePixmapCursor (si->dpy, bit, bit, &black, &black,
+					     0, 0);
 	  XFreePixmap (si->dpy, bit);
 	}
 
-      XSetWindowBackground (si->dpy, si->screensaver_window, si->black_pixel);
+      XSetWindowBackground (si->dpy, ssi->screensaver_window,
+			    ssi->black_pixel);
       if (si->demo_mode_p)
-	XUndefineCursor (si->dpy, si->screensaver_window);
+	XUndefineCursor (si->dpy, ssi->screensaver_window);
       else
-	XDefineCursor (si->dpy, si->screensaver_window, si->cursor);
+	XDefineCursor (si->dpy, ssi->screensaver_window, ssi->cursor);
     }
+}
+
+void
+#ifdef __STDC__
+initialize_screensaver_window (saver_info *si)
+#else  /* !__STDC__ */
+initialize_screensaver_window (si)
+	saver_info *si;
+#endif /* !__STDC__ */
+{
+  int i;
+  for (i = 0; i < si->nscreens; i++)
+    initialize_screensaver_window_1 (&si->screens[i]);
 }
 
 
@@ -772,69 +815,88 @@ raise_window (si, inhibit_fade, between_hacks_p, dont_clear)
 #endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
+  int i;
   initialize_screensaver_window (si);
 
   if (p->fade_p && !inhibit_fade && !si->demo_mode_p)
     {
-      Colormap cmap2;
       int grabbed = -1;
-      Colormap current_map = (between_hacks_p
-			      ? si->cmap
-			      : DefaultColormapOfScreen (si->screen));
-      cmap2 = copy_colormap (si->dpy, current_map, 0);
-      if (cmap2)
-	{
-	  if (p->verbose_p) fprintf (stderr, "%s: fading... ", progname);
-	  XGrabServer (si->dpy);
-	  /* grab and blacken mouse on the root window (saver not mapped yet)
-	   */
-	  grabbed = grab_mouse (si->dpy, RootWindowOfScreen (si->screen),
-				si->cursor);
+      Colormap *current_maps = (Colormap *)
+	calloc(sizeof(Colormap), si->nscreens);
 
-	  /* fade what's on the screen to black */
-	  XInstallColormap (si->dpy, cmap2);
-	  fade_colormap (si->dpy, current_map, cmap2,
-			 p->fade_seconds, p->fade_ticks,
-			 True, True);
-	  if (p->verbose_p) fprintf (stderr, "fading done.\n");
+      for (i = 0; i < si->nscreens; i++)
+	{
+	  saver_screen_info *ssi = &si->screens[i];
+	  current_maps[i] = (between_hacks_p
+			     ? ssi->cmap
+			     : DefaultColormapOfScreen (ssi->screen));
 	}
 
-      if (!dont_clear)
-	XClearWindow (si->dpy, si->screensaver_window);
+      if (p->verbose_p) fprintf (stderr, "%s: fading... ", progname);
 
-      XMapRaised (si->dpy, si->screensaver_window);
+      XGrabServer (si->dpy);
 
-      if (cmap2)
-	XFreeColormap(si->dpy, cmap2);
+      for (i = 0; i < si->nscreens; i++)
+	{
+	  saver_screen_info *ssi = &si->screens[i];
+
+	  /* grab and blacken mouse on the root window (saver not mapped yet)
+	   */
+	  if (grabbed != GrabSuccess)
+	    grabbed = grab_mouse (si->dpy, ssi->screensaver_window,
+				  (si->demo_mode_p ? 0 : ssi->cursor));
+	}
+
+      fade_screens (si->dpy, current_maps, p->fade_seconds, p->fade_ticks,
+		    True);
+
+      if (p->verbose_p) fprintf (stderr, "fading done.\n");
+
+      for (i = 0; i < si->nscreens; i++)
+	{
+	  saver_screen_info *ssi = &si->screens[i];
+	  if (!dont_clear)
+	    XClearWindow (si->dpy, ssi->screensaver_window);
+	  XMapRaised (si->dpy, ssi->screensaver_window);
 
 #ifdef HAVE_MIT_SAVER_EXTENSION
-      if (si->server_mit_saver_window &&
-	  window_exists_p (dpy, si->server_mit_saver_window))
-	XUnmapWindow (dpy, si->server_mit_saver_window);
+	  if (ssi->server_mit_saver_window &&
+	      window_exists_p (dpy, ssi->server_mit_saver_window))
+	    XUnmapWindow (dpy, ssi->server_mit_saver_window);
 #endif /* HAVE_MIT_SAVER_EXTENSION */
 
-      /* Once the saver window is up, restore the colormap.
-	 (The "black" pixels of the two colormaps are compatible.) */
-      if (si->cmap)
-	XInstallColormap (si->dpy, si->cmap);
+	  /* Once the saver window is up, restore the colormap.
+	     (The "black" pixels of the two colormaps are compatible.) */
+	  if (ssi->cmap)
+	    XInstallColormap (si->dpy, ssi->cmap);
+	}
+
       if (grabbed == GrabSuccess)
 	XUngrabPointer (si->dpy, CurrentTime);
       XUngrabServer (si->dpy);
     }
   else
     {
-      if (!dont_clear)
-	XClearWindow (si->dpy, si->screensaver_window);
-      XMapRaised (si->dpy, si->screensaver_window);
+      for (i = 0; i < si->nscreens; i++)
+	{
+	  saver_screen_info *ssi = &si->screens[i];
+	  if (!dont_clear)
+	    XClearWindow (si->dpy, ssi->screensaver_window);
+	  XMapRaised (si->dpy, ssi->screensaver_window);
 #ifdef HAVE_MIT_SAVER_EXTENSION
-      if (si->server_mit_saver_window &&
-	  window_exists_p (si->dpy, si->server_mit_saver_window))
-	XUnmapWindow (si->dpy, si->server_mit_saver_window);
+	  if (ssi->server_mit_saver_window &&
+	      window_exists_p (si->dpy, ssi->server_mit_saver_window))
+	    XUnmapWindow (si->dpy, ssi->server_mit_saver_window);
 #endif /* HAVE_MIT_SAVER_EXTENSION */
+	}
     }
 
-  if (p->install_cmap_p && si->cmap)
-    XInstallColormap (si->dpy, si->cmap);
+  for (i = 0; i < si->nscreens; i++)
+    {
+      saver_screen_info *ssi = &si->screens[i];
+      if (ssi->cmap)
+	XInstallColormap (si->dpy, ssi->cmap);
+    }
 }
 
 #ifdef __hpux
@@ -853,13 +915,21 @@ blank_screen (si)
 	saver_info *si;
 #endif /* !__STDC__ */
 {
-  save_real_vroot (si);
-  store_vroot_property (si->dpy, si->screensaver_window,
-			si->screensaver_window);
+  int i;
+  for (i = 0; i < si->nscreens; i++)
+    {
+      saver_screen_info *ssi = &si->screens[i];
+
+      save_real_vroot (ssi);
+      store_vroot_property (si->dpy,
+			    ssi->screensaver_window,
+			    ssi->screensaver_window);
+    }
   store_activate_time (si, True);
   raise_window (si, False, False, False);
-  grab_keyboard_and_mouse (si->dpy, si->screensaver_window,
-			   (si->demo_mode_p ? 0 : si->cursor));
+  /* #### */
+  grab_keyboard_and_mouse (si->dpy, si->screens[0].screensaver_window,
+			   (si->demo_mode_p ? 0 : si->screens[0].cursor));
 #ifdef __hpux
   if (lock_p && !hp_locked_p)
     XHPDisableReset (dpy);	/* turn off C-Sh-Reset */
@@ -878,68 +948,68 @@ unblank_screen (si)
 #endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
+  int i, j;
   store_activate_time (si, True);
   if (p->unfade_p && !si->demo_mode_p)
     {
-      int grabbed;
-      Colormap default_map = DefaultColormapOfScreen (si->screen);
-      Colormap cmap2 = XCreateColormap (si->dpy,
-					RootWindowOfScreen (si->screen),
-					DefaultVisualOfScreen (si->screen),
-					AllocAll);
-      if (cmap2)
+      int grabbed = -1;
+      int extra_cmaps = 4;
+      int ncmaps = si->nscreens * (extra_cmaps + 1);
+      Colormap *cmaps = (Colormap *) calloc(sizeof(Colormap), ncmaps);
+
+      if (p->verbose_p) fprintf (stderr, "%s: unfading... ", progname);
+
+      /* Fake out SGI's multi-colormap hardware; see utils/fade.c
+	 for an explanation. */
+      for (i = 0; i < ncmaps; i += (extra_cmaps + 1))
+	for (j = 0; j < (extra_cmaps + 1); j++)
+	  {
+	    cmaps[i+j] = XCreateColormap (si->dpy,
+					  RootWindow (si->dpy, i),
+					  DefaultVisual(si->dpy, i),
+					  AllocAll);
+	    if (cmaps[i+j])
+	      {
+		blacken_colormap (ScreenOfDisplay(si->dpy, i), cmaps[i+j]);
+		XInstallColormap (si->dpy, cmaps[i+j]);
+	      }
+	  }
+
+      XGrabServer (si->dpy);
+      for (i = 0; i < si->nscreens; i++)
 	{
-	  Colormap extra_cmaps[4];
-	  int n_extra_cmaps = sizeof(extra_cmaps)/sizeof(*extra_cmaps);
-	  int i;
-
-	  /* Fake out SGI's multi-colormap hardware; see utils/fade.c
-	     for an explanation. */
-	  for (i = 0; i < n_extra_cmaps; i++)
-	    {
-	      extra_cmaps[i] =
-		XCreateColormap (si->dpy, RootWindowOfScreen (si->screen),
-				 DefaultVisualOfScreen (si->screen), AllocAll);
-	      blacken_colormap (si->dpy, extra_cmaps[i]);
-	      XInstallColormap (si->dpy, extra_cmaps[i]);
-	    }
-
-	  blacken_colormap (si->dpy, cmap2);
-	  if (p->verbose_p) fprintf (stderr, "%s: unfading... ", progname);
-	  XGrabServer (si->dpy);
-	  /* grab and blacken mouse on the root window. */
-	  grabbed = grab_mouse (si->dpy, RootWindowOfScreen (si->screen),
-				si->cursor);
-	  XInstallColormap (si->dpy, cmap2);
-	  XUnmapWindow (si->dpy, si->screensaver_window);
-	  fade_colormap (si->dpy, default_map, cmap2,
-			 p->fade_seconds, p->fade_ticks,
-			 False, True);
-	  if (default_map)
-	    XInstallColormap (si->dpy, default_map);
-
-	  for (i = 0; i < n_extra_cmaps; i++)
-	    XFreeColormap (si->dpy, extra_cmaps[i]);
-
-
-	  if (p->verbose_p) fprintf (stderr, "unfading done.\n");
-	  if (grabbed == GrabSuccess)
-	    XUngrabPointer (si->dpy, CurrentTime);
-	  XUngrabServer (si->dpy);
-	  XFreeColormap (si->dpy, cmap2);
+	  saver_screen_info *ssi = &si->screens[i];
+	  if (grabbed != GrabSuccess)
+	    grabbed = grab_mouse (si->dpy, RootWindowOfScreen (ssi->screen),
+				  0);
+	  XUnmapWindow (si->dpy, ssi->screensaver_window);
 	}
-      else
-	XUnmapWindow (si->dpy, si->screensaver_window);
+      XUngrabServer (si->dpy);
+
+      fade_screens (si->dpy, 0, p->fade_seconds, p->fade_ticks, False);
+
+      for (i = 0; i < ncmaps; i++)
+	if (cmaps[i]) XFreeColormap (si->dpy, cmaps[i]);
+      free (cmaps);
+
+      if (p->verbose_p) fprintf (stderr, "unfading done.\n");
+      if (grabbed == GrabSuccess)
+	XUngrabPointer (si->dpy, CurrentTime);
     }
   else
     {
-      if (p->install_cmap_p)
+      for (i = 0; i < si->nscreens; i++)
 	{
-	  Colormap c = DefaultColormapOfScreen (si->screen);
-	  XClearWindow (si->dpy, si->screensaver_window); /*avoid technicolor*/
-	  if (c) XInstallColormap (si->dpy, c);
+	  saver_screen_info *ssi = &si->screens[i];
+	  if (ssi->cmap)
+	    {
+	      Colormap c = DefaultColormapOfScreen (ssi->screen);
+	      /* avoid technicolor */
+	      XClearWindow (si->dpy, ssi->screensaver_window);
+	      if (c) XInstallColormap (si->dpy, c);
+	    }
+	  XUnmapWindow (si->dpy, ssi->screensaver_window);
 	}
-      XUnmapWindow (si->dpy, si->screensaver_window);
     }
 
 
@@ -956,17 +1026,21 @@ unblank_screen (si)
     if (focus && focus != PointerRoot && focus != None)
       {
 	XWindowAttributes xgwa;
-	Colormap default_map = DefaultColormapOfScreen (si->screen);
 	xgwa.colormap = 0;
 	XGetWindowAttributes (si->dpy, focus, &xgwa);
 	if (xgwa.colormap &&
-	    xgwa.colormap != default_map)
+	    xgwa.colormap != DefaultColormapOfScreen (xgwa.screen))
 	  XInstallColormap (si->dpy, xgwa.colormap);
       }
   }
 
 
-  kill_xsetroot_data (si->dpy, si->screensaver_window, p->verbose_p);
+  for (i = 0; i < si->nscreens; i++)
+    {
+      saver_screen_info *ssi = &si->screens[i];
+      kill_xsetroot_data (si->dpy, ssi->screensaver_window, p->verbose_p);
+    }
+
   ungrab_keyboard_and_mouse (si->dpy);
   restore_real_vroot (si);
 
@@ -992,66 +1066,74 @@ store_activate_time (si, use_last_p)
   static time_t last_time = 0;
   time_t now = (use_last_p ? last_time : time ((time_t) 0));
   CARD32 now32 = (CARD32) now;
+  int i;
   last_time = now;
-  XChangeProperty (si->dpy, si->screensaver_window, XA_SCREENSAVER_TIME,
-		   XA_INTEGER, 32, PropModeReplace,
-		   (unsigned char *) &now32, 1);
+
+  for (i = 0; i < si->nscreens; i++)
+    {
+      saver_screen_info *ssi = &si->screens[i];
+      if (!ssi->screensaver_window) continue;
+      XChangeProperty (si->dpy, ssi->screensaver_window, XA_SCREENSAVER_TIME,
+		       XA_INTEGER, 32, PropModeReplace,
+		       (unsigned char *) &now32, 1);
+    }
 }
 
 
 Bool
 #ifdef __STDC__
-select_visual (saver_info *si, const char *visual_name)
+select_visual (saver_screen_info *ssi, const char *visual_name)
 #else  /* !__STDC__ */
-select_visual (si, visual_name)
-	saver_info *si;
+select_visual (ssi, visual_name)
+	saver_screen_info *ssi;
 	const char *visual_name;
 #endif /* !__STDC__ */
 {
+  saver_info *si = ssi->global;
   saver_preferences *p = &si->prefs;
   Visual *new_v;
   Bool got_it;
 
   if (visual_name && *visual_name)
-    new_v = get_visual (si->dpy, visual_name, True, False);
+    new_v = get_visual (ssi->screen, visual_name, True, False);
   else
-    new_v = p->default_visual;
+    new_v = ssi->default_visual;
 
   got_it = !!new_v;
 
-  if (new_v && si->current_visual != new_v)
+  if (new_v && ssi->current_visual != new_v)
     {
-      Colormap old_c = si->cmap;
-      Window old_w = si->screensaver_window;
+      Colormap old_c = ssi->cmap;
+      Window old_w = ssi->screensaver_window;
 
       if (p->verbose_p)
 	{
 #if 0
 	  fprintf (stderr, "%s: switching visuals\tfrom: ", progname);
-	  describe_visual (stderr, si->dpy, si->current_visual);
+	  describe_visual (stderr, ssi->screen, ssi->current_visual);
 	  fprintf (stderr, "\t\t\t\tto:   ");
-	  describe_visual (stderr, si->dpy, new_v);
+	  describe_visual (stderr, ssi->screen, new_v);
 #else
 	  fprintf (stderr, "%s: switching to visual ", progname);
-	  describe_visual (stderr, si->dpy, new_v);
+	  describe_visual (stderr, ssi->screen, new_v);
 #endif
 	}
 
-      si->current_visual = new_v;
-      si->current_depth = visual_depth(si->dpy, new_v);
-      si->cmap = 0;
-      si->screensaver_window = 0;
+      ssi->current_visual = new_v;
+      ssi->current_depth = visual_depth(ssi->screen, new_v);
+      ssi->cmap = 0;
+      ssi->screensaver_window = 0;
 
-      initialize_screensaver_window (si);
+      initialize_screensaver_window_1 (ssi);
       raise_window (si, True, True, False);
       store_vroot_property (si->dpy,
-			    si->screensaver_window, si->screensaver_window);
+			    ssi->screensaver_window, ssi->screensaver_window);
       store_activate_time (si, False);
 
       XDestroyWindow (si->dpy, old_w);
       if (old_c &&
-	  old_c != DefaultColormapOfScreen (si->screen) &&
-	  old_c != si->demo_cmap)
+	  old_c != DefaultColormapOfScreen (ssi->screen) &&
+	  old_c != ssi->demo_cmap)
 	XFreeColormap (si->dpy, old_c);
     }
 

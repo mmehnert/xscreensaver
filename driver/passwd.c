@@ -40,43 +40,30 @@
 #endif /* __bsdi__ */
 
 
-
-
-#define Bool int	/* blargh */
-#define True 1
-#define False 0
-
-
-extern char *progname;
-
-static char *encrypted_root_passwd = 0;
-static char *encrypted_user_passwd = 0;
-
-
-#if defined(HAVE_SHADOW)		/* passwds live in /etc/shadow */
+#if defined(HAVE_SHADOW)	      /* passwds live in /etc/shadow */
 
 #   include <shadow.h>
 #   define PWTYPE   struct spwd *
-#   define PW_PSLOT sp_pwdp
+#   define PWPSLOT  sp_pwdp
 #   define GETPW    getspnam
 
-#elif defined(HAVE_DEC_ENHANCED)	/* passwds live in /tcb/files/auth/ */
-
+#elif defined(HAVE_DEC_ENHANCED)      /* passwds live in /tcb/files/auth/ */
+				      /* M.Matsumoto <matsu@yao.sharp.co.jp> */
 #   include <sys/security.h>
 #   include <prot.h>
 
 #   define PWTYPE   struct pr_passwd *
-#   define PW_PSLOT ufld.fd_encrypt
+#   define PWPSLOT  ufld.fd_encrypt
 #   define GETPW    getprpwnam
 
-#elif defined(SCO)			/* SCO = DEC + different headers */
+#elif defined(SCO)		      /* SCO = DEC + different headers */
 
 #   include <sys/security.h>
 #   include <sys/audit.h>
 #   include <prot.h>
 
 #   define PRTYPE   struct pr_passwd *
-#   define PW_PSLOT ufld.fd_encrypt
+#   define PWPSLOT  ufld.fd_encrypt
 #   define GETPW    getprpwnam
 
 #elif defined(HAVE_ADJUNCT_PASSWD)
@@ -89,17 +76,123 @@ static char *encrypted_user_passwd = 0;
 #   define PWPSLOT  pwa_passwd
 #   define GETPW    getpwanam
 
-#else				/* good old vanilla, marginally secure Unix */
+#elif defined(HAVE_HPUX_PASSWD)
 
-#   define PWTYPE   struct passwd *
+#   include <hpsecurity.h>
+#   include <prot.h>
+
+#   define PRTYPE   struct s_passwd *
 #   define PWPSLOT  pw_passwd
-#   define GETPW    getpwnam
+#   define GETPW    getspwnam
+#   define crypt    bigcrypt
 
 #endif
 
 
+/* blargh */
+#undef  Bool
+#undef  True
+#undef  False
+#define Bool  int
+#define True  1
+#define False 0
+
+
+extern char *progname;
+
+static char *encrypted_root_passwd = 0;
+static char *encrypted_user_passwd = 0;
+
+#ifdef VMS
+# define ROOT "SYSTEM"
+#else
+# define ROOT "root"
+#endif
+
+
+
+static char *
+#ifdef __STDC__
+user_name (void)
+#else  /* !__STDC__ */
+user_name ()
+#endif /* !__STDC__ */
+{
+  /* I think that just checking $USER here is not the best idea. */
+
+  const char *u = 0;
+
+  /* It has been reported that getlogin() returns the wrong user id on some
+     very old SGI systems...  And I've seen it return the string "rlogin"
+     sometimes!  Screw it, using getpwuid() should be enough...
+   */
+/* u = (char *) getlogin ();
+ */
+
+  /* getlogin() fails if not attached to a terminal; in that case, use
+     getpwuid().  (Note that in this case, we're not doing shadow stuff, since
+     all we're interested in is the name, not the password.  So that should
+     still work.  Right?) */
+  if (!u || !*u)
+    {
+      struct passwd *p = getpwuid (getuid ());
+      u = (p ? p->pw_name : 0);
+    }
+
+  return (u ? strdup(u) : 0);
+}
+
+
+static Bool
+#ifdef __STDC__
+passwd_known_p (const char *pw)
+#else  /* !__STDC__ */
+passwd_known_p (pw)
+	const char *pw;
+#endif /* !__STDC__ */
+{
+  return (pw &&
+	  pw[0] != '*' &&	/* This would be sensible...         */
+	  strlen(pw) > 4);	/* ...but this is what Solaris does. */
+}
+
+
+static char *
+#ifdef __STDC__
+get_encrypted_passwd(const char *user)
+#else  /* !__STDC__ */
+get_encrypted_passwd (user)
+	const char *user;
+#endif /* !__STDC__ */
+{
+  if (user && *user)
+    {
+#ifdef PWTYPE
+      {					/* First check the shadow passwords. */
+	PWTYPE p = GETPW(user);
+	if (p && passwd_known_p (p->PWPSLOT))
+	  return strdup(p->PWPSLOT);
+      }
+#endif
+      {					/* Check non-shadow passwords too. */
+	struct passwd *p = getpwnam(user);
+	if (p && passwd_known_p (p->pw_passwd))
+	  return strdup(p->pw_passwd);
+      }
+    }
+
+  fprintf (stderr, "%s: couldn't get password of \"%s\"\n",
+	   progname, (user ? user : "(null)"));
+
+  return 0;
+}
+
+
+
 /* This has to be called before we've changed our effective user ID,
    because it might need priveleges to get at the encrypted passwords.
+   Returns false if we weren't able to get any passwords, and therefore,
+   locking isn't possible.  (It will also have written to stderr.)
  */
 Bool
 #ifdef __STDC__
@@ -110,58 +203,22 @@ lock_init (argc, argv)
 	char **argv;
 #endif /* !__STDC__ */
 {
-  Bool ok = True;
   char *u;
-  PWTYPE p;
 
-#ifdef HAVE_DEC_ENHANCED      /* from M.Matsumoto <matsu@yao.sharp.co.jp> */
+#ifdef HAVE_DEC_ENHANCED
   set_auth_parameters(argc, argv);
   check_auth_parameters();
 #endif /* HAVE_DEC_ENHANCED */
 
-  p = GETPW ("root");
-
-  if (p && p->PWPSLOT && p->PWPSLOT[0] != '*')
-    encrypted_root_passwd = strdup(p->PWPSLOT);
-  else
-    {
-      fprintf (stderr, "%s: couldn't get root's password\n", progname);
-      encrypted_root_passwd = strdup("*");
-    }
-
-  /* It has been reported that getlogin() returns the wrong user id on some
-     very old SGI systems... */
-
-  u = (char *) getlogin ();
-  if (u)
-    u = strdup(u);
-  else
-    {
-      /* getlogin() fails if not attached to a terminal; in that case, use
-	 getpwuid().  (Note that in this case, we're not doing shadow stuff,
-	 since all we're interested in is the name, not the password.  So
-	 that should still work.  Right?) */
-      struct passwd *p2 = getpwuid (getuid ());
-      u = (p2->pw_name ? strdup (p2->pw_name) : 0);
-    }
-
-  p = GETPW (u);
-
-  if (p && p->PWPSLOT &&
-      /* p->PWPSLOT[0] != '*' */	/* sensible */
-      (strlen (p->PWPSLOT) > 4)		/* solaris */
-      )
-    encrypted_user_passwd = strdup(p->PWPSLOT);
-  else
-    {
-      fprintf (stderr, "%s: couldn't get password of \"%s\"\n", progname,
-	       (u ? u : "(null)"));
-      encrypted_user_passwd = strdup("*");
-      ok = False;
-    }
-
+  u = user_name();
+  encrypted_user_passwd = get_encrypted_passwd(u);
+  encrypted_root_passwd = get_encrypted_passwd(ROOT);
   if (u) free (u);
-  return ok;
+
+  if (encrypted_user_passwd)
+    return True;
+  else
+    return False;
 }
 
 
@@ -180,17 +237,17 @@ passwd_valid_p (typed_passwd)
   if (encrypted_user_passwd &&
       !strcmp ((char *) crypt (typed_passwd, encrypted_user_passwd),
 	       encrypted_user_passwd))
-    return 1;
+    return True;
 
   /* do not allow root to have a null password. */
   else if (typed_passwd[0] &&
 	   encrypted_root_passwd &&
 	   !strcmp ((char *) crypt (typed_passwd, encrypted_root_passwd),
 		    encrypted_root_passwd))
-    return 1;
+    return True;
 
   else
-    return 0;
+    return False;
 }
 
 #endif /* NO_LOCKING -- whole file */

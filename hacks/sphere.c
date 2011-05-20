@@ -29,6 +29,7 @@ static const char sccsid[] = "@(#)sphere.c	4.00 97/01/01 xlockmore";
  * ***************************************************************************
  *
  * Revision History:
+ * 30-May-97: jwz@netscape.com: made it go vertically as well as horizontally.
  * 27-May-97: jwz@netscape.com: turned into a standalone program.
  * 2-Sep-93: xlock version (David Bagley bagleyd@bigfoot.com)
  * 1988: Revised to use SunView canvas instead of gfxsw Sun Microsystems
@@ -63,9 +64,9 @@ typedef struct {
 	int         x0;		/* x center */
 	int         y0;		/* y center */
 	int         color;
-	int         x;
-	int         dir;
-	int         maxy;
+	int         x, y;
+	int         dirx, diry;
+	int         maxx, maxy;
 	XPoint     *points;
 } spherestruct;
 
@@ -105,33 +106,65 @@ draw_sphere(ModeInfo * mi)
 	register    y, miny, maxy, npts = 0;
 
 	if (ABS(sp->x) >= sp->radius) {
-		sp->radius = NRAND(MIN(sp->width / 2, sp->height / 2) - 1) + 1;
-		sp->x0 = NRAND(sp->width);
-		sp->y0 = NRAND(sp->height);
-		sp->dir = (LRAND() & 1) * 2 - 1;
-		sp->x = -sp->radius * sp->dir;
+	  sp->radius = NRAND(MIN(sp->width / 2, sp->height / 2) - 1) + 1;
+
+	  sp->dirx = (LRAND() & 1) * 2 - 1;
+	  sp->diry = (LRAND() & 1) * 2 - 1;
+
+	  if (sp->diry == 1)
+		{
+		  sp->x0 = NRAND(sp->width);
+		  sp->y0 = NRAND(sp->height);
+		}
+	  else
+		{
+		  sp->y0 = NRAND(sp->width);
+		  sp->x0 = NRAND(sp->height);
+		}
+
+		sp->x = -sp->radius * sp->dirx;
 
 		if (MI_NPIXELS(mi) > 2)
 			sp->color = NRAND(MI_NPIXELS(mi));
 	}
-	if (sp->dir == 1) {
+	if (sp->dirx == 1) {
 		if (sp->x0 + sp->x < 0)
 			sp->x = -sp->x0;
 	} else {
-		if (sp->x0 + sp->x >= sp->width)
+	  if (sp->diry == 1) {
+		  if (sp->x0 + sp->x >= sp->width)
 			sp->x = sp->width - sp->x0 - 1;
+	  } else {
+		  if (sp->x0 + sp->x >= sp->height)
+			sp->x = sp->height - sp->x0 - 1;
+		}
 	}
+
 	sp->maxy = SQRT(sp->radius * sp->radius - sp->x * sp->x);
 	miny = -sp->maxy;
 	if (sp->y0 - sp->maxy < 0)
 		miny = -sp->y0;
 	maxy = sp->maxy;
-	if (sp->y0 + sp->maxy >= sp->height)
+
+	if (sp->diry == 1) {
+	  if (sp->y0 + sp->maxy >= sp->height)
 		maxy = sp->height - sp->y0;
+	} else {
+	  if (sp->y0 + sp->maxy >= sp->height)
+		maxy = sp->width - sp->y0;
+	}
+
 	XSetForeground(display, gc, MI_WIN_BLACK_PIXEL(mi));
-	XDrawLine(display, MI_WINDOW(mi), gc,
-		  sp->x0 + sp->x, sp->y0 + miny,
-		  sp->x0 + sp->x, sp->y0 + maxy);
+
+	if (sp->diry == 1)
+	  XDrawLine(display, MI_WINDOW(mi), gc,
+				sp->x0 + sp->x, sp->y0 + miny,
+				sp->x0 + sp->x, sp->y0 + maxy);
+	else
+	  XDrawLine(display, MI_WINDOW(mi), gc,
+				sp->y0 + miny, sp->x0 + sp->x,
+				sp->y0 + maxy, sp->x0 + sp->x);
+
 	if (MI_NPIXELS(mi) > 2)
 		XSetForeground(display, gc, MI_PIXEL(mi, sp->color));
 	else
@@ -140,15 +173,28 @@ draw_sphere(ModeInfo * mi)
 		if ((NRAND(sp->radius * NR)) <=
 		    (NX * sp->x + NY * y + NZ *
 		     SQRT(sp->radius * sp->radius - sp->x * sp->x - y * y))) {
-			sp->points[npts].x = sp->x + sp->x0;
-			sp->points[npts].y = y + sp->y0;
+		  if (sp->diry == 1)
+			{
+			  sp->points[npts].x = sp->x + sp->x0;
+			  sp->points[npts].y = y + sp->y0;
+			}
+		  else
+			{
+			  sp->points[npts].y = sp->x + sp->x0;
+			  sp->points[npts].x = y + sp->y0;
+			}
 			npts++;
 		}
 	XDrawPoints(display, MI_WINDOW(mi), gc, sp->points, npts, CoordModeOrigin);
-	if (sp->dir == 1) {
+	if (sp->dirx == 1) {
 		sp->x++;
-		if (sp->x0 + sp->x >= sp->width)
+		if (sp->diry == 1) {
+		  if (sp->x0 + sp->x >= sp->width)
 			sp->x = sp->radius;
+		} else {
+		  if (sp->x0 + sp->x >= sp->height)
+			sp->x = sp->radius;
+		}
 	} else {
 		sp->x--;
 		if (sp->x0 + sp->x < 0)

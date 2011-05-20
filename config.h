@@ -140,6 +140,12 @@
  */
 /* #define HAVE_ADJUNCT_PASSWD */
 
+/* Uncomment the following line if you are running HPUX with so-called
+   ``Secure Passwords'' (if you have /usr/include/hpsecurity.h, you probably
+   have this.)  I haven't tested this one, let me know if it works.
+ */
+/* #define HAVE_HPUX_PASSWD */
+
 
 /* Define this if you have the XReadDisplay extension (I think this is an
    SGI-only thing; it's in <X11/extensions/readdisplay.h>.)  A couple of

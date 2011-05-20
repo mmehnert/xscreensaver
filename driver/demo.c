@@ -52,9 +52,6 @@
 #include <string.h>
 #include <ctype.h>
 
-extern saver_info *global_si_kludge;	/* I hate C so much... */
-
-
 static void demo_mode_hack P((saver_info *si, char *));
 static void demo_mode_done P((saver_info *si));
 
@@ -221,23 +218,25 @@ destroy_screenhack_dialogs (si)
 	saver_info *si;
 #endif /* !__STDC__ */
 {
+  saver_screen_info *ssi = si->default_screen;
+
   if (demo_dialog) XtDestroyWidget (demo_dialog);
   if (resources_dialog) XtDestroyWidget (resources_dialog);
   demo_dialog = resources_dialog = 0;
 
-  if (si->demo_cmap &&
-      si->demo_cmap != si->cmap &&
-      si->demo_cmap != DefaultColormapOfScreen (si->screen))
+  if (ssi->demo_cmap &&
+      ssi->demo_cmap != ssi->cmap &&
+      ssi->demo_cmap != DefaultColormapOfScreen (ssi->screen))
     {
-      XFreeColormap (si->dpy, si->demo_cmap);
-      si->demo_cmap = 0;
+      XFreeColormap (si->dpy, ssi->demo_cmap);
+      ssi->demo_cmap = 0;
     }
 
   /* Since we installed our colormap to display the dialogs properly, put
      the old one back, so that the screensaver_window is now displayed
      properly. */
-  if (si->cmap)
-    XInstallColormap (si->dpy, si->cmap);
+  if (ssi->cmap)
+    XInstallColormap (si->dpy, ssi->cmap);
 }
 
 #ifdef USE_MOTIF
@@ -269,17 +268,21 @@ select_cb (button, client_data, call_data)
      XtPointer client_data, call_data;
 #endif /* ! __STDC__ */
 {
-  saver_info *si = global_si_kludge;	/* I hate C so much... */
+  saver_info *si = (saver_info *) client_data;
 
 #ifdef USE_ATHENA
   XawListReturnStruct *item = (XawListReturnStruct*)call_data;
   demo_mode_hack (si, item->string);
 #else  /* USE_MOTIF */
-  char **hacks = (char **) client_data;
   XmListCallbackStruct *lcb = (XmListCallbackStruct *) call_data;
-  set_text_string (text_line, hacks [lcb->item_position - 1]);
-  if (lcb->reason == XmCR_DEFAULT_ACTION)
-    demo_mode_hack (si, get_text_string (text_line));
+  char *string = 0;
+  if (lcb->item)
+    XmStringGetLtoR (lcb->item, XmSTRING_DEFAULT_CHARSET, &string);
+  set_text_string (text_line, (string ? string : ""));
+  if (lcb->reason == XmCR_DEFAULT_ACTION && string)
+    demo_mode_hack (si, string);
+  if (string)
+    XtFree (string);
 #endif /* USE_MOTIF */
   steal_focus_and_colormap (demo_dialog);
 }
@@ -498,7 +501,8 @@ edit_cb (button, client_data, call_data)
 #endif /* ! __STDC__ */
 {
   saver_info *si = (saver_info *) client_data;
-  Widget parent = si->toplevel_shell;
+  saver_screen_info *ssi = si->default_screen;
+  Widget parent = ssi->toplevel_shell;
   if (! resources_dialog)
     make_resources_dialog (si, parent);
   pop_resources_dialog (si);
@@ -624,26 +628,26 @@ make_screenhack_dialog (si)
 	saver_info *si;
 #endif /* !__STDC__ */
 {
-  saver_preferences *p = &si->prefs;
-  Widget parent = si->toplevel_shell;
+  saver_screen_info *ssi = si->default_screen;
+  Widget parent = ssi->toplevel_shell;
   char **hacks = si->prefs.screenhacks;
 
-  if (si->demo_cmap &&
-      si->demo_cmap != si->cmap &&
-      si->demo_cmap != DefaultColormapOfScreen (si->screen))
+  if (ssi->demo_cmap &&
+      ssi->demo_cmap != ssi->cmap &&
+      ssi->demo_cmap != DefaultColormapOfScreen (ssi->screen))
     {
-      XFreeColormap (si->dpy, si->demo_cmap);
-      si->demo_cmap = 0;
+      XFreeColormap (si->dpy, ssi->demo_cmap);
+      ssi->demo_cmap = 0;
     }
 
-  if (p->default_visual == DefaultVisualOfScreen (si->screen))
-    si->demo_cmap = DefaultColormapOfScreen (si->screen);
+  if (ssi->default_visual == DefaultVisualOfScreen (ssi->screen))
+    ssi->demo_cmap = DefaultColormapOfScreen (ssi->screen);
   else
-    si->demo_cmap = XCreateColormap (si->dpy,
-				     RootWindowOfScreen (si->screen),
-				     p->default_visual, AllocNone);
+    ssi->demo_cmap = XCreateColormap (si->dpy,
+				      RootWindowOfScreen (ssi->screen),
+				      ssi->default_visual, AllocNone);
 
-  create_demo_dialog (parent, p->default_visual, si->demo_cmap);
+  create_demo_dialog (parent, ssi->default_visual, ssi->demo_cmap);
   format_into_label (label1, si->version);
 
   add_button_callback (next,    next_cb,    (XtPointer) si);
@@ -654,9 +658,9 @@ make_screenhack_dialog (si)
 
 #ifdef USE_MOTIF
   XtAddCallback (demo_list, XmNbrowseSelectionCallback,
-		 select_cb, (XtPointer) hacks);
+		 select_cb, (XtPointer) si);
   XtAddCallback (demo_list, XmNdefaultActionCallback,
-		 select_cb, (XtPointer) hacks);
+		 select_cb, (XtPointer) si);
   XtAddCallback (text_line, XmNactivateCallback, text_cb, (XtPointer) si);
 
   for (; *hacks; hacks++)
@@ -670,9 +674,9 @@ make_screenhack_dialog (si)
 
   XtVaSetValues (demo_list,
 		 XtNlist, hacks,
-		 XtNnumberStrings, p->screenhacks_count,
+		 XtNnumberStrings, si->prefs.screenhacks_count,
 		 0);
-  XtAddCallback (demo_list, XtNcallback, select_cb, NULL);
+  XtAddCallback (demo_list, XtNcallback, select_cb, si);
 
 #endif /* USE_ATHENA */
 
@@ -887,24 +891,24 @@ make_resources_dialog (si, parent)
 	Widget parent;
 #endif /* !__STDC__ */
 {
-  saver_preferences *p = &si->prefs;
+  saver_screen_info *ssi = si->default_screen;
 
-  if (si->demo_cmap &&
-      si->demo_cmap != si->cmap &&
-      si->demo_cmap != DefaultColormapOfScreen (si->screen))
+  if (ssi->demo_cmap &&
+      ssi->demo_cmap != ssi->cmap &&
+      ssi->demo_cmap != DefaultColormapOfScreen (ssi->screen))
     {
-      XFreeColormap (si->dpy, si->demo_cmap);
-      si->demo_cmap = 0;
+      XFreeColormap (si->dpy, ssi->demo_cmap);
+      ssi->demo_cmap = 0;
     }
 
-  if (p->default_visual == DefaultVisualOfScreen (si->screen))
-    si->demo_cmap = DefaultColormapOfScreen (si->screen);
+  if (ssi->default_visual == DefaultVisualOfScreen (ssi->screen))
+    ssi->demo_cmap = DefaultColormapOfScreen (ssi->screen);
   else
-    si->demo_cmap = XCreateColormap (si->dpy,
-				     RootWindowOfScreen (si->screen),
-				     p->default_visual, AllocNone);
+    ssi->demo_cmap = XCreateColormap (si->dpy,
+				     RootWindowOfScreen (ssi->screen),
+				     ssi->default_visual, AllocNone);
 
-  create_resources_dialog (parent, p->default_visual, si->demo_cmap);
+  create_resources_dialog (parent, ssi->default_visual, ssi->demo_cmap);
 
   add_button_callback (res_done,   res_done_cb,   (XtPointer) si);
   add_button_callback (res_cancel, res_cancel_cb, (XtPointer) si);

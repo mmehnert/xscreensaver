@@ -54,6 +54,8 @@ extern int kill (pid_t, int);		/* signal() is in sys/signal.h... */
 
 extern saver_info *global_si_kludge;	/* I hate C so much... */
 
+static void hack_environment P((saver_screen_info *ssi));
+
 
 static void
 #ifdef __STDC__
@@ -224,124 +226,71 @@ exec_screenhack (si, command)
 }
 
 
-/* Global locks to avoid a race condition between the main thread and
-   the SIGCHLD handler.
+
+/* Management of child processes, and de-zombification.
  */
-static Bool killing = False;
-static Bool suspending = False;
 
-static const char *current_hack_name P((saver_info *si));
+enum job_status {
+  job_running,	/* the process is still alive */
+  job_stopped,	/* we have sent it a STOP signal */
+  job_killed,	/* we have sent it a TERM signal */
+  job_dead	/* we have wait()ed for it, and it's dead -- this state only
+		   occurs so that we can avoid calling free() from a signal
+		   handler.  Shortly after going into this state, the list
+		   element will be removed. */
+};
 
+struct screenhack_job {
+  char *name;
+  pid_t pid;
+  enum job_status status;
+  struct screenhack_job *next;
+};
+
+static struct screenhack_job *jobs = 0;
+
+#ifdef DEBUG
 static void
-#ifdef __STDC__
-await_child_death (saver_info *si, Bool killed)
-#else  /* !__STDC__ */
-await_child_death (si, killed)
-	saver_info *si;
-	Bool killed;
-#endif /* !__STDC__ */
+show_job_list (void)
 {
-  saver_preferences *p = &si->prefs;
-  Bool suspended_p = False;
-  int status;
-  pid_t kid;
-  killing = True;
-  if (! si->pid)
-    return;
-
-  do
-    {
-      kid = waitpid (si->pid, &status, WUNTRACED);
-    }
-  while (kid == -1 && errno == EINTR);
-
-  if (kid == si->pid)
-    {
-      if (WIFEXITED (status))
-	{
-	  int exit_status = WEXITSTATUS (status);
-	  if (exit_status & 0x80)
-	    exit_status |= ~0xFF;
-	  /* One might assume that exiting with non-0 means something went
-	     wrong.  But that loser xswarm exits with the code that it was
-	     killed with, so it *always* exits abnormally.  Treat abnormal
-	     exits as "normal" (don't mention them) if we've just killed
-	     the subprocess.  But mention them if they happen on their own.
-	   */
-	  if (exit_status != 0 && (p->verbose_p || (! killed)))
-	    fprintf (stderr,
-		     "%s: child pid %lu (%s) exited abnormally (code %d).\n",
-		    progname, (unsigned long) si->pid, current_hack_name(si),
-		     exit_status);
-	  else if (p->verbose_p)
-	    printf ("%s: child pid %lu (%s) exited normally.\n",
-		    progname, (unsigned long) si->pid, current_hack_name (si));
-	}
-      else if (WIFSIGNALED (status))
-	{
-	  if (!killed || WTERMSIG (status) != SIGTERM)
-	    fprintf (stderr,
-		     "%s: child pid %lu (%s) terminated with signal %d!\n",
-		     progname, (unsigned long) si->pid, current_hack_name(si),
-		     WTERMSIG(status));
-	  else if (p->verbose_p)
-	    printf ("%s: child pid %lu (%s) terminated with SIGTERM.\n",
-		    progname, (unsigned long) si->pid, current_hack_name (si));
-	}
-      else if (suspending)
-	{
-	  suspended_p = True;
-	  suspending = False; /* complain if it happens twice */
-	}
-      else if (WIFSTOPPED (status))
-	{
-	  suspended_p = True;
-	  fprintf (stderr,
-		   "%s: child pid %lu (%s) stopped with signal %d!\n",
-		   progname, (unsigned long) si->pid,
-		   current_hack_name(si), WSTOPSIG (status));
-	}
-      else
-	fprintf (stderr, "%s: child pid %lu (%s) died in a mysterious way!",
-		 progname, (unsigned long) si->pid, current_hack_name(si));
-    }
-  else if (kid <= 0)
-    fprintf (stderr,
-	     "%s: waitpid(%lu, ...) says there are no kids?  (%lu)\n",
-	     progname, (unsigned long) si->pid, (unsigned long) kid);
-  else
-    fprintf (stderr, "%s: waitpid(%lu, ...) says proc %lu died, not %lu?\n",
-	     progname, (unsigned long) si->pid, (unsigned long) kid,
-	     (unsigned long) si->pid);
-  killing = False;
-  if (suspended_p != True)
-    si->pid = 0;
+  struct screenhack_job *job;
+  fprintf(stderr, "%s: job list:\n", progname);
+  for (job = jobs; job; job = job->next)
+    fprintf (stderr, "  %5ld: (%s) %s\n",
+	     (long) job->pid,
+	     (job->status == job_running ? "running" :
+	      job->status == job_stopped ? "stopped" :
+	      job->status == job_killed  ? " killed" :
+	      job->status == job_dead    ? "   dead" : "    ???"),
+	     job->name);
+  fprintf (stderr, "\n");
 }
+#endif
 
 
-static const char *
+static void clean_job_list P((void));
+
+static struct screenhack_job *
 #ifdef __STDC__
-current_hack_name (saver_info *si)
+make_job (pid_t pid, const char *cmd)
 #else  /* !__STDC__ */
-current_hack_name (si)
-	saver_info *si;
+make_job (pid, cmd)
+	pid_t pid;
+	const char *cmd;
 #endif /* !__STDC__ */
 {
-  saver_preferences *p = &si->prefs;
-  static char name [1024];
-  const char *hack = (si->demo_mode_p
-		      ? si->demo_hack
-		      : p->screenhacks [si->current_hack]);
-  const char *in;
-  char *out;
+  struct screenhack_job *job = (struct screenhack_job *) malloc (sizeof(*job));
 
-  in = hack;
-  out = name;
+  static char name [1024];
+  const char *in = cmd;
+  char *out = name;
+
+  clean_job_list();
+
   while (isspace(*in)) in++;		/* skip whitespace */
   while (!isspace(*in) && *in != ':')
     *out++ = *in++;			/* snarf first token */
   while (isspace(*in)) in++;		/* skip whitespace */
-
   if (*in == ':')			/* token was a visual name; skip it. */
     {
       in++;
@@ -350,46 +299,165 @@ current_hack_name (si)
       while (!isspace(*in)) *out++ = *in++;	/* snarf first token */
     }
   *out = 0;
-  return name;
+
+  job->name = strdup(name);
+  job->pid = pid;
+  job->status = job_running;
+  job->next = jobs;
+  jobs = job;
+
+  return jobs;
 }
 
-static Bool
+
+static void
 #ifdef __STDC__
-select_visual_of_hack (saver_info *si, const char *hack)
+free_job (struct screenhack_job *job)
 #else  /* !__STDC__ */
-select_visual_of_hack (si, hack)
+free_job (job)
+	struct screenhack_job *job;
+#endif /* !__STDC__ */
+{
+  if (!job)
+    return;
+  else if (job == jobs)
+    jobs = jobs->next;
+  else
+    {
+      struct screenhack_job *job2, *prev;
+      for (prev = 0, job2 = jobs;
+	   job2;
+	   prev = job2, job2 = job2->next)
+	if (job2 == job)
+	  {
+	    prev->next = job->next;
+	    break;
+	  }
+    }
+  free(job->name);
+  free(job);
+}
+
+
+/* Cleans out dead jobs from the jobs list -- this must only be called
+   from the main thread, not from a signal handler. 
+ */
+static void
+clean_job_list P((void))
+{
+  struct screenhack_job *job, *prev, *next;
+  for (prev = 0, job = jobs, next = (job ? job->next : 0);
+       job;
+       prev = job, job = next, next = (job ? job->next : 0))
+    {
+      if (job->status == job_dead)
+	{
+	  if (prev)
+	    prev->next = next;
+	  free_job (job);
+	  job = prev;
+	}
+    }
+}
+
+
+static struct screenhack_job *
+#ifdef __STDC__
+find_job (pid_t pid)
+#else  /* !__STDC__ */
+find_job (pid)
+	pid_t pid;
+#endif /* !__STDC__ */
+{
+  struct screenhack_job *job;
+  for (job = jobs; job; job = job->next)
+    if (job->pid == pid)
+      return job;
+  return 0;
+}
+
+static void await_dying_children P((saver_info *si));
+static void describe_dead_child P((saver_info *, pid_t, int wait_status));
+
+
+
+/* Semaphore to temporarily turn the SIGCHLD handler into a no-op. */
+static int block_sigchld_handler = 0;
+
+static int
+#ifdef __STDC__
+kill_job (saver_info *si, pid_t pid, int signal)
+#else  /* !__STDC__ */
+kill_job (si, pid, signal)
 	saver_info *si;
-	const char *hack;
+	pid_t pid;
+	int signal;
 #endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
-  Bool selected;
-  static char vis [1024];
-  const char *in = hack;
-  char *out = vis;
-  while (isspace(*in)) in++;		/* skip whitespace */
-  while (!isspace(*in) && *in != ':')
-    *out++ = *in++;			/* snarf first token */
-  while (isspace(*in)) in++;		/* skip whitespace */
-  *out = 0;
+  struct screenhack_job *job;
+  int status = -1;
 
-  if (*in == ':')
-    selected = select_visual(si, vis);
-  else
-    selected = select_visual(si, 0);
+  clean_job_list();
 
-  if (!selected && (p->verbose_p || si->demo_mode_p))
+  if (block_sigchld_handler)
+    /* This function should not be called from the signal handler. */
+    abort();
+
+  block_sigchld_handler++;		/* we control the horizontal... */
+
+  job = find_job (pid);
+  if (!job ||
+      !job->pid ||
+      job->status == job_killed)
     {
-      if (*in == ':') in++;
-      while (isspace(*in)) in++;
-      fprintf (stderr,
-	       (si->demo_mode_p
-		? "%s: warning, no \"%s\" visual for \"%s\".\n"
-		: "%s: no \"%s\" visual; skipping \"%s\".\n"),
-	       progname, (vis ? vis : "???"), in);
+      if (p->verbose_p)
+	fprintf (stderr, "%s: no child %ld to signal!\n",
+		 progname, (long) pid);
+      goto DONE;
     }
 
-  return selected;
+  if (signal == SIGTERM)
+    job->status = job_killed;
+  else if (signal == SIGSTOP)
+    job->status = job_stopped;
+  else if (signal == SIGCONT)
+    job->status = job_running;
+  else
+    abort();
+
+  if (p->verbose_p)
+    fprintf (stderr, "%s: %s pid %lu.\n", progname,
+	     (signal == SIGTERM ? "killing" :
+	      signal == SIGSTOP ? "suspending" :
+	      signal == SIGCONT ? "resuming" : "signalling"),
+	     (unsigned long) job->pid);
+
+  status = kill (job->pid, signal);
+
+  if (p->verbose_p && status < 0)
+    {
+      if (errno == ESRCH)
+	fprintf (stderr, "%s: child process %lu (%s) was already dead.\n",
+		 progname, job->pid, job->name);
+      else
+	{
+	  char buf [1024];
+	  sprintf (buf, "%s: couldn't kill child process %lu (%s)",
+		   progname, job->pid, job->name);
+	  perror (buf);
+	}
+    }
+
+  await_dying_children (si);
+
+ DONE:
+  block_sigchld_handler--;
+  if (block_sigchld_handler < 0)
+    abort();
+
+  clean_job_list();
+  return status;
 }
 
 
@@ -404,13 +472,135 @@ sigchld_handler (sig)
 {
   saver_info *si = global_si_kludge;	/* I hate C so much... */
 
-  if (killing)
-    return;
-  if (! si->pid)
-    abort ();
-  await_child_death (si, False);
+#ifdef DEBUG
+  if (si->prefs.debug_p)
+    fprintf(stderr, "%s: got SIGCHLD%s\n", progname,
+	    (block_sigchld_handler ? " (blocked)" : ""));
+#endif
+
+  if (block_sigchld_handler < 0)
+    abort();
+  else if (block_sigchld_handler == 0)
+    {
+      block_sigchld_handler++;
+      await_dying_children (si);
+      block_sigchld_handler--;
+    }
+
+  init_sigchld();
 }
 #endif
+
+
+static void
+#ifdef __STDC__
+await_dying_children (saver_info *si)
+#else  /* !__STDC__ */
+await_dying_children (si)
+	saver_info *si;
+#endif /* !__STDC__ */
+{
+  saver_preferences *p = &si->prefs;
+
+  while (1)
+    {
+      int wait_status = 0;
+      pid_t kid;
+
+      errno = 0;
+      kid = waitpid (-1, &wait_status, WNOHANG|WUNTRACED);
+#ifdef DEBUG
+      if (p->debug_p)
+	if (kid < 0 && errno)
+	  fprintf (stderr, "%s: waitpid(-1) ==> %ld (%d)\n", progname,
+		   (long) kid, errno);
+      else
+	  fprintf (stderr, "%s: waitpid(-1) ==> %ld\n", progname, (long) kid);
+#endif
+
+      /* 0 means no more children to reap.
+	 -1 means error -- except "interrupted system call" isn't a "real"
+	 error, so if we get that, we should just try again. */
+      if (kid == 0 ||
+	  (kid < 0 && errno != EINTR))
+	break;
+
+      describe_dead_child (si, kid, wait_status);
+    }
+}
+
+
+static void
+#ifdef __STDC__
+describe_dead_child (saver_info *si, pid_t kid, int wait_status)
+#else  /* !__STDC__ */
+describe_dead_child (si, kid, wait_status)
+	saver_info *si;
+	pid_t kid;
+	int wait_status;
+#endif /* !__STDC__ */
+{
+  saver_preferences *p = &si->prefs;
+  struct screenhack_job *job = find_job (kid);
+  const char *name = job ? job->name : "<unknown>";
+
+  if (WIFEXITED (wait_status))
+    {
+      int exit_status = WEXITSTATUS (wait_status);
+
+      /* Treat exit code as a signed 8-bit quantity. */
+      if (exit_status & 0x80) exit_status |= ~0xFF;
+
+      /* One might assume that exiting with non-0 means something went wrong.
+	 But that loser xswarm exits with the code that it was killed with, so
+	 it *always* exits abnormally.  Treat abnormal exits as "normal" (don't
+	 mention them) if we've just killed the subprocess.  But mention them
+	 if they happen on their own.
+       */
+      if (!job ||
+	  (exit_status != 0 &&
+	   (p->verbose_p || job->status != job_killed)))
+	fprintf (stderr,
+		 "%s: child pid %lu (%s) exited abnormally (code %d).\n",
+		 progname, (unsigned long) kid, name, exit_status);
+      else if (p->verbose_p)
+	printf ("%s: child pid %lu (%s) exited normally.\n",
+		progname, (unsigned long) kid, name);
+
+      if (job)
+	job->status = job_dead;
+    }
+  else if (WIFSIGNALED (wait_status))
+    {
+      if (!job ||
+	  job->status != job_killed ||
+	  WTERMSIG (wait_status) != SIGTERM)
+	fprintf (stderr, "%s: child pid %lu (%s) terminated with signal %d!\n",
+		 progname, (unsigned long) kid, name, WTERMSIG(wait_status));
+      else if (p->verbose_p)
+	printf ("%s: child pid %lu (%s) terminated with SIGTERM.\n",
+		progname, (unsigned long) kid, name);
+
+      if (job)
+	job->status = job_dead;
+    }
+  else if (WIFSTOPPED (wait_status))
+    {
+      if (p->verbose_p || job->status == job_stopped)
+	fprintf (stderr, "%s: child pid %lu (%s) stopped with signal %d.\n",
+		 progname, (unsigned long) kid, name, WSTOPSIG (wait_status));
+
+      if (job)
+	job->status = job_stopped;
+    }
+  else
+    {
+      fprintf (stderr, "%s: child pid %lu (%s) died in a mysterious way!",
+	       progname, (unsigned long) kid, name);
+      if (job)
+	job->status = job_stopped;
+    }
+}
 
 
 void
@@ -427,15 +617,60 @@ init_sigchld P((void))
 }
 
 
-void
+
+
+
+static Bool
 #ifdef __STDC__
-spawn_screenhack (saver_info *si, Bool first_time_p)
+select_visual_of_hack (saver_screen_info *ssi, const char *hack)
 #else  /* !__STDC__ */
-spawn_screenhack (si, first_time_p)
-	saver_info *si;
+select_visual_of_hack (ssi, hack)
+	saver_screen_info *ssi;
+	const char *hack;
+#endif /* !__STDC__ */
+{
+  saver_info *si = ssi->global;
+  saver_preferences *p = &si->prefs;
+  Bool selected;
+  static char vis [1024];
+  const char *in = hack;
+  char *out = vis;
+  while (isspace(*in)) in++;		/* skip whitespace */
+  while (!isspace(*in) && *in != ':')
+    *out++ = *in++;			/* snarf first token */
+  while (isspace(*in)) in++;		/* skip whitespace */
+  *out = 0;
+
+  if (*in == ':')
+    selected = select_visual(ssi, vis);
+  else
+    selected = select_visual(ssi, 0);
+
+  if (!selected && (p->verbose_p || si->demo_mode_p))
+    {
+      if (*in == ':') in++;
+      while (isspace(*in)) in++;
+      fprintf (stderr,
+	       (si->demo_mode_p
+		? "%s: warning, no \"%s\" visual for \"%s\".\n"
+		: "%s: no \"%s\" visual; skipping \"%s\".\n"),
+	       progname, (vis ? vis : "???"), in);
+    }
+
+  return selected;
+}
+
+
+static void
+#ifdef __STDC__
+spawn_screenhack_1 (saver_screen_info *ssi, Bool first_time_p)
+#else  /* !__STDC__ */
+spawn_screenhack_1 (ssi, first_time_p)
+	saver_screen_info *ssi;
 	Bool first_time_p;
 #endif /* !__STDC__ */
 {
+  saver_info *si = ssi->global;
   saver_preferences *p = &si->prefs;
   raise_window (si, first_time_p, True, False);
   XFlush (si->dpy);
@@ -452,7 +687,7 @@ spawn_screenhack (si, first_time_p)
 	  hack = si->demo_hack;
 
 	  /* Ignore visual-selection failure if in demo mode. */
-	  (void) select_visual_of_hack (si, hack);
+	  (void) select_visual_of_hack (ssi, hack);
 	}
       else
 	{
@@ -462,18 +697,18 @@ spawn_screenhack (si, first_time_p)
 	  if (p->screenhacks_count == 1)
 	    new_hack = 0;
 	  else if (si->next_mode_p == 1)
-	    new_hack = (si->current_hack + 1) % p->screenhacks_count;
+	    new_hack = (ssi->current_hack + 1) % p->screenhacks_count;
 	  else if (si->next_mode_p == 2)
-	    new_hack = ((si->current_hack + p->screenhacks_count - 1)
+	    new_hack = ((ssi->current_hack + p->screenhacks_count - 1)
 			% p->screenhacks_count);
 	  else
 	    while ((new_hack = random () % p->screenhacks_count)
-		   == si->current_hack)
+		   == ssi->current_hack)
 	      ;
-	  si->current_hack = new_hack;
-	  hack = p->screenhacks[si->current_hack];
+	  ssi->current_hack = new_hack;
+	  hack = p->screenhacks[ssi->current_hack];
 
-	  if (!select_visual_of_hack (si, hack))
+	  if (!select_visual_of_hack (ssi, hack))
 	    {
 	      if (++retry_count > (p->screenhacks_count*4))
 		{
@@ -514,24 +749,45 @@ spawn_screenhack (si, first_time_p)
       switch ((int) (forked = fork ()))
 	{
 	case -1:
-	  sprintf (buf, "%s: %scouldn't fork", progname);
+	  sprintf (buf, "%s: couldn't fork", progname);
 	  perror (buf);
 	  restore_real_vroot (si);
 	  saver_exit (si, 1);
 
 	case 0:
 	  close (ConnectionNumber (si->dpy));	/* close display fd */
-	  nice_subproc (p->nice_inferior);
+	  nice_subproc (p->nice_inferior);	/* change process priority */
+	  hack_environment (ssi);		/* set $DISPLAY */
 	  exec_screenhack (si, hack);		/* this does not return */
 	  abort();
 	  break;
 
 	default:
-	  si->pid = forked;
+	  ssi->pid = forked;
+	  (void) make_job (forked, hack);
 	  break;
 	}
     }
 }
+
+
+void
+#ifdef __STDC__
+spawn_screenhack (saver_info *si, Bool first_time_p)
+#else  /* !__STDC__ */
+spawn_screenhack (si, first_time_p)
+	saver_info *si;
+	Bool first_time_p;
+#endif /* !__STDC__ */
+{
+  int i;
+  for (i = 0; i < si->nscreens; i++)
+    {
+      saver_screen_info *ssi = &si->screens[i];
+      spawn_screenhack_1 (ssi, first_time_p);
+    }
+}
+
 
 void
 #ifdef __STDC__
@@ -541,41 +797,13 @@ kill_screenhack (si)
 	saver_info *si;
 #endif /* !__STDC__ */
 {
-  saver_preferences *p = &si->prefs;
-  killing = True;
-  if (! si->pid)
-    return;
-  if (kill (si->pid, SIGTERM) < 0)
+  int i;
+  for (i = 0; i < si->nscreens; i++)
     {
-      if (errno == ESRCH)
-	{
-	  /* Sometimes we don't get a SIGCHLD at all!  WTF?
-	     It's a race condition.  It looks to me like what's happening is
-	     something like: a subprocess dies of natural causes.  There is a
-	     small window between when the process dies and when the SIGCHLD
-	     is (would have been) delivered.  If we happen to try to kill()
-	     the process during that time, the kill() fails, because the
-	     process is already dead.  But! no SIGCHLD is delivered (perhaps
-	     because the failed kill() has reset some state in the kernel?)
-	     Anyway, if kill() says "No such process", then we have to wait()
-	     for it anyway, because the process has already become a zombie.
-	     I love Unix.
-	   */
-	  await_child_death (si, False);
-	}
-      else
-	{
-	  char buf [255];
-	  sprintf (buf, "%s: couldn't kill child process %lu", progname,
-		   (unsigned long) si->pid);
-	  perror (buf);
-	}
-    }
-  else
-    {
-      if (p->verbose_p)
-	printf ("%s: killing pid %lu.\n", progname, (unsigned long) si->pid);
-      await_child_death (si, True);
+      saver_screen_info *ssi = &si->screens[i];
+      if (ssi->pid)
+	kill_job (si, ssi->pid, SIGTERM);
+      ssi->pid = 0;
     }
 }
 
@@ -589,22 +817,13 @@ suspend_screenhack (si, suspend_p)
 	Bool suspend_p;
 #endif /* !__STDC__ */
 {
-  saver_preferences *p = &si->prefs;
-  
-  suspending = suspend_p;
-  if (! si->pid)
-    ;
-  else if (kill (si->pid, (suspend_p ? SIGSTOP : SIGCONT)) < 0)
+  int i;
+  for (i = 0; i < si->nscreens; i++)
     {
-      char buf [255];
-      sprintf (buf, "%s: couldn't %s child process %lu", progname,
-	       (suspend_p ? "suspend" : "resume"),
-	       (unsigned long) si->pid);
-      perror (buf);
+      saver_screen_info *ssi = &si->screens[i];
+      if (ssi->pid)
+	kill_job (si, ssi->pid, (suspend_p ? SIGSTOP : SIGCONT));
     }
-  else if (p->verbose_p)
-    printf ("%s: %s pid %lu.\n", progname,
-	    (suspend_p ? "suspending" : "resuming"), (unsigned long) si->pid);
 }
 
 
@@ -617,16 +836,19 @@ emergency_kill_subproc (si)
 	saver_info *si;
 #endif /* !__STDC__ */
 {
-  saver_preferences *p = &si->prefs;
-  if (si->pid)
-    {
+  int i;
 #ifdef SIGCHLD
-      signal (SIGCHLD, SIG_IGN);
+  signal (SIGCHLD, SIG_IGN);
 #endif
-      if (p->verbose_p)
-	fprintf(real_stderr, "%s: kill(%d, SIGTERM)\n", progname, si->pid);
-      kill(si->pid, SIGTERM);
-      si->pid = 0;
+
+  for (i = 0; i < si->nscreens; i++)
+    {
+      saver_screen_info *ssi = &si->screens[i];
+      if (ssi->pid)
+	{
+	  kill_job (si, ssi->pid, SIGTERM);
+	  ssi->pid = 0;
+	}
     }
 }
 
@@ -638,8 +860,15 @@ screenhack_running_p (si)
 	saver_info *si;
 #endif /* !__STDC__ */
 {
-  if (si->pid) return True;
-  else return False;
+  Bool result = True;
+  int i;
+  for (i = 0; i < si->nscreens; i++)
+    {
+      saver_screen_info *ssi = &si->screens[i];
+      if (!ssi->pid)
+	result = False;
+    }
+  return result;
 }
 
 
@@ -705,29 +934,48 @@ demo_mode_restart_process (si)
   XBell(si->dpy, 0);
 }
 
-void
+static void
 #ifdef __STDC__
-hack_environment (saver_info *si)
+hack_environment (saver_screen_info *ssi)
 #else  /* !__STDC__ */
-hack_environment (si)
-	saver_info *si;
+hack_environment (ssi)
+	saver_screen_info *ssi;
 #endif /* !__STDC__ */
 {
   /* Store $DISPLAY into the environment, so that the $DISPLAY variable that
-     the spawned processes inherit is the same as the value of -display passed
-     in on our command line (which is not necessarily the same as what our
-     $DISPLAY variable is.)
+     the spawned processes inherit is correct.  First, it must be on the same
+     host and display as the value of -display passed in on our command line
+     (which is not necessarily the same as what our $DISPLAY variable is.)
+     Second, the screen number in the $DISPLAY passed to the subprocess should
+     be the screen on which this particular hack is running -- not the display
+     specification which the driver itself is using, since the driver ignores
+     its screen number and manages all existing screens.
    */
-  char *s, buf [2048];
-  int i;
-  sprintf (buf, "DISPLAY=%s", DisplayString (si->dpy));
-  i = strlen (buf);
-  s = (char *) malloc (i+1);
-  strncpy (s, buf, i+1);
+  saver_info *si = ssi->global;
+  const char *odpy = DisplayString (si->dpy);
+  char *ndpy = (char *) malloc(strlen(odpy) + 20);
+  int screen_number;
+  char *s;
+
+  for (screen_number = 0; screen_number < si->nscreens; screen_number++)
+    if (ssi == &si->screens[screen_number])
+      break;
+  if (screen_number >= si->nscreens) abort();
+
+  strcpy (ndpy, "DISPLAY=");
+  s = ndpy + strlen(ndpy);
+  strcpy (s, odpy);
+
+  while (*s && *s != ':') s++;			/* skip to colon */
+  while (*s == ':') s++;			/* skip over colons */
+  while (isdigit(*s)) s++;			/* skip over dpy number */
+  while (*s == '.') s++;			/* skip over dot */
+  if (s[-1] != '.') *s++ = '.';			/* put on a dot */
+  sprintf(s, "%d", screen_number);		/* put on screen number */
 
   /* Allegedly, BSD 4.3 didn't have putenv(), but nobody runs such systems
      any more, right?  It's not Posix, but everyone seems to have it. */
-  if (putenv (s))
+  if (putenv (ndpy))
     abort ();
 }
 

@@ -66,29 +66,37 @@ init_mit_saver_extension (si)
 	saver_info *si;
 #endif /* !__STDC__ */
 {
-  XID kill_id;
-  Atom kill_type;
-  Window root = RootWindowOfScreen (si->screen);
-  Pixmap blank_pix = XCreatePixmap (si->dpy, root, 1, 1, 1);
+  int i;
+  Pixmap *blank_pix = (Pixmap *) calloc (sizeof(Pixmap), ss->nscreens);
 
-  /* Kill off the old MIT-SCREEN-SAVER client if there is one.
-     This tends to generate X errors, though (possibly due to a bug
-     in the server extension itself?) so just ignore errors here. */
-  if (XScreenSaverGetRegistered (si->dpy, XScreenNumberOfScreen (si->screen),
-				 &kill_id, &kill_type)
-      && kill_id != blank_pix)
+  for (i = 0; i < si->nscreens; i++)
     {
-      int (*old_handler) ();
-      old_handler = XSetErrorHandler (ignore_all_errors_ehandler);
-      XKillClient (si->dpy, kill_id);
-      XSync (si->dpy, False);
-      XSetErrorHandler (old_handler);
+      saver_screen_info *ssi = &si->screens[i];
+      XID kill_id = 0;
+      Atom kill_type = 0;
+      Window root = RootWindowOfScreen (ssi->screen);
+      blank_pix[i] = XCreatePixmap (si->dpy, root, 1, 1, 1);
+
+      /* Kill off the old MIT-SCREEN-SAVER client if there is one.
+	 This tends to generate X errors, though (possibly due to a bug
+	 in the server extension itself?) so just ignore errors here. */
+      if (XScreenSaverGetRegistered (si->dpy,
+				     XScreenNumberOfScreen (ssi->screen),
+				     &kill_id, &kill_type)
+	  && kill_id != blank_pix)
+	{
+	  int (*old_handler) ();
+	  old_handler = XSetErrorHandler (ignore_all_errors_ehandler);
+	  XKillClient (si->dpy, kill_id);
+	  XSync (si->dpy, False);
+	  XSetErrorHandler (old_handler);
+	}
+      XScreenSaverSelectInput (si->dpy, root, ScreenSaverNotifyMask);
+      XScreenSaverRegister (si->dpy,
+			    XScreenNumberOfScreen (ssi->screen),
+			    (XID) blank_pix[i], XA_PIXMAP);
     }
-
-  XScreenSaverSelectInput (si->dpy, root, ScreenSaverNotifyMask);
-
-  XScreenSaverRegister (si->dpy, XScreenNumberOfScreen (si->screen),
-			(XID) blank_pix, XA_PIXMAP);
+  free(blank_pix);
 }
 #endif /* HAVE_MIT_SAVER_EXTENSION */
 
@@ -122,19 +130,25 @@ init_sgi_saver_extension (si)
 #endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
+  int i;
   if (si->screen_blanked_p)
     /* If you mess with this while the server thinks it's active,
        the server crashes. */
     return;
 
-  XScreenSaverDisable (si->dpy, XScreenNumberOfScreen(si->screen));
-  if (! XScreenSaverEnable (si->dpy, XScreenNumberOfScreen(si->screen)))
+  for (i = 0; i < si->nscreens; i++)
     {
-      fprintf (stderr,
+      saver_screen_info *ssi = &si->screens[i];
+      XScreenSaverDisable (si->dpy, XScreenNumberOfScreen(ssi->screen));
+      if (! XScreenSaverEnable (si->dpy, XScreenNumberOfScreen(ssi->screen)))
+	{
+	  fprintf (stderr,
        "%s: SGI SCREEN_SAVER extension exists, but can't be initialized;\n\
 		perhaps some other screensaver program is already running?\n",
-	       progname);
-      p->use_sgi_saver_extension = False;
+		   progname);
+	  p->use_sgi_saver_extension = False;
+	  return;
+	}
     }
 }
 

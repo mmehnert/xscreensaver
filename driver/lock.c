@@ -377,26 +377,26 @@ make_passwd_dialog (si)
 	saver_info *si;
 #endif /* !__STDC__ */
 {
-  saver_preferences *p = &si->prefs;
   char *username = 0;
-  Widget parent = si->toplevel_shell;
+  saver_screen_info *ssi = si->default_screen;
+  Widget parent = ssi->toplevel_shell;
 
-  if (si->demo_cmap &&
-      si->demo_cmap != si->cmap &&
-      si->demo_cmap != DefaultColormapOfScreen (si->screen))
+  if (ssi->demo_cmap &&
+      ssi->demo_cmap != ssi->cmap &&
+      ssi->demo_cmap != DefaultColormapOfScreen (ssi->screen))
     {
-      XFreeColormap (si->dpy, si->demo_cmap);
-      si->demo_cmap = 0;
+      XFreeColormap (si->dpy, ssi->demo_cmap);
+      ssi->demo_cmap = 0;
     }
 
-  if (p->default_visual == DefaultVisualOfScreen (si->screen))
-    si->demo_cmap = DefaultColormapOfScreen (si->screen);
+  if (ssi->default_visual == DefaultVisualOfScreen (ssi->screen))
+    ssi->demo_cmap = DefaultColormapOfScreen (ssi->screen);
   else
-    si->demo_cmap = XCreateColormap (si->dpy,
-				     RootWindowOfScreen (si->screen),
-				     p->default_visual, AllocNone);
+    ssi->demo_cmap = XCreateColormap (si->dpy,
+				     RootWindowOfScreen (ssi->screen),
+				     ssi->default_visual, AllocNone);
 
-  create_passwd_dialog (parent, p->default_visual, si->demo_cmap);
+  create_passwd_dialog (parent, ssi->default_visual, ssi->demo_cmap);
 
 #ifdef USE_ATHENA
 
@@ -540,7 +540,8 @@ passwd_idle_timer (closure, id)
 
   if (--passwd_idle_timer_tick)
     {
-      passwd_idle_id = XtAppAddTimeOut (si->app, 1000, passwd_idle_timer, (XtPointer) si);
+      passwd_idle_id = XtAppAddTimeOut (si->app, 1000, passwd_idle_timer,
+					(XtPointer) si);
       XFillArc (dpy, window, gc, x, y, d, d, ss, s);
       ss += s;
     }
@@ -637,17 +638,21 @@ pop_passwd_dialog (si)
 #endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
-  Widget parent = si->toplevel_shell;
+  saver_screen_info *ssi = si->default_screen;
+  Widget parent = ssi->toplevel_shell;
   Display *dpy = XtDisplay (passwd_dialog);
   Window focus;
   int revert_to;
+  int i;
+
   typed_passwd [0] = 0;
   passwd_state = pw_read;
   text_field_set_string (passwd_text, "", 0);
 
   /* In case one of the hacks has unmapped it temporarily...
      Get that sucker on stage now! */
-  XMapRaised(si->dpy, si->screensaver_window);
+  for (i = 0; i < si->nscreens; i++)
+    XMapRaised(si->dpy, si->screens[i].screensaver_window);
 
   XGetInputFocus (dpy, &focus, &revert_to);
 #if defined(USE_MOTIF) && !defined(DESTROY_WORKS)
@@ -679,7 +684,8 @@ pop_passwd_dialog (si)
 #endif
 
   passwd_idle_timer_tick = p->passwd_timeout / 1000;
-  passwd_idle_id = XtAppAddTimeOut (si->app, 1000,  passwd_idle_timer, (XtPointer) si);
+  passwd_idle_id = XtAppAddTimeOut (si->app, 1000,  passwd_idle_timer,
+				    (XtPointer) si);
 
 #ifdef USE_ATHENA
   if (roger_label)
@@ -772,8 +778,12 @@ pop_passwd_dialog (si)
   /* Since we installed our colormap to display the dialog properly, put
      the old one back, so that the screensaver_window is now displayed
      properly. */
-  if (si->cmap)
-    XInstallColormap (si->dpy, si->cmap);
+  for (i = 0; i < si->nscreens; i++)
+    {
+      saver_screen_info *ssi = &si->screens[i];
+      if (ssi->cmap)
+	XInstallColormap (si->dpy, ssi->cmap);
+    }
 
   return (passwd_state == pw_ok ? True : False);
 }

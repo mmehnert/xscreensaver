@@ -40,6 +40,15 @@
    Irix 6.2; Indy r5k; SGI cc version 6; gcc version 2.7.2.1.
  */
 
+
+#if defined(__sun) && defined(__svr4__)
+  /* Solaris 2.4 and less use gettimeofday(tp) but Solaris 2.5 and greater
+     use gettimeofday(tp,tzp) unless you define _SVID_GETTOD.  Make up your
+     fucking minds, assholes. */
+# undef  _SVID_GETTOD
+# define _SVID_GETTOD
+#endif
+
 #include <unistd.h>   /* for getpid() */
 #include <sys/time.h> /* for gettimeofday() */
 
@@ -92,8 +101,12 @@ ya_rand_init(seed)
   if (seed == 0)
     {
       struct timeval tp;
+# if defined(__svr4__) && !defined(__sun)
       struct timezone tzp;
       gettimeofday(&tp, &tzp);
+#else
+      gettimeofday(&tp);
+#endif
       /* ignore overflow */
       seed = (999*tp.tv_sec) + (1001*tp.tv_usec) + (1003 * getpid());
     }

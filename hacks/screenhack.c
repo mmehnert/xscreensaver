@@ -143,6 +143,7 @@ main (argc, argv)
   Bool root_p;
   XEvent event;
   Boolean dont_clear /*, dont_map */;
+  char version[255];
 
   merge_options ();
   toplevel = XtAppInitialize (&app, progclass, merged_options,
@@ -152,12 +153,30 @@ main (argc, argv)
   db = XtDatabase (dpy);
   XtGetApplicationNameAndClass (dpy, &progname, &progclass);
   XSetErrorHandler (screenhack_ehandler);
+
+  {
+    char *v = (char *) strdup(strchr(screensaver_id, ' '));
+    char *s = (char *) strchr(v, ',');
+    *s = 0;
+    sprintf (version, "%s: from the XScreenSaver%s distribution.",
+	     progclass, v);
+    free(v);
+  }
+
   if (argc > 1)
     {
+      const char *s;
       int i;
       int x = 18;
       int end = 78;
-      fprintf (stderr, "%s: unrecognised option \"%s\"\n", progname, argv[1]);
+      Bool help_p = !strcmp(argv[1], "-help");
+      fprintf (stderr, "%s\n", version);
+      for (s = progclass; *s; s++) fprintf(stderr, " ");
+      fprintf (stderr,
+	       "  http://www.netscape.com/people/jwz/xscreensaver/\n\n");
+
+      if (!help_p)
+	fprintf(stderr, "Unrecognised option: %s\n", argv[1]);
       fprintf (stderr, "Options include: ");
       for (i = 0; i < merged_options_size; i++)
 	{
@@ -175,7 +194,7 @@ main (argc, argv)
 	  if (i != merged_options_size - 1) fprintf (stderr, ", ");
 	}
       fprintf (stderr, ".\n");
-      exit (1);
+      exit (help_p ? 0 : 1);
     }
 
   dont_clear = get_boolean_resource ("dontClearRoot", "Boolean");
@@ -196,46 +215,64 @@ main (argc, argv)
     }
   else
     {
-      visual = get_visual_resource (dpy, "visualID", "VisualID", False);
+      Boolean def_visual_p;
+      Screen *screen = XtScreen (toplevel);
+      visual = get_visual_resource (screen, "visualID", "VisualID", False);
 
-      XtVaSetValues (toplevel, XtNmappedWhenManaged, False, 0);
-      XtRealizeWidget (toplevel);
-      window = XtWindow (toplevel);
+      if (toplevel->core.width <= 0)
+	toplevel->core.width = 600;
+      if (toplevel->core.height <= 0)
+	toplevel->core.height = 480;
 
-      if (visual != DefaultVisualOfScreen (XtScreen (toplevel)))
+      def_visual_p = (visual == DefaultVisualOfScreen (screen));
+
+      if (!def_visual_p)
 	{
-	  Arg av [20];
-	  int ac;
 	  unsigned int bg, bd;
 	  Widget new;
-	  cmap = XCreateColormap (dpy, window, visual, AllocNone);
+
+	  cmap = XCreateColormap (dpy, RootWindowOfScreen(screen),
+				  visual, AllocNone);
 	  bg = get_pixel_resource ("background", "Background", dpy, cmap);
 	  bd = get_pixel_resource ("borderColor", "Foreground", dpy, cmap);
-	  ac = 0;
-	  XtSetArg (av[ac], XtNvisual, visual); ac++;
-	  XtSetArg (av[ac], XtNcolormap, cmap); ac++;
-	  XtSetArg (av[ac], XtNdepth, visual_depth (dpy, visual)); ac++;
-	  XtSetArg (av[ac], XtNbackground, (Pixel) bg); ac++;
-	  XtSetArg (av[ac], XtNborderColor, (Pixel) bd); ac++;
-	  new = XtAppCreateShell (progname, progclass,
-				  topLevelShellWidgetClass, dpy,
-				  av, ac);
+
+	  new = XtVaAppCreateShell (progname, progclass,
+				    topLevelShellWidgetClass, dpy,
+				    XtNmappedWhenManaged, False,
+				    XtNvisual, visual,
+				    XtNdepth, visual_depth (screen, visual),
+				    XtNwidth, toplevel->core.width,
+				    XtNheight, toplevel->core.height,
+				    XtNcolormap, cmap,
+				    XtNbackground, (Pixel) bg,
+				    XtNborderColor, (Pixel) bd,
+				    0);
 	  XtDestroyWidget (toplevel);
 	  toplevel = new;
-	}
-      else if (get_boolean_resource ("installColormap", "InstallColormap"))
-	{
-	  cmap = XCreateColormap (dpy, window,
-				  DefaultVisualOfScreen (XtScreen (toplevel)),
-				  AllocNone);
-	  XSetWindowColormap (dpy, window, cmap);
+	  XtRealizeWidget (toplevel);
+	  window = XtWindow (toplevel);
 	}
       else
 	{
-	  cmap = DefaultColormap (dpy, DefaultScreen (dpy));
+	  XtVaSetValues (toplevel, XtNmappedWhenManaged, False, 0);
+	  XtRealizeWidget (toplevel);
+	  window = XtWindow (toplevel);
+
+	  if (get_boolean_resource ("installColormap", "InstallColormap"))
+	    {
+	      cmap = XCreateColormap (dpy, window,
+				   DefaultVisualOfScreen (XtScreen (toplevel)),
+				      AllocNone);
+	      XSetWindowColormap (dpy, window, cmap);
+	    }
+	  else
+	    {
+	      cmap = DefaultColormap (dpy, DefaultScreen (dpy));
+	    }
 	}
 
-/*      if (dont_map)
+/*
+      if (dont_map)
 	{
 	  XtVaSetValues (toplevel, XtNmappedWhenManaged, False, 0);
 	  XtRealizeWidget (toplevel);
@@ -246,7 +283,7 @@ main (argc, argv)
 	  XtPopup (toplevel, XtGrabNone);
 	}
 
-      window = XtWindow (toplevel);
+      XtVaSetValues(toplevel, XtNtitle, version, 0);
     }
 
   if (!dont_clear)
@@ -261,6 +298,7 @@ main (argc, argv)
     /* wait for it to be mapped */
     XIfEvent (dpy, &event, MapNotify_event_p, (XPointer) window);
 
+  free(version);
   XSync (dpy, False);
   srandom ((int) time ((time_t *) 0));
   screenhack (dpy, window);

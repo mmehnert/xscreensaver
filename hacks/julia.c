@@ -20,6 +20,7 @@ static const char sccsid[] = "@(#)julia.c	4.03 97/04/10 xlockmore";
  * other special, indirect and consequential damages.
  *
  * Revision History:
+ * 28-May-97: jwz@netscape.com: added interactive frobbing with the mouse.
  * 10-May-97: jwz@netscape.com: turned into a standalone program.
  * 02-Dec-95: snagged boilerplate from hop.c
  *           used ifs {w0 = sqrt(x-c), w1 = -sqrt(x-c)} with random iteration 
@@ -43,6 +44,7 @@ static const char sccsid[] = "@(#)julia.c	4.03 97/04/10 xlockmore";
 # define DEF_CYCLES					20
 # define DEF_DELAY					10000
 # define DEF_NCOLORS				200
+# define DEF_MOUSE					"True"
 # define UNIFORM_COLORS
 # include "xlockmore.h"				/* in xscreensaver distribution */
 #else  /* !STANDALONE */
@@ -68,8 +70,12 @@ typedef struct {
 	int         nbuffers;
 	int         redrawing, redrawpos;
 	Pixmap      pixmap;
+	Cursor      cursor;
 	GC          stippledGC;
 	XPoint    **pointBuffer;	/* pointer for XDrawPoints */
+
+    Bool        track_p;
+
 } juliastruct;
 
 static juliastruct *julias = NULL;
@@ -111,13 +117,38 @@ apply(juliastruct * jp, register double xr, register double xi, int d)
 }
 
 static void
-incr(juliastruct * jp)
+incr(ModeInfo * mi, juliastruct * jp)
 {
-	jp->cr = 1.5 * sin(M_PI * (jp->inc / 300.0)) * sin(jp->inc * M_PI / 200.0);
-	jp->ci = 1.5 * cos(M_PI * (jp->inc / 300.0)) * cos(jp->inc * M_PI / 200.0);
+    Bool track_p = jp->track_p;
+	int cx, cy;
 
-	jp->cr += 0.5 * cos(M_PI * jp->inc / 400.0);
-	jp->ci += 0.5 * sin(M_PI * jp->inc / 400.0);
+	if (track_p)
+	  {
+		Window r, c;
+		int rx, ry;
+		unsigned int m;
+		XQueryPointer(MI_DISPLAY(mi), MI_WINDOW(mi),
+					  &r, &c, &rx, &ry, &cx, &cy, &m);
+		if (cx <= 0 || cy <= 0 ||
+			cx >= MI_WIN_WIDTH(mi) || cy >= MI_WIN_HEIGHT(mi))
+		  track_p = False;
+	  }
+
+	if (track_p)
+	  {
+		jp->cr = ((double) (cx + 2 - jp->centerx)) * 2 / jp->centerx;
+		jp->ci = ((double) (cy + 2 - jp->centery)) * 2 / jp->centery;
+	  }
+	else
+	  {
+		jp->cr = 1.5 * (sin(M_PI * (jp->inc / 300.0)) *
+						sin(jp->inc * M_PI / 200.0));
+		jp->ci = 1.5 * (cos(M_PI * (jp->inc / 300.0)) *
+						cos(jp->inc * M_PI / 200.0));
+
+		jp->cr += 0.5 * cos(M_PI * jp->inc / 400.0);
+		jp->ci += 0.5 * sin(M_PI * jp->inc / 400.0);
+	  }
 }
 
 void
@@ -136,6 +167,11 @@ init_julia(ModeInfo * mi)
 	}
 	jp = &julias[MI_SCREEN(mi)];
 
+	jp->track_p = False;
+#ifdef STANDALONE
+	jp->track_p = get_boolean_resource ("mouse", "Boolean");
+#endif /* !STANDALONE */
+
 	jp->centerx = MI_WIN_WIDTH(mi) / 2;
 	jp->centery = MI_WIN_HEIGHT(mi) / 2;
 
@@ -143,6 +179,20 @@ init_julia(ModeInfo * mi)
 	if (jp->depth > 10)
 		jp->depth = 10;
 
+
+	if (jp->track_p && !jp->cursor)
+	  {
+		Pixmap bit;
+		XColor black;
+		black.red = black.green = black.blue = 0;
+		black.flags = DoRed|DoGreen|DoBlue;
+		bit = XCreatePixmapFromBitmapData (display, window, "\000", 1, 1,
+										   MI_WIN_BLACK_PIXEL(mi),
+										   MI_WIN_BLACK_PIXEL(mi), 1);
+		jp->cursor = XCreatePixmapCursor (display, bit, bit, &black, &black,
+										  0, 0);
+		XFreePixmap (display, bit);
+	  }
 
 	if (jp->pixmap != None &&
 	    jp->circsize != (MIN(jp->centerx, jp->centery) / 60) * 2 + 1) {
@@ -170,6 +220,12 @@ init_julia(ModeInfo * mi)
 		if (bg_gc != None)
 			XFreeGC(display, bg_gc);
 	}
+
+	if (jp->circsize > 0)
+	  XDefineCursor (display, window, jp->cursor);
+	else
+	  XUndefineCursor (display, window);
+
 	if (!jp->stippledGC) {
 		gcv.foreground = MI_WIN_BLACK_PIXEL(mi);
 		gcv.background = MI_WIN_BLACK_PIXEL(mi);
@@ -226,7 +282,7 @@ draw_julia(ModeInfo * mi)
 
 	old_circle.x = (int) (jp->centerx * jp->cr / 2) + jp->centerx - 2;
 	old_circle.y = (int) (jp->centery * jp->ci / 2) + jp->centery - 2;
-	incr(jp);
+	incr(mi, jp);
 	new_circle.x = (int) (jp->centerx * jp->cr / 2) + jp->centerx - 2;
 	new_circle.y = (int) (jp->centery * jp->ci / 2) + jp->centery - 2;
 	XSetForeground(display, gc, MI_WIN_BLACK_PIXEL(mi));
@@ -331,6 +387,8 @@ release_julia(ModeInfo * mi)
 				XFreeGC(display, jp->stippledGC);
 			if (jp->pixmap != None)
 				XFreePixmap(display, jp->pixmap);
+			if (jp->cursor)
+			  XFreeCursor (display, jp->cursor);
 		}
 		(void) free((void *) julias);
 		julias = NULL;

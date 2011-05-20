@@ -18,6 +18,18 @@
 #include <X11/Xlib.h>
 #include <X11/Xresource.h>
 
+#ifdef __STDC__
+# define P(x)x
+#else
+# define P(x)()
+# ifndef const
+#  define const /**/
+# endif
+#endif
+
+#include "resources.h"
+
+
 /* Resource functions.  Assumes: */
 
 extern char *progname;
@@ -25,8 +37,6 @@ extern char *progclass;
 extern XrmDatabase db;
 
 #ifdef __STDC__
-char *get_string_resource (char *res_name, char *res_class);
-int parse_time (char *string, Bool seconds_default_p, Bool silent_p);
 static unsigned int get_time_resource (char *res_name, char *res_class,
 				       Bool sec_p);
 #endif

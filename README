@@ -110,6 +110,12 @@ http://www.netscape.com/people/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 1.32:	Made it work with multi-headed displays.
+			Generalized sub-process management (Unix sucks!)
+			Added interactive mouse frobbing to Julia.
+			Added (untested) support for HPUX shadow passwords.
+			Made normal non-shadow passwords be checked if the
+			shadow passwords aren't accessible for some reason.
 Changes since 1.31:	Removed *colorPrograms and *monoPrograms resources:
 			made it possible to specify the desired visual on a
 			per-hack basis.
@@ -121,6 +127,7 @@ Changes since 1.31:	Removed *colorPrograms and *monoPrograms resources:
 			Added an improved version of xlock's `flag' hack.
 			Made unfading work better, and not flicker on SGIs.
 			Added `sphere', `forest', `lisa' hacks from xlockmore.
+			Added (untested) support for SunOS Adjunct passwords.
 Changes since 1.30:	Improved colors and colormap cycling of many hacks.
 			Cleaned up xlockmore compatibility layer.
 			Made `blitspin' able to grab an image off the screen.

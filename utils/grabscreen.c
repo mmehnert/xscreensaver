@@ -17,6 +17,7 @@
    breaks down...
  */
 
+#include <stdio.h>
 #ifdef __STDC__
 # include <stdlib.h>
 # include <unistd.h>
@@ -41,7 +42,7 @@
 # include "visual.h"
 # include <X11/extensions/readdisplay.h>
 # ifdef __STDC__
-  static Bool read_display (Display *, Window, Pixmap, Bool);
+  static Bool read_display (Screen *, Window, Pixmap, Bool);
 # else /* !__STDC__ */
   static Bool read_display ();
 # endif /* !__STDC__ */
@@ -53,7 +54,7 @@ ERROR!  You must not include vroot.h in this file.
 #endif
 
 
-static void copy_default_colormap_contents P((Display *, Colormap, Visual *));
+static void copy_default_colormap_contents P((Screen *, Colormap, Visual *));
 
 
 static Bool
@@ -86,7 +87,7 @@ raise_window(dpy, window, dont_wait)
 #endif /* !__STDC__ */
 {
 #ifdef DEBUG
-  fprintf(stderr, "%s: raising window 0x%08X (%s)\n",
+  fprintf(stderr, "%s: raising window 0x%08lX (%s)\n",
 	  progname, (unsigned long) window,
 	  (dont_wait ? "not waiting" : "waiting"));
 #endif /* DEBUG */
@@ -144,15 +145,16 @@ screensaver_window_p (dpy, window)
 
 void
 #ifdef __STDC__
-grab_screen_image (Display *dpy, Window window)
-#else /* !__STDC__ */
-grab_screen_image (dpy, window)
-     Display *dpy;
-     Window window;
+grab_screen_image (Screen *screen, Window window)
+#else  /* !__STDC__ */
+grab_screen_image (screen, window)
+	Screen *screen;
+	Window window;
 #endif /* !__STDC__ */
 {
+  Display *dpy = DisplayOfScreen (screen);
   XWindowAttributes xgwa;
-  Window real_root = RootWindowOfScreen (DefaultScreenOfDisplay (dpy));
+  Window real_root = RootWindowOfScreen (screen);
   Bool root_p = (window == real_root);
   Bool saver_p = screensaver_window_p (dpy, window);
   Bool grab_mouse_p = False;
@@ -170,21 +172,21 @@ grab_screen_image (dpy, window)
   if (!root_p)
     {
       if (saver_p)
-	unmap_time = 5000000;  /* 5 seconds */
+	unmap_time = 2500000;  /* 2 1/2 seconds */
       else
 	unmap_time =  660000;  /* 2/3rd second */
     }
 
 #ifdef DEBUG
   fprintf(stderr,
-	  "\n%s: window 0x%08X root: %d saver: %d grab: %d wait: %.1f\n",
+	  "\n%s: window 0x%08lX root: %d saver: %d grab: %d wait: %.1f\n",
 	  progname, (unsigned long) window,
 	  root_p, saver_p, grab_mouse_p, ((double)unmap_time)/1000000.0);
   {
     XWindowAttributes xgwa2;
     XGetWindowAttributes (dpy, window, &xgwa2);
     fprintf(stderr, "%s: ", progname);
-    describe_visual(stderr, dpy, xgwa2.visual);
+    describe_visual(stderr, screen, xgwa2.visual);
   }
 #endif /* DEBUG */
 
@@ -214,13 +216,13 @@ grab_screen_image (dpy, window)
   if (!root_p)
     {
 #ifdef HAVE_READ_DISPLAY_EXTENSION
-      if (! read_display(dpy, window, 0, saver_p))
+      if (! read_display(screen, window, 0, saver_p))
 #endif /* HAVE_READ_DISPLAY_EXTENSION */
 	{
 #if defined(HAVE_READ_DISPLAY_EXTENSION) && defined(DEBUG)
 	  fprintf(stderr, "%s: read_display() failed\n", progname);
 #endif /* DEBUG */
-	  copy_default_colormap_contents (dpy, xgwa.colormap, xgwa.visual);
+	  copy_default_colormap_contents (screen, xgwa.colormap, xgwa.visual);
 	  raise_window(dpy, window, saver_p);
 	}
     }
@@ -232,7 +234,7 @@ grab_screen_image (dpy, window)
       pixmap = XCreatePixmap(dpy, window, xgwa.width, xgwa.height, xgwa.depth);
 
 #ifdef HAVE_READ_DISPLAY_EXTENSION
-      if (! read_display(dpy, window, pixmap, True))
+      if (! read_display(screen, window, pixmap, True))
 #endif
 	{
 	  XGCValues gcv;
@@ -242,7 +244,7 @@ grab_screen_image (dpy, window)
 	  fprintf(stderr, "%s: read_display() failed\n", progname);
 #endif /* DEBUG */
 
-	  copy_default_colormap_contents (dpy, xgwa.colormap, xgwa.visual);
+	  copy_default_colormap_contents (screen, xgwa.colormap, xgwa.visual);
 
 	  gcv.function = GXcopy;
 	  gcv.subwindow_mode = IncludeInferiors;
@@ -272,17 +274,17 @@ grab_screen_image (dpy, window)
  */
 static void
 #ifdef __STDC__
-copy_default_colormap_contents (Display *dpy,
+copy_default_colormap_contents (Screen *screen,
 				Colormap to_cmap,
 				Visual *to_visual)
-#else /* !__STDC__ */
-copy_default_colormap_contents (dpy, to_cmap, to_visual)
-     Display *dpy;
-     Colormap to_cmap;
-     Visual *to_visual;
+#else  /* !__STDC__ */
+copy_default_colormap_contents (screen, to_cmap, to_visual)
+	Screen *screen;
+	Colormap to_cmap;
+	Visual *to_visual;
 #endif /* !__STDC__ */
 {
-  Screen *screen = DefaultScreenOfDisplay (dpy);
+  Display *dpy = DisplayOfScreen (screen);
   Visual *from_visual = DefaultVisualOfScreen (screen);
   Colormap from_cmap = XDefaultColormapOfScreen (screen);
 
@@ -346,19 +348,21 @@ copy_default_colormap_contents (dpy, to_cmap, to_visual)
 
 #ifdef HAVE_READ_DISPLAY_EXTENSION
 
-static void make_cubic_colormap P((Display *, Window, Visual *));
+static void make_cubic_colormap P((Screen *, Window, Visual *));
 
 static Bool
 #ifdef __STDC__
-read_display (Display *dpy, Window window, Pixmap into_pixmap, Bool dont_wait)
-#else /* !__STDC__ */
-read_display (dpy, window, into_pixmap, dont_wait)
-  Display *dpy;
-  Window window;
-  Pixmap into_pixmap;
-  Bool dont_wait;
+read_display (Screen *screen, Window window, Pixmap into_pixmap,
+	      Bool dont_wait)
+#else  /* !__STDC__ */
+read_display (screen, window, into_pixmap, dont_wait)
+	Screen *screen;
+	Window window;
+	Pixmap into_pixmap;
+	Bool dont_wait;
 #endif /* !__STDC__ */
 {
+  Display *dpy = DisplayOfScreen (screen);
   XWindowAttributes xgwa;
   int rd_event_base = 0;
   int rd_error_base = 0;
@@ -379,7 +383,7 @@ read_display (dpy, window, into_pixmap, dont_wait)
       = PseudoColor and DirectColor in depths 8 and 12.
    */
   XGetWindowAttributes(dpy, window, &xgwa);
-  class = visual_class (dpy, xgwa.visual);
+  class = visual_class (screen, xgwa.visual);
   if (class == TrueColor)
     {
       if (xgwa.depth != 8  && xgwa.depth != 12 && xgwa.depth != 16 &&
@@ -512,32 +516,30 @@ read_display (dpy, window, into_pixmap, dont_wait)
   XDestroyImage(image);
 
   if (install_p)
-    make_cubic_colormap (dpy, window, xgwa.visual);
+    make_cubic_colormap (screen, window, xgwa.visual);
 
   return True;
 }
 
 static void
 #ifdef __STDC__
-make_cubic_colormap (Display *dpy, Window window, Visual *visual)
+make_cubic_colormap (Screen *screen, Window window, Visual *visual)
 #else  /* !__STDC__ */
-make_cubic_colormap (dpy, window, visual)
-	Display *dpy;
-	Window *window;
+make_cubic_colormap (screen, window, visual)
+	Screen *screen;
+	Window window;
 	Visual *visual;
 #endif /* !__STDC__ */
 {
+  Display *dpy = DisplayOfScreen (screen);
   Colormap cmap = XCreateColormap(dpy, window, visual, AllocAll);
   int nr, ng, nb, cells;
   int r, g, b;
   int depth;
   XColor colors[4097];
   int i;
-#ifdef DEBUG
-  int foo = 0;
-#endif /* DEBUG */
 
-  depth = visual_depth(dpy, visual);
+  depth = visual_depth(screen, visual);
   switch (depth)
     {
     case 8:  nr = 3; ng = 3; nb = 2; cells = 256;  break;
@@ -583,8 +585,20 @@ make_cubic_colormap (dpy, window, visual)
   XStoreColors (dpy, cmap, colors, cells);
   XSetWindowColormap (dpy, window, cmap);
 
-  if (screensaver_window_p (dpy, window))  /* gag... */
-    XInstallColormap (dpy, cmap);
+  /* Gag, install the colormap.
+     This is definitely right in the `if screensaver_window_p' case, since
+     it will never get installed otherwise.  But, if we don't do it
+     unconditionally, then the new colormap won't get installed until the
+     window (re-)gains focus.  It's generally very antisocial to install
+     the colormap of a non-OverrideRedirect window (that task belongs to
+     the WM) and if we were being kosher, we would only install this cmap
+     if the old cmap was already installed (or perhaps, if the window had
+     focus.)  But, since this extension only exists on SGIs, and since SGIs
+     can handle four colormaps at once, let's go ahead and install it all
+     the time, so that even if the window pops up and has never had focus,
+     it will still display in the proper colors.
+   */
+  XInstallColormap (dpy, cmap);
 }
 
 

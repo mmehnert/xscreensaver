@@ -285,11 +285,9 @@ check_pointer_timer (closure, id)
 	XtIntervalId *id;
 #endif /* !__STDC__ */
 {
+  int i;
   saver_info *si = (saver_info *) closure;
   saver_preferences *p = &si->prefs;
-  Window root, child;
-  int root_x, root_y, x, y;
-  unsigned int mask;
 
   if (p->use_xidle_extension ||
       p->use_mit_saver_extension ||
@@ -300,28 +298,40 @@ check_pointer_timer (closure, id)
     XtAppAddTimeOut (si->app, p->pointer_timeout, check_pointer_timer,
 		     (XtPointer) si);
 
-  XQueryPointer (si->dpy, si->screensaver_window, &root, &child,
-		 &root_x, &root_y, &x, &y, &mask);
-  if (root_x == si->poll_mouse_last_root_x &&
-      root_y == si->poll_mouse_last_root_y &&
-      child  == si->poll_mouse_last_child &&
-      mask   == si->poll_mouse_last_mask)
-    return;
+  for (i = 0; i < si->nscreens; i++)
+    {
+      saver_screen_info *ssi = &si->screens[i];
+      Window root, child;
+      int root_x, root_y, x, y;
+      unsigned int mask;
+
+      XQueryPointer (si->dpy, ssi->screensaver_window, &root, &child,
+		     &root_x, &root_y, &x, &y, &mask);
+
+      if (root_x == ssi->poll_mouse_last_root_x &&
+	  root_y == ssi->poll_mouse_last_root_y &&
+	  child  == ssi->poll_mouse_last_child &&
+	  mask   == ssi->poll_mouse_last_mask)
+	continue;
 
 #ifdef DEBUG_TIMERS
-  if (verbose_p && this_timer)
-    if (root_x == si->poll_mouse_last_root_x &&
-	root_y == si->poll_mouse_last_root_y &&
-	child  == si->poll_mouse_last_child)
-      printf ("%s: modifiers changed at %s.\n", progname, timestring ());
-    else
-      printf ("%s: pointer moved at %s.\n", progname, timestring ());
+      if (verbose_p && this_timer)
+	if (root_x == ssi->poll_mouse_last_root_x &&
+	    root_y == ssi->poll_mouse_last_root_y &&
+	    child  == ssi->poll_mouse_last_child)
+	  printf ("%s: modifiers changed at %s on screen %d.\n",
+		  progname, timestring(), i);
+	else
+	  printf ("%s: pointer moved at %s on screen %d.\n",
+		  progname, timestring(), i);
 #endif
 
-  si->poll_mouse_last_root_x = root_x;
-  si->poll_mouse_last_root_y = root_y;
-  si->poll_mouse_last_child  = child;
-  si->poll_mouse_last_mask   = mask;
+      si->last_activity_screen    = ssi;
+      ssi->poll_mouse_last_root_x = root_x;
+      ssi->poll_mouse_last_root_y = root_y;
+      ssi->poll_mouse_last_child  = child;
+      ssi->poll_mouse_last_mask   = mask;
+    }
 
   reset_timers (si);
 }
@@ -375,7 +385,7 @@ sleep_until_idle (si, until_idle_p)
 		if (! XGetIdleTime (si->dpy, &idle))
 		  {
 		    fprintf (stderr, "%s: XGetIdleTime() failed.\n", progname);
-		    saver_exit (si, 1);
+		    saver_exit (si->global, 1);
 		  }
 	      }
 	    else

@@ -114,7 +114,7 @@ create_passwd_dialog (parent, visual, colormap)
   ac = 0;
   XtSetArg (al[ac], XmNvisual, visual); ac++;
   XtSetArg (al[ac], XmNcolormap, colormap); ac++;
-  XtSetArg (al[ac], XmNdepth, visual_depth(XtDisplay(parent), visual)); ac++;
+  XtSetArg (al[ac], XmNdepth, visual_depth(XtScreen(parent), visual)); ac++;
 
   shell = XmCreateDialogShell (parent, "passwdDialog", al, ac);
 
@@ -247,7 +247,7 @@ create_resources_dialog (parent, visual, colormap)
   ac = 0;
   XtSetArg (al[ac], XmNvisual, visual); ac++;
   XtSetArg (al[ac], XmNcolormap, colormap); ac++;
-  XtSetArg (al[ac], XmNdepth, visual_depth(XtDisplay(parent), visual)); ac++;
+  XtSetArg (al[ac], XmNdepth, visual_depth(XtScreen(parent), visual)); ac++;
 
   real_dialog = XmCreatePromptDialog (parent, "resourcesForm", al, ac);
   resources_dialog = XtParent(real_dialog);
@@ -618,7 +618,7 @@ create_demo_dialog (parent, visual, colormap)
   ac = 0;
   XtSetArg (al[ac], XmNvisual, visual); ac++;
   XtSetArg (al[ac], XmNcolormap, colormap); ac++;
-  XtSetArg (al[ac], XmNdepth, visual_depth(XtDisplay(parent), visual)); ac++;
+  XtSetArg (al[ac], XmNdepth, visual_depth(XtScreen(parent), visual)); ac++;
 
 
   real_dialog = XmCreatePromptDialog (parent, "demoForm", al, ac);

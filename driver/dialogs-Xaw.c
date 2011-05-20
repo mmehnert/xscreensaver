@@ -95,7 +95,7 @@ create_passwd_dialog (parent, visual, colormap)
 #endif /* !__STDC__ */
 {
   Widget box, passwd_label2;
-  int depth = visual_depth(XtDisplay(parent), visual);
+  int depth = visual_depth(XtScreen(parent), visual);
 
   passwd_dialog = 
     XtVaCreatePopupShell("passwd_dialog", transientShellWidgetClass, parent,
@@ -159,7 +159,7 @@ create_resources_dialog (parent, visual, colormap)
 #endif /* !__STDC__ */
 {
   Widget rlabel;
-  int depth = visual_depth(XtDisplay(parent), visual);
+  int depth = visual_depth(XtScreen(parent), visual);
 
   resources_dialog = 
     XtVaCreatePopupShell("resources_dialog", transientShellWidgetClass, parent,
@@ -277,7 +277,7 @@ create_demo_dialog (parent, visual, colormap)
 #endif /* !__STDC__ */
 {
   Widget subform, box, viewport, label2;
-  int depth = visual_depth(XtDisplay(parent), visual);
+  int depth = visual_depth(XtScreen(parent), visual);
 
   demo_dialog = 
     XtVaCreatePopupShell("demo_dialog", transientShellWidgetClass, parent,

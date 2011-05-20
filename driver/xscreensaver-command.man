@@ -11,18 +11,27 @@
 .if n .sp 1
 .if t .sp .5
 ..
-.TH XScreenSaver 1 "17-May-97" "X Version 11"
+.TH XScreenSaver 1 "31-May-97" "X Version 11"
 .SH NAME
 xscreensaver-command - control a running xscreensaver process
 .SH SYNOPSIS
 .B xscreensaver-command
-[\-activate] [\-deactivate] [\-cycle] [\-next] [\-prev] [\-exit] [\-restart] [\-demo] [\-lock] [\-version] [\-time]
+[\-help] [\-demo] [\-activate] [\-deactivate] [\-lock] [\-cycle] [\-next] [\-prev] [\-exit] [\-restart] [\-version] [\-time]
 .SH DESCRIPTION
 The \fIxscreensaver\-command\fP program controls a running \fIxscreensaver\fP
 process by sending it client-messages.
 .SH OPTIONS
 .I xscreensaver-command
 accepts the following options:
+.TP 8
+.B \-help
+Prints a brief summary of command-line options.
+.TP 8
+.B \-demo
+Cause the screensaver to enter its interactive demo mode, in which one
+can experiment with the various graphics hacks available.  See 
+.BR xscreensaver (1)
+for details.
 .TP 8
 .B \-activate
 Tell the screensaver to turn on immediately (that is, pretend that the 
@@ -41,35 +50,32 @@ Tell the screensaver to turn off, as if there had been user activity.
 If locking is enabled, then the screensaver will prompt for a password
 as usual.
 .TP 8
-.B \-cycle
-Tell the screensaver to change which graphics hack it is running, just
-as if the ``cycle'' timer had expired.
-.TP 8
-.B \-next
-This is like either \fI\-activate\fP or \fI\-cycle\fP, depending on which is
-more appropriate, except that the screenhack that will be run is the next
-one in the list of programs, instead of a randomly-chosen one.  This option
-is good for looking at a demo of each of the screensavers currently available.
-You might want to put this on a menu.
-.TP 8
-.B \-prev
-This is like \fI\-next\fP, but cycles in the other direction.
-.TP 8
-.B \-demo
-Cause the screensaver to enter its interactive demo mode, if it has been
-compiled with support for it.
-.TP 8
 .B \-lock
 Like \fI\-activate\fP, but a password will be required before the screensaver
 turns off, even if the screensaver's \fIlock\fP resource is false.  The 
 display will be locked immediately even if the screensaver's \fIlockTimeout\fP
 resource is non-zero.
 .TP 8
+.B \-cycle
+Tell the screensaver to change which graphics hack it is running, just
+as if the ``cycle'' timer had expired.  A new hack will be chosen randomly.
+.TP 8
+.B \-next
+This is like either \fI\-activate\fP or \fI\-cycle\fP, depending on which is
+more appropriate, except that the screenhack that will be run is the next
+one in the list of programs, instead of a randomly-chosen one.  Repeatedly
+executing this will cycle through each hack in turn (though using 
+the \fI\-demo\fP option is probably an easier way to accomplish that.)
+.TP 8
+.B \-prev
+This is like \fI\-next\fP, but cycles in the other direction.
+.TP 8
 .B \-exit
-Causes the screensaver process to exit gracefully.  This is a slightly
-safer way to kill the screensaver than by using \fIkill\fP.  
+Causes the screensaver process to exit gracefully.  This is a safer and
+easier way to kill the screensaver than by using \fIkill\fP.  
 
-Never use \fIkill -9\fP with \fIxscreensaver\fP while the screensaver is
+.B Warning:
+never use \fIkill -9\fP with \fIxscreensaver\fP while the screensaver is
 active.  If you are using a virtual root window manager, that can leave
 things in an inconsistent state, and you may need to restart your window
 manager to repair the damage.
@@ -86,7 +92,7 @@ settings instead of the default ones.
 .TP 8
 .B \-version
 Print (on stdout) the version number of the xscreensaver program that is 
-running on $DISPLAY.  (To see the version number of xscreensaver-command 
+running on $DISPLAY.  (To see the version number of \fIxscreensaver-command\fP
 itself, use the \fI\-help\fP option.)
 .TP 8
 .B \-time

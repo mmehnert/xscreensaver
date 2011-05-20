@@ -127,7 +127,7 @@ moire (dpy, window, offset, colors, ncolors)
   xo = (random() % xgwa.width)  - xgwa.width/2;
   yo = (random() % xgwa.height) - xgwa.height/2;
 
-  depth = visual_depth(dpy, xgwa.visual);
+  depth = visual_depth(DefaultScreenOfDisplay(dpy), xgwa.visual);
   image = XCreateImage (dpy, xgwa.visual,
 			depth, ZPixmap, 0,	 /* depth, format, offset */
 			0, xgwa.width, 1, 8, 0); /* data, w, h, pad, bpl */

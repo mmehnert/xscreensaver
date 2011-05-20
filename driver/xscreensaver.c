@@ -124,6 +124,8 @@
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Intrinsic.h>
+#include <X11/StringDefs.h>
+#include <X11/Shell.h>
 #include <X11/Xos.h>
 #include <X11/Xmu/Error.h>
 
@@ -184,7 +186,7 @@ do_help (si)
 #endif /* !__STDC__ */
 {
   printf ("\
-xscreensaver %s, copyright (c) 1991-1996 by Jamie Zawinski <jwz@netscape.com>.\n\
+xscreensaver %s, copyright (c) 1991-1997 by Jamie Zawinski <jwz@netscape.com>\n\
 The standard Xt command-line options are accepted; other options include:\n\
 \n\
     -timeout <minutes>         When the screensaver should activate.\n\
@@ -210,7 +212,8 @@ The standard Xt command-line options are accepted; other options include:\n\
 Use the `xscreensaver-command' program to control a running screensaver.\n\
 \n\
 The *programs resource controls which graphics demos will be launched by the\n\
-screensaver.  See the man page for more details.\n\n",
+screensaver.  See the man page for more details.  For updates, check\n\
+http://www.netscape.com/people/jwz/xscreensaver/\n\n",
 	  si->version);
 
 #ifdef NO_LOCKING
@@ -389,12 +392,7 @@ get_resources (si) saver_info *si;
   p->unfade_p	    = get_boolean_resource ("unfade", "Boolean");
   p->fade_seconds   = get_seconds_resource ("fadeSeconds", "Time");
   p->fade_ticks	    = get_integer_resource ("fadeTicks", "Integer");
-
-  /* Note: we can't use the resource ".visual" because Xt is SO FUCKED. */
-  p->default_visual = get_visual_resource (si->dpy, "visualID", "VisualID",
-					   False);
   p->install_cmap_p = get_boolean_resource ("installColormap", "Boolean");
-
   p->nice_inferior  = get_integer_resource ("nice", "Nice");
 
   p->initial_delay  = get_seconds_resource ("initialDelay", "Time");
@@ -486,12 +484,6 @@ get_resources (si) saver_info *si;
     }
 #endif /* ! NO_LOCKING */
 
-  si->current_visual = p->default_visual;
-  si->current_depth = visual_depth (si->dpy, si->current_visual);
-
-  if (si->current_depth <= 1 || CellsOfScreen (si->screen) <= 2)
-    p->install_cmap_p = False;
-
   get_screenhacks (si);
 
 #ifdef DEBUG
@@ -530,7 +522,6 @@ main (argc, argv)
   saver_info si;
   memset(&si, 0, sizeof(si));
   global_si_kludge = &si;	/* I hate C so much... */
-
   initialize (&si, argc, argv);
   main_loop (&si);
 }
@@ -563,12 +554,12 @@ initialize_connection (si, argc, argv)
 	char **argv;
 #endif /* !__STDC__ */
 {
-  si->toplevel_shell = XtAppInitialize (&si->app, progclass,
-					options, XtNumber (options),
-					&argc, argv, defaults, 0, 0);
+  int i;
+  Widget toplevel_shell = XtAppInitialize (&si->app, progclass,
+					   options, XtNumber (options),
+					   &argc, argv, defaults, 0, 0);
 
-  si->dpy = XtDisplay (si->toplevel_shell);
-  si->screen = XtScreen (si->toplevel_shell);
+  si->dpy = XtDisplay (toplevel_shell);
   si->db = XtDatabase (si->dpy);
   XtGetApplicationNameAndClass (si->dpy, &progname, &progclass);
 
@@ -587,7 +578,6 @@ initialize_connection (si, argc, argv)
     }
   get_resources (si);
   hack_uid_warn (si);
-  hack_environment (si);
   XA_VROOT = XInternAtom (si->dpy, "__SWM_VROOT", False);
   XA_SCREENSAVER = XInternAtom (si->dpy, "SCREENSAVER", False);
   XA_SCREENSAVER_VERSION = XInternAtom (si->dpy, "_SCREENSAVER_VERSION",False);
@@ -603,6 +593,40 @@ initialize_connection (si, argc, argv)
   XA_EXIT = XInternAtom (si->dpy, "EXIT", False);
   XA_DEMO = XInternAtom (si->dpy, "DEMO", False);
   XA_LOCK = XInternAtom (si->dpy, "LOCK", False);
+
+  si->nscreens = ScreenCount(si->dpy);
+  si->screens = (saver_screen_info *)
+    calloc(sizeof(saver_screen_info), si->nscreens);
+
+  si->default_screen = &si->screens[DefaultScreen(si->dpy)];
+
+  for (i = 0; i < si->nscreens; i++)
+    {
+      saver_screen_info *ssi = &si->screens[i];
+      ssi->global = si;
+      ssi->screen = ScreenOfDisplay (si->dpy, i);
+
+      /* Note: we can't use the resource ".visual" because Xt is SO FUCKED. */
+      ssi->default_visual =
+	get_visual_resource (ssi->screen, "visualID", "VisualID", False);
+
+      ssi->current_visual = ssi->default_visual;
+      ssi->current_depth = visual_depth (ssi->screen, ssi->current_visual);
+
+      if (ssi == si->default_screen)
+	/* Since this is the default screen, use the one already created. */
+	ssi->toplevel_shell = toplevel_shell;
+      else
+	/* Otherwise, each screen must have its own unmapped root widget. */
+	ssi->toplevel_shell =
+	  XtVaAppCreateShell(progname, progclass, applicationShellWidgetClass,
+			     si->dpy,
+			     XtNscreen, ssi->screen,
+			     XtNvisual, ssi->current_visual,
+			     XtNdepth,  visual_depth(ssi->screen,
+						     ssi->current_visual),
+			     0);
+    }
 }
 
 
@@ -616,6 +640,7 @@ initialize (si, argc, argv)
 	char **argv;
 #endif /* !__STDC__ */
 {
+  int i;
   saver_preferences *p = &si->prefs;
   Bool initial_demo_mode_p = False;
   si->version = (char *) malloc (5);
@@ -644,37 +669,31 @@ initialize (si, argc, argv)
   progclass = "XScreenSaver";
 
   /* remove -demo switch before saving argv */
-  {
-    int i;
-    for (i = 1; i < argc; i++)
-      while (!strcmp ("-demo", argv [i]))
-	{
-	  int j;
-	  initial_demo_mode_p = True;
-	  for (j = i; j < argc; j++)
-	    argv [j] = argv [j+1];
-	  argv [j] = 0;
-	  argc--;
-	  if (argc <= i) break;
-	}
-  }
+  for (i = 1; i < argc; i++)
+    while (!strcmp ("-demo", argv [i]))
+      {
+	int j;
+	initial_demo_mode_p = True;
+	for (j = i; j < argc; j++)
+	  argv [j] = argv [j+1];
+	argv [j] = 0;
+	argc--;
+	if (argc <= i) break;
+      }
   save_argv (argc, argv);
   initialize_connection (si, argc, argv);
 
   if (p->verbose_p)
     printf ("\
-%s %s, copyright (c) 1991-1997 by Jamie Zawinski <jwz@netscape.com>.\n\
+%s %s, copyright (c) 1991-1997 by Jamie Zawinski <jwz@netscape.com>\n\
  pid = %d.\n", progname, si->version, (int) getpid ());
 
-  ensure_no_screensaver_running (si->dpy, si->screen);
+  
+  for (i = 0; i < si->nscreens; i++)
+    ensure_no_screensaver_running (si->dpy, si->screens[i].screen);
 
   si->demo_mode_p = initial_demo_mode_p;
-  si->screensaver_window = 0;
-  si->cursor = 0;
   srandom ((int) time ((time_t *) 0));
-  si->cycle_id = 0;
-  si->lock_id = 0;
-  si->locked_p = False;
 
   if (p->use_sgi_saver_extension)
     {
@@ -797,8 +816,14 @@ initialize (si, argc, argv)
 	  printf ("%s: selecting events on extant windows...", progname);
 	  fflush (stdout);
 	}
-      start_notice_events_timer (si,
-			   RootWindowOfScreen (XtScreen (si->toplevel_shell)));
+
+      /* Select events on the root windows of every screen.  This also selects
+	 for window creation events, so that new subwindows will be noticed.
+       */
+      for (i = 0; i < si->nscreens; i++)
+	start_notice_events_timer (si,
+				   RootWindowOfScreen (si->screens[i].screen));
+
       if (p->verbose_p)
 	printf (" done.\n");
     }
@@ -867,21 +892,25 @@ main_loop (si) saver_info *si;
 	       */
 	      /* ungrab_keyboard_and_mouse (); */
 
-	      suspend_screenhack (si, True);
-	      XUndefineCursor (si->dpy, si->screensaver_window);
-	      if (p->verbose_p)
-		printf ("%s: prompting for password.\n", progname);
-	      val = unlock_p (si);
-	      if (p->verbose_p && val == False)
-		printf ("%s: password incorrect!\n", progname);
-	      si->dbox_up_p = False;
-	      XDefineCursor (si->dpy, si->screensaver_window, si->cursor);
-	      suspend_screenhack (si, False);
+	      {
+		saver_screen_info *ssi = si->default_screen;
+		suspend_screenhack (si, True);
+		XUndefineCursor (si->dpy, ssi->screensaver_window);
+		if (p->verbose_p)
+		  printf ("%s: prompting for password.\n", progname);
+		val = unlock_p (si);
+		if (p->verbose_p && val == False)
+		  printf ("%s: password incorrect!\n", progname);
+		si->dbox_up_p = False;
+		XDefineCursor (si->dpy, ssi->screensaver_window, ssi->cursor);
+		suspend_screenhack (si, False);
 
-	      /* I think this grab is now redundant, but it shouldn't hurt. */
-	      if (!si->demo_mode_p)
-		grab_keyboard_and_mouse (si->dpy, si->screensaver_window,
-					 si->cursor);
+		/* I think this grab is now redundant, but it shouldn't hurt.
+		 */
+		if (!si->demo_mode_p)
+		  grab_keyboard_and_mouse (si->dpy, ssi->screensaver_window,
+					   ssi->cursor);
+	      }
 
 	      if (! val)
 		goto PASSWD_INVALID;

@@ -480,14 +480,14 @@ complain (wanted_colors, got_colors, wanted_writable, got_writable)
 
 static Bool
 #ifdef __STDC__
-has_writable_cells (Display *dpy, Visual *visual)
-#else /* !__STDC__ */
-has_writable_cells (dpy, visual)
-  Display *dpy;
-  Visual *visual;
+has_writable_cells (Screen *screen, Visual *visual)
+#else  /* !__STDC__ */
+has_writable_cells (screen, visual)
+	Screen *screen;
+	Visual *visual;
 #endif /* !__STDC__ */
 {
-  int class = visual_class(dpy, visual);
+  int class = visual_class(screen, visual);
   return (class == PseudoColor || class == GrayScale);
 }
 
@@ -523,6 +523,7 @@ make_smooth_colormap (dpy, visual, cmap,
   double v[MAXPOINTS];
   double total_s = 0;
   double total_v = 0;
+  Screen *screen = DefaultScreenOfDisplay(dpy); /* #### WRONG! */
 
   if (*ncolorsP <= 0) return;
 
@@ -574,7 +575,7 @@ make_smooth_colormap (dpy, visual, cmap,
 
   /* If this visual doesn't support writable cells, don't bother trying.
    */
-  if (wanted_writable && !has_writable_cells(dpy, visual))
+  if (wanted_writable && !has_writable_cells(screen, visual))
     *writable_pP = False;
 
  RETRY_NON_WRITABLE:
@@ -620,6 +621,7 @@ make_uniform_colormap (dpy, visual, cmap,
 {
   int ncolors = *ncolorsP;
   Bool wanted_writable = (allocate_p && writable_pP && *writable_pP);
+  Screen *screen = DefaultScreenOfDisplay(dpy); /* #### WRONG! */
 
   double S = ((double) (random() % 34) + 66) / 100.0;	/* range 66%-100% */
   double V = ((double) (random() % 34) + 66) / 100.0;	/* range 66%-100% */
@@ -627,7 +629,7 @@ make_uniform_colormap (dpy, visual, cmap,
   if (*ncolorsP <= 0) return;
 
   /* If this visual doesn't support writable cells, don't bother trying. */
-  if (wanted_writable && !has_writable_cells(dpy, visual))
+  if (wanted_writable && !has_writable_cells(screen, visual))
     *writable_pP = False;
 
  RETRY_NON_WRITABLE:
@@ -681,11 +683,12 @@ make_random_colormap (dpy, visual, cmap,
   Bool wanted_writable = (allocate_p && writable_pP && *writable_pP);
   int ncolors = *ncolorsP;
   int i;
+  Screen *screen = DefaultScreenOfDisplay(dpy); /* #### WRONG! */
 
   if (*ncolorsP <= 0) return;
 
   /* If this visual doesn't support writable cells, don't bother trying. */
-  if (wanted_writable && !has_writable_cells(dpy, visual))
+  if (wanted_writable && !has_writable_cells(screen, visual))
     *writable_pP = False;
 
   for (i = 0; i < ncolors; i++)

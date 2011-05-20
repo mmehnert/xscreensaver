@@ -35,11 +35,20 @@
 extern char *progname;
 extern char *progclass;
 
+typedef struct saver_preferences saver_preferences;
+typedef struct saver_info saver_info;
+typedef struct saver_screen_info saver_screen_info;
+
+
+#undef countof
+#define countof(x) (sizeof((x))/sizeof((*x)))
+
+
 
 /* This structure holds all the user-specified parameters, read from the
    command line, the resource database, or entered through a dialog box.
  */
-typedef struct saver_preferences {
+struct saver_preferences {
   Bool verbose_p;
   Bool lock_p;			/* whether to lock as well as save */
 
@@ -52,9 +61,8 @@ typedef struct saver_preferences {
   int fade_seconds;		/* how long that should take */
   int fade_ticks;		/* how many ticks should be used */
 
-  Visual *default_visual;	/* visual to use when none other specified */
   Bool install_cmap_p;		/* whether we should use our own colormap
-				   when using the default visual */
+				   when using the screen's default visual. */
 
   char **screenhacks;		/* the programs to run */
   int screenhacks_count;
@@ -78,12 +86,19 @@ typedef struct saver_preferences {
 
   char *shell;			/* where to find /bin/sh */
 
-} saver_preferences;
+};
 
 
-typedef struct saver_info {
+/* This structure holds all the data that applies to the program as a whole,
+   or to the non-screen-specific parts of the display connection.
+ */
+struct saver_info {
   char *version;
   saver_preferences prefs;
+
+  int nscreens;
+  saver_screen_info *screens;
+  saver_screen_info *default_screen;	/* ...on which dialogs will appear. */
 
   /* =======================================================================
      global connection info
@@ -91,8 +106,6 @@ typedef struct saver_info {
 
   XtAppContext app;
   Display *dpy;
-  Screen *screen;
-  Widget toplevel_shell;
   XrmDatabase db;
 
   /* =======================================================================
@@ -109,27 +122,12 @@ typedef struct saver_info {
   int sgi_saver_ext_error_number;
 # endif
 
+
   /* =======================================================================
      blanking
      ======================================================================= */
 
   Bool screen_blanked_p;	/* Whether the saver is currently active. */
-
-  Window screensaver_window;	/* The window that will impersonate the root,
-				   when the screensaver activates.  Note that
-				   the window stored here may change, as we
-				   destroy and recreate it on different
-				   visuals. */
-  Colormap cmap;		/* The colormap that goes with the window. */
-  Visual *current_visual;	/* The visual of the window. */
-  int current_depth;		/* How deep the visual (and the window) are. */
-
-  Window real_vroot;		/* The original virtual-root window. */
-  Window real_vroot_value;	/* What was in the __SWM_VROOT property. */
-
-  Cursor cursor;		/* A blank cursor that goes with the
-				   real root window. */
-  unsigned long black_pixel;	/* Black, allocated from `cmap'. */
 
 
   /* =======================================================================
@@ -142,6 +140,7 @@ typedef struct saver_info {
   Bool dbox_up_p;		/* Whether the demo-mode or passwd dialogs
 				   are currently visible */
 
+
   /* =======================================================================
      demoing
      ======================================================================= */
@@ -149,10 +148,6 @@ typedef struct saver_info {
   Bool demo_mode_p;		/* Whether demo-mode is active */
   char *demo_hack;		/* The hack that has been selected from the
 				   dialog box, which should be run next. */
-  Colormap demo_cmap;		/* The colormap that goes with the dialogs:
-				   this might be the same as `cmap' so care
-				   must be taken not to free it while it's
-				   still in use. */
 
 
   /* =======================================================================
@@ -165,11 +160,8 @@ typedef struct saver_info {
   XtIntervalId watchdog_id;	/* Timer to implement `prefs.watchdog */
   XtIntervalId check_pointer_timer_id;	/* `prefs.pointer_timeout' */
 
-  time_t last_activity_time;		/* Used only when no server exts. */
-  int poll_mouse_last_root_x;
-  int poll_mouse_last_root_y;
-  Window poll_mouse_last_child;
-  unsigned int poll_mouse_last_mask;
+  time_t last_activity_time;		   /* Used only when no server exts. */
+  saver_screen_info *last_activity_screen;
 
 
   /* =======================================================================
@@ -180,6 +172,65 @@ typedef struct saver_info {
 				   been received; set to 2 if PREV has just
 				   been received.  (#### This is nasty.) */
 
+  /* =======================================================================
+     subprocs
+     ======================================================================= */
+
+  XtIntervalId stderr_popup_timer;
+
+};
+
+
+/* This structure holds all the data that applies to the screen-specific parts
+   of the display connection; if the display has multiple screens, there will
+   be one of these for each screen.
+ */
+struct saver_screen_info {
+  saver_info *global;
+
+  Screen *screen;
+  Widget toplevel_shell;
+
+  /* =======================================================================
+     blanking
+     ======================================================================= */
+
+  Window screensaver_window;	/* The window that will impersonate the root,
+				   when the screensaver activates.  Note that
+				   the window stored here may change, as we
+				   destroy and recreate it on different
+				   visuals. */
+  Colormap cmap;		/* The colormap that goes with the window. */
+  Visual *current_visual;	/* The visual of the window. */
+  Visual *default_visual;	/* visual to use when none other specified */
+  int current_depth;		/* How deep the visual (and the window) are. */
+
+  Window real_vroot;		/* The original virtual-root window. */
+  Window real_vroot_value;	/* What was in the __SWM_VROOT property. */
+
+  Cursor cursor;		/* A blank cursor that goes with the
+				   real root window. */
+  unsigned long black_pixel;	/* Black, allocated from `cmap'. */
+
+
+  /* =======================================================================
+     demoing
+     ======================================================================= */
+
+  Colormap demo_cmap;		/* The colormap that goes with the dialogs:
+				   this might be the same as `cmap' so care
+				   must be taken not to free it while it's
+				   still in use. */
+
+  /* =======================================================================
+     timers
+     ======================================================================= */
+
+  int poll_mouse_last_root_x;		/* Used only when no server exts. */
+  int poll_mouse_last_root_y;
+  Window poll_mouse_last_child;
+  unsigned int poll_mouse_last_mask;
+
 
   /* =======================================================================
      subprocs
@@ -188,15 +239,13 @@ typedef struct saver_info {
   int current_hack;		/* Index into `prefs.screenhacks' */
   pid_t pid;
 
-  XtIntervalId stderr_popup_timer;
   int stderr_text_x;
   int stderr_text_y;
   int stderr_line_height;
   XFontStruct *stderr_font;
   GC stderr_gc;
 
-
-} saver_info;
+};
 
 
 
@@ -279,14 +328,13 @@ extern Bool handle_clientmessage P((saver_info *, XEvent *, Bool));
    subprocs
    ======================================================================= */
 
-extern void hack_environment P((saver_info *si));
 extern void init_sigchld P((void));
 extern void spawn_screenhack P((saver_info *si, Bool first_time_p));
 extern void kill_screenhack P((saver_info *si));
 extern void suspend_screenhack P((saver_info *si, Bool suspend_p));
 extern Bool screenhack_running_p P((saver_info *si));
 extern void emergency_kill_subproc P((saver_info *si));
-extern Bool select_visual P((saver_info *si, const char *visual_name));
+extern Bool select_visual P((saver_screen_info *ssi, const char *visual_name));
 
 /* =======================================================================
    subprocs security
