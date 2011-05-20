@@ -357,6 +357,11 @@ init_starfish (Display *dpy, Window window)
     make_uniform_colormap (dpy, xgwa.visual, cmap, colors, &ncolors,
 			   True, &cycle_p, True);
 
+  if (ncolors < 2) ncolors = 2;
+  if (ncolors <= 2) mono_p = True;
+
+  if (mono_p) cycle_p = False;
+
   fg_index = 0;
 
   if (!mono_p && !blob_p)

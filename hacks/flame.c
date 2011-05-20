@@ -129,6 +129,8 @@ init_flame (Display *dpy, Window window)
       colors = (XColor *) malloc ((ncolors+1) * sizeof (*colors));
       make_smooth_colormap (dpy, xgwa.visual, xgwa.colormap, colors, &ncolors,
 			    True, 0, True);
+      if (ncolors <= 2)
+	mono_p = True, ncolors = 0;
     }
 
   gcv.foreground = get_pixel_resource ("foreground", "Foreground", dpy, cmap);

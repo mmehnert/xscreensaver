@@ -583,6 +583,12 @@ process immediately unmaps that window, but this results in a flicker.  I
 haven't figured a way  to get around this; it seems to be a fundamental
 property of the (mis-) design of this server extension.
 .TP 8
+LessTif (Motif Clone)
+Rumor has it that demo mode is buggy if XScreenSaver was compiled with the
+GNU LessTif reimplementation of Motif.  Since it works fine with OSF Motif
+on a variety of systems, I assume these problems are due to bugs in LessTif.
+Again, any insight would be appreciated.
+.TP 8
 Red Hot Lava
 There need to be a lot more graphics hacks.  In particular, there should be
 a simulation of a Lavalite (tm).

@@ -236,7 +236,7 @@ AC_DEFUN(AC_CHECK_X_HEADER, [
     CPPFLAGS="$CPPFLAGS -I$includedir"
   fi
   CPPFLAGS="$CPPFLAGS $X_CFLAGS"
-  AC_CHECK_HEADER($1, $2)
+  AC_CHECK_HEADER([$1], [$2])
   CPPFLAGS="$ac_save_CPPFLAGS"])
 
 # Like AC_EGREP_HEADER, but it uses the already-computed -I directories.
@@ -247,7 +247,18 @@ AC_DEFUN(AC_EGREP_X_HEADER, [
     CPPFLAGS="$CPPFLAGS -I$includedir"
   fi
   CPPFLAGS="$CPPFLAGS $X_CFLAGS"
-  AC_EGREP_HEADER($1, $2, $3, $4)
+  AC_EGREP_HEADER([$1], [$2], [$3], [$4])
+  CPPFLAGS="$ac_save_CPPFLAGS"])
+
+# Like AC_TRY_COMPILE, but it uses the already-computed -I directories.
+#
+AC_DEFUN(AC_TRY_X_COMPILE, [
+  ac_save_CPPFLAGS="$CPPFLAGS"
+  if test \! -z "$includedir" ; then 
+    CPPFLAGS="$CPPFLAGS -I$includedir"
+  fi
+  CPPFLAGS="$CPPFLAGS $X_CFLAGS"
+  AC_TRY_COMPILE([$1], [$2], [$3], [$4])
   CPPFLAGS="$ac_save_CPPFLAGS"])
 
 
@@ -261,19 +272,48 @@ AC_EGREP_X_HEADER(XHPDisableReset, X11/XHPlib.h,
 # Check for the availability of the XPointer typedef, and define it otherwise.
 #
 AC_CACHE_CHECK([for XPointer], ac_cv_xpointer,
-		[ac_save_CPPFLAGS="$CPPFLAGS"
-		 if test \! -z "$includedir" ; then 
-		   CPPFLAGS="$CPPFLAGS -I$includedir"
-		 fi
-		 CPPFLAGS="$CPPFLAGS $X_CFLAGS"
-		 AC_TRY_COMPILE([#include <X11/Xlib.h>],
+		[AC_TRY_X_COMPILE([#include <X11/Xlib.h>],
 				  [XPointer foo = (XPointer) 0;],
 				  [ac_cv_xpointer=yes],
-				  [ac_cv_xpointer=no])
-		 CPPFLAGS="$ac_save_CPPFLAGS"])
+				  [ac_cv_xpointer=no])])
 if test $ac_cv_xpointer != yes; then
   AC_DEFINE(XPointer,[char*])
 fi
+
+
+case "$host" in
+  *-hpux*)
+    # Thanks for not making xmkmf find this by default, you losers.
+    if test -d /usr/lib/Motif1.2 ; then
+      X_CFLAGS="-I/usr/include/Motif1.2 $X_CFLAGS"
+      X_LIBS="-L/usr/lib/Motif1.2 $X_LIBS"
+    elif test -d /usr/lib/Motif1.1 ; then
+      X_CFLAGS="-I/usr/include/Motif1.1 $X_CFLAGS"
+      X_LIBS="-L/usr/lib/Motif1.1 $X_LIBS"
+    fi
+
+    # This too.  You losers.
+    if test -d /usr/contrib/X11R6/include ; then
+      X_CFLAGS="-I/usr/contrib/X11R6/include $X_CFLAGS"
+      X_LIBS="-L/usr/contrib/X11R6/lib $X_LIBS"
+    elif test -d /usr/contrib/X11R5/include ; then
+      X_CFLAGS="-I/usr/contrib/X11R5/include $X_CFLAGS"
+      X_LIBS="-L/usr/contrib/X11R5/lib $X_LIBS"
+    fi
+
+  ;;
+  *-solaris*)
+    # Same to you, pinheads.  (Is this really the standard location now?
+    # What happened to the joke that this kind of thing went in /opt?)
+    if test -f /usr/dt/include/Xm/Xm.h ; then
+      X_CFLAGS="$X_CFLAGS -I/usr/dt/include"
+      X_LIBS="$X_LIBS -L/usr/dt/lib -R:/usr/dt/lib"
+
+      # Some versions of Slowlaris Motif require -lgen.  But not all.  Why?
+      AC_CHECK_LIB(gen, regcmp, [X_LIBS="$X_LIBS -lgen"])
+    fi
+  ;;
+esac
 
 
 
@@ -444,30 +484,6 @@ if test $with_athena != yes -a $with_athena != no ; then
 fi
 
 
-case "$host" in
-  *-hpux*)
-    # Thanks for not making xmkmf find this by default, you losers.
-    if test -d /usr/lib/Motif1.2 ; then
-      X_CFLAGS="$X_CFLAGS -I/usr/include/Motif1.2"
-      X_LIBS="$X_LIBS -L/usr/lib/Motif1.2"
-    elif test -d /usr/lib/Motif1.1 ; then
-      X_CFLAGS="$X_CFLAGS -I/usr/include/Motif1.1"
-      X_LIBS="$X_LIBS -L/usr/lib/Motif1.1"
-    fi
-  ;;
-  *-solaris*)
-    # Same to you, pinheads.  (Is this really the standard location now?
-    # What happened to the joke that this kind of thing went in /opt?)
-    if test -f /usr/dt/include/Xm/Xm.h ; then
-      X_CFLAGS="$X_CFLAGS -I/usr/dt/include"
-      X_LIBS="$X_LIBS -L/usr/dt/lib -R:/usr/dt/lib"
-
-      # Some versions of Slowlaris Motif require -lgen.  But not all.  Why?
-      AC_CHECK_LIB(gen, regcmp, [X_LIBS="$X_LIBS -lgen"])
-    fi
-  ;;
-esac
-
 # Saying --without-motif is the same as saying --with-athena.
 if test $with_motif_req = no ; then
   with_athena_req=yes
@@ -553,9 +569,10 @@ fi
 if test $have_motif = yes ; then
   AC_CACHE_CHECK([whether Motif is really LessTif], 
 		 ac_cv_have_lesstif,
-		 [ac_cv_have_lesstif=no
-		  AC_EGREP_X_HEADER(LesstifVERSION_STRING, Xm/Xm.h,
-				    ac_cv_have_lesstif=yes)])
+		 [AC_TRY_X_COMPILE([#include <Xm/Xm.h>],
+				   [long vers = LesstifVersion;],
+				   [ac_cv_have_lesstif=yes],
+				   [ac_cv_have_lesstif=no])])
   have_lesstif=$ac_cv_have_lesstif
 fi
 
@@ -573,7 +590,8 @@ Demo options:
   [with_xpm="$withval"; with_xpm_req="$withval"],[with_xpm=yes])
 if test $with_xpm = yes; then
   AC_CHECK_X_HEADER(X11/xpm.h,
-	           [AC_DEFINE(HAVE_XPM)
+	           [have_xpm=yes
+		    AC_DEFINE(HAVE_XPM)
 		    XPM_LIBS="-lXpm"])
 elif test $with_xpm != no; then
   echo "error: must be yes or no: --with-xpm=$with_xpm"
@@ -786,14 +804,9 @@ if test $enable_locking = yes; then
   [with_kerberos="$withval"; with_kerberos_req="$withval"],[with_kerberos=yes])
   if test $with_kerberos = yes; then
     AC_CACHE_CHECK([for Kerberos], ac_cv_kerberos,
-		   [ac_save_CPPFLAGS="$CPPFLAGS"
-		    if test \! -z "$includedir" ; then 
-		      CPPFLAGS="$CPPFLAGS -I$includedir"
-		    fi
-		    AC_TRY_COMPILE([#include <krb.h>],,
-				   [ac_cv_kerberos=yes],
-				   [ac_cv_kerberos=no])
-		    CPPFLAGS="$ac_save_CPPFLAGS"])
+		   [AC_TRY_X_COMPILE([#include <krb.h>],,
+				     [ac_cv_kerberos=yes],
+				     [ac_cv_kerberos=no])])
     if test $ac_cv_kerberos = yes ; then
       have_kerberos=yes
       AC_DEFINE(HAVE_KERBEROS)
@@ -825,21 +838,16 @@ if test $enable_locking = yes; then
   #
   if test $passwd_cruft_done = no ; then
     AC_CACHE_CHECK([for Sun-style shadow passwords], ac_cv_sun_adjunct,
-		   [ac_save_CPPFLAGS="$CPPFLAGS"
-		    if test \! -z "$includedir" ; then 
-		      CPPFLAGS="$CPPFLAGS -I$includedir"
-		    fi
-		    AC_TRY_COMPILE([#include <stdlib.h>
-				    #include <unistd.h>
-				    #include <sys/types.h>
-				    #include <sys/label.h>
-				    #include <sys/audit.h>
-				    #include <pwdadj.h>],
+		   [AC_TRY_X_COMPILE([#include <stdlib.h>
+				      #include <unistd.h>
+				      #include <sys/types.h>
+				      #include <sys/label.h>
+				      #include <sys/audit.h>
+				      #include <pwdadj.h>],
 			[struct passwd_adjunct *p = getpwanam("nobody");
 			 const char *pw = p->pwa_passwd;],
 			[ac_cv_sun_adjunct=yes],
-			[ac_cv_sun_adjunct=no])
-		    CPPFLAGS="$ac_save_CPPFLAGS"])
+			[ac_cv_sun_adjunct=no])])
     if test $ac_cv_sun_adjunct = yes; then
       have_shadow=yes
       need_setuid=yes
@@ -852,16 +860,12 @@ if test $enable_locking = yes; then
   #
   if test $passwd_cruft_done = no ; then
     AC_CACHE_CHECK([for DEC-style shadow passwords], ac_cv_enhanced_passwd,
-		   [ac_save_CPPFLAGS="$CPPFLAGS"
-		    if test \! -z "$includedir" ; then 
-		      CPPFLAGS="$CPPFLAGS -I$includedir"
-		    fi
-		    AC_TRY_COMPILE([#include <stdlib.h>
-				    #include <unistd.h>
-				    #include <sys/types.h>
-				    #include <pwd.h>
-				    #include <sys/security.h>
-				    #include <prot.h>],
+		   [AC_TRY_X_COMPILE([#include <stdlib.h>
+				      #include <unistd.h>
+				      #include <sys/types.h>
+				      #include <pwd.h>
+				      #include <sys/security.h>
+				      #include <prot.h>],
 			[struct pr_passwd *p;
 			 const char *pw;
 			 set_auth_parameters(0, 0);
@@ -869,8 +873,7 @@ if test $enable_locking = yes; then
 			 p = getprpwnam("nobody");
 			 pw = p->ufld.fd_encrypt;],
 			[ac_cv_enhanced_passwd=yes],
-			[ac_cv_enhanced_passwd=no])
-		    CPPFLAGS="$ac_save_CPPFLAGS"])
+			[ac_cv_enhanced_passwd=no])])
     if test $ac_cv_enhanced_passwd = yes; then
       have_shadow=yes
       need_setuid=yes
@@ -891,21 +894,16 @@ if test $enable_locking = yes; then
   #
   if test $passwd_cruft_done = no ; then
     AC_CACHE_CHECK([for HP-style shadow passwords], ac_cv_hpux_passwd,
-		   [ac_save_CPPFLAGS="$CPPFLAGS"
-		    if test \! -z "$includedir" ; then 
-		      CPPFLAGS="$CPPFLAGS -I$includedir"
-		    fi
-		    AC_TRY_COMPILE([#include <stdlib.h>
-				    #include <unistd.h>
-				    #include <sys/types.h>
-				    #include <pwd.h>
-				    #include <hpsecurity.h>
-				    #include <prot.h>],
+		   [AC_TRY_X_COMPILE([#include <stdlib.h>
+				      #include <unistd.h>
+				      #include <sys/types.h>
+				      #include <pwd.h>
+				      #include <hpsecurity.h>
+				      #include <prot.h>],
 			[struct s_passwd *p = getspwnam("nobody");
 			 const char *pw = p->pw_passwd;],
 			[ac_cv_hpux_passwd=yes],
-			[ac_cv_hpux_passwd=no])
-		    CPPFLAGS="$ac_save_CPPFLAGS"])
+			[ac_cv_hpux_passwd=no])])
     if test $ac_cv_hpux_passwd = yes; then
       have_shadow=yes
       need_setuid=yes
@@ -921,20 +919,15 @@ if test $enable_locking = yes; then
   #
   if test $passwd_cruft_done = no ; then
     AC_CACHE_CHECK([for generic shadow passwords], ac_cv_shadow,
-		   [ac_save_CPPFLAGS="$CPPFLAGS"
-		    if test \! -z "$includedir" ; then 
-		      CPPFLAGS="$CPPFLAGS -I$includedir"
-		    fi
-		    AC_TRY_COMPILE([#include <stdlib.h>
-				    #include <unistd.h>
-				    #include <sys/types.h>
-				    #include <pwd.h>
-				    #include <shadow.h>],
+		   [AC_TRY_X_COMPILE([#include <stdlib.h>
+				      #include <unistd.h>
+				      #include <sys/types.h>
+				      #include <pwd.h>
+				      #include <shadow.h>],
 			[struct spwd *p = getspnam("nobody");
 			 const char *pw = p->sp_pwdp;],
 			[ac_cv_shadow=yes],
-			[ac_cv_shadow=no])
-		    CPPFLAGS="$ac_save_CPPFLAGS"])
+			[ac_cv_shadow=no])])
     if test $ac_cv_shadow = yes; then
       have_shadow=yes
       need_setuid=yes
@@ -1118,7 +1111,8 @@ fi
 if test $have_motif = yes -a $have_lesstif = yes ; then
   warn  "Motif is being used, but it appears to actually be LessTif."
   warn2 "XScreenSaver has been reported to have problems with some"
-  warn2 "versions of LessTif.  You might want to use Athena instead."
+  warn2 "versions of LessTif (notably 0.79).  You might want to use"
+  warn2 "Athena instead."
 fi
 
 if test $with_xpm_req = yes -a $have_xpm = no ; then

@@ -231,7 +231,6 @@ $(UTIL_OBJS):
 #
 XScreenSaver_ad.h: XScreenSaver.ad
 	$(SHELL) $(UTILS_SRC)/ad2c $(srcdir)/XScreenSaver.ad > $@
-xscreensaver.c:: XScreenSaver_ad.h
 
 # The executables linked in this directory.
 #

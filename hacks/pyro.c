@@ -85,7 +85,7 @@ launch (int xlim, int ylim, int g,
       if (!XAllocColor (dpy, cmap, &p->color))
 	{
 	  p->color.pixel = WhitePixel (dpy, DefaultScreen (dpy));
-	  p->color.red = p->color.green = p->color.blue = 0;
+	  p->color.red = p->color.green = p->color.blue = 0xFFFF;
 	}
     }
 }
@@ -205,7 +205,9 @@ pyro (Display *dpy, Window window, Colormap cmap)
       else
 	{
 	  free_projectile (p);
-	  if (! mono_p) XFreeColors (dpy, cmap, &p->color.pixel, 1, 0);
+	  if (! mono_p)
+	    if (p->color.pixel != WhitePixel (dpy, DefaultScreen (dpy)))
+	      XFreeColors (dpy, cmap, &p->color.pixel, 1, 0);
 	}
 
       if (p->primary && p->fuse <= 0)

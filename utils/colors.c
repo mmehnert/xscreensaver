@@ -338,7 +338,11 @@ make_color_path (Display *dpy, Colormap cmap,
 
   /* Floating-point round-off can make us decide to use fewer colors. */
   if (k < *ncolorsP)
-    *ncolorsP = k;
+    {
+      *ncolorsP = k;
+      if (k <= 0)
+	return;
+    }
 
   if (!allocate_p)
     return;

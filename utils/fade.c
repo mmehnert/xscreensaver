@@ -126,10 +126,14 @@ fade_screens (Display *dpy, Colormap *cmaps,
     {
       fade_cmaps = (Colormap *) calloc(sizeof(Colormap), ncmaps);
       for (i = 0; i < nscreens; i++)
-	for (j = 0; j < cmaps_per_screen; j++)
-	  fade_cmaps[(i * cmaps_per_screen) + j] =
-	    XCreateColormap (dpy, RootWindow (dpy, i), DefaultVisual(dpy, i),
-			     AllocAll);
+	{
+	  Visual *v = DefaultVisual(dpy, i);
+	  Screen *s = ScreenOfDisplay(dpy, i);
+	  if (has_writable_cells (s, v))
+	    for (j = 0; j < cmaps_per_screen; j++)
+	      fade_cmaps[(i * cmaps_per_screen) + j] =
+		XCreateColormap (dpy, RootWindowOfScreen (s), v, AllocAll);
+	}
     }
 
 #ifdef GETTIMEOFDAY_TWO_ARGS

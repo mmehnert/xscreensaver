@@ -227,6 +227,7 @@ xlockmore_screenhack (Display *dpy, Window window,
       colors[1].flags = DoRed|DoGreen|DoBlue;
       colors[0].red = colors[0].green = colors[0].blue = 0;
       colors[1].red = colors[1].green = colors[1].blue = 0xFFFF;
+      mi.writable_p = False;
     }
   else
     {

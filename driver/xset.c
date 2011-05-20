@@ -72,10 +72,10 @@ init_mit_saver_extension (saver_info *si)
       if (XScreenSaverGetRegistered (si->dpy,
 				     XScreenNumberOfScreen (ssi->screen),
 				     &kill_id, &kill_type)
-	  && kill_id != blank_pix)
+	  && kill_id != blank_pix[i])
 	{
-	  int (*old_handler) ();
-	  old_handler = XSetErrorHandler (ignore_all_errors_ehandler);
+	  XErrorHandler old_handler =
+	    XSetErrorHandler (ignore_all_errors_ehandler);
 	  XKillClient (si->dpy, kill_id);
 	  XSync (si->dpy, False);
 	  XSetErrorHandler (old_handler);

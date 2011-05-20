@@ -324,6 +324,10 @@ make_goop (Display *dpy, Window window, Colormap cmap,
     goop->nlayers = (random() % (depth-2)) + 2;
   goop->layers = (struct layer **) malloc(sizeof(*goop->layers)*goop->nlayers);
 
+
+  if (mono_p && goop->mode == transparent)
+    goop->mode = opaque;
+
   /* Try to allocate some color planes before committing to nlayers.
    */
   if (goop->mode == transparent)
@@ -383,7 +387,7 @@ make_goop (Display *dpy, Window window, Colormap cmap,
 	    goop->layers[i]->pixel = color.pixel;
 	  else
 	    goop->layers[i]->pixel =
-	      BlackPixelOfScreen(DefaultScreenOfDisplay(dpy));
+	      WhitePixelOfScreen(DefaultScreenOfDisplay(dpy));
 	}
     }
 

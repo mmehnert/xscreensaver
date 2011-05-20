@@ -130,6 +130,9 @@ http://www.netscape.com/people/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 2.03:	HP configure tweaks.  Detect and warn about LessTif.
+			Fixed low-color behavior of `goop', `pyro', `starfish',
+			`greynetic', `flame', `halo', and `moire'.
 Changes since 2.02:	Fixed flicker in `pipes'.  Fixed 3d in `bouboule'.
 			Added `munch' hack.
 			Added basic dependencies to the Makefile.in files.

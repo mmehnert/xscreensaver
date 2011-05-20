@@ -38,6 +38,7 @@ init_moire (Display *dpy, Window window)
   offset = get_integer_resource ("offset", "Integer");
   if (offset < 2) offset = 2;
 
+ MONO:
   if (colors)
     {
       for (i = 0; i < ncolors; i++)
@@ -46,10 +47,18 @@ init_moire (Display *dpy, Window window)
       colors = 0;
     }
 
-  fg_pixel = get_pixel_resource ("foreground", "Foreground", dpy,
-				 xgwa.colormap);
-  bg_pixel = get_pixel_resource ("background", "Background", dpy,
-				 xgwa.colormap);
+  if (mono_p)
+    {
+      fg_pixel = WhitePixelOfScreen (DefaultScreenOfDisplay(dpy));
+      bg_pixel = BlackPixelOfScreen (DefaultScreenOfDisplay(dpy));
+    }
+  else
+    {
+      fg_pixel = get_pixel_resource ("foreground", "Foreground", dpy,
+				     xgwa.colormap);
+      bg_pixel = get_pixel_resource ("background", "Background", dpy,
+				     xgwa.colormap);
+    }
 
   if (mono_p)
     {
@@ -92,6 +101,12 @@ init_moire (Display *dpy, Window window)
 	fprintf(stderr, "%s: got %d of %d requested colors.\n",
 		progname, ncolors, oncolors);
 
+      if (ncolors <= 2)
+	{
+	  mono_p = True;
+	  goto MONO;
+	}
+
       gcv.foreground = colors[0].pixel;
     }
   gc = XCreateGC (dpy, window, GCForeground, &gcv);
@@ -120,8 +135,6 @@ moire (Display *dpy, Window window, int offset, XColor *colors, int ncolors)
   image->data = (char *) malloc (((xgwa.width + 1) * depth / 8)
 				 * 2  /* uh, I dunno... */
 				 );
-
-  sleep(5);
 
   for (y = 0; y < xgwa.height; y++)
     {

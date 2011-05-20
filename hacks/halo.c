@@ -136,6 +136,10 @@ init_circles (Display *dpy, Window window)
     make_smooth_colormap (dpy, xgwa.visual, cmap, colors, &ncolors,
 			  True, &cycle_p, True);
 
+  if (ncolors <= 2) mono_p = True;
+  if (mono_p) cycle_p = False;
+  if (mono_p) cmode = seuss_mode;
+
   if (mono_p)
     {
       fg_pixel = get_pixel_resource ("foreground", "Foreground", dpy, cmap);
