@@ -723,6 +723,33 @@ elif test $with_readdisplay != no; then
 fi
 
 
+# check for SGI's Iris Video Library header.
+#
+have_sgivideo=no
+with_sgivideo_req=unspecified
+AC_ARG_WITH(sgivideo,
+[  --with-sgivideo         Include support for SGI's Iris Video Library
+                          if possible (this is the default).
+  --without-sgivideo       Do not compile in support for this library.],
+  [with_sgivideo="$withval"; with_sgivideo_req="$withval"],
+  [with_sgivideo=yes])
+if test $with_sgivideo = yes; then
+  AC_CHECK_X_HEADER(dmedia/vl.h, have_sgivideo=yes)
+  if test $have_sgivideo = yes; then
+    have_sgivideo=no
+    AC_CHECK_LIB(vl, vlOpenVideo, have_sgivideo=yes)
+    if test $have_sgivideo = yes; then
+      SGI_VIDEO_OBJS="$(UTILS_SRC)/sgivideo.o"
+      SGI_VIDEO_LIBS="-lvl"
+      AC_DEFINE(HAVE_SGI_VIDEO)
+    fi
+  fi
+elif test $with_sgivideo != no; then
+  echo "error: must be yes or no: --with-sgivideo=$with_sgivideo"
+  exit 1
+fi
+
+
 
 # Try to find a program to generate random text.
 #
@@ -1117,6 +1144,8 @@ AC_SUBST(GL_LIBS)
 AC_SUBST(PASSWD_LIBS)
 AC_SUBST(INSTALL_SETUID)
 AC_SUBST(NEED_SETUID)
+AC_SUBST(SGI_VIDEO_OBJS)
+AC_SUBST(SGI_VIDEO_LIBS)
 
 AC_SUBST(DIALOG_SRCS)
 AC_SUBST(DIALOG_OBJS)
@@ -1198,6 +1227,10 @@ fi
 
 if test $with_readdisplay_req = yes -a $have_readdisplay = no ; then
   warn 'Use of XReadDisplay was requested, but it was not found.'
+fi
+
+if test $with_sgivideo_req = yes -a $have_sgivideo = no ; then
+  warn 'Use of the Iris Video Library was requested, but it was not found.'
 fi
 
 if test $with_kerberos_req = yes -a $have_kerberos = no ; then

@@ -558,6 +558,7 @@ initialize_screensaver_window_1 (saver_screen_info *ssi)
 {
   saver_info *si = ssi->global;
   saver_preferences *p = &si->prefs;
+  Bool install_cmap_p = ssi->install_cmap_p;
 
   /* This resets the screensaver window as fully as possible, since there's
      no way of knowing what some random client may have done to us in the
@@ -578,8 +579,10 @@ initialize_screensaver_window_1 (saver_screen_info *ssi)
   if (ssi->cmap == DefaultColormapOfScreen (ssi->screen))
     ssi->cmap = 0;
 
-  if (p->install_cmap_p ||
-      ssi->current_visual != DefaultVisualOfScreen (ssi->screen))
+  if (ssi->current_visual != DefaultVisualOfScreen (ssi->screen))
+    install_cmap_p = True;
+
+  if (install_cmap_p)
     {
       if (! ssi->cmap)
 	{
@@ -591,30 +594,17 @@ initialize_screensaver_window_1 (saver_screen_info *ssi)
     }
   else
     {
+      Colormap def_cmap = DefaultColormapOfScreen (ssi->screen);
       if (ssi->cmap)
 	{
 	  XFreeColors (si->dpy, ssi->cmap, &ssi->black_pixel, 1, 0);
-	  if (ssi->cmap != ssi->demo_cmap)
+	  if (ssi->cmap != ssi->demo_cmap &&
+	      ssi->cmap != def_cmap)
 	    XFreeColormap (si->dpy, ssi->cmap);
 	}
-      ssi->cmap = DefaultColormapOfScreen (ssi->screen);
+      ssi->cmap = def_cmap;
       ssi->black_pixel = BlackPixelOfScreen (ssi->screen);
     }
-
-#if 0
-  if (cmap2)
-    {
-      XFreeColormap (si->dpy, cmap2);
-      cmap2 = 0;
-    }
-
-  if (p->fade_p)
-    {
-      cmap2 = copy_colormap (si->screen, ssi->current_visual, ssi->cmap, 0);
-      if (! cmap2)
-	p->fade_p = p->unfade_p = 0;
-    }
-#endif
 
   attrmask = (CWOverrideRedirect | CWEventMask | CWBackingStore | CWColormap |
 	      CWBackPixel | CWBackingPixel | CWBorderPixel);
@@ -1077,17 +1067,40 @@ select_visual (saver_screen_info *ssi, const char *visual_name)
 {
   saver_info *si = ssi->global;
   saver_preferences *p = &si->prefs;
+  Bool install_cmap_p = p->install_cmap_p;
+  Bool was_installed_p = (ssi->cmap != DefaultColormapOfScreen(ssi->screen));
   Visual *new_v;
   Bool got_it;
 
   if (visual_name && *visual_name)
-    new_v = get_visual (ssi->screen, visual_name, True, False);
+    {
+      if (!strcmp(visual_name, "default-i"))
+	{
+	  visual_name = "default";
+	  install_cmap_p = True;
+	}
+      else if (!strcmp(visual_name, "default-n"))
+	{
+	  visual_name = "default";
+	  install_cmap_p = False;
+	}
+      new_v = get_visual (ssi->screen, visual_name, True, False);
+    }
   else
-    new_v = ssi->default_visual;
+    {
+      new_v = ssi->default_visual;
+    }
 
   got_it = !!new_v;
 
-  if (new_v && ssi->current_visual != new_v)
+  if (new_v && new_v != DefaultVisualOfScreen(ssi->screen))
+    install_cmap_p = True;
+
+  ssi->install_cmap_p = install_cmap_p;
+
+  if (new_v &&
+      ((ssi->current_visual != new_v) ||
+       (install_cmap_p != was_installed_p)))
     {
       Colormap old_c = ssi->cmap;
       Window old_w = ssi->screensaver_window;
@@ -1099,6 +1112,8 @@ select_visual (saver_screen_info *ssi, const char *visual_name)
 	  describe_visual (stderr, ssi->screen, ssi->current_visual);
 	  fprintf (stderr, "\t\t\t\tto:   ");
 	  describe_visual (stderr, ssi->screen, new_v);
+	  fprintf (stderr, "\t\t\t\t install cmap:   %s\n",
+		   (install_cmap_p ? "yes" : "no"));
 #else
 	  fprintf (stderr, "%s: switching to visual ", progname);
 	  describe_visual (stderr, ssi->screen, new_v);

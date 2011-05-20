@@ -18,6 +18,7 @@
  */
 
 #include "utils.h"
+#include "yarandom.h"
 
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
@@ -33,6 +34,9 @@
 #include "usleep.h"
 #include "colors.h"
 #include "grabscreen.h"
+#include "sgivideo.h"
+#include "visual.h"
+#include "resources.h"
 
 #include "vroot.h"
 #undef RootWindowOfScreen
@@ -41,13 +45,16 @@
 
 
 #ifdef HAVE_READ_DISPLAY_EXTENSION
-# include "visual.h"
 # include <X11/extensions/readdisplay.h>
   static Bool read_display (Screen *, Window, Pixmap, Bool);
 #endif /* HAVE_READ_DISPLAY_EXTENSION */
 
 
 static void copy_default_colormap_contents (Screen *, Colormap, Visual *);
+
+#if defined(HAVE_READ_DISPLAY_EXTENSION) || defined(HAVE_SGI_VIDEO)
+static void make_cubic_colormap (Screen *, Window, Visual *);
+#endif
 
 
 static Bool
@@ -174,8 +181,8 @@ install_screen_colormaps (Screen *screen)
 }
 
 
-void
-grab_screen_image (Screen *screen, Window window)
+static void
+grab_screen_image_1 (Screen *screen, Window window)
 {
   Display *dpy = DisplayOfScreen (screen);
   XWindowAttributes xgwa;
@@ -293,6 +300,42 @@ grab_screen_image (Screen *screen, Window window)
   XSync (dpy, True);
 }
 
+void
+grab_screen_image (Screen *screen, Window window)
+{
+#ifdef HAVE_SGI_VIDEO
+  char c, *s = get_string_resource("grabVideoProbability", "Float");
+  double prob = -1;
+  if (!s ||
+      (1 != sscanf (s, " %lf %c", &prob, &c)) ||
+      prob < 0 ||
+      prob > 1)
+    prob = 0.5;
+
+  if ((random() % 100) < ((int) (100 * prob)))
+    {
+      XWindowAttributes xgwa;
+      Display *dpy = DisplayOfScreen (screen);
+      XGetWindowAttributes (dpy, window, &xgwa);
+# ifdef DEBUG
+      fprintf(stderr, "%s: trying to grab from video...\n", progname);
+# endif /* DEBUG */
+      if (grab_video_frame (screen, xgwa.visual, window))
+	{
+	  if (xgwa.depth < 24)
+	    {
+	      int class = visual_class (screen, xgwa.visual);
+	      if (class == PseudoColor || class == DirectColor)
+		make_cubic_colormap (screen, window, xgwa.visual);
+	    }
+	  return;
+	}
+    }
+#endif /* HAVE_SGI_VIDEO */
+
+  grab_screen_image_1 (screen, window);
+}
+
 
 /* When we are grabbing and manipulating a screen image, it's important that
    we use the same colormap it originally had.  So, if the screensaver was
@@ -396,8 +439,6 @@ copy_default_colormap_contents (Screen *screen,
 
 #ifdef HAVE_READ_DISPLAY_EXTENSION
 
-static void make_cubic_colormap (Screen *, Window, Visual *);
-
 static Bool
 read_display (Screen *screen, Window window, Pixmap into_pixmap,
 	      Bool dont_wait)
@@ -458,7 +499,7 @@ read_display (Screen *screen, Window window, Pixmap into_pixmap,
      If the visual is of depth 24, but the image came back as depth 32,
      hack it to be 24 lest we get a BadMatch from XPutImage.  (I presume
      I'm expected to look at the server's pixmap formats or some such
-     nonsense... but fuck it.
+     nonsense... but fuck it.)
    */
   if (xgwa.depth == 24 && image->depth == 32)
     image->depth = 24;
@@ -560,7 +601,14 @@ read_display (Screen *screen, Window window, Pixmap into_pixmap,
 
   return True;
 }
+#endif /* HAVE_READ_DISPLAY_EXTENSION */
 
+
+#if defined(HAVE_READ_DISPLAY_EXTENSION) || defined(HAVE_SGI_VIDEO)
+
+/* Makes and installs a colormap that makes a PseudoColor or DirectColor
+   visual behave like a TrueColor visual of the same depth.
+ */
 static void
 make_cubic_colormap (Screen *screen, Window window, Visual *visual)
 {
@@ -634,5 +682,4 @@ make_cubic_colormap (Screen *screen, Window window, Visual *visual)
   XInstallColormap (dpy, cmap);
 }
 
-
-#endif /* HAVE_READ_DISPLAY_EXTENSION */
+#endif /* HAVE_READ_DISPLAY_EXTENSION || HAVE_SGI_VIDEO */

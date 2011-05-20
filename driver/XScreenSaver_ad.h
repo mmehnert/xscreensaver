@@ -34,6 +34,7 @@
 		imsmap -root						\\n\
 		slidescreen -root					\\n\
 		decayscreen -root					\\n\
+		puzzle -root						\\n\
 		blitspin -root -grab					\\n\
 		hypercube -root						\\n\
 		halo -root						\\n\
@@ -78,6 +79,7 @@
 		rotor -root						\\n\
 		ant -root						\\n\
 		xjack -root						\\n\
+		xlyap -root -random					\\n\
 									  \
 	mono:	rocks -root						\\n\
 	color:	rocks -root -fg darksalmon				\\n\

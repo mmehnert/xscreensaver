@@ -22,6 +22,10 @@ The most important hint is probably this:
 
 To build on VMS, see README.VMS.
 
+If you think you've found a bug, please let me know; but first, read
+the enlosed `README.debugging' file to find out what kind of information
+would be most helpful to include in your bug report.
+
                               ============
 
 The xscreensaver program waits until the keyboard and mouse have been idle
@@ -69,6 +73,7 @@ window, which are pointed at by the screensaver's default resource settings.
    hypercube	- 2d projection of a hypercube rotating on all four axes.
    slidescreen	- Divides the screen into a grid and plays a 16-puzzle on it.
    decayscreen	- A melting effect.
+   puzzle	- Turns the screen into a jigsaw puzzle and shuffles it.
    halo		- Random circular patterns.
    pyro		- Fireworks.  Looks a lot like the version in xlock.
    hopalong	- Fractals.  I snarfed this code from xlock.
@@ -115,6 +120,7 @@ window, which are pointed at by the screensaver's default resource settings.
    rotor	- Draws a rotating spiral pattern.
    ant		- A cellular automaton.
    xjack	- Simulates a schizophrenic typist.
+   xlyap	- Calculates and displays Lyapunov exponents.
    escher	- Draws some escher-like scenes (GLX only.)
    gears	- Draws interlocking rotating gears (GLX only.)
    morph3d	- Draws shiny shape-changing 3d forms (GLX only.)
@@ -136,10 +142,11 @@ Other reasonable things to use as screensavers, if you have them, are
   xv -root file.gif -quit	- they don't all have to animate!
   xsplinefun			- bouncing splines
   xfishtank -c black -d -r 1	- fish (use version 2.0 or later)
+  xmountains -b			- very realistic generated mountains
   xtacy -root			- various eye candy
   /usr/demos/bin/bongo -wbongo	- an SGI GL demo
 
-You can get all of these from the contrib directory on ftp.x.org.  If you
+You can get most of these from the contrib directory on ftp.x.org.  If you
 know of (or write) any other interesting programs that can be used as
 screensavers, please let me know!
 
@@ -149,6 +156,15 @@ http://people.netscape.com/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 2.11:	Added `README.debugging'.
+			Added `puzzle' hack.
+			Added `xlyap' hack.
+			Added "default-n" as a visual name, so that one can
+			have -install on by default, but turn it off for
+			certain poorly-behaved hacks (like xv.)
+			Added support for grabbing frames of external video
+			(on SGI) to the screen-grabbing hacks (decayscreen,
+			slidescreen, slip, blitspin, and puzzle.)
 Changes since 2.10:	Tweaked `blitspin', added it to the default list.
 			Added `lissie', `mountain', `triangle', `worm',
 			`rotor', and `ant' from xlockmore.

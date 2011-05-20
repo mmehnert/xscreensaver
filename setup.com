@@ -41,6 +41,7 @@ $ munch		:== $'mydir'munch
 $ noseguy	:== $'mydir'noseguy
 $ pedal		:== $'mydir'pedal
 $ penrose	:== $'mydir'penrose
+$ puzzle	:== $'mydir'puzzle
 $ pyro		:== $'mydir'pyro
 $ qix		:== $'mydir'qix
 $ rd-bomb	:== $'mydir'rd-bomb
@@ -59,6 +60,7 @@ $ triangle	:== $'mydir'triangle
 $ vines		:== $'mydir'vines
 $ worm		:== $'mydir'worm
 $ xjack		:== $'mydir'xjack
+$ xlyap		:== $'mydir'xlyap
 $ xroger	:== $'mydir'xroger
 $ set def [-.DRIVER]
 $ mydir  = mydisk+f$directory()

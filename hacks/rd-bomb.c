@@ -43,7 +43,6 @@ char *defaults [] = {
   "*width:	100",
   "*height:	100",
   "*epoch:	40000",
-  "*palette:	-1",
   "*reaction:	-1",
   "*diffusion:	-1",
   "*verbose:	off",
@@ -59,10 +58,9 @@ XrmOptionDescRec options [] = {
   { "-width",		".width",	XrmoptionSepArg, 0 },
   { "-height",		".height",	XrmoptionSepArg, 0 },
   { "-epoch",		".epoch",	XrmoptionSepArg, 0 },
-  { "-palette",		".palette",	XrmoptionSepArg, 0 },
   { "-reaction",	".reaction",	XrmoptionSepArg, 0 },
   { "-diffusion",	".diffusion",	XrmoptionSepArg, 0 },
-  { "-verbose",		".verbose",	XrmoptionSepArg, 0 },
+  { "-verbose",		".verbose",	XrmoptionNoArg, "True" },
   { "-radius",		".radius",	XrmoptionSepArg, 0 },
   { "-speed",		".speed",	XrmoptionSepArg, 0 },
   { "-size",		".size",	XrmoptionSepArg, 0 },
@@ -307,11 +305,9 @@ screenhack (Display *dpy, Window win)
       if (2 == reaction && 2 == diffusion)
 	reaction = diffusion = 0;
       
-/*      if (verbose)
-	printf("reaction = %d\ndiffusion = %d\n"
-	       "palette = %d\nradius = %d\n",
-	       reaction, diffusion, palette, radius);
-*/
+      if (verbose)
+	printf("reaction = %d\ndiffusion = %d\nradius = %d\n",
+	       reaction, diffusion, radius);
     }
     for (i = 0; i <= width+1; i++) {
       r1[i] = r1[i + w2 * height];

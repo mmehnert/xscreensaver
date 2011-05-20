@@ -130,11 +130,10 @@ See the description of the \fBprograms\fP resource, below.
 .RE
 .TP 8
 .B \-install
-When using a non-default visual, install a private colormap while the
-screensaver is active, so that the graphics hacks can get as many colors as 
-possible.    This is the default.  (This only applies when the screen's 
-default visual is being used, since non-default visuals get their own
-colormaps automatically.)
+Install a private colormap while the screensaver is active, so that the
+graphics hacks can get as many colors as possible.  This is the 
+default.  (This only applies when the screen's default visual is being
+used, since non-default visuals get their own colormaps automatically.)
 .TP 8
 .B \-no\-install
 Use the default colormap.

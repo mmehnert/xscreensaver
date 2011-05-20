@@ -575,6 +575,29 @@ make_screenhack_dialog (saver_info *si)
       XmStringFree (xmstr);
     }
 
+  /* Cause the most-recently-run hack to be selected in the list.
+     Do some voodoo to make it be roughly centered in the list (really,
+     just make it not be within +/- 5 of the top/bottom if possible.)
+   */
+  if (ssi->current_hack > 0)
+    {
+      int i = ssi->current_hack+1;
+      int top = i + 5;
+      int bot = i - 5;
+      if (bot < 1) bot = 1;
+      if (top > si->prefs.screenhacks_count)
+	top = si->prefs.screenhacks_count;
+
+      XmListSelectPos (demo_list, bot, False);
+      ensure_selected_item_visible (demo_list);
+
+      XmListSelectPos (demo_list, top, False);
+      ensure_selected_item_visible (demo_list);
+
+      XmListSelectPos (demo_list, i, False);
+      ensure_selected_item_visible (demo_list);
+    }
+
 #else  /* HAVE_ATHENA */
 
   XtVaSetValues (demo_list,
@@ -582,6 +605,10 @@ make_screenhack_dialog (saver_info *si)
 		 XtNnumberStrings, si->prefs.screenhacks_count,
 		 0);
   XtAddCallback (demo_list, XtNcallback, select_cb, si);
+
+  /* ####   still need to do the "select most-recently-run hack"
+     ####   thing for Athena.
+  */
 
 #endif /* HAVE_ATHENA */
 
