@@ -24,6 +24,12 @@ hsv_to_rgb (int h, double s, double v,
   double p1, p2, p3;
   double f;
   int i;
+
+  if (s < 0) s = 0;
+  if (v < 0) v = 0;
+  if (s > 1) s = 1;
+  if (v > 1) v = 1;
+
   S = s; V = v;
   H = (h % 360) / 60.0;
   i = H;

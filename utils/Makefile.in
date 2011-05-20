@@ -12,18 +12,24 @@ CC		= @CC@
 CFLAGS		= @CFLAGS@
 DEFS		= @DEFS@
 
+DEPEND		= @DEPEND@
+DEPEND_FLAGS	= @DEPEND_FLAGS@
+DEPEND_DEFINES	= @DEPEND_DEFINES@
+
 SHELL		= /bin/sh
 
 X_CFLAGS	= @X_CFLAGS@
 
 INCLUDES	= -I$(srcdir) -I$(srcdir)/.. @INCLUDES@
 
-SRCS		= colors.c fade.c grabscreen.c hsv.c overlay.c resources.c \
-		  spline.c usleep.c visual.c xmu.c xroger.c yarandom.c
-OBJS		= colors.o fade.o grabscreen.o hsv.o overlay.o resources.o \
-		  spline.o usleep.o visual.o xmu.o xroger.o yarandom.o
-HDRS		= colors.h fade.h grabscreen.h hsv.h resources.h spline.h \
-		  usleep.h utils.h version.h visual.h xmu.h yarandom.h
+SRCS		= alpha.c colors.c fade.c grabscreen.c hsv.c overlay.c \
+		  resources.c spline.c usleep.c visual.c xmu.c xroger.c \
+		  yarandom.c
+OBJS		= alpha.o colors.o fade.o grabscreen.o hsv.o overlay.o \
+		  resources.o spline.o usleep.o visual.o xmu.o xroger.o \
+		  yarandom.o
+HDRS		= alpha.h colors.h fade.h grabscreen.h hsv.h resources.h \
+		  spline.h usleep.h utils.h version.h visual.h xmu.h yarandom.h
 EXTRAS		= README Makefile.in ad2c
 
 TARFILES	= $(EXTRAS) $(SRCS) $(HDRS)
@@ -49,7 +55,8 @@ distclean: clean
 	-rm -f Makefile *~ "#"*
 
 depend:
-	$(MAKEDEP) -I$(srcdir) -I. $(DEFS) $(SRCS)
+	$(DEPEND) $(DEPEND_FLAGS) -- \
+	$(INCLUDES) $(DEFS) $(DEPEND_DEFINES) $(CFLAGS) $(X_CFLAGS) -- $(SRCS)
 
 TAGS: tags
 tags:

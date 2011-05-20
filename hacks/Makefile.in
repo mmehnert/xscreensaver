@@ -22,6 +22,10 @@ LDFLAGS		= @LDFLAGS@
 DEFS		= -DSTANDALONE @DEFS@
 LIBS		= @LIBS@
 
+DEPEND		= @DEPEND@
+DEPEND_FLAGS	= @DEPEND_FLAGS@
+DEPEND_DEFINES	= @DEPEND_DEFINES@
+
 SHELL		= /bin/sh
 INSTALL		= @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -44,16 +48,16 @@ UTILS_BIN	= ../utils
 
 INCLUDES	= -I$(srcdir) -I$(srcdir)/.. -I$(UTILS_SRC) @INCLUDES@
 
-UTIL_SRCS	= $(UTILS_SRC)/colors.c $(UTILS_SRC)/grabscreen.c \
-		  $(UTILS_SRC)/hsv.c $(UTILS_SRC)/resources.c \
-		  $(UTILS_SRC)/spline.c $(UTILS_SRC)/usleep.c \
-		  $(UTILS_SRC)/visual.c $(UTILS_SRC)/xroger.c \
-		  $(UTILS_SRC)/yarandom.c
-UTIL_OBJS	= $(UTILS_BIN)/colors.o $(UTILS_BIN)/grabscreen.o \
-		  $(UTILS_BIN)/hsv.o $(UTILS_BIN)/resources.o \
-		  $(UTILS_BIN)/spline.o $(UTILS_BIN)/usleep.o \
-		  $(UTILS_BIN)/visual.o $(UTILS_BIN)/xroger.o \
-		  $(UTILS_BIN)/yarandom.o
+UTIL_SRCS	= $(UTILS_SRC)/alpha.c $(UTILS_SRC)/colors.c \
+		  $(UTILS_SRC)/grabscreen.c $(UTILS_SRC)/hsv.c \
+		  $(UTILS_SRC)/resources.c $(UTILS_SRC)/spline.c \
+		  $(UTILS_SRC)/usleep.c $(UTILS_SRC)/visual.c \
+		  $(UTILS_SRC)/xroger.c $(UTILS_SRC)/yarandom.c
+UTIL_OBJS	= $(UTILS_SRC)/alpha.o $(UTILS_SRC)/colors.o \
+		  $(UTILS_SRC)/grabscreen.o $(UTILS_SRC)/hsv.o \
+		  $(UTILS_SRC)/resources.o $(UTILS_SRC)/spline.o \
+		  $(UTILS_SRC)/usleep.o $(UTILS_SRC)/visual.o \
+		  $(UTILS_SRC)/xroger.o $(UTILS_SRC)/yarandom.o
 
 SRCS		= attraction.c blitspin.c bouboule.c braid.c bubbles.c \
 		  bubbles_default.c decayscreen.c deco.c drift.c flag.c \
@@ -63,7 +67,7 @@ SRCS		= attraction.c blitspin.c bouboule.c braid.c bubbles.c \
 		  maze.c moire.c noseguy.c pedal.c penrose.c pyro.c qix.c \
 		  rocks.c rorschach.c screenhack.c sierpinski.c slidescreen.c \
 		  slip.c sphere.c spiral.c strange.c swirl.c xlockmore.c \
-		  xroger-hack.c
+		  xroger-hack.c goop.c starfish.c
 
 OBJS		= attraction.o blitspin.o bouboule.o braid.o bubbles.o \
 		  bubbles_default.o decayscreen.o deco.o drift.o flag.o \
@@ -73,14 +77,14 @@ OBJS		= attraction.o blitspin.o bouboule.o braid.o bubbles.o \
 		  maze.o moire.o noseguy.o pedal.o penrose.o pyro.o qix.o \
 		  rocks.o rorschach.o screenhack.o sierpinski.o slidescreen.o \
 		  slip.o sphere.o spiral.o strange.o swirl.o xlockmore.o \
-		  xroger-hack.o
+		  xroger-hack.o goop.o starfish.o
 
 EXES		= attraction blitspin bouboule braid bubbles decayscreen deco \
 		  drift flag flame forest fract galaxy grav greynetic halo \
 		  helix hopalong hypercube ifs imsmap julia kaleidescope \
 		  laser lightning lisa lmorph maze moire noseguy pedal \
 		  penrose pyro qix rocks rorschach sierpinski slidescreen \
-		  slip sphere spiral strange swirl xroger
+		  slip sphere spiral strange swirl xroger goop starfish
 
 HACK_OBJS_1	= $(UTILS_BIN)/resources.o $(UTILS_BIN)/visual.o \
 		  $(UTILS_BIN)/usleep.o $(UTILS_BIN)/yarandom.o @XMU_OBJS@
@@ -99,7 +103,7 @@ MEN		= attraction.man blitspin.man bouboule.man braid.man \
 		  noseguy.man pedal.man penrose.man pyro.man qix.man \
 		  rocks.man rorschach.man sierpinski.man slidescreen.man \
 		  slip.man sphere.man spiral.man strange.man swirl.man \
-		  xroger.man
+		  xroger.man goop.man starfish.man
 STAR		= *
 EXTRAS		= README Makefile.in xlock.h default.xbm bob.xbm .gdbinit \
 		  noses/nose-$(STAR).xbm noses/nose-$(STAR).xpm \
@@ -152,7 +156,8 @@ distclean: clean
 	-rm -f Makefile *~ "#"*
 
 depend:
-	$(MAKEDEP) -I$(srcdir) -I. $(DEFS) $(SRCS)
+	$(DEPEND) $(DEPEND_FLAGS) -- \
+	$(INCLUDES) $(DEFS) $(DEPEND_DEFINES) $(CFLAGS) $(X_CFLAGS) -- $(SRCS)
 
 TAGS: tags
 tags:
@@ -166,6 +171,7 @@ echo_tarfiles:
 # date with respect to their sources, and going and building them according
 # to the rules in their own Makefile...
 #
+$(UTILS_BIN)/alpha.o:		$(UTILS_SRC)/alpha.c
 $(UTILS_BIN)/colors.o:		$(UTILS_SRC)/colors.c
 $(UTILS_BIN)/grabscreen.o:	$(UTILS_SRC)/grabscreen.c
 $(UTILS_BIN)/hsv.o:		$(UTILS_SRC)/hsv.c
@@ -193,10 +199,12 @@ screenhack-xlock.o: screenhack.c
 	-DXLOCKMORE $(srcdir)/screenhack.c
 
 # Some abbreviations to keep the lines short...
+ALP		= $(HSV) $(UTILS_BIN)/alpha.o
 HSV		= $(UTILS_BIN)/hsv.o
 SPL		= $(UTILS_BIN)/spline.o
 XROG		= $(UTILS_BIN)/xroger.o
 GRAB		= $(UTILS_BIN)/grabscreen.o
+COL		= $(COLOR_OBJS)
 
 CC_HACK		= $(CC) $(LDFLAGS)
 
@@ -207,8 +215,8 @@ CC_HACK		= $(CC) $(LDFLAGS)
 # is pretty much useless in the face of more than one dependency, as far
 # as I can tell.
 #
-attraction:		 $(HACK_OBJS) attraction.o $(HSV) $(SPL)
-	$(CC_HACK) -o $@ $(HACK_OBJS) attraction.o $(HSV) $(SPL) $(HACK_LIBS)
+attraction:		 $(HACK_OBJS) attraction.o $(COL) $(SPL)
+	$(CC_HACK) -o $@ $(HACK_OBJS) attraction.o $(COL) $(SPL) $(HACK_LIBS)
 
 blitspin:		 $(HACK_OBJS) blitspin.o $(GRAB_OBJS)
 	$(CC_HACK) -o $@ $(HACK_OBJS) blitspin.o $(GRAB_OBJS) $(XPM_LIBS)
@@ -219,17 +227,17 @@ bubbles:		 $(HACK_OBJS) bubbles.o bubbles_default.o
 decayscreen:		 $(HACK_OBJS) decayscreen.o $(GRAB_OBJS)
 	$(CC_HACK) -o $@ $(HACK_OBJS) decayscreen.o $(GRAB_OBJS) $(HACK_LIBS)
 
-deco:			 $(HACK_OBJS) deco.o $(COLOR_OBJS)
-	$(CC_HACK) -o $@ $(HACK_OBJS) deco.o $(COLOR_OBJS) $(HACK_LIBS)
+deco:			 $(HACK_OBJS) deco.o $(COL)
+	$(CC_HACK) -o $@ $(HACK_OBJS) deco.o $(COL) $(HACK_LIBS)
 
-flame:			 $(HACK_OBJS) flame.o $(COLOR_OBJS)
-	$(CC_HACK) -o $@ $(HACK_OBJS) flame.o $(COLOR_OBJS) $(HACK_LIBS)
+flame:			 $(HACK_OBJS) flame.o $(COL)
+	$(CC_HACK) -o $@ $(HACK_OBJS) flame.o $(COL) $(HACK_LIBS)
 
 greynetic:		 $(HACK_OBJS) greynetic.o
 	$(CC_HACK) -o $@ $(HACK_OBJS) greynetic.o $(HACK_LIBS)
 
-halo:			 $(HACK_OBJS) halo.o $(COLOR_OBJS)
-	$(CC_HACK) -o $@ $(HACK_OBJS) halo.o $(COLOR_OBJS) $(HACK_LIBS)
+halo:			 $(HACK_OBJS) halo.o $(COL)
+	$(CC_HACK) -o $@ $(HACK_OBJS) halo.o $(COL) $(HACK_LIBS)
 
 helix:			 $(HACK_OBJS) helix.o $(HSV)
 	$(CC_HACK) -o $@ $(HACK_OBJS) helix.o $(HSV) $(HACK_LIBS)
@@ -237,8 +245,8 @@ helix:			 $(HACK_OBJS) helix.o $(HSV)
 hypercube:		 $(HACK_OBJS) hypercube.o
 	$(CC_HACK) -o $@ $(HACK_OBJS) hypercube.o $(HACK_LIBS)
 
-imsmap:			 $(HACK_OBJS) imsmap.o $(COLOR_OBJS)
-	$(CC_HACK) -o $@ $(HACK_OBJS) imsmap.o $(COLOR_OBJS) $(HACK_LIBS)
+imsmap:			 $(HACK_OBJS) imsmap.o $(COL)
+	$(CC_HACK) -o $@ $(HACK_OBJS) imsmap.o $(COL) $(HACK_LIBS)
 
 kaleidescope:		 $(HACK_OBJS) kaleidescope.o
 	$(CC_HACK) -o $@ $(HACK_OBJS) kaleidescope.o $(HACK_LIBS)
@@ -249,8 +257,8 @@ lmorph:			 $(HACK_OBJS) lmorph.o
 maze:			 $(HACK_OBJS) maze.o $(UTILS_BIN)/xroger.o
 	$(CC_HACK) -o $@ $(HACK_OBJS) maze.o $(UTILS_BIN)/xroger.o $(HACK_LIBS)
 
-moire:			 $(HACK_OBJS) moire.o $(COLOR_OBJS)
-	$(CC_HACK) -o $@ $(HACK_OBJS) moire.o $(COLOR_OBJS) $(HACK_LIBS)
+moire:			 $(HACK_OBJS) moire.o $(COL)
+	$(CC_HACK) -o $@ $(HACK_OBJS) moire.o $(COL) $(HACK_LIBS)
 
 noseguy:		 $(HACK_OBJS) noseguy.o
 	$(CC_HACK) -o $@ $(HACK_OBJS) noseguy.o $(XPM_LIBS)
@@ -261,8 +269,8 @@ pedal:			 $(HACK_OBJS) pedal.o $(HSV)
 pyro:			 $(HACK_OBJS) pyro.o $(HSV)
 	$(CC_HACK) -o $@ $(HACK_OBJS) pyro.o $(HSV) $(HACK_LIBS)
 
-qix:			 $(HACK_OBJS) qix.o $(HSV)
-	$(CC_HACK) -o $@ $(HACK_OBJS) qix.o $(HSV) $(HACK_LIBS)
+qix:			 $(HACK_OBJS) qix.o $(ALP)
+	$(CC_HACK) -o $@ $(HACK_OBJS) qix.o $(ALP) $(HACK_LIBS)
 
 rocks:			 $(HACK_OBJS) rocks.o
 	$(CC_HACK) -o $@ $(HACK_OBJS) rocks.o $(HACK_LIBS)
@@ -275,6 +283,12 @@ slidescreen:		 $(HACK_OBJS) slidescreen.o $(GRAB_OBJS)
 
 xroger:			 $(HACK_OBJS) xroger-hack.o $(HSV) $(XROG)
 	$(CC_HACK) -o $@ $(HACK_OBJS) xroger-hack.o $(HSV) $(XROG) $(HACK_LIBS)
+
+goop:			 $(HACK_OBJS) goop.o $(ALP) $(SPL)
+	$(CC_HACK) -o $@ $(HACK_OBJS) goop.o $(ALP) $(SPL) $(HACK_LIBS)
+
+starfish:		 $(HACK_OBJS) starfish.o $(COL) $(SPL)
+	$(CC_HACK) -o $@ $(HACK_OBJS) starfish.o $(COL) $(SPL) $(HACK_LIBS)
 
 
 # The rules for those hacks which follow the `xlockmore' API.

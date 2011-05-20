@@ -111,12 +111,39 @@ exec_simple_command (const char *command)
 
   {
     char buf [512];
-    sprintf (buf, "%s: execvp(\"%s\") failed", progname, av[0]);
+    sprintf (buf, "%s: could not execute \"%s\"", progname, av[0]);
     perror (buf);
-    fflush(stderr);
-    fflush(stdout);
-    exit (1);	/* Note that this only exits a child fork.  */
+
+#ifndef VMS
+    if (errno == ENOENT &&
+	(token = getenv("PATH")))
+      {
+# ifndef PATH_MAX
+#  ifdef MAXPATHLEN
+#   define PATH_MAX MAXPATHLEN
+#  else
+#   define PATH_MAX 2048
+#  endif
+# endif
+	char path[PATH_MAX];
+	*path = 0;
+	fprintf (stderr, "\n");
+	getwd (path);
+	fprintf (stderr, "    Current directory is: %s\n", path);
+	fprintf (stderr, "    PATH is:\n");
+	token = strtok (strdup(token), ":");
+	while (token)
+	  {
+	    fprintf (stderr, "        %s\n", token);
+	    token = strtok(0, ":");
+	  }
+	fprintf (stderr, "\n");
+      }
+#endif
   }
+  fflush(stderr);
+  fflush(stdout);
+  exit (1);	/* Note that this only exits a child fork.  */
 }
 
 

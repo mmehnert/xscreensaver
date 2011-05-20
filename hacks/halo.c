@@ -37,12 +37,18 @@ static struct circle *circles;
 static int count, global_count;
 static Pixmap pixmap, buffer;
 static int width, height, global_inc;
-static int delay;
+static int delay, delay2, cycle_delay;
 static unsigned long fg_pixel, bg_pixel;
-static XColor fgc, bgc;
 static GC draw_gc, erase_gc, copy_gc, merge_gc;
 static Bool anim_p;
 static Colormap cmap;
+
+static int ncolors;
+static XColor *colors;
+static Bool cycle_p;
+static int fg_index;
+static int bg_index;
+
 
 #define min(x,y) ((x)<(y)?(x):(y))
 #define max(x,y) ((x)>(y)?(x):(y))
@@ -88,6 +94,8 @@ init_circles (Display *dpy, Window window)
   if (global_inc < 0) global_inc = 0;
   anim_p = get_boolean_resource ("animate", "Boolean");
   delay = get_integer_resource ("delay", "Integer");
+  delay2 = get_integer_resource ("delay2", "Integer") * 1000000;
+  cycle_delay = get_integer_resource ("cycleDelay", "Integer");
   mode_str = get_string_resource ("colorMode", "ColorMode");
   if (! mode_str) cmode = random_mode;
   else if (!strcmp (mode_str, "seuss"))  cmode = seuss_mode;
@@ -107,26 +115,39 @@ init_circles (Display *dpy, Window window)
   if (cmode == ramp_mode)
     anim_p = False;    /* This combo doesn't work right... */
 
+  ncolors = get_integer_resource ("colors", "Colors");
+  if (ncolors < 2) ncolors = 2;
+  if (ncolors <= 2) mono_p = True;
+
+  if (mono_p)
+    colors = 0;
+  else
+    colors = (XColor *) malloc(sizeof(*colors) * (ncolors+1));
+
+  cycle_p = mono_p ? False : get_boolean_resource ("cycle", "Cycle");
+
+
+  if (mono_p)
+    ;
+  else if (random() % (cmode == seuss_mode ? 2 : 10))
+    make_uniform_colormap (dpy, xgwa.visual, cmap, colors, &ncolors,
+			   True, &cycle_p, True);
+  else
+    make_smooth_colormap (dpy, xgwa.visual, cmap, colors, &ncolors,
+			  True, &cycle_p, True);
+
   if (mono_p)
     {
-      fg_pixel = get_pixel_resource ("foreground","Foreground", dpy, cmap);
-      bg_pixel = get_pixel_resource ("background","Background", dpy, cmap);
+      fg_pixel = get_pixel_resource ("foreground", "Foreground", dpy, cmap);
+      bg_pixel = get_pixel_resource ("background", "Background", dpy, cmap);
     }
   else
     {
-      int r  = random() % 360;
-      int r2 = (random() % 180) + 45;
-      double fs, bs;
-      if (cmode == seuss_mode)
-	fs = 0.5, bs = 1.0;
-      else
-	fs = 1.0, bs = 0.1;
-      hsv_to_rgb (r,          fs, 1.0, &fgc.red, &fgc.green, &fgc.blue);
-      hsv_to_rgb ((r+r2)%360, bs, 0.7, &bgc.red, &bgc.green, &bgc.blue);
-      XAllocColor (dpy, cmap, &fgc);
-      XAllocColor (dpy, cmap, &bgc);
-      fg_pixel = fgc.pixel;
-      bg_pixel = bgc.pixel;
+      fg_index = 0;
+      bg_index = ncolors / 4;
+      if (fg_index == bg_index) bg_index++;
+      fg_pixel = colors[fg_index].pixel;
+      bg_pixel = colors[bg_index].pixel;
     }
 
   width = max (50, xgwa.width);
@@ -187,13 +208,14 @@ run_circles (Display *dpy, Window window)
     {
       int radius = circles [i].radius;
       int inc = circles [i].increment;
-      if (! (iterations & 1))
+
+      if (! (iterations & 1))  /* never stop on an odd number of iterations */
 	;
-      else if (radius == 0)
+      else if (radius == 0)	/* eschew inf */
 	;
-      else if (radius < 0)
+      else if (radius < 0)	/* stop when the circles are points */
 	done = True;
-      else
+      else			/* stop when the circles fill the window */
 	{
 	  /* Probably there's a simpler way to ask the musical question,
 	     "is this square completely enclosed by this circle," but I've
@@ -207,14 +229,38 @@ run_circles (Display *dpy, Window window)
 	  if ((x1 + y1) < 1 && (x2 + y2) < 1 && (x1 + y2) < 1 && (x2 + y1) < 1)
 	    done = True;
 	}
+
       if (radius > 0 &&
-	  (cmode == seuss_mode || circles [0].increment < 0))
-	XFillArc (dpy,
-		  (cmode == seuss_mode ? pixmap : window),
-		  (cmode == seuss_mode ? draw_gc : merge_gc),
-		  circles [i].x - radius, circles [i].y - radius,
-		  radius * 2, radius * 2, 0, 360*64);
+	  (cmode == seuss_mode ||	/* drawing all circles, or */
+	   circles [0].increment < 0))	/* on the way back in */
+	{
+	  XFillArc (dpy,
+		    (cmode == seuss_mode ? pixmap : window),
+		    (cmode == seuss_mode ? draw_gc : merge_gc),
+		    circles [i].x - radius, circles [i].y - radius,
+		    radius * 2, radius * 2, 0, 360*64);
+	}
       circles [i].radius += inc;
+    }
+
+  if (cycle_p && cmode != seuss_mode)
+    {
+      struct timeval now;
+      static struct timeval then = { 0, };
+      unsigned long diff;
+#ifdef GETTIMEOFDAY_TWO_ARGS
+      struct timezone tzp;
+      gettimeofday(&now, &tzp);
+#else
+      gettimeofday(&now);
+#endif
+      diff = (((now.tv_sec - then.tv_sec)  * 1000000) +
+	      (now.tv_usec - then.tv_usec));
+      if (diff > cycle_delay)
+	{
+	  rotate_colors (dpy, cmap, colors, ncolors, 1);
+	  then = now;
+	}
     }
 
   if (anim_p && !first_time_p)
@@ -244,37 +290,33 @@ run_circles (Display *dpy, Window window)
 	}
       else if (circles [0].increment < 0)
 	{
+	  /* We've zoomed out and the screen is blank -- re-pick the
+	     center points, and shift the colors.
+	   */
 	  free (circles);
 	  init_circles_1 (dpy, window);
 	  if (! mono_p)
 	    {
-	      XColor d1, d2;
-	      int h;
-	      double s, v;
-
-	      rgb_to_hsv (fgc.red, fgc.green, fgc.blue, &h, &s, &v);
-	      h = (h + 10) % 360;
-	      hsv_to_rgb (h, s, v, &fgc.red, &fgc.green, &fgc.blue);
-
-	      rgb_to_hsv (bgc.red, bgc.green, bgc.blue, &h, &s, &v);
-	      h = (h + 10) % 360;
-	      hsv_to_rgb (h, s, v, &bgc.red, &bgc.green, &bgc.blue);
-
-	      XFreeColors (dpy, cmap, &fgc.pixel, 1, 0);
-	      XFreeColors (dpy, cmap, &bgc.pixel, 1, 0);
-	      d1 = fgc;
-	      d2 = bgc;
-	      XAllocColor (dpy, cmap, &fgc);
-	      XAllocColor (dpy, cmap, &bgc);
-	      fgc.red = d1.red; fgc.green = d1.green; fgc.blue = d1.blue;
-	      bgc.red = d2.red; bgc.green = d2.green; bgc.blue = d2.blue;
-	      XSetForeground (dpy, copy_gc, fgc.pixel);
-	      XSetBackground (dpy, copy_gc, bgc.pixel);
+	      fg_index = (fg_index + 1) % ncolors;
+	      bg_index = (fg_index + (ncolors/2)) % ncolors;
+	      XSetForeground (dpy, copy_gc, colors [fg_index].pixel);
+	      XSetBackground (dpy, copy_gc, colors [bg_index].pixel);
 	    }
 	}
-#if 0
-      else if ((random () % 2) == 0)
+#if 1
+      /* Sometimes go out from the inside instead of the outside */
+      else if ((random () % 10) == 0)
 	{
+# if 0
+	  if (! mono_p)
+	    {
+	      unsigned long swap = fg_index;
+	      fg_index = bg_index;
+	      bg_index = swap;
+	      XSetForeground (dpy, copy_gc, colors [fg_index].pixel);
+	      XSetBackground (dpy, copy_gc, colors [bg_index].pixel);
+	    }
+# endif
 	  iterations = 0; /* ick */
 	  for (i = 0; i < count; i++)
 	    circles [i].radius %= circles [i].increment;
@@ -295,45 +337,25 @@ run_circles (Display *dpy, Window window)
     XCopyPlane (dpy, pixmap, buffer, merge_gc, 0, 0, width, height, 0, 0, 1);
   else if (cmode != seuss_mode)
     {
-      static int ncolors = 0;
-      static XColor *colors = 0;
+
+      if (!mono_p)
+	{
+	  fg_index++;
+	  bg_index++;
+	  if (fg_index >= ncolors) fg_index = 0;
+	  if (bg_index >= ncolors) bg_index = 0;
+	  XSetForeground (dpy, merge_gc, colors [fg_index].pixel);
+	}
+
       if (circles [0].increment >= 0)
 	inhibit_sleep = True;
-      else if (done)
-	{
-	  int fgh, bgh;
-	  double fgs, fgv, bgs, bgv;
-	  if (colors)
-	    free_colors (dpy, cmap, colors, ncolors);
-
-	  rgb_to_hsv (fgc.red, fgc.green, fgc.blue, &fgh, &fgs, &fgv);
-	  rgb_to_hsv (bgc.red, bgc.green, bgc.blue, &bgh, &bgs, &bgv);
-	  ncolors = oiterations;
-	  colors = ((XColor *)
-		    (colors
-		     ? realloc (colors, sizeof (XColor) * ncolors)
-		     : malloc (sizeof (XColor) * ncolors)));
-	  
-	  XSync(dpy, False);
-	  if (delay) usleep (delay * 10);
-	  XFillRectangle (dpy, window, merge_gc, 0, 0, width, height);
-
-	  make_color_ramp (dpy, cmap,
-			   bgh, bgs, bgv, fgh, fgs, fgv,
-			   colors, &ncolors,
-			   False, True, False);
-	  XSetForeground (dpy, merge_gc, colors [0].pixel);
-
-	  XFillRectangle (dpy, window, merge_gc, 0, 0, width, height);
-	}
-      else
-	{
-	  XSetForeground (dpy, merge_gc, colors [iterations].pixel);
-	}
+      else if (done && cmode == seuss_mode)
+	XFillRectangle (dpy, window, merge_gc, 0, 0, width, height);
     }
   else
     XCopyPlane (dpy, pixmap, window, merge_gc, 0, 0, width, height, 0, 0, 1);
 
+  /* buffer is only used in seuss-mode or anim-mode */
   if (buffer && (anim_p
 		 ? (done || (first_time_p && (iterations & 1)))
 		 : (iterations & 1)))
@@ -343,6 +365,7 @@ run_circles (Display *dpy, Window window)
       if (anim_p && done)
 	XFillRectangle (dpy, buffer, erase_gc, 0, 0, width, height);
     }
+
 #ifdef DEBUG
   XCopyPlane (dpy, pixmap, window, copy_gc, 0,0,width,height,width,height, 1);
   if (buffer)
@@ -357,8 +380,32 @@ run_circles (Display *dpy, Window window)
 
   if (delay && !inhibit_sleep)
     {
+      static Bool really_first_p = True;
+      int direction = 1;
+      int d = delay;
+      if (done && cycle_p && cmode != seuss_mode && !really_first_p)
+	{
+	  d = delay2;
+	  if (! (random() % 10))
+	    direction = -1;
+	}
+      if (done)
+	really_first_p = False;
+
       XSync(dpy, False);
-      usleep (delay);
+
+      if (cycle_p && cycle_delay)
+	{
+	  int i = 0;
+	  while (i < d)
+	    {
+	      rotate_colors (dpy, cmap, colors, ncolors, direction);
+	      usleep(cycle_delay);
+	      i += cycle_delay;
+	    }
+	}
+      else
+	usleep (d);
     }
 }
 
@@ -369,16 +416,24 @@ char *defaults [] = {
   "Halo.background:	black",		/* to placate SGI */
   "Halo.foreground:	white",
   "*colorMode:		random",
+  "*colors:		100",
+  "*cycle:		true",
   "*count:		0",
   "*delay:		100000",
+  "*delay2:		20",
+  "*cycleDelay:		100000",
   0
 };
 
 XrmOptionDescRec options [] = {
   { "-count",		".count",	XrmoptionSepArg, 0 },
   { "-delay",		".delay",	XrmoptionSepArg, 0 },
+  { "-cycle-delay",	".cycleDelay",	XrmoptionSepArg, 0 },
   { "-animate",		".animate",	XrmoptionNoArg, "True" },
   { "-mode",		".colorMode",	XrmoptionSepArg, 0 },
+  { "-colors",		".colors",	XrmoptionSepArg, 0 },
+  { "-cycle",		".cycle",	XrmoptionNoArg, "True" },
+  { "-no-cycle",	".cycle",	XrmoptionNoArg, "False" },
   { 0, 0, 0, 0 }
 };
 

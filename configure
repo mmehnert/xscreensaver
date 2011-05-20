@@ -898,11 +898,11 @@ case "$host" in
   *-irix*)
   if test -n "$GCC"; then
     echo "$ac_t""Turning on gcc compiler warnings." 1>&6
-    CFLAGS="$CFLAGS -Wall -Wstrict-prototypes -Wnested-externs -Wno-format"
+    CC="$CC -Wall -Wstrict-prototypes -Wnested-externs -Wno-format"
   else
     # not gcc
     echo "$ac_t""Turning on SGI compiler warnings." 1>&6
-    CFLAGS="$CFLAGS -fullwarn -use_readonly_const -rdata_shared -g3"
+    CC="$CC -fullwarn -use_readonly_const -rdata_shared -g3"
   fi
   ;;
 esac
@@ -4234,6 +4234,13 @@ if test \! -z "$libdir" ; then
 fi
 
 
+##### should have options to override the DEPEND crap, I guess...
+DEPEND=makedepend
+DEPEND_FLAGS=
+DEPEND_DEFINES=
+
+
+
 # Done testing things -- now substitute in some stuff for the Makefiles.
 #
 if test $have_motif = yes; then
@@ -4279,10 +4286,20 @@ else
   INSTALL_SETUID='$(INSTALL_PROGRAM)'
 fi
 
-
+tab='	'
 if test $have_gl = yes; then
   GL_EXES='$(GL_EXES)'
+  GL_KLUDGE_1=${tab}${tab}${tab}${tab}${tab}${tab}${tab}${tab}${tab}'  \'
+  GL_KLUDGE_2=${tab}
+else
+  GL_KLUDGE_1=${tab}${tab}${tab}${tab}${tab}${tab}${tab}${tab}${tab}'\n'
+  GL_KLUDGE_2='!'${tab}
 fi
+
+
+
+
+
 
 
 
@@ -4478,7 +4495,8 @@ trap 'rm -fr `echo "Makefile
 	  utils/Makefile
 	  driver/Makefile
 	  hacks/Makefile
-	  hacks/glx/Makefile config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
+	  hacks/glx/Makefile
+	  driver/XScreenSaver.ad config.h" | sed "s/:[^ ]*//g"` conftest*; exit 1' 1 2 15
 EOF
 cat >> $CONFIG_STATUS <<EOF
 
@@ -4539,8 +4557,13 @@ s%@XMU_OBJS@%$XMU_OBJS%g
 s%@LOCK_SRCS@%$LOCK_SRCS%g
 s%@LOCK_OBJS@%$LOCK_OBJS%g
 s%@GL_EXES@%$GL_EXES%g
+s%@GL_KLUDGE_1@%$GL_KLUDGE_1%g
+s%@GL_KLUDGE_2@%$GL_KLUDGE_2%g
 s%@HACKDIR@%$HACKDIR%g
 s%@APPDEFAULTS@%$APPDEFAULTS%g
+s%@DEPEND@%$DEPEND%g
+s%@DEPEND_FLAGS@%$DEPEND_FLAGS%g
+s%@DEPEND_DEFINES@%$DEPEND_DEFINES%g
 
 CEOF
 EOF
@@ -4586,7 +4609,8 @@ CONFIG_FILES=\${CONFIG_FILES-"Makefile
 	  utils/Makefile
 	  driver/Makefile
 	  hacks/Makefile
-	  hacks/glx/Makefile"}
+	  hacks/glx/Makefile
+	  driver/XScreenSaver.ad"}
 EOF
 cat >> $CONFIG_STATUS <<\EOF
 for ac_file in .. $CONFIG_FILES; do if test "x$ac_file" != x..; then

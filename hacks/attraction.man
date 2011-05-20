@@ -11,12 +11,12 @@
 .if n .sp 1
 .if t .sp .5
 ..
-.TH XScreenSaver 1 "14-Dec-95" "X Version 11"
+.TH XScreenSaver 1 "14-Jun-97" "X Version 11"
 .SH NAME
 attraction - interactions of opposing forces
 .SH SYNOPSIS
 .B attraction
-[\-display \fIhost:display.screen\fP] [\-foreground \fIcolor\fP] [\-background \fIcolor\fP] [\-window] [\-root] [\-mono] [\-install] [\-visual \fIvisual\fP] [\-points \fIint\fP] [\-threshold \fIint\fP] [\-mode balls | lines | polygons | splines | filled-splines | tails ] [\-color-mode cycle | random] [\-size \fIint\fP] [\-segments \fIint\fP] [\-delay \fIusecs\fP] [\-color-shift \fIdegrees\fP] [\-radius \fIint\fP] [\-vx \fIint\fP] [\-vy \fIint\fP] [\-glow] [\-noglow] [\-orbit] [\-viscosity \fIfloat\fP] [\-mouse] [\-no-mouse] [\-mouse-size]
+[\-display \fIhost:display.screen\fP] [\-foreground \fIcolor\fP] [\-background \fIcolor\fP] [\-window] [\-root] [\-mono] [\-install] [\-visual \fIvisual\fP] [\-points \fIint\fP] [\-threshold \fIint\fP] [\-mode balls | lines | polygons | splines | filled-splines | tails ] [\-size \fIint\fP] [\-segments \fIint\fP] [\-delay \fIusecs\fP] [\-color-shift \fIint\fP] [\-radius \fIint\fP] [\-vx \fIint\fP] [\-vy \fIint\fP] [\-glow] [\-noglow] [\-orbit] [\-viscosity \fIfloat\fP] [\-mouse] [\-no-mouse] [\-mouse-size]
 .SH DESCRIPTION
 The \fIattraction\fP program has several visually different modes of 
 operation, all of which are based on the interactions of a set of control
@@ -71,9 +71,6 @@ In \fItails\fP mode, the path which each particle follows is indicated
 by a worm-like trail, whose length is controlled by the \fIsegments\fP
 parameter.
 .TP 8
-.B \-color-mode cycle | random
-Whether colors should cycle through the spectrum, or be picked randomly.
-.TP 8
 .B \-size integer
 The size of the balls in pixels, or 0, meaning to select the sizes 
 randomly (the default.)  If this is specified, then all balls will be 
@@ -90,10 +87,11 @@ is only useful in color.)
 How much of a delay should be introduced between steps of the animation.
 Default 10000, or about 0.01 seconds.
 .TP 8
-.B \-color-shift degrees
+.B \-color-shift int
 If on a color display, the color of the line segments or polygons will 
-cycle through the spectrum.  This specifies how far the hue of each segment
-should be from the next, in degrees on the HSV wheel.  Default 3.
+cycle through the color map.  This specifies how many lines will be drawn
+before a new color is chosen.  (When a small number of colors are available,
+increasing this value will yield smoother transitions.)  Default 3.
 This has no effect in \fIballs\fP mode.
 .TP 8
 .B \-radius
@@ -127,7 +125,8 @@ to decay.
 .B \-vmult float
 In orbit mode, the initial velocity of the balls is multiplied by this;
 a number less than 1 will make the balls pull closer together, and a larger
-number will make them move apart.  The default is 1, meaning stability.
+number will make them move apart.  The default is 0.9, meaning a slight
+inward pull.
 .TP 8
 .B \-viscosity float
 This sets the viscosity of the hypothetical fluid through which the control
@@ -166,13 +165,13 @@ stored in the RESOURCE_MANAGER property.
 .BR X (1),
 .BR xscreensaver (1)
 .SH COPYRIGHT
-Copyright \(co 1992, 1993 by Jamie Zawinski.  Permission to use, copy, modify, 
-distribute, and sell this software and its documentation for any purpose is 
-hereby granted without fee, provided that the above copyright notice appear 
-in all copies and that both that copyright notice and this permission notice
-appear in supporting documentation.  No representations are made about the 
-suitability of this software for any purpose.  It is provided "as is" without
-express or implied warranty.
+Copyright \(co 1992, 1993, 1997 by Jamie Zawinski.  Permission to use, copy,
+modify, distribute, and sell this software and its documentation for any
+purpose is hereby granted without fee, provided that the above copyright
+notice appear in all copies and that both that copyright notice and this
+permission notice appear in supporting documentation.  No representations are
+made about the suitability of this software for any purpose.  It is provided
+"as is" without express or implied warranty.
 .SH AUTHOR
 Jamie Zawinski <jwz@netscape.com>, 13-aug-92.
 

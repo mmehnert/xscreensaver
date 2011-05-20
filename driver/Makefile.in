@@ -22,6 +22,10 @@ LDFLAGS		= @LDFLAGS@
 DEFS		= @DEFS@
 LIBS		= @LIBS@
 
+DEPEND		= @DEPEND@
+DEPEND_FLAGS	= @DEPEND_FLAGS@
+DEPEND_DEFINES	= @DEPEND_DEFINES@
+
 SHELL		= /bin/sh
 INSTALL		= @INSTALL@
 SUID_FLAGS      = -o root -m 4755
@@ -92,7 +96,7 @@ EXES		= xscreensaver xscreensaver-command
 
 HDRS		= XScreenSaver_ad.h xscreensaver.h
 MEN		= xscreensaver.man xscreensaver-command.man
-EXTRAS		= README Makefile.in XScreenSaver.ad dialogs.xd .gdbinit
+EXTRAS		= README Makefile.in XScreenSaver.ad.in dialogs.xd .gdbinit
 
 TARFILES	= $(EXTRAS) $(SAVER_SRCS_1) $(MOTIF_SRCS) $(ATHENA_SRCS) \
 		  $(PWENT_SRCS) $(KERBEROS_SRCS) $(LOCK_SRCS_1) \
@@ -122,7 +126,7 @@ install-program:
  $$e "           passwords.  If your system actually uses shadow passwords," ;\
  $$e "           then xscreensaver must be installed as a setuid root"	     ;\
  $$e "           program in order for locking to work.  To do this, you"     ;\
- $$e "           must run 'make install' as root, not as $$me."		     ;\
+ $$e "           must run 'make install' as 'root', not as '$$me'."	     ;\
  $$e ""									     ;\
  $$e "           For now, xscreensaver will be installed non-setuid, which"  ;\
  $$e "           means that locking may not work."			     ;\
@@ -163,10 +167,12 @@ clean:
 	-rm -f *.o a.out core $(EXES) XScreenSaver_ad.h
 
 distclean: clean
-	-rm -f Makefile *~ "#"*
+	-rm -f Makefile XScreenSaver.ad *~ "#"*
 
 depend: XScreenSaver_ad.h
-	$(MAKEDEP) -I$(srcdir) -I. $(DEFS) $(SRCS)
+	$(DEPEND) $(DEPEND_FLAGS) -- \
+	$(INCLUDES) $(DEFS) $(DEPEND_DEFINES) $(CFLAGS) $(X_CFLAGS) -- \
+	$(SAVER_SRCS_1) $(CMD_SRCS)
 
 TAGS: tags
 tags:

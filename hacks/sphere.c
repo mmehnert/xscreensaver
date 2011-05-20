@@ -52,7 +52,7 @@ static const char sccsid[] = "@(#)sphere.c	4.00 97/01/01 xlockmore";
 ModeSpecOpt sphere_opts = {
   0, NULL, 0, NULL, NULL };
 
-/* 
+/*-
  * (NX, NY, NZ) is the light source vector -- length should be 100
  */
 #define NX 48
@@ -97,7 +97,7 @@ init_sphere(ModeInfo * mi)
 
 	XClearWindow(MI_DISPLAY(mi), MI_WINDOW(mi));
 
-	sp->x = sp->radius = 0;
+	sp->dirx = 1;
 }
 
 void
@@ -106,26 +106,24 @@ draw_sphere(ModeInfo * mi)
 	Display    *display = MI_DISPLAY(mi);
 	GC          gc = MI_GC(mi);
 	spherestruct *sp = &spheres[MI_SCREEN(mi)];
-	register    y, miny, maxy, npts = 0;
+	register    minx = 0, maxx = 0, miny = 0, maxy = 0, npts = 0;
 
-	if (ABS(sp->x) >= sp->radius) {
-	  sp->radius = NRAND(MIN(sp->width / 2, sp->height / 2) - 1) + 1;
+	if ((sp->dirx && ABS(sp->x) >= sp->radius) ||
+	    (sp->diry && ABS(sp->y) >= sp->radius)) {
+		sp->radius = NRAND(MIN(sp->width / 2, sp->height / 2) - 1) + 1;
 
-	  sp->dirx = (LRAND() & 1) * 2 - 1;
-	  sp->diry = (LRAND() & 1) * 2 - 1;
-
-	  if (sp->diry == 1)
-		{
-		  sp->x0 = NRAND(sp->width);
-		  sp->y0 = NRAND(sp->height);
+		if (LRAND() & 1) {
+			sp->dirx = (LRAND() & 1) * 2 - 1;
+			sp->diry = 0;
+		} else {
+			sp->dirx = 0;
+			sp->diry = (LRAND() & 1) * 2 - 1;
 		}
-	  else
-		{
-		  sp->y0 = NRAND(sp->width);
-		  sp->x0 = NRAND(sp->height);
-		}
+		sp->x0 = NRAND(sp->width);
+		sp->y0 = NRAND(sp->height);
 
 		sp->x = -sp->radius * sp->dirx;
+		sp->y = -sp->radius * sp->diry;
 
 		if (MI_NPIXELS(mi) > 2)
 			sp->color = NRAND(MI_NPIXELS(mi));
@@ -133,75 +131,89 @@ draw_sphere(ModeInfo * mi)
 	if (sp->dirx == 1) {
 		if (sp->x0 + sp->x < 0)
 			sp->x = -sp->x0;
-	} else {
-	  if (sp->diry == 1) {
-		  if (sp->x0 + sp->x >= sp->width)
+	} else if (sp->dirx == -1) {
+		if (sp->x0 + sp->x >= sp->width)
 			sp->x = sp->width - sp->x0 - 1;
-	  } else {
-		  if (sp->x0 + sp->x >= sp->height)
-			sp->x = sp->height - sp->x0 - 1;
-		}
 	}
-
-	sp->maxy = SQRT(sp->radius * sp->radius - sp->x * sp->x);
-	miny = -sp->maxy;
-	if (sp->y0 - sp->maxy < 0)
-		miny = -sp->y0;
-	maxy = sp->maxy;
-
 	if (sp->diry == 1) {
-	  if (sp->y0 + sp->maxy >= sp->height)
-		maxy = sp->height - sp->y0;
-	} else {
-	  if (sp->y0 + sp->maxy >= sp->height)
-		maxy = sp->width - sp->y0;
+		if (sp->y0 + sp->y < 0)
+			sp->y = -sp->y0;
+	} else if (sp->diry == -1) {
+		if (sp->y0 + sp->y >= sp->height)
+			sp->y = sp->height - sp->y0 - 1;
 	}
-
+	if (sp->dirx) {
+		sp->maxy = SQRT(sp->radius * sp->radius - sp->x * sp->x);
+		miny = -sp->maxy;
+		if (sp->y0 - sp->maxy < 0)
+			miny = -sp->y0;
+		maxy = sp->maxy;
+	}
+	if (sp->diry) {
+		sp->maxx = SQRT(sp->radius * sp->radius - sp->y * sp->y);
+		minx = -sp->maxx;
+		if (sp->x0 - sp->maxx < 0)
+			minx = -sp->x0;
+		maxx = sp->maxx;
+	}
+	if (sp->dirx) {
+		if (sp->y0 + sp->maxy >= sp->height)
+			maxy = sp->height - sp->y0;
+	}
+	if (sp->diry) {
+		if (sp->x0 + sp->maxx >= sp->width)
+			maxx = sp->width - sp->x0;
+	}
 	XSetForeground(display, gc, MI_WIN_BLACK_PIXEL(mi));
 
-	if (sp->diry == 1)
-	  XDrawLine(display, MI_WINDOW(mi), gc,
-				sp->x0 + sp->x, sp->y0 + miny,
-				sp->x0 + sp->x, sp->y0 + maxy);
-	else
-	  XDrawLine(display, MI_WINDOW(mi), gc,
-				sp->y0 + miny, sp->x0 + sp->x,
-				sp->y0 + maxy, sp->x0 + sp->x);
+	if (sp->dirx)
+		XDrawLine(display, MI_WINDOW(mi), gc,
+		sp->x0 + sp->x, sp->y0 + miny, sp->x0 + sp->x, sp->y0 + maxy);
+	if (sp->diry)
+		XDrawLine(display, MI_WINDOW(mi), gc,
+		sp->x0 + minx, sp->y0 + sp->y, sp->x0 + maxx, sp->y0 + sp->y);
 
 	if (MI_NPIXELS(mi) > 2)
 		XSetForeground(display, gc, MI_PIXEL(mi, sp->color));
 	else
 		XSetForeground(display, gc, MI_WIN_WHITE_PIXEL(mi));
-	for (y = miny; y <= maxy; y++)
-		if ((NRAND(sp->radius * NR)) <=
-		    (NX * sp->x + NY * y + NZ *
-		     SQRT(sp->radius * sp->radius - sp->x * sp->x - y * y))) {
-		  if (sp->diry == 1)
-			{
-			  sp->points[npts].x = sp->x + sp->x0;
-			  sp->points[npts].y = y + sp->y0;
+
+	if (sp->dirx)
+		for (sp->y = miny; sp->y <= maxy; sp->y++)
+			if ((NRAND(sp->radius * NR)) <=
+			    (NX * sp->x + NY * sp->y + NZ *
+			     SQRT(sp->radius * sp->radius - sp->x * sp->x - sp->y * sp->y))) {
+				sp->points[npts].x = sp->x + sp->x0;
+				sp->points[npts].y = sp->y + sp->y0;
+				npts++;
 			}
-		  else
-			{
-			  sp->points[npts].y = sp->x + sp->x0;
-			  sp->points[npts].x = y + sp->y0;
+	if (sp->diry)
+		for (sp->x = minx; sp->x <= maxx; sp->x++)
+			if ((NRAND(sp->radius * NR)) <=
+			    (NX * sp->x + NY * sp->y + NZ *
+			     SQRT(sp->radius * sp->radius - sp->x * sp->x - sp->y * sp->y))) {
+				sp->points[npts].x = sp->x + sp->x0;
+				sp->points[npts].y = sp->y + sp->y0;
+				npts++;
 			}
-			npts++;
-		}
 	XDrawPoints(display, MI_WINDOW(mi), gc, sp->points, npts, CoordModeOrigin);
 	if (sp->dirx == 1) {
 		sp->x++;
-		if (sp->diry == 1) {
-		  if (sp->x0 + sp->x >= sp->width)
+		if (sp->x0 + sp->x >= sp->width)
 			sp->x = sp->radius;
-		} else {
-		  if (sp->x0 + sp->x >= sp->height)
-			sp->x = sp->radius;
-		}
-	} else {
+	} else if (sp->dirx == -1) {
 		sp->x--;
 		if (sp->x0 + sp->x < 0)
 			sp->x = -sp->radius;
+	}
+	if (sp->diry == 1) {
+		sp->y++;
+		if (sp->y0 + sp->y >= sp->height)
+			sp->y = sp->radius;
+	} else if (sp->diry == -1) {
+		sp->y--;
+		if (sp->y0 + sp->y < 0)
+			sp->y = -sp->radius;
 	}
 }
 

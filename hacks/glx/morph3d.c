@@ -3,6 +3,8 @@ static const char sccsid[] = "@(#)morph3d.c	4.02 97/04/01 xlockmore";
 
 #endif
 
+#undef DEBUG_CULL_FACE
+
 /*-
  * morph3d.c - Shows 3D morphing objects (XLock Version)
  *
@@ -34,7 +36,7 @@ static const char sccsid[] = "@(#)morph3d.c	4.02 97/04/01 xlockmore";
  * Marcelo F. Vianna (Feb-13-1997)
  *
  * Revision History:
- * 08-May-97: Speed ups b Marcelo F. Vianna
+ * 08-May-97: Speed ups by Marcelo F. Vianna.
  *
  */
 
@@ -97,6 +99,7 @@ typedef struct {
 	GLfloat     seno;
 	int         object;
 	int         edgedivisions;
+        int         VisibleSpikes;
 	void        (*draw_object) (ModeInfo * mi);
 	float       Magnitude;
 	float      *MaterialColor[20];
@@ -139,10 +142,10 @@ static float MaterialGray[] =
 
 static morph3dstruct *morph3d = NULL;
 
-#define TRIANGLE(Edge, Amp, Divisions, Z)                                                                        \
+#define TRIANGLE(Edge, Amp, Divisions, Z, VS)                                                                    \
 {                                                                                                                \
   GLfloat   Xf,Yf,Xa,Yb,Xf2,Yf2;                                                                                 \
-  GLfloat   Factor,Factor1,Factor2;                                                                              \
+  GLfloat   Factor=0.0,Factor1,Factor2;                                                                              \
   GLfloat   VertX,VertY,VertZ,NeiAX,NeiAY,NeiAZ,NeiBX,NeiBY,NeiBZ;                                               \
   GLfloat   Ax,Ay,Bx;                                                                                            \
   int       Ri,Ti;                                                                                               \
@@ -194,13 +197,14 @@ static morph3dstruct *morph3d = NULL;
     glVertex3f(VertX, VertY, VertZ);                                                                             \
     glEnd();                                                                                                     \
   }                                                                                                              \
+  VS=(Factor<0);                                                                                               \
 }
 
-#define SQUARE(Edge, Amp, Divisions, Z)                                                                          \
+#define SQUARE(Edge, Amp, Divisions, Z, VS)                                                                      \
 {                                                                                                                \
   int       Xi,Yi;                                                                                               \
   GLfloat   Xf,Yf,Y,Xf2,Yf2,Y2,Xa,Yb;                                                                            \
-  GLfloat   Factor,Factor1,Factor2;                                                                              \
+  GLfloat   Factor=0.0,Factor1,Factor2;                                                                              \
   GLfloat   VertX,VertY,VertZ,NeiAX,NeiAY,NeiAZ,NeiBX,NeiBY,NeiBZ;                                               \
   GLfloat   Zf=(Edge)*(Z);                                                                                       \
   GLfloat   AmpVr2=(Amp)/sqr((Edge)*SQRT2/2);                                                                    \
@@ -237,20 +241,21 @@ static morph3dstruct *morph3d = NULL;
     }                                                                                                            \
     glEnd();                                                                                                     \
   }                                                                                                              \
+  VS=(Factor<0);                                                                                             \
 }
 
-#define PENTAGON(Edge, Amp, Divisions, Z)                                                                        \
+#define PENTAGON(Edge, Amp, Divisions, Z, VS)                                                                    \
 {                                                                                                                \
   int       Ri,Ti,Fi;                                                                                            \
   GLfloat   Xf,Yf,Xa,Yb,Xf2,Yf2;                                                                                 \
   GLfloat   x[6],y[6];                                                                                           \
-  GLfloat   Factor,Factor1,Factor2;                                                                              \
+  GLfloat   Factor=0.0,Factor1,Factor2;                                                                              \
   GLfloat   VertX,VertY,VertZ,NeiAX,NeiAY,NeiAZ,NeiBX,NeiBY,NeiBZ;                                               \
   GLfloat   Zf=(Edge)*(Z);                                                                                       \
   GLfloat   AmpVr2=(Amp)/sqr((Edge)*cossec36_2);                                                                 \
                                                                                                                  \
   for(Fi=0;Fi<6;Fi++) {                                                                                          \
-    x[Fi]=-cos( Fi*2*Pi/5 + Pi/10 )/(Divisions)*cossec36_2*(Edge);                                                \
+    x[Fi]=-cos( Fi*2*Pi/5 + Pi/10 )/(Divisions)*cossec36_2*(Edge);                                               \
     y[Fi]=sin( Fi*2*Pi/5 + Pi/10 )/(Divisions)*cossec36_2*(Edge);                                                \
   }                                                                                                              \
                                                                                                                  \
@@ -297,6 +302,7 @@ static morph3dstruct *morph3d = NULL;
       glEnd();                                                                                                   \
     }                                                                                                            \
   }                                                                                                              \
+  VS=(Factor<0);                                                                                             \
 }
 
 static void
@@ -310,7 +316,7 @@ draw_tetra(ModeInfo * mi)
 
 	list = glGenLists(1);
 	glNewList(list, GL_COMPILE_AND_EXECUTE);
-	TRIANGLE(2, mp->seno, mp->edgedivisions, 0.5 / SQRT6);
+	TRIANGLE(2, mp->seno, mp->edgedivisions, 0.5 / SQRT6, mp->VisibleSpikes);
 	glEndList();
 
 	glPushMatrix();
@@ -345,8 +351,8 @@ draw_cube(ModeInfo * mi)
 
 	list = glGenLists(1);
 	glNewList(list, GL_COMPILE_AND_EXECUTE);
-	SQUARE(2, mp->seno, mp->edgedivisions, 0.5)
-		glEndList();
+	SQUARE(2, mp->seno, mp->edgedivisions, 0.5, mp->VisibleSpikes)
+	glEndList();
 
 	glRotatef(cubeangle, 1, 0, 0);
 	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mp->MaterialColor[1]);
@@ -378,7 +384,7 @@ draw_octa(ModeInfo * mi)
 
 	list = glGenLists(1);
 	glNewList(list, GL_COMPILE_AND_EXECUTE);
-	TRIANGLE(2, mp->seno, mp->edgedivisions, 1 / SQRT6);
+	TRIANGLE(2, mp->seno, mp->edgedivisions, 1 / SQRT6, mp->VisibleSpikes);
 	glEndList();
 
 	glPushMatrix();
@@ -435,7 +441,7 @@ draw_dodeca(ModeInfo * mi)
 
 	list = glGenLists(1);
 	glNewList(list, GL_COMPILE_AND_EXECUTE);
-	PENTAGON(1, mp->seno, mp->edgedivisions, sqr(TAU) * sqrt((TAU + 2) / 5) / 2);
+	PENTAGON(1, mp->seno, mp->edgedivisions, sqr(TAU) * sqrt((TAU + 2) / 5) / 2, mp->VisibleSpikes);
 	glEndList();
 
 	glPushMatrix();
@@ -506,7 +512,7 @@ draw_icosa(ModeInfo * mi)
 
 	list = glGenLists(1);
 	glNewList(list, GL_COMPILE_AND_EXECUTE);
-	TRIANGLE(1.5, mp->seno, mp->edgedivisions, (3 * SQRT3 + SQRT15) / 12);
+	TRIANGLE(1.5, mp->seno, mp->edgedivisions, (3 * SQRT3 + SQRT15) / 12,mp->VisibleSpikes);
 	glEndList();
 
 	glPushMatrix();
@@ -640,6 +646,21 @@ draw_morph3d(ModeInfo * mi)
 	glRotatef(mp->step * 90, 0, 0, 1);
 
 	mp->seno = (sin(mp->step) + 1.0 / 3.0) * (4.0 / 5.0) * mp->Magnitude;
+
+        if (mp->VisibleSpikes) {
+#ifdef DEBUG_CULL_FACE
+          int loop;
+	  for (loop = 0; loop < 20; loop++) mp->MaterialColor[loop] = MaterialGray;
+#endif
+          glDisable(GL_CULL_FACE);
+        } else {
+#ifdef DEBUG_CULL_FACE
+          int loop;
+	  for (loop = 0; loop < 20; loop++) mp->MaterialColor[loop] = MaterialWhite;
+#endif
+          glEnable(GL_CULL_FACE);
+        }
+
 	mp->draw_object(mi);
 
 	glPopMatrix();
@@ -788,6 +809,7 @@ init_morph3d(ModeInfo * mi)
 	}
 	mp = &morph3d[screen];
 	mp->step = NRAND(90);
+        mp->VisibleSpikes=1;
 
 	mp->glx_context = init_GL(mi);
 

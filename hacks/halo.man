@@ -1,9 +1,9 @@
-.TH XScreenSaver 1 "7-jul-93" "X Version 11"
+.TH XScreenSaver 1 "12-Jun-97" "X Version 11"
 .SH NAME
 halo - draw circular patterns
 .SH SYNOPSIS
 .B halo
-[\-display \fIhost:display.screen\fP] [\-foreground \fIcolor\fP] [\-background \fIcolor\fP] [\-window] [\-root] [\-mono] [\-install] [\-visual \fIvisual\fP] [\-count \fIint\fP] [\-delay \fIusecs\fP] [\-mode seuss | ramp | random ] [\-animate]
+[\-display \fIhost:display.screen\fP] [\-foreground \fIcolor\fP] [\-background \fIcolor\fP] [\-window] [\-root] [\-mono] [\-install] [\-visual \fIvisual\fP] [\-count \fIint\fP] [\-delay \fIusecs\fP] [\-mode seuss | ramp | random ] [\-animate] [\-colors \fIinteger\fP] [\-cycle] [\-no\-cycle] [\-cycle\-delay \fIusecs\fP] 
 .SH DESCRIPTION
 The \fIhalo\fP program draws cool patterns based on circles.
 .SH OPTIONS
@@ -40,10 +40,22 @@ In \fIramp\fP mode, a color ramp will be drawn.
 How much of a delay should be introduced between steps of the animation.
 Default 100000, or about 0.1 second.
 .TP 8
+.B \-colors \fIinteger\fP
+How many colors to use.  Default 100.
+.TP 8
 .B \-animate
 If specified, then the centerpoints of the circles will bounce around.
 Otherwise, the circles will be drawn once, erased, and a new set of
 circles will be drawn.
+.TP 8
+.B \-cycle
+.TP 8
+.B \-no\-cycle
+Whether to do colormap cycling.  Default is to cycle.
+.TP 8
+.B \-cycle\-delay
+Number of microseconds between shifts of the colormap; default 100000,
+or 1/10th second.
 .SH ENVIRONMENT
 .PP
 .TP 8

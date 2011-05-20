@@ -60,16 +60,15 @@
 #include "spline.h"
 
 struct ball {
-  float x, y;
-  float vx, vy;
-  float dx, dy;
-  float mass;
+  double x, y;
+  double vx, vy;
+  double dx, dy;
+  double mass;
   int size;
-  XColor color;
+  int pixel_index;
   int hue;
 };
 
-static unsigned int default_fg_pixel;
 static struct ball *balls;
 static int npoints;
 static int threshold;
@@ -79,23 +78,21 @@ static int segments;
 static Bool glow_p;
 static Bool orbit_p;
 static XPoint *point_stack;
-static int point_stack_size, point_stack_fp, pixel_stack_fp, pixel_stack_size;
-static unsigned long *pixel_stack;
-static unsigned int color_shift;
+static int point_stack_size, point_stack_fp;
+static XColor *colors;
+static int ncolors;
+static int fg_index;
+static int color_shift;
 
 /*flip mods for mouse interaction*/
 static Bool mouse_p;
 int mouse_x, mouse_y, mouse_mass, root_x, root_y;
-static float viscosity;
+static double viscosity;
 
 static enum object_mode {
   ball_mode, line_mode, polygon_mode, spline_mode, spline_filled_mode,
   tail_mode
 } mode;
-
-static enum color_mode {
-  cycle_mode, random_mode
-} cmode;
 
 static GC draw_gc, erase_gc;
 
@@ -140,7 +137,7 @@ init_balls (Display *dpy, Window window)
   glow_p = get_boolean_resource ("glow", "Boolean");
   orbit_p = get_boolean_resource ("orbit", "Boolean");
   color_shift = get_integer_resource ("colorShift", "Integer");
-  if (color_shift >= 360) color_shift = 5;
+  if (color_shift <= 0) color_shift = 5;
 
   /*flip mods for mouse interaction*/
   mouse_p = get_boolean_resource ("mouse", "Boolean");
@@ -165,20 +162,60 @@ init_balls (Display *dpy, Window window)
     exit (1);
   }
 
-  mode_str = get_string_resource ("colorMode", "ColorMode");
-  if (! mode_str) cmode = cycle_mode;
-  else if (!strcmp (mode_str, "cycle")) cmode = cycle_mode;
-  else if (!strcmp (mode_str, "random")) cmode = random_mode;
-  else {
-    fprintf (stderr, "%s: colorMode must be cycle or random, not \"%s\"\n",
-	     progname, mode_str);
-    exit (1);
-  }
-
   if (mode != ball_mode && mode != tail_mode) glow_p = False;
   
   if (mode == polygon_mode && npoints < 3)
     mode = line_mode;
+
+  ncolors = get_integer_resource ("colors", "Colors");
+  if (ncolors < 2) ncolors = 2;
+  if (ncolors <= 2) mono_p = True;
+  colors = 0;
+
+  if (!mono_p)
+    {
+      fg_index = 0;
+      switch (mode)
+	{
+	case ball_mode:
+	  if (glow_p)
+	    {
+	      int H = random() % 360;
+	      double S1 = 0.25;
+	      double S2 = 1.00;
+	      double V = frand(0.25) + 0.75;
+	      colors = (XColor *) malloc(sizeof(*colors) * (ncolors+1));
+	      make_color_ramp (dpy, cmap, H, S1, V, H, S2, V, colors, &ncolors,
+			       False, True, False);
+	    }
+	  else
+	    {
+	      ncolors = npoints;
+	      colors = (XColor *) malloc(sizeof(*colors) * (ncolors+1));
+	      make_random_colormap (dpy, xgwa.visual, cmap, colors, &ncolors,
+				    True, True, False, True);
+	    }
+	  break;
+	case line_mode:
+	case polygon_mode:
+	case spline_mode:
+	case spline_filled_mode:
+	case tail_mode:
+	  colors = (XColor *) malloc(sizeof(*colors) * (ncolors+1));
+	  make_smooth_colormap (dpy, xgwa.visual, cmap, colors, &ncolors,
+				True, False, True);
+	  break;
+	default:
+	  abort ();
+	}
+    }
+
+  if (!mono_p && ncolors <= 2)
+    {
+      if (colors) free (colors);
+      colors = 0;
+      mono_p = True;
+    }
 
   if (mode != ball_mode)
     {
@@ -186,13 +223,6 @@ init_balls (Display *dpy, Window window)
       point_stack_size = size * (npoints + 1);
       point_stack = (XPoint *) calloc (point_stack_size, sizeof (XPoint));
       point_stack_fp = 0;
-      if (segments > 0)
-	pixel_stack_size = segments;
-      else
-	pixel_stack_size = (360 / color_shift);
-      pixel_stack = (unsigned long *)
-	calloc (pixel_stack_size, sizeof (unsigned int));
-      pixel_stack_fp = 0;
     }
 
   gcv.line_width = (mode == tail_mode
@@ -200,21 +230,15 @@ init_balls (Display *dpy, Window window)
 		    : 1);
   gcv.cap_style = (mode == tail_mode ? CapRound : CapButt);
 
-  gcv.foreground = default_fg_pixel =
-    get_pixel_resource ("foreground", "Foreground", dpy, cmap);
+  if (mono_p)
+    gcv.foreground = get_pixel_resource("foreground", "Foreground", dpy, cmap);
+  else
+    gcv.foreground = colors[fg_index].pixel;
   draw_gc = XCreateGC (dpy, window, GCForeground|GCLineWidth|GCCapStyle, &gcv);
-  gcv.foreground = get_pixel_resource ("background", "Background", dpy, cmap);
+
+  gcv.foreground = get_pixel_resource("background", "Background", dpy, cmap);
   erase_gc = XCreateGC (dpy, window, GCForeground|GCLineWidth|GCCapStyle,&gcv);
 
-  if (!mono_p && mode != ball_mode)
-    for (i = 0; i < pixel_stack_size; i++)
-      {
-	XColor color;
-	color.pixel = default_fg_pixel;
-	XQueryColor (dpy, cmap, &color);
-	if (!XAllocColor (dpy, cmap, &color)) abort ();
-	pixel_stack [i] = color.pixel;
-      }
 
 #define rand_size() min (MAX_SIZE, 8 + (random () % (MAX_SIZE - 9)))
 
@@ -238,20 +262,12 @@ init_balls (Display *dpy, Window window)
 	  balls [i].vx = vx ? vx : ((6.0 - (random () % 11)) / 8.0);
 	  balls [i].vy = vy ? vy : ((6.0 - (random () % 11)) / 8.0);
 	}
-      balls [i].color.pixel = default_fg_pixel;
-      balls [i].color.flags = DoRed | DoGreen | DoBlue;
-      if (!mono_p)
-	{
-	  if (i != 0 && (glow_p || mode != ball_mode))
-	    balls [i].hue = balls [0].hue;
-	  else
-	    balls [i].hue = random () % 360;
-	  hsv_to_rgb (balls [i].hue, 1.0, 1.0,
-		      &balls [i].color.red, &balls [i].color.green,
-		      &balls [i].color.blue);
-	  if (!XAllocColor (dpy, cmap, &balls [i].color))
-	    mono_p = True; /* just give up */
-	}
+      if (mono_p || mode != ball_mode)
+	balls [i].pixel_index = -1;
+      else if (glow_p)
+	balls [i].pixel_index = 0;
+      else
+	balls [i].pixel_index = random() % ncolors;
     }
 
   if (orbit_p)
@@ -294,10 +310,10 @@ init_balls (Display *dpy, Window window)
 }
 
 static void
-compute_force (int i, float *dx_ret, float *dy_ret)
+compute_force (int i, double *dx_ret, double *dy_ret)
 {
   int j;
-  float x_dist, y_dist, dist, dist2;
+  double x_dist, y_dist, dist, dist2;
   *dx_ret = 0;
   *dy_ret = 0;
   for (j = 0; j < npoints; j++)
@@ -310,9 +326,9 @@ compute_force (int i, float *dx_ret, float *dy_ret)
 	      
       if (dist > 0.1) /* the balls are not overlapping */
 	{
-	  float new_acc = ((balls[j].mass / dist2) *
-			   ((dist < threshold) ? -1.0 : 1.0));
-	  float new_acc_dist = new_acc / dist;
+	  double new_acc = ((balls[j].mass / dist2) *
+			    ((dist < threshold) ? -1.0 : 1.0));
+	  double new_acc_dist = new_acc / dist;
 	  *dx_ret += new_acc_dist * x_dist;
 	  *dy_ret += new_acc_dist * y_dist;
 	}
@@ -332,9 +348,9 @@ compute_force (int i, float *dx_ret, float *dy_ret)
 	
       if (dist > 0.1) /* the balls are not overlapping */
 	{
-	  float new_acc = ((mouse_mass / dist2) *
-			   ((dist < threshold) ? -1.0 : 1.0));
-	  float new_acc_dist = new_acc / dist;
+	  double new_acc = ((mouse_mass / dist2) *
+			    ((dist < threshold) ? -1.0 : 1.0));
+	  double new_acc_dist = new_acc / dist;
 	  *dx_ret += new_acc_dist * x_dist;
 	  *dy_ret += new_acc_dist * y_dist;
 	}
@@ -380,9 +396,9 @@ run_balls (Display *dpy, Window window)
   /* move the balls according to the forces now in effect */
   for (i = 0; i < npoints; i++)
     {
-      float old_x = balls[i].x;
-      float old_y = balls[i].y;
-      float new_x, new_y;
+      double old_x = balls[i].x;
+      double old_y = balls[i].y;
+      double new_x, new_y;
       int size = balls[i].size;
       balls[i].vx += balls[i].dx;
       balls[i].vy += balls[i].dy;
@@ -441,43 +457,39 @@ run_balls (Display *dpy, Window window)
       new_x = balls[i].x;
       new_y = balls[i].y;
 
-      /* make color saturation be related to particle acceleration. */
-      if (glow_p)
+      if (!mono_p)
 	{
-	  float limit = 0.5;
-	  double s, v, fraction;
-	  float vx = balls [i].dx;
-	  float vy = balls [i].dy;
-	  XColor new_color;
-	  if (vx < 0) vx = -vx;
-	  if (vy < 0) vy = -vy;
-	  fraction = vx + vy;
-	  if (fraction > limit) fraction = limit;
-
-	  s = 1 - (fraction / limit);
-	  v = 1.0;
-
-	  s = (s * 0.75) + 0.25;
-
-	  hsv_to_rgb (balls [i].hue, s, v, 
-		      &new_color.red, &new_color.green, &new_color.blue);
-	  if (XAllocColor (dpy, cmap, &new_color))
+	  if (mode == ball_mode)
 	    {
-	      XFreeColors (dpy, cmap, &balls [i].color.pixel, 1, 0);
-	      balls [i].color = new_color;
+	      if (glow_p)
+		{
+		  /* make color saturation be related to particle
+		     acceleration. */
+		  double limit = 0.5;
+		  double s, fraction;
+		  double vx = balls [i].dx;
+		  double vy = balls [i].dy;
+		  if (vx < 0) vx = -vx;
+		  if (vy < 0) vy = -vy;
+		  fraction = vx + vy;
+		  if (fraction > limit) fraction = limit;
+
+		  s = 1 - (fraction / limit);
+		  balls[i].pixel_index = (ncolors * s);
+		}
+	      XSetForeground (dpy, draw_gc,
+			      colors[balls[i].pixel_index].pixel);
 	    }
 	}
 
       if (mode == ball_mode)
 	{
-	  if (!mono_p)
-	    XSetForeground (dpy, draw_gc, balls [i].color.pixel);
 	  XFillArc (dpy, window, erase_gc, (int) old_x, (int) old_y,
 		    size, size, 0, 360*64);
 	  XFillArc (dpy, window, draw_gc,  (int) new_x, (int) new_y,
 		    size, size, 0, 360*64);
 	}
-      if (mode != ball_mode)
+      else
 	{
 	  point_stack [point_stack_fp].x = new_x;
 	  point_stack [point_stack_fp].y = new_y;
@@ -497,51 +509,13 @@ run_balls (Display *dpy, Window window)
 	abort ();
       if (!mono_p)
 	{
-	  XColor color2, desired;
-	  color2 = balls [0].color;
-	  switch (cmode)
+	  static int tick = 0;
+	  if (tick++ == color_shift)
 	    {
-	    case cycle_mode:
-	      {
-		int h;
-		double s, v;
-		rgb_to_hsv (color2.red, color2.green, color2.blue, &h, &s, &v);
-		h = (h + color_shift) % 360;
-		hsv_to_rgb (h, s, v, &color2.red, &color2.green, &color2.blue);
-	      }
-	      break;
-	    case random_mode:
-	      color2.red =   random () % 65535;
-	      color2.green = random () % 65535;
-	      color2.blue =  random () % 65535;
-	      break;
-	    default:
-	      abort ();
+	      tick = 0;
+	      fg_index = (fg_index + 1) % ncolors;
+	      XSetForeground (dpy, draw_gc, colors[fg_index].pixel);
 	    }
-	      
-	  desired = color2;
-	  if (XAllocColor (dpy, cmap, &color2))
-	    {
-	      /* XAllocColor returns the actual RGB that the hardware let us
-		 allocate.  Restore the requested values into the XColor struct
-		 so that limited-resolution hardware doesn't cause the cycle to
-		 get "stuck". */
-	      color2.red = desired.red;
-	      color2.green = desired.green;
-	      color2.blue = desired.blue;
-	    }
-	  else
-	    {
-	      color2 = balls [0].color;
-	      if (!XAllocColor (dpy, cmap, &balls [0].color))
-		abort ();
-	    }
-	  pixel_stack [pixel_stack_fp++] = balls [0].color.pixel;
-	  if (pixel_stack_fp >= pixel_stack_size)
-	    pixel_stack_fp = 0;
-	  XFreeColors (dpy, cmap, pixel_stack + pixel_stack_fp, 1, 0);
-	  balls [0].color = color2;
-	  XSetForeground (dpy, draw_gc, balls [0].color.pixel);
 	}
     }
 
@@ -643,6 +617,7 @@ char *defaults [] = {
   "*mode:	balls",
   "*points:	0",
   "*size:	0",
+  "*colors:	200",
   "*threshold:	100",
   "*delay:	10000",
   "*glow:	false",
@@ -651,19 +626,20 @@ char *defaults [] = {
   "*viscosity:	1",
   "*orbit:	false",
   "*colorShift:	3",
-  "*segments:	100",
+  "*segments:	500",
+  "*vMult:	0.9",
   0
 };
 
 XrmOptionDescRec options [] = {
   { "-mode",		".mode",	XrmoptionSepArg, 0 },
+  { "-colors",		".colors",	XrmoptionSepArg, 0 },
   { "-points",		".points",	XrmoptionSepArg, 0 },
+  { "-color-shift",	".colorShift",	XrmoptionSepArg, 0 },
   { "-threshold",	".threshold",	XrmoptionSepArg, 0 },
   { "-segments",	".segments",	XrmoptionSepArg, 0 },
   { "-delay",		".delay",	XrmoptionSepArg, 0 },
   { "-size",		".size",	XrmoptionSepArg, 0 },
-  { "-color-mode",	".colorMode",	XrmoptionSepArg, 0 },
-  { "-color-shift",	".colorShift",	XrmoptionSepArg, 0 },
   { "-radius",		".radius",	XrmoptionSepArg, 0 },
   { "-vx",		".vx",		XrmoptionSepArg, 0 },
   { "-vy",		".vy",		XrmoptionSepArg, 0 },

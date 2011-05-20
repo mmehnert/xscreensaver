@@ -49,11 +49,11 @@ case "$host" in
   *-irix*)
   if test -n "$GCC"; then
     AC_MSG_RESULT(Turning on gcc compiler warnings.)
-    CFLAGS="$CFLAGS -Wall -Wstrict-prototypes -Wnested-externs -Wno-format"
+    CC="$CC -Wall -Wstrict-prototypes -Wnested-externs -Wno-format"
   else
     # not gcc
     AC_MSG_RESULT(Turning on SGI compiler warnings.)
-    CFLAGS="$CFLAGS -fullwarn -use_readonly_const -rdata_shared -g3"
+    CC="$CC -fullwarn -use_readonly_const -rdata_shared -g3"
   fi
   ;;
 esac
@@ -829,6 +829,13 @@ if test \! -z "$libdir" ; then
 fi
 
 
+##### should have options to override the DEPEND crap, I guess...
+DEPEND=makedepend
+DEPEND_FLAGS=
+DEPEND_DEFINES=
+
+
+
 # Done testing things -- now substitute in some stuff for the Makefiles.
 #
 if test $have_motif = yes; then
@@ -868,9 +875,14 @@ else
   INSTALL_SETUID='$(INSTALL_PROGRAM)'
 fi
 
-
+tab='	'
 if test $have_gl = yes; then
   GL_EXES='$(GL_EXES)'
+  GL_KLUDGE_1=${tab}${tab}${tab}${tab}${tab}${tab}${tab}${tab}${tab}'  \'
+  GL_KLUDGE_2=${tab}
+else
+  GL_KLUDGE_1=${tab}${tab}${tab}${tab}${tab}${tab}${tab}${tab}${tab}'\n'
+  GL_KLUDGE_2='!'${tab}
 fi
 
 AC_SUBST(INCLUDES)
@@ -892,9 +904,14 @@ AC_SUBST(XMU_OBJS)
 AC_SUBST(LOCK_SRCS)
 AC_SUBST(LOCK_OBJS)
 AC_SUBST(GL_EXES)
+AC_SUBST(GL_KLUDGE_1)
+AC_SUBST(GL_KLUDGE_2)
 AC_SUBST(HACKDIR)
 AC_SUBST(APPDEFAULTS)
 
+AC_SUBST(DEPEND)
+AC_SUBST(DEPEND_FLAGS)
+AC_SUBST(DEPEND_DEFINES)
 
 # Print some warnings before emitting the Makefiles.
 #
@@ -966,4 +983,5 @@ AC_OUTPUT(Makefile
 	  utils/Makefile
 	  driver/Makefile
 	  hacks/Makefile
-	  hacks/glx/Makefile)
+	  hacks/glx/Makefile
+	  driver/XScreenSaver.ad)

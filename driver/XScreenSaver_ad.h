@@ -64,6 +64,9 @@
 		sphere -root						\\n\
 		forest -root						\\n\
 		lisa -root						\\n\
+		goop -root						\\n\
+		starfish -root						\\n\
+		starfish -root -blob					\\n\
 									  \
 	mono:	rocks -root						\\n\
 	color:	rocks -root -fg darksalmon				\\n\
@@ -78,7 +81,14 @@
 									  \
   PseudoColor:	qix -root -count 4 -solid -transparent			\\n\
   PseudoColor:	qix -root -count 5 -solid -transparent -linear		  \
-			-segments 250 -size 100				\\n",
+			-segments 250 -size 100				\\n\
+									  \
+		gears -root					  	\\n\
+		superquadrics -root				  	\\n\
+		escher -root					  	\\n\
+		pipes -root					  	\\n\
+		sproingies -root				  	\\n",
+" ",
 "*fontList:                       *-helvetica-medium-r-*-*-*-120-*-*-*-iso8859-1",
 "*demoDialog*label1.fontList:     *-helvetica-medium-r-*-*-*-140-*-*-*-iso8859-1",
 "*passwdDialog*fontList:          *-helvetica-medium-r-*-*-*-140-*-*-*-iso8859-1",

@@ -99,6 +99,9 @@
 		sphere -root						\n\
 		forest -root						\n\
 		lisa -root						\n\
+		goop -root						\n\
+		starfish -root						\n\
+		starfish -root -blob					\n\
 									  \
 	mono:	rocks -root						\n\
 	color:	rocks -root -fg darksalmon				\n\
@@ -113,25 +116,23 @@
 									  \
   PseudoColor:	qix -root -count 4 -solid -transparent			\n\
   PseudoColor:	qix -root -count 5 -solid -transparent -linear		  \
-			-segments 250 -size 100				\n
+			-segments 250 -size 100				\n\
+@GL_KLUDGE_1@
+@GL_KLUDGE_2@	gears -root					  	\n\
+@GL_KLUDGE_2@	superquadrics -root				  	\n\
+@GL_KLUDGE_2@	escher -root					  	\n\
+@GL_KLUDGE_2@	pipes -root					  	\n\
+@GL_KLUDGE_2@	sproingies -root				  	\n
+ 
 
-
-! The sources for the following programs are included with XScreenSaver, but
-! they require OpenGL; so, since most people don't have the GL headers and
-! libraries, they're not included in the programs list by default.
-! 
-! Note that these will work best on a visual *half* as deep as the depth of
-! the screen, since that way they can do double-buffering -- on an SGI, you
-! should specify the 12-bit TrueColor visual (probably 0x29) instead of 
+! A few of the hacks require OpenGL, and will only be built if you have it.
+! Note that those hacks (gears, superquadratics, escher, pipes, and
+! sproingies) will work best on a visual *half* as deep as the depth of the
+! screen, since that way they can do double-buffering -- on an SGI, you
+! should specify the 12-bit TrueColor visual (probably 0x29) instead of
 ! letting XScreenSaver pick the visual itself (specifying "TrueColor" would
 ! select the 24-bit TrueColor visual, and double-buffering wouldn't be used,
 ! resulting in flicker.)
-!
-!		gears -root					  	\n\
-!		superquadrics -root				  	\n\
-!		escher -root					  	\n\
-!		pipes -root					  	\n\
-!		sproingies -root				  	\n\
 !
 ! Some other programs that you might want to track down (these work as
 ! XScreenSaver helpers, but are not distributed with it):

@@ -22,6 +22,10 @@ LDFLAGS		= @LDFLAGS@
 DEFS		= -DSTANDALONE -DUSE_GL @DEFS@
 LIBS		= @LIBS@
 
+DEPEND		= @DEPEND@
+DEPEND_FLAGS	= @DEPEND_FLAGS@
+DEPEND_DEFINES	= @DEPEND_DEFINES@
+
 SHELL		= /bin/sh
 INSTALL		= @INSTALL@
 INSTALL_PROGRAM = @INSTALL_PROGRAM@
@@ -67,7 +71,7 @@ HACK_OBJS	= screenhack-gl.o xlock-gl.o $(HACK_BIN)/xlockmore.o \
 		  $(UTILS_BIN)/usleep.o $(UTILS_BIN)/yarandom.o \
 		  $(UTILS_BIN)/hsv.o $(UTILS_BIN)/colors.o
 
-HDRS		= buildlwo.h
+HDRS		= buildlwo.h e_textures.h
 MEN		= 
 EXTRAS		= README Makefile.in
 
@@ -115,7 +119,8 @@ distclean: clean
 	-rm -f Makefile *~ "#"*
 
 depend:
-	$(MAKEDEP) -I$(srcdir) -I. $(DEFS) $(SRCS)
+	$(DEPEND) $(DEPEND_FLAGS) -- \
+	$(INCLUDES) $(DEFS) $(DEPEND_DEFINES) $(CFLAGS) $(X_CFLAGS) -- $(SRCS)
 
 TAGS: tags
 tags:

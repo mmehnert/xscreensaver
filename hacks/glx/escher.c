@@ -21,6 +21,12 @@ static const char sccsid[] = "@(#)escher.c	4.03 97/04/01 xlockmore";
  *     Foley - vanDam - Feiner - Hughes
  *     Second Edition" Pag. 227, exercise 5.15.
  * 
+ * This mode shows some interesting scenes that are impossible OR very
+ * wierd to build in the real universe. Much of the scenes are inspirated
+ * on Mauritz Cornelis Escher's works which derivated the mode's name.
+ * M.C. Escher (1898-1972) was a dutch artist and many people prefer to
+ * say he was a matematician.
+ *
  * Thanks goes to Brian Paul for making it possible and inexpensive to use 
  * OpenGL at home.
  *
@@ -35,15 +41,37 @@ static const char sccsid[] = "@(#)escher.c	4.03 97/04/01 xlockmore";
  * Marcelo F. Vianna (Jun-01-1997)
  *
  * Revision History:
+ * 08-Jun-97: New scene implemented: "Impossible Cage" based in a M.C. Escher's
+ *            painting with the same name (quite similar). The first GL mode
+ *            to use texture mapping.
+ *            The "Impossible Cage" scene doesn't use DEPTH BUFFER, the 
+ *            wood planks are drawn consistently using GL_CULL_FACE, and
+ *            the painter's algorithm is used to sort the planks.
+ *            Marcelo F. Vianna.
+ * 07-Jun-97: Speed ups in Moebius Strip using GL_CULL_FACE.
+ *            Marcelo F. Vianna.
  * 03-Jun-97: Initial Release (Only one scene: "Moebius Strip")
- *            The Moebious Strip scene was inspirated in a D.C. Escher's
+ *            The Moebious Strip scene was inspirated in a M.C. Escher's
  *            painting named Moebius Strip II in wich ants walk across a
  *            Moebius Strip path, sometimes meeting each other and sometimes
  *            being in "opposite faces" (note that the moebius strip has
  *            only one face and one edge).
+ *            Marcelo F. Vianna.
+ *
  */
 
-#include <X11/Intrinsic.h>
+/*-
+ * Texture mapping is only available on RGBA contexts, Mono and color index
+ * visuals DO NOT support texture mapping in OpenGL.
+ *
+ * BUT Mesa do implements RGBA contexts in pseudo color visuals, so texture
+ * mapping shuld work on PseudoColor, DirectColor, TrueColor using Mesa. Mono
+ * is not officially supported for both OpenGL and Mesa, but seems to not crash
+ * Mesa.
+ *
+ * In real OpenGL, PseudoColor DO NOT support texture map (as far as I know).
+ * Perhaps this explains the strange behaviour when running Multiscreen.
+ */
 
 #include <X11/Intrinsic.h>
 
@@ -65,6 +93,7 @@ static const char sccsid[] = "@(#)escher.c	4.03 97/04/01 xlockmore";
 #ifdef USE_GL
 
 #include <GL/glu.h>
+#include "e_textures.h"
 
 static int solidmoebius;
 static int noants;
@@ -89,10 +118,8 @@ static OptionStruct desc[] =
 ModeSpecOpt escher_opts =
 {4, opts, 2, vars, desc};
 
-
-
 #define Scale4Window               0.3
-#define Scale4Iconic               0.5
+#define Scale4Iconic               0.4
 
 #define sqr(A)                     ((A)*(A))
 
@@ -107,6 +134,7 @@ typedef struct {
 	GLfloat     step;
         GLfloat     ant_position;
 	int         scene;
+  int AreObjectsDefined[3];
 	GLXContext  glx_context;
 } escherstruct;
 
@@ -143,14 +171,21 @@ static float MaterialWhite[] =
 {0.7, 0.7, 0.7, 1.0};
 static float MaterialGray[] =
 {0.2, 0.2, 0.2, 1.0};
+/*static float MaterialLightGray[] =
+{0.4, 0.4, 0.4, 1.0};*/
 
 static escherstruct *escher = NULL;
 static GLuint objects;
-static AreObjectsDefined[2]={0,0};
+
+#define NUM_SCENES      2
 
 #define ObjMoebiusStrip 0
 #define ObjAntBody      1
-#define NUM_SCENES      1
+#define ObjWoodPlank    2
+
+#define PlankWidth      3.0
+#define PlankHeight     0.35
+#define PlankThickness  0.15   
 
 static void
 mySphere(float radius)
@@ -175,7 +210,7 @@ myCone(float radius)
 }
 
 static void
-draw_escher_ant(float *Material)
+draw_escher_ant(escherstruct *ep, float *Material)
 {
         static float ant_step=0;
         float cos1=cos(ant_step);
@@ -186,8 +221,9 @@ draw_escher_ant(float *Material)
         float sin3=sin(ant_step+4*Pi/3);
               
         glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, Material);
-        if (!AreObjectsDefined[ObjAntBody]) {
+        if (!ep->AreObjectsDefined[ObjAntBody]) {
 	  glNewList(objects+ObjAntBody, GL_COMPILE_AND_EXECUTE);
+            glEnable(GL_CULL_FACE);
             glPushMatrix();
             glScalef(1,1.3,1);
             mySphere(0.18);
@@ -209,12 +245,17 @@ draw_escher_ant(float *Material)
             mySphere(0.25);
             glScalef(1,1/1.3,1);
             glPopMatrix();
+            glDisable(GL_CULL_FACE);
           glEndList();
-          AreObjectsDefined[ObjAntBody]=1;
-          /* printf("Ant drawn slowly"); */
+          ep->AreObjectsDefined[ObjAntBody]=1;
+#ifdef DEBUG_LISTS
+          printf("Ant drawn SLOWLY\n");
+#endif
         } else {
           glCallList(objects+ObjAntBody);
-          /* printf("Ant drawn quickly"); */
+#ifdef DEBUG_LISTS
+          printf("Ant drawn quickly\n");
+#endif
         }
 
         glDisable(GL_LIGHTING);
@@ -324,7 +365,6 @@ static void RotateAaroundU(float  Ax, float  Ay, float Az,
 static void
 draw_moebius(ModeInfo * mi)
 {
-/*        GLfloat X,Y;*/
         GLfloat Phi, Theta;
         GLfloat cPhi, sPhi;
 	escherstruct *ep = &escher[MI_SCREEN(mi)];
@@ -332,7 +372,7 @@ draw_moebius(ModeInfo * mi)
 
         float Cx,Cy,Cz;
 
-        if (!AreObjectsDefined[ObjMoebiusStrip]) {
+        if (!ep->AreObjectsDefined[ObjMoebiusStrip]) {
 	  glNewList(objects+ObjMoebiusStrip, GL_COMPILE_AND_EXECUTE);
 
         if (solidmoebius) {
@@ -395,11 +435,15 @@ draw_moebius(ModeInfo * mi)
         }
 
           glEndList();
-          AreObjectsDefined[ObjMoebiusStrip]=1;
-          /* printf("Strip drawn slowly\n"); */
+          ep->AreObjectsDefined[ObjMoebiusStrip]=1;
+#ifdef DEBUG_LISTS
+          printf("Strip drawn SLOWLY\n");
+#endif
         } else {
           glCallList(objects+ObjMoebiusStrip);
-          /* printf("Strip drawn quickly\n"); */
+#ifdef DEBUG_LISTS
+          printf("Strip drawn quickly\n");
+#endif
         }
         
         if (!noants) {
@@ -409,7 +453,7 @@ draw_moebius(ModeInfo * mi)
           glTranslatef(3,0,0);
           glRotatef(ep->ant_position/2+90,0,1,0);
           glTranslatef(0.28,0,-0.45);
-          draw_escher_ant(MaterialYellow);
+          draw_escher_ant(ep, MaterialYellow);
           glPopMatrix();
 
           /* DRAW YELLOW ANT */
@@ -418,7 +462,7 @@ draw_moebius(ModeInfo * mi)
           glTranslatef(3,0,0);
           glRotatef(ep->ant_position/2,0,1,0);
           glTranslatef(0.28,0,-0.45);
-          draw_escher_ant(MaterialBlue);
+          draw_escher_ant(ep, MaterialBlue);
           glPopMatrix();
 
           /* DRAW GREEN ANT */
@@ -428,7 +472,7 @@ draw_moebius(ModeInfo * mi)
           glRotatef(-ep->ant_position/2,0,1,0);
           glTranslatef(0.28,0, 0.45);
           glRotatef(180,1,0,0);
-          draw_escher_ant(MaterialGreen);
+          draw_escher_ant(ep, MaterialGreen);
           glPopMatrix();
 
           /* DRAW CYAN ANT */
@@ -438,7 +482,7 @@ draw_moebius(ModeInfo * mi)
           glRotatef(-ep->ant_position/2+90,0,1,0);
           glTranslatef(0.28,0, 0.45);
           glRotatef(180,1,0,0);
-          draw_escher_ant(MaterialCyan);
+          draw_escher_ant(ep, MaterialCyan);
           glPopMatrix();
         }
 
@@ -446,6 +490,141 @@ draw_moebius(ModeInfo * mi)
 }
 #undef MoebiusDivisions
 #undef MoebiusTransversals
+
+static void
+draw_woodplank(escherstruct *ep)
+{
+         if (!ep->AreObjectsDefined[ObjWoodPlank]) {
+	 glNewList(objects+ObjWoodPlank, GL_COMPILE_AND_EXECUTE);
+         glBegin(GL_QUADS);
+           glNormal3f( 0, 0, 1);
+           glTexCoord2f( 0, 0);
+           glVertex3f(-PlankWidth,-PlankHeight, PlankThickness);
+           glTexCoord2f( 1, 0);
+           glVertex3f( PlankWidth,-PlankHeight, PlankThickness);
+           glTexCoord2f( 1, 1);
+           glVertex3f( PlankWidth, PlankHeight, PlankThickness);
+           glTexCoord2f( 0, 1);
+           glVertex3f(-PlankWidth ,PlankHeight, PlankThickness);
+           glNormal3f( 0, 0,-1);
+           glTexCoord2f( 0, 0);
+           glVertex3f(-PlankWidth ,PlankHeight,-PlankThickness);
+           glTexCoord2f( 1, 0);
+           glVertex3f( PlankWidth, PlankHeight,-PlankThickness);
+           glTexCoord2f( 1, 1);
+           glVertex3f( PlankWidth,-PlankHeight,-PlankThickness);
+           glTexCoord2f( 0, 1);
+           glVertex3f(-PlankWidth,-PlankHeight,-PlankThickness);
+           glNormal3f( 0, 1, 0);
+           glTexCoord2f( 0, 0);
+           glVertex3f(-PlankWidth, PlankHeight, PlankThickness);
+           glTexCoord2f( 1, 0);
+           glVertex3f( PlankWidth, PlankHeight, PlankThickness);
+           glTexCoord2f( 1, 1);
+           glVertex3f( PlankWidth, PlankHeight,-PlankThickness);
+           glTexCoord2f( 0, 1);
+           glVertex3f(-PlankWidth, PlankHeight,-PlankThickness);
+           glNormal3f( 0,-1, 0);
+           glTexCoord2f( 0, 0);
+           glVertex3f(-PlankWidth,-PlankHeight,-PlankThickness);
+           glTexCoord2f( 1, 0);
+           glVertex3f( PlankWidth,-PlankHeight,-PlankThickness);
+           glTexCoord2f( 1, 1);
+           glVertex3f( PlankWidth,-PlankHeight, PlankThickness);
+           glTexCoord2f( 0, 1);
+           glVertex3f(-PlankWidth,-PlankHeight, PlankThickness);
+           glNormal3f( 1, 0, 0);
+           glTexCoord2f( 0, 0);
+           glVertex3f( PlankWidth,-PlankHeight, PlankThickness);
+           glTexCoord2f( 1, 0);
+           glVertex3f( PlankWidth,-PlankHeight,-PlankThickness);
+           glTexCoord2f( 1, 1);
+           glVertex3f( PlankWidth, PlankHeight,-PlankThickness);
+           glTexCoord2f( 0, 1);
+           glVertex3f( PlankWidth, PlankHeight, PlankThickness);
+           glNormal3f(-1, 0, 0);
+           glTexCoord2f( 0, 0);
+           glVertex3f(-PlankWidth, PlankHeight, PlankThickness);
+           glTexCoord2f( 1, 0);
+           glVertex3f(-PlankWidth, PlankHeight,-PlankThickness);
+           glTexCoord2f( 1, 1);
+           glVertex3f(-PlankWidth,-PlankHeight,-PlankThickness);
+           glTexCoord2f( 0, 1);
+           glVertex3f(-PlankWidth,-PlankHeight, PlankThickness);
+         glEnd();
+         glEndList();
+         ep->AreObjectsDefined[ObjWoodPlank]=1;
+#ifdef DEBUG_LISTS
+         printf("WoodPlank drawn SLOWLY\n");
+#endif
+       } else {
+         glCallList(objects+ObjWoodPlank);
+#ifdef DEBUG_LISTS
+         printf("WoodPlank drawn quickly\n");
+#endif
+       }
+}
+
+static void
+draw_impossiblecage(escherstruct *ep)
+{
+  glPushMatrix();
+  glRotatef(90,0,1,0);
+  glTranslatef( 0.0,PlankHeight-PlankWidth,-PlankThickness-PlankWidth);
+  draw_woodplank(ep);
+  glPopMatrix();
+  glPushMatrix();
+  glRotatef(90,0,0,1);
+  glTranslatef( 0.0,PlankHeight-PlankWidth, PlankWidth-PlankThickness);
+  draw_woodplank(ep);
+  glPopMatrix();
+  glPushMatrix();
+  glRotatef(90,0,1,0);
+  glTranslatef( 0.0, PlankWidth-PlankHeight,-PlankThickness-PlankWidth);
+  draw_woodplank(ep);
+  glPopMatrix();
+  glPushMatrix();
+  glTranslatef( 0.0, PlankWidth-PlankHeight,3*PlankThickness-PlankWidth);
+  draw_woodplank(ep);
+  glPopMatrix();
+  glPushMatrix();
+  glRotatef(90,0,0,1);
+  glTranslatef( 0.0, PlankWidth-PlankHeight, PlankWidth-PlankThickness);
+  draw_woodplank(ep);
+  glPopMatrix();
+  glPushMatrix();
+  glTranslatef( 0.0, PlankWidth-PlankHeight, PlankWidth-3*PlankThickness);
+  draw_woodplank(ep);
+  glPopMatrix();
+  glPushMatrix();
+  glTranslatef( 0.0,PlankHeight-PlankWidth,3*PlankThickness-PlankWidth);
+  draw_woodplank(ep);
+  glPopMatrix();
+  glPushMatrix();
+  glRotatef(90,0,0,1);
+  glTranslatef( 0.0,PlankHeight-PlankWidth,PlankThickness-PlankWidth);
+  draw_woodplank(ep);
+  glPopMatrix();
+  glPushMatrix();
+  glTranslatef( 0.0,PlankHeight-PlankWidth, PlankWidth-3*PlankThickness);
+  draw_woodplank(ep);
+  glPopMatrix();
+  glPushMatrix();
+  glRotatef(90,0,1,0);
+  glTranslatef( 0.0,PlankHeight-PlankWidth, PlankWidth+PlankThickness);
+  draw_woodplank(ep);
+  glPopMatrix();
+  glPushMatrix();
+  glRotatef(90,0,0,1);
+  glTranslatef( 0.0, PlankWidth-PlankHeight,PlankThickness-PlankWidth);
+  draw_woodplank(ep);
+  glPopMatrix();
+  glPushMatrix();
+  glRotatef(90,0,1,0);
+  glTranslatef( 0.0, PlankWidth-PlankHeight, PlankWidth+PlankThickness);
+  draw_woodplank(ep);
+  glPopMatrix();
+}
 
 void
 draw_escher(ModeInfo * mi)
@@ -455,7 +634,7 @@ draw_escher(ModeInfo * mi)
 	Display    *display = MI_DISPLAY(mi);
 	Window      window = MI_WINDOW(mi);
 
-	glXMakeCurrent(display, window, ep->glx_context);
+  glXMakeCurrent(display, window, ep->glx_context);
 
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
@@ -469,12 +648,20 @@ draw_escher(ModeInfo * mi)
 		glScalef(Scale4Iconic * ep->WindH / ep->WindW, Scale4Iconic, Scale4Iconic);
 	}
 
-        glRotatef(ep->step * 100, 1, 0, 0);
-        glRotatef(ep->step * 95, 0, 1, 0);
-        glRotatef(ep->step * 90, 0, 0, 1);
 
         switch (ep->scene) {
-          case 1:draw_moebius(mi);
+          case 1:
+                 glRotatef(ep->step * 100, 1, 0, 0);
+                 glRotatef(ep->step * 95, 0, 1, 0);
+                 glRotatef(ep->step * 90, 0, 0, 1);
+                 draw_moebius(mi);
+                 break;
+          case 2: /* 196 - 213 */
+                 glRotatef(ep->step*100, 0, 0, 1);
+                 glRotatef(25+cos(ep->step*5)*6, 1, 0, 0);
+                 glRotatef(204.5-sin(ep->step*5)*8, 0, 1, 0);
+                 draw_impossiblecage(ep);
+                 break;
         }
 
 	glPopMatrix();
@@ -506,18 +693,18 @@ reshape(ModeInfo * mi, int width, int height)
           glLineWidth(1);
           glPointSize(1);
         }
-	AreObjectsDefined[ObjMoebiusStrip]=0;
-	AreObjectsDefined[ObjAntBody]=0;
+	ep->AreObjectsDefined[ObjMoebiusStrip]=0;
+	ep->AreObjectsDefined[ObjAntBody]=0;
+	ep->AreObjectsDefined[ObjWoodPlank]=0;
 }
 
 static void
 pinit(ModeInfo * mi)
 {
-/*	escherstruct *ep = &escher[MI_SCREEN(mi)];*/
+	escherstruct *ep = &escher[MI_SCREEN(mi)];
 
 	glClearDepth(1.0);
 	glClearColor(0.0, 0.0, 0.0, 1.0);
-	glColor3f(1.0, 1.0, 1.0);
 
 	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
@@ -530,10 +717,35 @@ pinit(ModeInfo * mi)
 	glEnable(GL_LIGHTING);
 	glEnable(GL_LIGHT0);
 	glEnable(GL_LIGHT1);
-	glEnable(GL_DEPTH_TEST);
 	glEnable(GL_NORMALIZE);
+        glFrontFace(GL_CCW);
+        glCullFace(GL_BACK);
 
-	glShadeModel(GL_SMOOTH);
+        switch (ep->scene) {
+          case 1:
+            glShadeModel(GL_SMOOTH);
+            glEnable(GL_DEPTH_TEST);
+            glDisable(GL_TEXTURE_2D);
+            glDisable(GL_CULL_FACE);
+            break;
+          case 2:
+            glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, MaterialWhite);
+            glShadeModel(GL_FLAT);
+            glDisable(GL_DEPTH_TEST);
+            glEnable(GL_TEXTURE_2D);
+            glEnable(GL_CULL_FACE);
+            break;
+        }
+
+        glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+        gluBuild2DMipmaps(GL_TEXTURE_2D, 3, WoodTextureWidth, WoodTextureHeight,
+		          GL_RGB, GL_UNSIGNED_BYTE, WoodTextureData);
+        glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+
 	glMaterialfv(GL_FRONT_AND_BACK, GL_SHININESS, front_shininess);
 	glMaterialfv(GL_FRONT_AND_BACK, GL_SPECULAR, front_specular);
 }
@@ -560,8 +772,9 @@ init_escher(ModeInfo * mi)
 	if (ep->scene <= 0 || ep->scene > NUM_SCENES)
 		ep->scene = NRAND(NUM_SCENES) + 1;
 	glDrawBuffer(GL_BACK);
-	objects = glGenLists(2);
+	objects = glGenLists(3);
 	pinit(mi);
+
 }
 
 void
@@ -570,6 +783,7 @@ change_escher(ModeInfo * mi)
 	escherstruct *ep = &escher[MI_SCREEN(mi)];
 
 	ep->scene = (ep->scene) % NUM_SCENES + 1;
+  glXMakeCurrent(MI_DISPLAY(mi), MI_WINDOW(mi), ep->glx_context);
 	pinit(mi);
 }
 
@@ -580,9 +794,7 @@ release_escher(ModeInfo * mi)
 		(void) free((void *) escher);
 		escher = NULL;
 	}
-	glDeleteLists(objects,2);
-	AreObjectsDefined[ObjMoebiusStrip]=0;
-	AreObjectsDefined[ObjAntBody]=0;
+	glDeleteLists(objects,3);
 }
 
 #endif

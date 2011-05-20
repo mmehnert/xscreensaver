@@ -90,6 +90,11 @@ make_color_ramp (Display *dpy, Colormap cmap,
   if (closed_p)
     ncolors = (ncolors / 2) + 1;
 
+  /* Note: unlike other routines in this module, this function assumes that
+     if h1 and h2 are more than 180 degrees apart, then the desired direction
+     is always from h1 to h2 (rather than the shorter path.)  make_uniform
+     depends on this.
+   */
   dh = ((double)h2 - (double)h1) / ncolors;
   ds = (s2 - s1) / ncolors;
   dv = (v2 - v1) / ncolors;
@@ -232,14 +237,14 @@ make_color_path (Display *dpy, Colormap cmap,
 	circum += edge[i];
       }
 
-#if 0
+#ifdef DEBUG
     fprintf(stderr, "\ncolors:");
     for (i=0; i < npoints; i++)
       fprintf(stderr, " (%d, %.3f, %.3f)", h[i], s[i], v[i]);
     fprintf(stderr, "\nlengths:");
     for (i=0; i < npoints; i++)
       fprintf(stderr, " %.3f", edge[i]);
-#endif /* 0 */
+#endif /* DEBUG */
 
     if (circum < 0.0001)
       goto FAIL;
@@ -250,11 +255,11 @@ make_color_path (Display *dpy, Colormap cmap,
 	one_point_oh += ratio[i];
       }
 
-#if 0
+#ifdef DEBUG
     fprintf(stderr, "\nratios:");
     for (i=0; i < npoints; i++)
       fprintf(stderr, " %.3f", ratio[i]);
-#endif /* 0 */
+#endif /* DEBUG */
 
     if (one_point_oh < 0.99999 || one_point_oh > 1.00001)
       abort();
@@ -267,12 +272,12 @@ make_color_path (Display *dpy, Colormap cmap,
       ncolors[i] = total_ncolors * ratio[i];
 
 
-#if 0
+#ifdef DEBUG
     fprintf(stderr, "\npixels:");
     for (i=0; i < npoints; i++)
       fprintf(stderr, " %d", ncolors[i]);
     fprintf(stderr, "  (%d)\n", total_ncolors);
-#endif /* 0 */
+#endif /* DEBUG */
 
     for (i = 0; i < npoints; i++)
       {
@@ -291,15 +296,45 @@ make_color_path (Display *dpy, Colormap cmap,
 
   k = 0;
   for (i = 0; i < npoints; i++)
-    for (j = 0; j < ncolors[i]; j++, k++)
-      {
-	colors[k].flags = DoRed|DoGreen|DoBlue;
-	hsv_to_rgb ((int)
-		    (h[i] + (j * dh[i])),
-		    (s[i] + (j * ds[i])),
-		    (v[i] + (j * dv[i])),
-		    &colors[k].red, &colors[k].green, &colors[k].blue);
-      }
+    {
+      int distance, direction;
+      distance = h[(i+1) % npoints] - h[i];
+      direction = (distance >= 0 ? -1 : 1);
+
+      if (distance > 180)
+	distance = 180 - (distance - 180);
+      else if (distance < -180)
+	distance = -(180 - ((-distance) - 180));
+      else
+	direction = -direction;
+
+#ifdef DEBUG
+      fprintf (stderr, "point %d: %3d %.2f %.2f\n",
+	       i, h[i], s[i], v[i]);
+      fprintf(stderr, "  h[i]=%d  dh[i]=%.2f  ncolors[i]=%d\n",
+	      h[i], dh[i], ncolors[i]);
+#endif /* DEBUG */
+      for (j = 0; j < ncolors[i]; j++, k++)
+	{
+	  double hh = (h[i] + (j * dh[i] * direction));
+	  if (hh < 0) hh += 360;
+	  else if (hh > 360) hh -= 0;
+	  colors[k].flags = DoRed|DoGreen|DoBlue;
+	  hsv_to_rgb ((int)
+		      hh,
+		      (s[i] + (j * ds[i])),
+		      (v[i] + (j * dv[i])),
+		      &colors[k].red, &colors[k].green, &colors[k].blue);
+#ifdef DEBUG
+	  fprintf (stderr, "point %d+%d: %.2f %.2f %.2f  %04X %04X %04X\n",
+		   i, j,
+		   hh,
+		   (s[i] + (j * ds[i])),
+		   (v[i] + (j * dv[i])),
+		   colors[k].red, colors[k].green, colors[k].blue);
+#endif /* DEBUG */
+	}
+    }
 
   /* Floating-point round-off can make us decide to use fewer colors. */
   if (k < *ncolorsP)
@@ -523,9 +558,9 @@ make_uniform_colormap (Display *dpy, Visual *visual, Colormap cmap,
  RETRY_NON_WRITABLE:
   make_color_ramp(dpy, cmap,
 		  0,   S, V,
-		  180, S, V,
+		  359, S, V,
 		  colors, &ncolors,
-		  True, True, wanted_writable);
+		  False, True, wanted_writable);
 
   /* If we tried for writable cells and got none, try for non-writable. */
   if (allocate_p && *ncolorsP == 0 && writable_pP && *writable_pP)

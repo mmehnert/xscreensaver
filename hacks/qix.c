@@ -11,6 +11,7 @@
  */
 
 #include "screenhack.h"
+#include "alpha.h"
 #include <stdio.h>
 
 #define MAXPOLY	16
@@ -43,7 +44,6 @@ static Bool random_p, solid_p, xor_p, transparent_p, gravity_p;
 static int delay;
 static int count;
 static Colormap cmap;
-static unsigned long base_pixel;
 static int npoly;
 
 static GC *gcs[2];
@@ -123,69 +123,7 @@ init_one_qix (Display *dpy, Window window, int nlines, int npoly)
   return qix;
 }
 
-/* I don't believe this fucking language doesn't have builtin exponentiation.
-   I further can't believe that the fucking ^ character means fucking XOR!! */
-static int 
-i_exp (int i, int j)
-{
-  int k = 1;
-  while (j--) k *= i;
-  return k;
-}
 
-
-static void
-merge_colors (int argc, XColor **argv, XColor *into_color, int mask,
-	      Bool increment_p)
-{
-  int j;
-  *into_color = *argv [0];
-  into_color->pixel |= mask;
-#define SHORT_INC(x,y) (x = ((((x)+(y)) > 0xFFFF) ? 0xFFFF : ((x)+(y))))
-#define SHORT_DEC(x,y) (x = ((((x)-(y)) < 0)      ? 0      : ((x)-(y))))
-  for (j = 1; j < argc; j++)
-    if (increment_p)
-      {
-	SHORT_INC (into_color->red,   argv[j]->red);
-	SHORT_INC (into_color->green, argv[j]->green);
-	SHORT_INC (into_color->blue,  argv[j]->blue);
-      }
-    else
-      {
-	SHORT_DEC (into_color->red,   argv[j]->red);
-	SHORT_DEC (into_color->green, argv[j]->green);
-	SHORT_DEC (into_color->blue,  argv[j]->blue);
-      }
-#undef SHORT_INC
-#undef SHORT_DEC
-}
-
-/* fill in all the permutations of colors that XAllocColorCells() has 
-   allocated for us.  Thanks Ron, you're an additive kind of guy. */
-static void
-permute_colors (XColor *pcolors, XColor *colors,
-		int count,
-		unsigned long *plane_masks,
-		Bool increment_p)
-{
-  int out = 0;
-  int max = i_exp (2, count);
-  if (count > 31) abort ();
-  for (out = 1; out < max; out++)
-    {
-      XColor *argv [32];
-      int this_mask = 0;
-      int argc = 0;
-      int bit;
-      for (bit = 0; bit < 32; bit++)
-	if (out & (1<<bit))
-	  {
-	    argv [argc++] = &pcolors [bit];
-	    this_mask |= plane_masks [bit];
-	  }
-      merge_colors (argc, argv, &colors [out-1], this_mask, increment_p);
-    }
-}
 
 
 static struct qix **
@@ -256,20 +194,14 @@ init_qix (Display *dpy, Window window)
 
   if (transparent_p)
     {
-      Bool increment_p = get_boolean_resource ("additive", "Boolean");
-      unsigned long plane_masks [32];
-      XColor *pcolors, *colors;
+      Bool additive_p = get_boolean_resource ("additive", "Boolean");
+      unsigned long *plane_masks = 0;
+      unsigned long base_pixel;
       int nplanes = count;
-      int i, total_colors;
+      int i;
 
-      /* permutations would be harder if the number of planes didn't fit
-	 in an int.  Who has >32-bit displays anyway... */
-      if (nplanes > 31) nplanes = 31;
-
-      while (nplanes > 1 &&
-	     !XAllocColorCells (dpy, cmap, False, plane_masks, nplanes,
-				&base_pixel, 1))
-	nplanes--;
+      allocate_alpha_colors (dpy, cmap, &nplanes, additive_p, &plane_masks,
+			     &base_pixel);
 
       if (nplanes <= 1)
 	{
@@ -292,9 +224,8 @@ init_qix (Display *dpy, Window window)
 
       gcs[0] = (GC *) malloc (count * sizeof (GC));
       gcs[1] = xor_p ? gcs[0] : (GC *) malloc (count * sizeof (GC));
-      total_colors = i_exp (2, count);
-      pcolors = (XColor *) calloc (count, sizeof (XColor));
-      colors = (XColor *) calloc (total_colors, sizeof (XColor));
+
+
       for (i = 0; i < count; i++)
 	{
 	  gcv.plane_mask = plane_masks [i];
@@ -314,23 +245,8 @@ init_qix (Display *dpy, Window window)
 	      gcs [1][i] = XCreateGC (dpy, window, GCForeground|GCPlaneMask,
 				      &gcv);
 	    }
-
-	  /* pick the "primary" (not in that sense) colors.
-	     If we are in subtractive mode, pick higher intensities. */
-	  hsv_to_rgb (random () % 360, frand (1.0),
-		      frand (0.5) + (increment_p ? 0.2 : 0.5),
-		      &pcolors[i].red, &pcolors[i].green, &pcolors[i].blue);
-
-	  pcolors [i].flags = DoRed | DoGreen | DoBlue;
-	  pcolors [i].pixel = base_pixel | plane_masks [i];
 	}
-      permute_colors (pcolors, colors, count, plane_masks, increment_p);
-      /* clone the default background of the window into our "base" pixel */
-      colors [total_colors - 1].pixel =
-	get_pixel_resource ("background", "Background", dpy, cmap);
-      XQueryColor (dpy, cmap, &colors [total_colors - 1]);
-      colors [total_colors - 1].pixel = base_pixel;
-      XStoreColors (dpy, cmap, colors, total_colors);
+
       XSetWindowBackground (dpy, window, base_pixel);
       XClearWindow (dpy, window);
     }
