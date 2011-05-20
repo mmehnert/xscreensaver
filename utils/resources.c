@@ -119,7 +119,12 @@ get_pixel_resource (char *res_name, char *res_class,
 {
   XColor color;
   char *s = get_string_resource (res_name, res_class);
+  char *s2;
   if (!s) goto DEFAULT;
+
+  for (s2 = s + strlen(s) - 1; s2 > s; s2--)
+    if (*s2 == ' ' || *s2 == '\t')
+      *s2 = 0;
 
   if (! XParseColor (dpy, cmap, s, &color))
     {

@@ -55,9 +55,31 @@ clean:
 distclean: clean
 	-rm -f Makefile *~ "#"*
 
+# Adds all current dependencies to Makefile
 depend:
-	$(DEPEND) $(DEPEND_FLAGS) -- \
-	$(INCLUDES) $(DEFS) $(DEPEND_DEFINES) $(CFLAGS) $(X_CFLAGS) -- $(SRCS)
+	$(DEPEND) -s '# DO NOT DELETE: updated by make depend'		    \
+	$(DEPEND_FLAGS) --						    \
+	$(INCLUDES) $(DEFS) $(DEPEND_DEFINES) $(CFLAGS) $(X_CFLAGS) --	    \
+	$(SRCS)
+
+# Adds some dependencies to Makefile.in -- not totally accurate, but pretty
+# close.  This excludes dependencies on files in /usr/include, etc.  It tries
+# to include only dependencies on files which are themselves a part of this
+# package.
+distdepend:
+	@echo updating dependencies in `pwd`/Makefile.in... ;		    \
+	$(DEPEND) -w 0 -f - 						    \
+	-s '# DO NOT DELETE: updated by make distdepend' $(DEPEND_FLAGS) -- \
+	$(INCLUDES) $(DEFS) $(DEPEND_DEFINES) $(CFLAGS) $(X_CFLAGS) --	    \
+	$(SRCS) | 							    \
+	(								    \
+	  awk '/^# .*Makefile.in ---/,/^# DO .*distdepend/' < Makefile.in ; \
+	  sed -e 's@ \./@ @g;s@ /[^ ]*@@g;/^.*:$$/d'			    \
+	      -e 's@ \([^$$]\)@ $$(srcdir)/\1@g' ;			    \
+	  echo ''							    \
+	) > /tmp/distdepend.$$$$ &&					    \
+	mv Makefile.in Makefile.in.bak &&				    \
+	mv /tmp/distdepend.$$$$ Makefile.in
 
 TAGS: tags
 tags:
@@ -70,3 +92,56 @@ echo_tarfiles:
 # How we build object files in this directory.
 .c.o:
 	$(CC) -c $(INCLUDES) $(DEFS) $(CFLAGS) $(X_CFLAGS) $<
+
+
+##############################################################################
+#
+# DO NOT DELETE: updated by make distdepend
+
+alpha.o: $(srcdir)/utils.h
+alpha.o: $(srcdir)/../config.h
+alpha.o: $(srcdir)/alpha.h
+alpha.o: $(srcdir)/hsv.h
+alpha.o: $(srcdir)/yarandom.h
+alpha.o: $(srcdir)/resources.h
+colors.o: $(srcdir)/utils.h
+colors.o: $(srcdir)/../config.h
+colors.o: $(srcdir)/hsv.h
+colors.o: $(srcdir)/yarandom.h
+colors.o: $(srcdir)/visual.h
+colors.o: $(srcdir)/colors.h
+fade.o: $(srcdir)/utils.h
+fade.o: $(srcdir)/../config.h
+fade.o: $(srcdir)/visual.h
+fade.o: $(srcdir)/usleep.h
+fade.o: $(srcdir)/fade.h
+grabscreen.o: $(srcdir)/utils.h
+grabscreen.o: $(srcdir)/../config.h
+grabscreen.o: $(srcdir)/usleep.h
+grabscreen.o: $(srcdir)/colors.h
+grabscreen.o: $(srcdir)/grabscreen.h
+grabscreen.o: $(srcdir)/vroot.h
+grabscreen.o: $(srcdir)/visual.h
+hsv.o: $(srcdir)/utils.h
+hsv.o: $(srcdir)/../config.h
+hsv.o: $(srcdir)/hsv.h
+overlay.o: $(srcdir)/utils.h
+overlay.o: $(srcdir)/../config.h
+overlay.o: $(srcdir)/visual.h
+resources.o: $(srcdir)/utils.h
+resources.o: $(srcdir)/../config.h
+resources.o: $(srcdir)/resources.h
+spline.o: $(srcdir)/utils.h
+spline.o: $(srcdir)/../config.h
+spline.o: $(srcdir)/spline.h
+usleep.o: $(srcdir)/../config.h
+visual.o: $(srcdir)/utils.h
+visual.o: $(srcdir)/../config.h
+visual.o: $(srcdir)/resources.h
+visual.o: $(srcdir)/visual.h
+xmu.o: $(srcdir)/../config.h
+xroger.o: $(srcdir)/utils.h
+xroger.o: $(srcdir)/../config.h
+yarandom.o: $(srcdir)/../config.h
+yarandom.o: $(srcdir)/yarandom.h
+

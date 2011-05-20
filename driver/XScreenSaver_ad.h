@@ -67,6 +67,7 @@
 		goop -root						\\n\
 		starfish -root						\\n\
 		starfish -root -blob					\\n\
+		munch -root						\\n\
 									  \
 	mono:	rocks -root						\\n\
 	color:	rocks -root -fg darksalmon				\\n\

@@ -32,19 +32,6 @@ AC_TRY_RUN([ main(int ac, char **av) { return 0; } ],
    AC_MSG_ERROR(Couldn't build even a trivial ANSI C program: check CC.),
    AC_MSG_ERROR(Couldn't build even a trivial ANSI C program: check CC.))
 
-if test -z "$no_pipe"; then
-  if test -n "$GCC"; then
-    AC_CACHE_CHECK([whether the compiler understands -pipe], ac_cv_cc_pipe,
-		   [ac_save_CC="$CC"
-		    CC="$CC -pipe"
-		    AC_TRY_COMPILE(,,[ac_cv_cc_pipe=yes],[ac_cv_cc_pipe=no])
-		    CC="$ac_save_CC"])
-    if test $ac_cv_cc_pipe = yes ; then
-      CC="$CC -pipe"
-    fi
-  fi
-fi
-
 case "$host" in
   *-irix*)
   if test -n "$GCC"; then
@@ -476,7 +463,7 @@ case "$host" in
       X_LIBS="$X_LIBS -L/usr/dt/lib -R:/usr/dt/lib"
 
       # Some versions of Slowlaris Motif require -lgen.  But not all.  Why?
-      AC_CHECK_LIB(gen, regcmp, [X_LIBS="X_LIBS -lgen"])
+      AC_CHECK_LIB(gen, regcmp, [X_LIBS="$X_LIBS -lgen"])
     fi
   ;;
 esac
@@ -549,8 +536,27 @@ fi
 # If we have Athena, check whether it's a version that includes
 # XawViewportSetCoordinates in Viewport.h (R3 (or R4?) don't.)
 if test $have_athena = yes ; then
-  AC_EGREP_X_HEADER(XawViewportSetCoordinates, X11/Xaw/Viewport.h,
-		    AC_DEFINE(HAVE_XawViewportSetCoordinates))
+  AC_CACHE_CHECK([for XawViewportSetCoordinates in Viewport.h], 
+		 ac_cv_have_XawViewportSetCoordinates,
+		 [ac_cv_have_XawViewportSetCoordinates=no
+		  AC_EGREP_X_HEADER(XawViewportSetCoordinates, 
+				    X11/Xaw/Viewport.h,
+				    ac_cv_have_XawViewportSetCoordinates=yes)])
+  if test $ac_cv_have_XawViewportSetCoordinates = yes ; then
+    AC_DEFINE(HAVE_XawViewportSetCoordinates)
+  fi
+fi
+
+
+# If we have Motif, check whether it's really LessTif.
+#
+if test $have_motif = yes ; then
+  AC_CACHE_CHECK([whether Motif is really LessTif], 
+		 ac_cv_have_lesstif,
+		 [ac_cv_have_lesstif=no
+		  AC_EGREP_X_HEADER(LesstifVERSION_STRING, Xm/Xm.h,
+				    ac_cv_have_lesstif=yes)])
+  have_lesstif=$ac_cv_have_lesstif
 fi
 
 
@@ -1107,6 +1113,12 @@ elif test $with_motif_req = yes -a $have_motif = no ; then
 elif test $with_athena_req = yes -a $have_athena = no ; then
   warn  "Use of Athena was requested, but it wasn't found;"
   warn2 "Motif will be used instead."
+fi
+
+if test $have_motif = yes -a $have_lesstif = yes ; then
+  warn  "Motif is being used, but it appears to actually be LessTif."
+  warn2 "XScreenSaver has been reported to have problems with some"
+  warn2 "versions of LessTif.  You might want to use Athena instead."
 fi
 
 if test $with_xpm_req = yes -a $have_xpm = no ; then

@@ -18,7 +18,7 @@
 /* This is pretty compute-intensive, probably due to the large number of
    polygon fills.  I tried introducing a scaling factor to make the spline
    code emit fewer line segments, but that made the edges very rough.
-   However, tuning VELOCITY, ELASTICITY and *delay can result in much
+   However, tuning *maxVelocity, *elasticity and *delay can result in much
    smoother looking animation.  I tuned these for a 1280x1024 Indy display,
    but I don't know whether these values will be reasonable for a slower
    machine...
@@ -26,12 +26,18 @@
    The more planes the better -- SGIs have a 12-bit pseudocolor display
    (4096 colormap cells) which is mostly useless, except for this program,
    where it means you can have 11 or 12 mutually-transparent objects instead
-   of only 7 or 8.
+   of only 7 or 8.  But, if you are using the 12-bit visual, you should crank
+   down the velocity and elasticity, or server slowness will cause the
+   animation to look jerky (yes, it's sad but true, SGI's X server is
+   perceptibly slower when using plane masks on a 12-bit visual than on an
+   8-bit visual.)  Using -max-velocity 0.5 -elasticity 0.9 seems to work ok
+   on my Indy R5k with visual 0x27 and the bottom-of-the-line 24-bit graphics
+   board.
 
    It might look better if each blob had an outline, which was a *slightly*
    darker color than the center, to give them a bit more definition -- but
    that would mean using two planes per blob.  (Or maybe allocating the
-   outline colors out of the plane-space?  Then the outlines wouldn't be
+   outline colors outside of the plane-space?  Then the outlines wouldn't be
    transparent, but maybe that wouldn't be so noticeable?)
 
    Oh, for an alpha channel... maybe I should rewrite this in GL.  Then the
@@ -39,11 +45,8 @@
  */
 
 
-#define DEF_COUNT      12	/* When planes and count are 0, how many. */
-#define SCALE       10000	/* fixed-point math, for sub-pixel motion */
-#define VELOCITY    12000	/* speed limit */
-#define ELASTICITY  18000	/* how fast they deform */
-#define TORQUE     0.0075	/* how fast they rotate */
+#define SCALE       10000  /* fixed-point math, for sub-pixel motion */
+#define DEF_COUNT   12	   /* When planes and count are 0, how many blobs. */
 
 
 #define RAND(n) ((long) ((random() & 0x7fffffff) % ((long) (n))))
@@ -52,7 +55,10 @@
 struct blob {
   long x, y;		/* position of midpoint */
   long dx, dy;		/* velocity and direction */
-  double th;		/* rotation */
+  double torque;	/* rotational speed */
+  double th;		/* angle of rotation */
+  long elasticity;	/* how fast they deform */
+  long max_velocity;	/* speed limit */
   long min_r, max_r;	/* radius range */
   int npoints;		/* control points */
   long *r;		/* radii */
@@ -103,11 +109,15 @@ make_blob (int maxx, int maxy, int size)
   if (b->min_r < (5*SCALE)) b->min_r = (5*SCALE);
   mid = ((b->min_r + b->max_r) / 2);
 
+  b->torque       = get_float_resource ("torque", "Torque");
+  b->elasticity   = SCALE * get_float_resource ("elasticity", "Elasticity");
+  b->max_velocity = SCALE * get_float_resource ("maxVelocity", "MaxVelocity");
+
   b->x = RAND(maxx);
   b->y = RAND(maxy);
 
-  b->dx = RAND(VELOCITY) * RANDSIGN();
-  b->dy = RAND(VELOCITY) * RANDSIGN();
+  b->dx = RAND(b->max_velocity) * RANDSIGN();
+  b->dy = RAND(b->max_velocity) * RANDSIGN();
   b->th = frand(M_PI+M_PI) * RANDSIGN();
   b->npoints = (random() % 5) + 5;
 
@@ -140,7 +150,7 @@ throb_blob (struct blob *b)
 
       /* alter the radius by a random amount, in the direction in which
 	 it had been going (the sign of the radius indicates direction.) */
-      ra += (RAND(ELASTICITY) * (r > 0 ? 1 : -1));
+      ra += (RAND(b->elasticity) * (r > 0 ? 1 : -1));
       r = ra * (r >= 0 ? 1 : -1);
 
       /* If we've reached the end (too long or too short) reverse direction. */
@@ -179,19 +189,19 @@ move_blob (struct blob *b, int maxx, int maxy)
   /* Alter velocity randomly. */
   if (! (random() % 10))
     {
-      b->dx += (RAND(VELOCITY/2) * RANDSIGN());
-      b->dy += (RAND(VELOCITY/2) * RANDSIGN());
+      b->dx += (RAND(b->max_velocity/2) * RANDSIGN());
+      b->dy += (RAND(b->max_velocity/2) * RANDSIGN());
 
       /* Throttle velocity */
-      if (b->dx > VELOCITY || b->dx < -VELOCITY)
+      if (b->dx > b->max_velocity || b->dx < -b->max_velocity)
 	b->dx /= 2;
-      if (b->dy > VELOCITY || b->dy < -VELOCITY)
+      if (b->dy > b->max_velocity || b->dy < -b->max_velocity)
 	b->dy /= 2;
     }
 
   {
     double th = b->th;
-    double d = frand(TORQUE);
+    double d = (b->torque == 0 ? 0 : frand(b->torque));
     if (th < 0)
       th = -(th + d);
     else
@@ -483,6 +493,9 @@ char *defaults [] = {
   "*count:		0",
   "*planes:		0",
   "*thickness:		5",
+  "*torque:		0.0075",
+  "*elasticity:		1.8",
+  "*maxVelocity:	1.2",
   0
 };
 
@@ -497,6 +510,9 @@ XrmOptionDescRec options [] = {
   { "-xor",		".xor",		XrmoptionNoArg, "true" },
   { "-no-xor",		".xor",		XrmoptionNoArg, "false" },
   { "-thickness",	".thickness",	XrmoptionSepArg, 0 },
+  { "-torque",		".torque",	XrmoptionSepArg, 0 },
+  { "-elasticity",	".elasticity",	XrmoptionSepArg, 0 },
+  { "-max-velocity",	".maxVelocity",	XrmoptionSepArg, 0 },
   { 0, 0, 0, 0 }
 };
 

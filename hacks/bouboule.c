@@ -82,7 +82,14 @@ static const char sccsid[] = "@(#)bouboule.c	4.00 97/01/01 xlockmore";
 # define DEFAULTS	"*count:		100     \n"			\
 					"*size:			15      \n"			\
 					"*delay:		5000    \n"			\
-					"*ncolors:		64      \n"
+					"*ncolors:		64      \n"			\
+					"*use3d:		False   \n"			\
+					"*delta3d:		1.5		\n"			\
+					"*right3d:		red		\n"			\
+					"*left3d:		blue	\n"			\
+					"*both3d:		magenta	\n"			\
+					"*none3d:		black	\n"
+
 # define SMOOTH_COLORS
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */

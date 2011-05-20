@@ -61,7 +61,7 @@ pre_merge_options (void)
   /* Add extra args, if they're mentioned in the defaults... */
   {
     char *args[] = { "-count", "-cycles", "-delay", "-ncolors",
-		     "-size", "-wireframe" };
+		     "-size", "-wireframe", "-use3d" };
     for (j = 0; j < countof(args); j++)
       if (strstr(app_defaults, args[j]+1))
 	{
@@ -75,6 +75,17 @@ pre_merge_options (void)
 	      new->value = "True";
 	      new = &options[i++];
 	      new->option = "-no-wireframe";
+	      new->specifier = options[i-1].specifier;
+	      new->argKind = XrmoptionNoArg;
+	      new->value = "False";
+	    }
+	  else if (!strcmp(new->option, "-use3d"))
+	    {
+	      new->option = "-3d";
+	      new->argKind = XrmoptionNoArg;
+	      new->value = "True";
+	      new = &options[i++];
+	      new->option = "-no-3d";
 	      new->specifier = options[i-1].specifier;
 	      new->argKind = XrmoptionNoArg;
 	      new->value = "False";

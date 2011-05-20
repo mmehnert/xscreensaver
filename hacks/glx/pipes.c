@@ -63,7 +63,12 @@ static const char sccsid[] = "@(#)pipes.c   	4.02 97/04/29 xlockmore";
 # define pipes_opts					xlockmore_opts
 # define DEFAULTS	"*count:		2       \n"			\
 					"*cycles:		5       \n"			\
-					"*delay:		100     \n"
+					"*size:			500     \n"			\
+					"*delay:		100     \n"			\
+					"*fisheye:		True    \n"			\
+					"*tightturns:	False   \n"			\
+					"*rotatepipes:	True    \n"			\
+					"*noBuffer:		True	\n"
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */

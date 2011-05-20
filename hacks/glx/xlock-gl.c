@@ -109,6 +109,7 @@ get_gl_visual (Screen *screen, char *name, char *class)
       int screen_num = screen_number (screen);
       int attrs[20];
       int i = 0;
+      Bool dbuf_p = !get_boolean_resource ("noBuffer", "NoBuffer");
 
       done_once = True;
 
@@ -117,7 +118,8 @@ get_gl_visual (Screen *screen, char *name, char *class)
       attrs[i++] = GLX_GREEN_SIZE; attrs[i++] = 1;
       attrs[i++] = GLX_BLUE_SIZE;  attrs[i++] = 1;
       attrs[i++] = GLX_DEPTH_SIZE; attrs[i++] = 1;
-      attrs[i++] = GLX_DOUBLEBUFFER;
+      if (dbuf_p)
+	attrs[i++] = GLX_DOUBLEBUFFER;
       attrs[i++] = 0;
 
       vi = glXChooseVisual (dpy, screen_num, attrs);
@@ -130,7 +132,8 @@ get_gl_visual (Screen *screen, char *name, char *class)
 
       /* Try mono. */
       i = 0;
-      attrs[i++] = GLX_DOUBLEBUFFER;
+      if (dbuf_p)
+	attrs[i++] = GLX_DOUBLEBUFFER;
       attrs[i++] = 0;
       vi = glXChooseVisual (dpy, screen_num, attrs);
       if (vi) goto DONE;

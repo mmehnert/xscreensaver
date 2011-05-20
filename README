@@ -102,6 +102,7 @@ window, which are pointed at by the screensaver's default resource settings.
    lisa		- draws animated full-loop lisajous figures.
    goop		- Squishy transparent oil-and-bubble images
    starfish	- Radially-symmetric throbbing colormap-hacking blobs.
+   munch	- The classic 1962-vintage "munching squares" hack.
 
 All of these will pop up their own window unless given that -root option.
 See their man pages for more details.
@@ -129,8 +130,12 @@ http://www.netscape.com/people/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 2.02:	Fixed flicker in `pipes'.  Fixed 3d in `bouboule'.
+			Added `munch' hack.
+			Added basic dependencies to the Makefile.in files.
 Changes since 2.01:	Fixes for compiling with the MIT saver extension.
 			Made the yow/fortune program be a configure option.
+			Various configure tweaks.
 Changes since 2.00:	Added `goop' and `starfish' hacks.
 			Added colomap cycling to `halo'.
 			Made `attraction' use the new colormap allocator.

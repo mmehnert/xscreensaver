@@ -150,7 +150,7 @@ allocate_alpha_colors (Display *dpy, Colormap cmap,
 				   base_pixelP);
   *nplanesP = nplanes;
 
-  if (nplanes <= 0)
+  if (nplanes <= 1)
     {
       free(*plane_masks);
       *plane_masks = 0;
