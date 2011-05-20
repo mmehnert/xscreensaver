@@ -424,6 +424,8 @@ passwd_idle_timer (XtPointer closure, XtIntervalId *id)
       XtVaGetValues(passwd_done,
 		    XmNheight, &h,
 		    XmNy, &y,
+		    0);
+      XtVaGetValues(passwd_form,
 		    XtNforeground, &fg,
 		    XtNbackground, &bg,
 		    XmNtopShadowColor, &ts,

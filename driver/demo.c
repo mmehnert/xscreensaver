@@ -15,6 +15,7 @@
 #endif
 
 #include <X11/Intrinsic.h>
+#include <X11/StringDefs.h>
 
 /* We don't actually use any widget internals, but these are included
    so that gdb will have debug info for the widgets... */
@@ -30,7 +31,6 @@
 #else  /* HAVE_ATHENA */
   /* Athena demo code contributed by Jon A. Christopher <jac8782@tamu.edu> */
   /* Copyright 1997, with the same permissions as above. */
-# include <X11/StringDefs.h>
 # include <X11/Shell.h>
 # include <X11/Xaw/Form.h>
 # include <X11/Xaw/Box.h>

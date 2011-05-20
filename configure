@@ -6443,7 +6443,7 @@ echo '      When you run "make install", the "xscreensaver" and'
 echo '      "xscreensaver-command" executables will be installed in'
 echo "      ${bindir}."
 echo ""
-echo "      The various graphics demos (60+ different executables) will"
+echo "      The various graphics demos (80+ different executables) will"
 echo "      be installed in ${HACKDIR}."
 echo ""
 echo "      If you would prefer the demos to be installed elsewhere"

@@ -157,6 +157,7 @@ window, which are pointed at by the screensaver's default resource settings.
    cage		- Draws Escher's impossible cage (GLX only.)
    moebius	- Draws Escher's Moebius Strip II (GLX only.)
    atlantis	- Draws swimming mammals (GLX only.)
+   lament	- Draws a dangerous puzzle box (GLX only.)
 
 All of these will pop up their own window unless given that -root option.
 See their respective man pages for more details.
@@ -189,6 +190,11 @@ http://people.netscape.com/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 2.24:   * Improved motion in `rd-bomb'.
+		      * Added XSHM (shared memory extension) support to the
+			`distort', `interference', `moire', `rd-bomb', and
+			`swirl' hacks, which speeds them up a bit.
+		      * Added `lament' hack.
 Changes since 2.23:   * Tweaked the order of the -L options again.
 		      * Cleaned up configure's --help message.
 		      * Added `kumppa' hack.

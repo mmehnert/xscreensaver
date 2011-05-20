@@ -28,7 +28,7 @@ Entered-date:   $DATE
 Description:    A modular screen saver and locker for the X Window System.
                 Highly customizable: allows the use of any program that
                 can draw on the root window as a display mode.
-                Comes with more than 60 display modes.
+                Comes with more than 80 display modes.
                 Home page: http://people.netscape.com/jwz/xscreensaver/
 Keywords:       screen saver, screen lock, lock, xlock, X11
 Author:         jwz@netscape.com (Jamie Zawinski)

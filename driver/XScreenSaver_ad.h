@@ -116,7 +116,8 @@
 		pipes -root					  	\\n\
 		sproingies -root				  	\\n\
 		rubik -root					  	\\n\
-		atlantis -root					  	\\n",
+		atlantis -root					  	\\n\
+		lament -root					  	\\n",
 " ",
 "*fontList:                       *-helvetica-medium-r-*-*-*-120-*-*-*-iso8859-1",
 "*demoDialog*label1.fontList:     *-helvetica-medium-r-*-*-*-140-*-*-*-iso8859-1",

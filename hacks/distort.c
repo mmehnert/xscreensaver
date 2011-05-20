@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1992, 1993, 1994, 1996, 1997, 1998
+/* -*- mode: C; tab-width: 4 -*-
+ * xscreensaver, Copyright (c) 1992, 1993, 1994, 1996, 1997, 1998
  * Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -24,15 +25,24 @@
 
 #include <math.h>
 #include "screenhack.h"
+#include <X11/Xutil.h>
+
+#ifdef HAVE_XSHM_EXTENSION
+# include "xshm.h"
+static Bool use_shm;
+static XShmSegmentInfo shm_info;
+#endif /* HAVE_XSHM_EXTENSION */
 
 static int delay, radius, speed, size_x, size_y;
 static XWindowAttributes xgwa;
 static GC gc;
-static Pixmap orig_map, buffer_map;
+
+static XImage *orig_map, *buffer_map;
 
 static int ***from;
 
-static void init_distort (Display *dpy, Window window) {
+static void init_distort (Display *dpy, Window window) 
+{
 	XGCValues gcv;
 	long gcflags;
 	int i, j;
@@ -40,6 +50,10 @@ static void init_distort (Display *dpy, Window window) {
 	delay = get_integer_resource ("delay", "Integer");
 	radius = get_integer_resource ("radius", "Integer");
 	speed = get_integer_resource ("speed", "Integer");
+
+#ifdef HAVE_XSHM_EXTENSION
+	use_shm = get_boolean_resource("useSHM", "Boolean");
+#endif /* HAVE_XSHM_EXTENSION */
 
 	if (delay < 0)
 		delay = 0;
@@ -62,13 +76,32 @@ static void init_distort (Display *dpy, Window window) {
     
 	grab_screen_image (xgwa.screen, window);
 
-	orig_map = XCreatePixmap(dpy, window,
-			xgwa.width, xgwa.height, xgwa.depth);
-	XCopyArea(dpy, window,
-			orig_map, gc, 0, 0, xgwa.width, xgwa.height, 0, 0);
-	buffer_map = XCreatePixmap(dpy, window,
-			2*radius + speed, 2*radius + speed,
-			xgwa.depth);
+	buffer_map = 0;
+	orig_map = XGetImage(dpy, window, 0, 0, xgwa.width, xgwa.height,
+						 ~0L, ZPixmap);
+
+
+# ifdef HAVE_XSHM_EXTENSION
+	if (use_shm)
+	  {
+		buffer_map = create_xshm_image(dpy, xgwa.visual, orig_map->depth,
+									   ZPixmap, 0, &shm_info,
+									   2*radius + speed + 2,
+									   2*radius + speed + 2);
+		if (!buffer_map)
+		  use_shm = False;
+	  }
+# endif /* HAVE_XSHM_EXTENSION */
+
+	if (!buffer_map)
+	  {
+		buffer_map = XCreateImage(dpy, xgwa.visual,
+								  orig_map->depth, ZPixmap, 0, 0,
+								  2*radius + speed + 2, 2*radius + speed + 2,
+								  8, 0);
+		buffer_map->data = (unsigned char *)
+		  calloc(buffer_map->height, buffer_map->bytes_per_line);
+	  }
 
 	from = (int ***)malloc ((2*radius+1) * sizeof(int **));
 	for(i = 0; i <= 2*radius; i++) {
@@ -137,10 +170,17 @@ static void distort (Display *dpy, Window window)
 
 	move_lens (&x, &y, &xmove, &ymove);
 
-	XCopyArea(dpy, orig_map, buffer_map, gc,
-			x-radius/2 - xmove, y-radius/2 - ymove,
-			2*radius + abs(xmove), 2*radius + abs(ymove),
-			0,0);
+	{
+	  int xoff = x-xmove-(radius/2);
+	  int yoff = y-ymove-(radius/2);
+	  for(j = 0; j < buffer_map->height; j++)
+		for(i = 0; i < buffer_map->width; i++)
+		  if (i+xoff >= 0 &&
+			  j+yoff >= 0 &&
+			  i+xoff <= xgwa.width &&
+			  j+yoff <= xgwa.height)
+			XPutPixel(buffer_map, i, j, XGetPixel(orig_map, i+xoff, j+yoff));
+	}
 
 	/* it's possible to lower the number of loop iterations by a factor
 	 * of 4, but since it's the XCopyArea's which eat resources, and
@@ -154,17 +194,22 @@ static void distort (Display *dpy, Window window)
 		for(j = 0 ; j <= 2*radius ; j++) {
 			if (((radius-i)*(radius-i) + (j-radius)*(j-radius))
 				< radius*radius) {
-			XCopyArea (dpy, orig_map, buffer_map, gc,
-					x+from[i][j][0],
-					y+from[i][j][1],
-					1, 1, i + xmove, j+ymove);
+			  if (i+xmove >= 0 &&
+				  j+ymove >= 0 &&
+				  i+xmove < xgwa.width &&
+				  j+ymove < xgwa.height)
+				XPutPixel(buffer_map,
+						  i+xmove, j+ymove,
+						  XGetPixel(orig_map,
+									x+from[i][j][0],
+									y+from[i][j][1]));
 			}
 		}
 	}
 
-	XCopyArea(dpy, buffer_map, window, gc, 0, 0,
-			2*radius + abs(xmove), 2*radius + abs(ymove),
-			x-radius/2 - xmove, y-radius/2 - ymove);
+	XPutImage(dpy, window, gc, buffer_map, 0, 0, 
+			  x-radius/2 - xmove, y-radius/2 - ymove,
+			  2*radius + abs(xmove), 2*radius + abs(ymove));
 }
 
 
@@ -180,6 +225,9 @@ char *defaults [] = {
 	"*delay:			10000",
 	"*radius:			60",
 	"*speed:			2",
+#ifdef HAVE_XSHM_EXTENSION
+    "*useSHM:			False",		/* xshm turns out not to help. */
+#endif /* HAVE_XSHM_EXTENSION */
 	0
 };
 
@@ -187,6 +235,10 @@ XrmOptionDescRec options [] = {
 	{ "-delay",	".delay",	XrmoptionSepArg, 0 },
 	{ "-radius",	".radius",	XrmoptionSepArg, 0 },
 	{ "-speed",	".speed",	XrmoptionSepArg, 0 },
+#ifdef HAVE_XSHM_EXTENSION
+	{ "-shm",		".useSHM",	XrmoptionNoArg, "True" },
+	{ "-no-shm",	".useSHM",	XrmoptionNoArg, "False" },
+#endif /* HAVE_XSHM_EXTENSION */
 	{ 0, 0, 0, 0 }
 };
 		
