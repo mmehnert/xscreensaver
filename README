@@ -130,6 +130,8 @@ http://www.netscape.com/people/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 2.04:	Fixed a MIT-SCREEN-SAVER-related crash, and tweaked 
+			configure to detect the extra-random -Xss library.
 Changes since 2.03:	HP configure tweaks.  Detect and warn about LessTif.
 			Fixed low-color behavior of `goop', `pyro', `starfish',
 			`greynetic', `flame', `halo', and `moire'.

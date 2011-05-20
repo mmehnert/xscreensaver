@@ -262,6 +262,30 @@ AC_DEFUN(AC_TRY_X_COMPILE, [
   CPPFLAGS="$ac_save_CPPFLAGS"])
 
 
+# Like AC_CHECK_LIB, but it uses the already-computed -I and -L directories.
+# Use this sparingly; it probably doesn't work very well on X programs.
+#
+AC_DEFUN(AC_CHECK_X_LIB, [
+  ac_save_CPPFLAGS="$CPPFLAGS"
+  ac_save_LDFLAGS="$LDFLAGS"
+  if test \! -z "$includedir" ; then 
+    CPPFLAGS="$CPPFLAGS -I$includedir"
+  fi
+  if test \! -z "$includedir" ; then 
+    CPPFLAGS="$CPPFLAGS -I$includedir"
+  fi
+  if test \! -z "$libdir" ; then
+    LDFLAGS="$LDFLAGS -L$libdir"
+  fi
+  CPPFLAGS="$CPPFLAGS $X_CFLAGS"
+  LDFLAGS="$LDFLAGS -L$x_libraries"
+  AC_CHECK_LIB([$1], [$2], [$3], [$4], [$5])
+  CPPFLAGS="$ac_save_CPPFLAGS"
+  LDFLAGS="$ac_save_LDFLAGS"])
+
+
+
+
 # check for the HP XHPDisableReset server extension headers.
 #
 AC_EGREP_X_HEADER(XHPDisableReset, X11/XHPlib.h,
@@ -410,14 +434,24 @@ if test $have_sgi != yes; then
     # scrnsaver.h, but doesn't include the code in libXext.a, the idiots!
     #
     if test $have_mit = yes; then
-      AC_CHECK_LIB(Xext, XScreenSaverRegister, [], [have_mit=no], -lm)
+      AC_CHECK_X_LIB(Xext, XScreenSaverRegister, [], [have_mit=no], -lm)
 
       if test $have_mit = no; then
 	# Fuck!  Looks like XF86Free-3.3 actually puts it in XExExt instead
 	# of in Xext.  Thank you master, may I have another.
-        AC_CHECK_LIB(XExExt, XScreenSaverRegister,
-		     [have_mit=yes; SAVER_LIBS="$SAVER_LIBS -lXExExt"],
-		     [], -lX11 -lXext -lm)
+        AC_CHECK_X_LIB(XExExt, XScreenSaverRegister,
+		       [have_mit=yes; SAVER_LIBS="$SAVER_LIBS -lXExExt"],
+		       [], -lX11 -lXext -lm)
+      fi
+
+      if test $have_mit = no; then
+	# Double fuck!  Looks like some versions of XFree86 (whichever version
+	# it is that comes with RedHat Linux 2.0 -- I can't find a version 
+	# number) put this garbage in Xss instead of Xext.  Thank you master,
+	#  may I have another.
+        AC_CHECK_X_LIB(Xss, XScreenSaverRegister,
+		       [have_mit=yes; SAVER_LIBS="$SAVER_LIBS -lXss"],
+		       [], -lX11 -lXext -lm)
       fi
 
     if test $have_mit = yes; then

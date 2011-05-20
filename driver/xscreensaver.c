@@ -425,7 +425,7 @@ get_resources (saver_info *si)
 
 
   /* don't set use_mit_extension unless it is explicitly specified */
-  if (get_string_resource ("sgiSaverExtension", "Boolean"))
+  if ((s = get_string_resource ("sgiSaverExtension", "Boolean")))
     p->use_sgi_saver_extension = get_boolean_resource ("sgiSaverExtension",
 						       "Boolean");
   else
