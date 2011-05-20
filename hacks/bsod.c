@@ -146,6 +146,31 @@ double_pixmap(Display *dpy, GC gc, Visual *visual, int depth, Pixmap pixmap,
 }
 
 
+/* Sleep for N seconds and return False.  But if a key or mouse event is
+   seen, discard all pending key or mouse events, and return True.
+ */
+static Bool
+bsod_sleep(Display *dpy, int seconds)
+{
+  XEvent event;
+  int q = seconds * 4;
+  int mask = KeyPressMask|ButtonPressMask;
+  while (q > 0)
+    {
+      XSync(dpy, False);
+      if (XCheckMaskEvent(dpy, mask, &event))
+	{
+	  while (XCheckMaskEvent(dpy, mask, &event))
+	    ;
+	  return True;
+	}
+      q--;
+      usleep(250000);
+    }
+  return False; 
+}
+
+
 static void
 windows (Display *dpy, Window window, int delay, Bool w95p)
 {
@@ -216,7 +241,13 @@ windows (Display *dpy, Window window, int delay, Bool w95p)
 
   XGetWindowAttributes (dpy, window, &xgwa);
 
-  fontname = get_string_resource ((w95p ? "windows95.font" : "windowsNT.font"),
+  fontname = get_string_resource ((xgwa.height > 600
+				   ? (w95p
+				      ? "windows95.font2"
+				      : "windowsNT.font2")
+				   : (w95p
+				      ? "windows95.font"
+				      : "windowsNT.font")),
 				  "Windows.Font");
   if (!fontname || !*fontname) fontname = (char *)def_font;
   font = XLoadQueryFont (dpy, fontname);
@@ -248,7 +279,7 @@ windows (Display *dpy, Window window, int delay, Bool w95p)
 
   XFreeGC(dpy, gc);
   XSync(dpy, False);
-  sleep(delay);
+  bsod_sleep(dpy, delay);
   XClearWindow(dpy, window);
   XFreeFont(dpy, font);
 }
@@ -348,7 +379,7 @@ amiga (Display *dpy, Window window, int delay)
       XCopyArea(dpy, pixmap, window, gc, 0, 0, pix_w, pix_h, x, y);
 
       XSync(dpy, False);
-      sleep(3);
+      bsod_sleep(dpy, 2);
 
       XCopyArea(dpy, pixmap, window, gc, 0, 0, pix_w, pix_h, x, y + height);
       XClearArea(dpy, window, 0, 0, xgwa.width, y + height, False);
@@ -370,7 +401,8 @@ amiga (Display *dpy, Window window, int delay)
 		       font->ascent);
 	gca = (gca == gc ? gc2 : gc);
 	XSync(dpy, False);
-	sleep(1);
+	if (bsod_sleep(dpy, 1))
+	  break;
 	delay--;
       }
   }
@@ -449,7 +481,7 @@ mac (Display *dpy, Window window, int delay)
 
   XFreeGC(dpy, gc);
   XSync(dpy, False);
-  sleep(delay);
+  bsod_sleep(dpy, delay);
   XClearWindow(dpy, window);
   XFreeFont(dpy, font);
 }
@@ -460,19 +492,20 @@ char *progclass = "BSOD";
 char *defaults [] = {
   "*delay:			30",
 
-  "BSOD.windows.font:		-*-courier-bold-r-*-*-*-120-*-*-m-*-*-*",
-  "BSOD.Windows.foreground:	#FFFFFF",
-  "BSOD.Windows.background:	#0000FF",
+  "BSOD.Windows.font:		-*-courier-bold-r-*-*-*-120-*-*-m-*-*-*",
+  "BSOD.Windows.font2:		-*-courier-bold-r-*-*-*-180-*-*-m-*-*-*",
+  "BSOD.Windows.foreground:	White",
+  "BSOD.Windows.background:	Blue",
 
   "BSOD.Amiga.font:		-*-courier-bold-r-*-*-*-120-*-*-m-*-*-*",
   "BSOD.Amiga.font2:		-*-courier-bold-r-*-*-*-180-*-*-m-*-*-*",
-  "BSOD.Amiga.foreground:	#FF0000",
-  "BSOD.Amiga.background:	#000000",
-  "BSOD.Amiga.background2:	#FFFFFF",
+  "BSOD.Amiga.foreground:	Red",
+  "BSOD.Amiga.background:	Black",
+  "BSOD.Amiga.background2:	White",
 
   "BSOD.Mac.font:		-*-courier-bold-r-*-*-*-120-*-*-m-*-*-*",
-  "BSOD.Mac.foreground:		#DDFFFF",
-  "BSOD.Mac.background:		#000000",
+  "BSOD.Mac.foreground:		PaleTurquoise1",
+  "BSOD.Mac.background:		Black",
   0
 };
 
@@ -488,6 +521,9 @@ screenhack (Display *dpy, Window window)
   int j = -1;
   int delay = get_integer_resource ("delay", "Integer");
   if (delay < 3) delay = 3;
+
+  XSelectInput(dpy, window, KeyPressMask|ButtonPressMask);
+
   while (1)
     {
       while (i == j) i = random() % 4;

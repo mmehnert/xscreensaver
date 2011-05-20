@@ -216,11 +216,13 @@ The standard Xt command-line options are accepted; other options include:\n\
     -lock-timeout <minutes>    Grace period before locking; default 0.\n\
     -help                      This message.\n\
 \n\
-Use the `xscreensaver-command' program to control a running screensaver.\n\
+The `xscreensaver' program should be left running in the background.\n\
+Use the `xscreensaver-command' program to manipulate a running xscreensaver.\n\
 \n\
-The *programs resource controls which graphics demos will be launched by the\n\
-screensaver.  See the man page for more details.  For updates, check\n\
-http://people.netscape.com/jwz/xscreensaver/\n\n",
+The `*programs' resource controls which graphics demos will be launched by\n\
+the screensaver.  See `man xscreensaver' or the web page for more details.\n\
+\n\
+For updates, check http://people.netscape.com/jwz/xscreensaver/\n\n",
 	  si->version);
 
 #ifdef NO_LOCKING
@@ -541,6 +543,8 @@ initialize_connection (saver_info *si, int argc, char **argv)
   si->db = XtDatabase (si->dpy);
   XtGetApplicationNameAndClass (si->dpy, &progname, &progclass);
 
+  if(strlen(progname)  > 100) progname [99] = 0;  /* keep it short. */
+
   db = si->db;	/* resources.c needs this */
 
   if (argc == 2 && !strcmp (argv[1], "-help"))
@@ -620,6 +624,8 @@ initialize (saver_info *si, int argc, char **argv)
   memcpy (si->version, screensaver_id + 17, 4);
   si->version [4] = 0;
   progname = argv[0]; /* reset later; this is for the benefit of lock_init() */
+
+  if(strlen(progname) > 100) progname[99] = 0;  /* keep it short. */
 
 #ifdef NO_LOCKING
   si->locking_disabled_p = True;

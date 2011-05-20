@@ -18,39 +18,7 @@ verbose=false
 delay=3
 use_stdin=false
 
-if [ "$1" = "-root" ]; then
-  onroot=true
-  shift
-fi
-
-if [ "$1" = "-verbose" ]; then
-  verbose=true
-  shift
-fi
-
-if [ "$1" = "-stdin" ]; then
-  use_stdin=true
-  shift
-fi
-
-if [ "$1" != "" ]; then
-  echo "usage: $0 [-root] [-verbose]" >&2
-  exit 1
-fi
-
-
-xvargs="-quick24"
-
-if [ "$onroot" = true ]; then
-  xvargs="$xvargs -root -rmode 5 -quit"
-else
-  xvargs="$xvargs -geom +0+0"
-fi
-
-screen_width=`xdpyinfo | sed -n 's/.* dimensions: *\([0-9]*\).*/\1/p'`
-
-# global vars...
-
+pid=""
 tmp=/tmp/vd$$
 tmp_rgb=$tmp-00000.rgb
 tmp_ppm0=$tmp-0.ppm
@@ -58,6 +26,40 @@ tmp_ppm1=$tmp-1.ppm
 tmp_ppm2=$tmp-2.ppm
 tmp_ppm3=$tmp-3.ppm
 tmp_ppm4=$tmp-4.ppm
+
+
+getargs() {
+
+  while [ $# != 0 ]; do
+    case "$1" in
+    -root )
+      onroot=true
+      ;;
+    -verbose )
+      verbose=true
+      ;;
+    -stdin )
+      use_stdin=true
+      ;;
+    * )
+      echo "usage: $0 [ -root | -verbose | -stdin ]" >&2
+      exit 1
+      ;;
+    esac
+    shift
+  done
+
+  xvargs="-quick24"
+
+  if [ "$onroot" = true ]; then
+    xvargs="$xvargs -root -rmode 5 -noresetroot -rfg black -rbg black -viewonly"
+  else
+    xvargs="$xvargs -geom +0+0"
+  fi
+
+  screen_width=`xdpyinfo | sed -n 's/.* dimensions: *\([0-9]*\).*/\1/p'`
+}
+
 
 clean() {
   rm -f $tmp_rgb $tmp_ppm1 $tmp_ppm2 $tmp_ppm3 $tmp_ppm4
@@ -218,7 +220,6 @@ frob() {
 }
 
 
-
 # Grab a frame and frob it.  leave it in $tmp_ppm3.
 #
 whack() {
@@ -238,57 +239,89 @@ whack() {
 }
 
 
-pid=""
-
-if [ "$onroot" != true ]; then
-  trap "kill \$pid; clean2; exit 1" 2 15
-fi
-
-if [ "$use_stdin" = true ]; then
- cat > $tmp_ppm0
-fi
-
-
-while true; do
-
-  # Loop grabbing and frobbing images.
-  #
-  # If we're running on the root, run xv in the foreground (with -exit)
-  # and then wait.
-  #
-  # If we're running in a window, spawn xv in the background; then when
-  # it's time to put up the new image, kill off the currently-running xv.
-
-  if [ "$verbose" = true ]; then
-    whack
-  else
-    whack >&- 2>&-
-  fi
-
+# Kill off the xv subprocess, if it's running
+#
+kill_pid() {
   if [ "$pid" != "" ]; then
-    kill $pid
-    pid=""
-  fi
 
-  if [ ! -s $tmp_ppm3 ]; then
-    echo "$0: no image grabbed" >&2
-  else
-
-    pnmtosgi < $tmp_ppm3 > $tmp_ppm2
-    rm -f $tmp_ppm3
-
-    if [ "$onroot" = true ]; then
-      xv $xvargs $tmp_ppm2
-    else
-      xv $xvargs $tmp_ppm2 &
-      pid=$!
+    if [ "$verbose" = true ]; then
+      echo "killing pid $pid..." >&2
     fi
 
-    #xv -geom =320x220 $tmp_ppm3 &
-    #pid=
+    # need to do this to avoid "6898 Terminated" messages!
+    # apparently one can't redirect the output of the builtin `kill' command.
+#    ( sh -c "kill $pid" ) >/dev/null 2>/dev/null </dev/null
+
+    # wtf?  that doesn't work either.  Is it writing to /dev/tty??
+    kill $pid >&- >&-
+
+    pid=""
+  fi
+}
+
+# called when this process is signalled (for cleanup)
+#
+my_trap() {
+  if [ "$verbose" = true ]; then
+    echo "trapped signal!" >&2
+  fi
+  kill_pid
+  clean2
+  exit 1
+}
+
+main() {
+
+  getargs $@
+
+  trap my_trap 0 1 2 3 6 9 13
+
+  if [ "$use_stdin" = true ]; then
+   cat > $tmp_ppm0
   fi
 
-  clean
-  sleep $delay
+  while true; do
 
-done
+    # Loop grabbing and frobbing images.
+    #
+    # If we're running on the root, run xv in the foreground (with -exit)
+    # and then wait.
+    #
+    # If we're running in a window, spawn xv in the background; then when
+    # it's time to put up the new image, kill off the currently-running xv.
+
+    if [ "$verbose" = true ]; then
+      whack
+    else
+      whack >&- 2>&-
+    fi
+
+    kill_pid
+
+    if [ ! -s $tmp_ppm3 ]; then
+      echo "$0: no image grabbed" >&2
+    else
+
+      pnmtosgi < $tmp_ppm3 > $tmp_ppm2
+      rm -f $tmp_ppm3
+
+      if [ -s $tmp_ppm2 ]; then
+        if [ "$verbose" = true ]; then
+          echo "launching xv $xvargs $tmp_ppm2" >&2
+        fi
+        xv $xvargs $tmp_ppm2 &
+        pid=$!
+      fi
+    fi
+
+    clean
+    sleep $delay
+
+  done
+  exit 1
+}
+
+main $@
+
+# to find stray xv data:
+# xwininfo -root -children|grep 'xv image comments' | awk '{print $1}'

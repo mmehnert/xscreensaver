@@ -90,7 +90,6 @@ static void
 print_stderr_1 (saver_screen_info *ssi, char *string)
 {
   saver_info *si = ssi->global;
-  saver_preferences *p = &si->prefs;
   Display *dpy = si->dpy;
   Screen *screen = ssi->screen;
   Window window = (ssi->stderr_overlay_window ?
@@ -100,10 +99,6 @@ print_stderr_1 (saver_screen_info *ssi, char *string)
   int v_border = 20;
   char *head = string;
   char *tail;
-
-  /* In verbose mode, copy it to stderr as well. */
-  if (p->verbose_p)
-    fprintf (real_stderr, "%s", string);
 
   if (! ssi->stderr_font)
     {

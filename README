@@ -169,6 +169,16 @@ http://people.netscape.com/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 2.19:	Fixed a bug that caused the mouse to sometimes not be
+			grabbed properly (meaning the window manager menu could
+			pop up over the demo-mode display.)
+			Fixed a bug that made the stderr output sometimes get
+			printed twice.
+			Fixed a bug that made the demo-mode scrollbar move too
+			fast.
+			Protected against a possible buffer overflow.
+			Made `vidwhacker' not leave stray xv windows around.
+			New version of `ant' so that Bagley doesn't calve.
 Changes since 2.18:	One file was missing from the tar file.  Fixed.
 Changes since 2.17:	Oops, atlantis wasn't being built by default.  Fixed.
 			Added `epicycle' hack.

@@ -112,6 +112,8 @@ struct saver_info {
      ======================================================================= */
 
   Bool screen_blanked_p;	/* Whether the saver is currently active. */
+  Window mouse_grab_window;	/* Window holding our mouse grab */
+  Window keyboard_grab_window;	/* Window holding our keyboard grab */
 
 
   /* =======================================================================

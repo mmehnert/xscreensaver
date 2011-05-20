@@ -41,6 +41,14 @@ For the impatient, try this:
 .EE
 After a few seconds, the screen should go black, and a dialog box should
 appear in the upper right corner.  This is \fIDemo Mode\fP.
+
+.B Note:
+unlike
+.BR xlock (1),
+xscreensaver has a client-server model: the xscreensaver process is a
+daemon that runs in the background; it is controlled by the foreground
+.BR xscreensaver-command (1)
+program.
 .SH DEMO MODE
 If \fIxscreensaver\fP receives the \fBDEMO\fP ClientMessage, which is done
 by running the
@@ -655,19 +663,22 @@ in code intended for use as a screensaver.  This prevents too much graphics
 activity from being buffered up.
 .TP 8
 .B Locking and XDM
-Locking doesn't work if the screensaver is launched by \fIxdm\fP.
-The reason for this is that when it is launched by \fIxdm\fP, the
-screensaver process is owned by some standard user id (such as \fIroot\fP
-or \fIdaemon\fP) instead of the user who is logged in on the console:
-because the screensaver was started \fIbefore\fP anyone was logged in.
-In order for the screensaver to prompt for the password of the person
-who had logged in from \fIxdm\fP, it would need to know who that user was, 
-and there is no reliable and safe way to figure that out.  (And even if 
-there was, there would be some other security issues here as well.)
+If xscreensaver has been launched from XDM, you will need to cause the
+xscreensaver daemon to exit and restart in order to lock the screen.
+
+The reason for this is, if xscreensaver has been launched by XDM, that
+means it was launched \fIbefore\fP you logged in: so it has no way of
+knowing who the logged-in user is, and therefore, whose password it
+should prompt for.
 
 So if you want to use it as a locker, you must start it with your user id.
-If it has already been started by \fIxdm\fP, you can kill it with
-\fBxscreensaver\-command -exit\fP, and then start it again as you.
+If it has already been started by \fIxdm\fP, you can kill it by sending
+it the \fBexit\fP command, and then re-launching it as you, by putting
+something like the following in your personal X startup script:
+.EX
+xscreensaver-command -exit
+xscreensaver &
+.EE
 .TP 8
 .B Locking and root logins
 An implication of the above is that if you log in as \fIroot\fP on the
@@ -697,8 +708,11 @@ some options with \fIconfigure\fP and recompile.
 
 If you change your password after xscreensaver has been launched, it will
 continue using your old password to unlock the screen until xscreensaver
-is restarted.  This turns out to be kind of hard to fix.  (But remember,
-kids!  Unix security doesn't do much more than keep honest people honest...)
+is restarted.  So, after you change your password, you'll have to do
+.EX
+xscreensaver-command -restart
+.EE
+to make \fIxscreensaver\fP notice.
 .TP 8
 .B Colormap lossage: TWM
 The \fBinstallColormap\fP option doesn't work very well with the

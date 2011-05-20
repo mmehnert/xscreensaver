@@ -4,7 +4,7 @@
 !            a screen saver and locker for the X window system
 !                            by Jamie Zawinski
 !
-!                              version 2.19
+!                              version 2.20
 !
 ! See "man xscreensaver" for more info.  The latest version is always
 ! available at http://people.netscape.com/jwz/xscreensaver/
@@ -421,8 +421,7 @@ XScreenSaver*dragReceiverProtocolStyle:  DRAG_NONE
 ! You probably won't need to change these.  They are only used if no server
 ! extension is in use.
 !
-*pointerPollTime:	5
-*initialDelay:		30
-*windowCreationTimeout:	30
-
-*bourneShell:		/bin/sh
+XScreenSaver.pointerPollTime:		5
+XScreenSaver.initialDelay:		0
+XScreenSaver.windowCreationTimeout:	30
+XScreenSaver.bourneShell:		/bin/sh
