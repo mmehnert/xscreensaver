@@ -6,6 +6,8 @@
  */
 
 #include "utils.h"
+#include "yarandom.h"
+#include "usleep.h"
 
 #define NUM_MODES 6
 

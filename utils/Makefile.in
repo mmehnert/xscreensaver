@@ -149,4 +149,6 @@ yarandom.o: $(srcdir)/../config.h
 yarandom.o: $(srcdir)/yarandom.h
 erase.o: $(srcdir)/utils.h
 erase.o: $(srcdir)/../config.h
+erase.o: $(srcdir)/yarandom.h
+erase.o: $(srcdir)/usleep.h
 

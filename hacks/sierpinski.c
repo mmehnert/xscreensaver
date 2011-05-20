@@ -129,9 +129,11 @@ draw_sierpinski(ModeInfo * mi)
 	Display    *display = MI_DISPLAY(mi);
 	GC          gc = MI_GC(mi);
 	sierpinskistruct *sp = &tris[MI_SCREEN(mi)];
-	XPoint     *xp[sp->corners];
+	XPoint     **xp;
 	int         i = 0, v;
 
+    xp = (XPoint **) malloc (sp->corners * sizeof (XPoint *));
+    
 	if (MI_NPIXELS(mi) <= 2)
 		XSetForeground(display, gc, MI_WIN_WHITE_PIXEL(mi));
 	for (i = 0; i < sp->corners; i++)
@@ -154,6 +156,8 @@ draw_sierpinski(ModeInfo * mi)
 	}
 	if (++sp->time >= MI_CYCLES(mi))
 		startover(mi);
+
+    free (xp);
 }
 
 void
