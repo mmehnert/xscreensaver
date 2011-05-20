@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992 Jamie Zawinski <jwz@lucid.com>
+/* xscreensaver, Copyright (c) 1992 Jamie Zawinski <jwz@mcom.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -242,8 +242,8 @@ display (pixmap)
 char *progclass = "BlitSpin";
 
 char *defaults [] = {
-  "*background:	black",
-  "*foreground:	white",
+  "BlitSpin.background:	black",		/* to placate SGI */
+  "BlitSpin.foreground:	white",
   "*delay:	500000",
   "*delay2:	500000",
   "*bitmap:	(default)",

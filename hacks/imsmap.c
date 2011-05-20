@@ -392,8 +392,8 @@ cycle (dpy)
 char *progclass = "Imsmap";
 
 char *defaults [] = {
-  "*background:	black",
-  "*foreground:	black",
+  "Imsmap.background:	black",		/* to placate SGI */
+  "Imsmap.foreground:	black",
   "*mode:	random",
   "*ncolors:	50",
   "*iterations:	7",

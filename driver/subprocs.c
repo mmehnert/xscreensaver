@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1991-1993 Jamie Zawinski <jwz@lucid.com>
+/* xscreensaver, Copyright (c) 1991-1993 Jamie Zawinski <jwz@mcom.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -105,8 +105,12 @@ int nice_inferior = 0;
 extern Bool demo_mode_p;
 
 static void
+#if __STDC__
+exec_screenhack (char *command)
+#else
 exec_screenhack (command)
      char *command;
+#endif
 {
   char *tmp;
   char buf [512];
@@ -203,8 +207,12 @@ static Bool suspending = False;
 static char *current_hack_name P((void));
 
 static void
+#if __STDC__
+await_child_death (Bool killed)
+#else
 await_child_death (killed)
      Bool killed;
+#endif
 {
   Bool suspended_p = False;
   int status;

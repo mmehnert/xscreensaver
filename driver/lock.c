@@ -1,4 +1,4 @@
-/*    xscreensaver, Copyright (c) 1993 Jamie Zawinski <jwz@lucid.com>
+/*    xscreensaver, Copyright (c) 1993 Jamie Zawinski <jwz@mcom.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -481,6 +481,10 @@ pop_passwd_dialog (parent)
 
 
   XGrabServer (dpy);				/* ############ DANGER! */
+
+  /* this call to ungrab used to be in main_loop() - see comment in
+      xscreensaver.c around line 696. */
+  ungrab_keyboard_and_mouse ();
 
   while (passwd_state == pw_read)
     {

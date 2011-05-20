@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992, 1993 Jamie Zawinski <jwz@lucid.com>
+/* xscreensaver, Copyright (c) 1992, 1993 Jamie Zawinski <jwz@mcom.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -18,6 +18,7 @@
 
 #if __STDC__
 #include <stdlib.h>
+#include <unistd.h>
 #endif
 
 #include <X11/Xlib.h>
@@ -33,6 +34,10 @@ MapNotify_event_p (dpy, event, window)
 	  event->xvisibility.window == (Window) window);
 }
 
+
+#if __STDC__
+static Bool screensaver_window_p (Display *, Window);
+#endif
 
 static Bool
 screensaver_window_p (dpy, window)

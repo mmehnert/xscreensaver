@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1991-1993 Jamie Zawinski <jwz@lucid.com>
+/* xscreensaver, Copyright (c) 1991-1993 Jamie Zawinski <jwz@mcom.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -57,7 +57,7 @@ static Window real_vroot, real_vroot_value;
 		GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime)
 
 void
-grab_keyboard_and_mouse ()
+grab_keyboard_and_mouse P((void))
 {
   Status status;
   XSync (dpy, False);
@@ -85,7 +85,7 @@ grab_keyboard_and_mouse ()
 }
 
 void
-ungrab_keyboard_and_mouse ()
+ungrab_keyboard_and_mouse P((void))
 {
   XUngrabPointer (dpy, CurrentTime);
   XUngrabKeyboard (dpy, CurrentTime);
@@ -167,8 +167,12 @@ ERROR!  You must not include vroot.h in this file.
 #endif
 
 static void
+#if __STDC__
+store_vroot_property (Window win, Window value)
+#else
 store_vroot_property (win, value)
      Window win, value;
+#endif
 {
 #if 0
   printf ("%s: storing XA_VROOT = 0x%x (%s) = 0x%x (%s)\n", progname, 
@@ -186,8 +190,12 @@ store_vroot_property (win, value)
 }
 
 static void
+#if __STDC__
+remove_vroot_property (Window win)
+#else
 remove_vroot_property (win)
      Window win;
+#endif
 {
 #if 0
   printf ("%s: removing XA_VROOT from 0x%x (%s)\n", progname, win, 
@@ -200,7 +208,7 @@ remove_vroot_property (win)
 
 
 static void
-kill_xsetroot_data ()
+kill_xsetroot_data P((void))
 {
   Atom type;
   int format;
@@ -246,7 +254,7 @@ kill_xsetroot_data ()
 static void handle_signals P((Bool on_p));
 
 static void
-save_real_vroot ()
+save_real_vroot P((void))
 {
   int i;
   Window root = RootWindowOfScreen (screen);
@@ -299,7 +307,7 @@ save_real_vroot ()
 }
 
 static Bool
-restore_real_vroot_1 ()
+restore_real_vroot_1 P((void))
 {
   if (verbose_p && real_vroot)
     printf ("%s: restoring __SWM_VROOT property on the real vroot (0x%x).\n",
@@ -349,10 +357,14 @@ restore_real_vroot_handler (sig)
 
 
 static void
+#if __STDC__
+catch_signal (int sig, char *signame, Bool on_p)
+#else
 catch_signal (sig, signame, on_p)
      int sig;
      char *signame;
      Bool on_p;
+#endif
 {
   if (! on_p)
     signal (sig, SIG_DFL);
@@ -410,7 +422,7 @@ handle_signals (on_p)
 /* Managing the actual screensaver window */
 
 void
-initialize_screensaver_window ()
+initialize_screensaver_window P((void))
 {
   /* This resets the screensaver window as fully as possible, since there's
      no way of knowing what some random client may have done to us in the

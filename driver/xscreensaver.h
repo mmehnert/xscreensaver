@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1993 Jamie Zawinski <jwz@lucid.com>
+/* xscreensaver, Copyright (c) 1993 Jamie Zawinski <jwz@mcom.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -40,9 +40,9 @@ extern int visual_depth;
 
 extern Bool verbose_p;
 
-extern void initialize_screensaver_window P(());
+extern void initialize_screensaver_window P((void));
 extern void raise_window P((Bool inhibit_fade, Bool between_hacks_p));
-extern void blank_screen P(());
+extern void blank_screen P((void));
 extern void unblank_screen P((void));
 extern void restart_process P((void));
 

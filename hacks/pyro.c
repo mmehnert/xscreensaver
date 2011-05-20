@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992 Jamie Zawinski <jwz@lucid.com>
+/* xscreensaver, Copyright (c) 1992 Jamie Zawinski <jwz@mcom.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -231,8 +231,8 @@ pyro (dpy, window, cmap)
 char *progclass = "Pyro";
 
 char *defaults [] = {
-  "*background:	black",
-  "*foreground:	white",
+  "Pyro.background:	black",		/* to placate SGI */
+  "Pyro.foreground:	white",
   "*count:	100",
   "*frequency:	30",
   "*scatter:	20",

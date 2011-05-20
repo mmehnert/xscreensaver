@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992, 1993 Jamie Zawinski <jwz@lucid.com>
+/* xscreensaver, Copyright (c) 1992, 1993 Jamie Zawinski <jwz@mcom.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -72,7 +72,7 @@ extern XrmOptionDescRec options [];
 extern int options_size;
 extern char *defaults [];
 
-#if __STDC__
+#if xxx__STDC__
 # if defined(SVR4) || defined(SYSV)
 #  ifndef random
     extern int rand (void);

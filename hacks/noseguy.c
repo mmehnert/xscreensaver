@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992 Jamie Zawinski <jwz@lucid.com>
+/* xscreensaver, Copyright (c) 1992 Jamie Zawinski <jwz@mcom.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -463,7 +463,7 @@ get_words()
     switch (getwordsfrom)
     {
     case FROM_PROGRAM:
-	if (pp = popen(program, "r"))
+	if ((pp = popen(program, "r")))
 	{
 	    while (fgets(p, sizeof(buf) - strlen(buf), pp))
 	    {
@@ -505,7 +505,7 @@ get_words()
 	}
 	break;
     case FROM_FILE:
-	if (pp = fopen(filename, "r"))
+	if ((pp = fopen(filename, "r")))
 	{
 	    while (fgets(p, sizeof(buf) - strlen(buf), pp))
 	    {
@@ -543,8 +543,8 @@ get_words()
 char *progclass = "Noseguy";
 
 char *defaults [] = {
-  "*background:		black",
-  "*foreground:		white",
+  "Noseguy.background:	black",		/* to placate SGI */
+  "Noseguy.foreground:	white",
   "*mode:		program",
   "*program:		fortune -s",
   "noseguy.font:	-*-new century schoolbook-*-r-*-*-*-180-*-*-*-*-*-*",
@@ -589,7 +589,7 @@ noseguy_init (d, w)
     {
 	list = XListFonts(dpy, FONT_NAME, 32767, &foo);
 	for (i = 0; i < foo; i++)
-	    if (font = XLoadQueryFont(dpy, list[i]))
+	    if ((font = XLoadQueryFont(dpy, list[i])))
 		break;
 	if (!font)
 	  {

@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992 Jamie Zawinski <jwz@lucid.com>
+/* xscreensaver, Copyright (c) 1992 Jamie Zawinski <jwz@mcom.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -35,6 +35,7 @@ static int sizex, sizey;
 static int delay;
 static GC gc;
 
+#if 0
 static Bool
 MapNotify_event_p (dpy, event, window)
      Display *dpy;
@@ -65,6 +66,7 @@ screensaver_window_p (dpy, window)
     return True;
   return False;
 }
+#endif
 
 static void
 init_decay (dpy, window)

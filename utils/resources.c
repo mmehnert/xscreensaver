@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992 Jamie Zawinski <jwz@lucid.com>
+/* xscreensaver, Copyright (c) 1992 Jamie Zawinski <jwz@mcom.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -23,6 +23,13 @@
 extern char *progname;
 extern char *progclass;
 extern XrmDatabase db;
+
+#if __STDC__
+char *get_string_resource (char *res_name, char *res_class);
+int parse_time (char *string, Bool seconds_default_p, Bool silent_p);
+static unsigned int get_time_resource (char *res_name, char *res_class,
+				       Bool sec_p);
+#endif
 
 #ifndef isupper
 # define isupper(c)  ((c) >= 'A' && (c) <= 'Z')

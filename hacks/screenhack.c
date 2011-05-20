@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992 Jamie Zawinski <jwz@lucid.com>
+/* xscreensaver, Copyright (c) 1992 Jamie Zawinski <jwz@mcom.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -42,6 +42,12 @@ char *progname;
 XrmDatabase db;
 Bool mono_p;
 
+#if __STDC__
+# define P(x) x
+#else
+# define P(x)()
+#endif
+
 
 static XrmOptionDescRec default_options [] = {
   { "-root",	".root",		XrmoptionNoArg, "True" },
@@ -63,7 +69,7 @@ static int merged_options_size;
 static char **merged_defaults;
 
 static void
-merge_options ()
+merge_options P((void))
 {
   int options_sizeof = options_size * sizeof (options[0]);
   int defaults_size;

@@ -18,7 +18,7 @@
 /*  Uncomment the following line if you have the XPM library installed.
  *  Some of the demos can make use of this.
  */
-/* #define HAVE_XPM */
+#define HAVE_XPM
 
 /*  Uncomment the following line if you don't have Motif.  If you don't have
  *  Motif, then the screensaver won't have any dialog boxes, which means
@@ -56,8 +56,8 @@
 /*  You may need to edit these to correspond to where Motif is installed.
  */
 #ifndef NO_MOTIF
-  MOTIFINCLUDES = /* -I... */
- MOTIFLDOPTIONS = /* -L... */
+  MOTIFINCLUDES = -I/usr/local/include/
+ MOTIFLDOPTIONS = -L/usr/local/lib/
       MOTIFLIBS = -lXm
 #endif
 
@@ -65,9 +65,9 @@
     library routine.  This means that, in order for locking to work, the
     screensaver must be installed as setuid to root.  Define this to make
     that happen.  (You must run "make install" as root for it to work.)
-    (What systems other than HP need this?  Let me know.)
+    (What systems other than HP and AIX need this?  Let me know.)
  */
-#if defined(HPArchitecture) || defined(HAVE_SHADOW)
+#if defined(HPArchitecture) || defined(AIXArchitecture) || defined(HAVE_SHADOW)
 # define INSTALL_SETUID
 #endif
 
