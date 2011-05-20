@@ -611,7 +611,7 @@ char *defaults [] = {
   "Noseguy.background:	black",		/* to placate SGI */
   "Noseguy.foreground:	gray80",
   "*mode:		program",
-  "*program:		fortune -s",
+  "*program:		" ZIPPY_PROGRAM,
   "noseguy.font:	-*-new century schoolbook-*-r-*-*-*-180-*-*-*-*-*-*",
   0
 };

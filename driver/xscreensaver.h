@@ -100,7 +100,6 @@ struct saver_info {
 # ifdef HAVE_MIT_SAVER_EXTENSION
   int mit_saver_ext_event_number;
   int mit_saver_ext_error_number;
-  Window server_mit_saver_window;
 # endif
 # ifdef HAVE_SGI_SAVER_EXTENSION
   int sgi_saver_ext_event_number;
@@ -196,6 +195,10 @@ struct saver_screen_info {
   Cursor cursor;		/* A blank cursor that goes with the
 				   real root window. */
   unsigned long black_pixel;	/* Black, allocated from `cmap'. */
+
+# ifdef HAVE_MIT_SAVER_EXTENSION
+  Window server_mit_saver_window;
+# endif
 
 
   /* =======================================================================

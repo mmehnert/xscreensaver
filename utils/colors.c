@@ -437,14 +437,6 @@ complain (int wanted_colors, int got_colors,
 }
 
 
-static Bool
-has_writable_cells (Screen *screen, Visual *visual)
-{
-  int class = visual_class(screen, visual);
-  return (class == PseudoColor || class == GrayScale);
-}
-
-
 void
 make_smooth_colormap (Display *dpy, Visual *visual, Colormap cmap,
 		      XColor *colors, int *ncolorsP,

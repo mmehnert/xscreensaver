@@ -56,7 +56,7 @@ static void
 init_mit_saver_extension (saver_info *si)
 {
   int i;
-  Pixmap *blank_pix = (Pixmap *) calloc (sizeof(Pixmap), ss->nscreens);
+  Pixmap *blank_pix = (Pixmap *) calloc (sizeof(Pixmap), si->nscreens);
 
   for (i = 0; i < si->nscreens; i++)
     {

@@ -319,6 +319,26 @@ visual_class (Screen *screen, Visual *visual)
   return c;
 }
 
+Bool
+has_writable_cells (Screen *screen, Visual *visual)
+{
+  switch (visual_class (screen, visual))
+    {
+    case GrayScale:	/* Mappable grays. */
+    case PseudoColor:	/* Mappable colors. */
+      return True;
+    case StaticGray:	/* Fixed grays. */
+    case TrueColor:	/* Fixed colors. */
+    case StaticColor:	/* (What's the difference again?) */
+    case DirectColor:	/* DirectColor visuals are like TrueColor, but have
+			   three colormaps - one for each component of RGB.
+			   Screw it. */
+      return False;
+    default:
+      abort();
+    }
+}
+
 void
 describe_visual (FILE *f, Screen *screen, Visual *visual)
 {

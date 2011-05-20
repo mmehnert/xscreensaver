@@ -22,9 +22,18 @@
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
 
+#ifdef HAVE_XMU
+# include <X11/Xmu/WinUtil.h>
+#endif
+
 #include "usleep.h"
 #include "colors.h"
 #include "grabscreen.h"
+
+#include "vroot.h"
+#undef RootWindowOfScreen
+#undef RootWindow
+#undef DefaultRootWindow
 
 
 #ifdef HAVE_READ_DISPLAY_EXTENSION
@@ -32,11 +41,6 @@
 # include <X11/extensions/readdisplay.h>
   static Bool read_display (Screen *, Window, Pixmap, Bool);
 #endif /* HAVE_READ_DISPLAY_EXTENSION */
-
-
-#ifdef _VROOT_H_
-ERROR!  You must not include vroot.h in this file.
-#endif
 
 
 static void copy_default_colormap_contents (Screen *, Colormap, Visual *);
@@ -91,7 +95,7 @@ raise_window(Display *dpy, Window window, Bool dont_wait)
 
 
 static Bool
-screensaver_window_p (Display *dpy, Window window)
+xscreensaver_window_p (Display *dpy, Window window)
 {
   Atom type;
   int format;
@@ -108,14 +112,72 @@ screensaver_window_p (Display *dpy, Window window)
   return False;
 }
 
+
+
+static XErrorHandler old_ehandler = 0;
+static int
+BadWindow_ehandler (Display *dpy, XErrorEvent *error)
+{
+  if (error->error_code == BadWindow || error->error_code == BadDrawable)
+    return 0;
+  else if (!old_ehandler)
+    abort();
+  else
+    return (*old_ehandler) (dpy, error);
+}
+
+
+/* Install the colormaps of all visible windows, deepest first.
+   This should leave the colormaps of the topmost windows installed
+   (if only N colormaps can be installed at a time, then only the
+   topmost N windows will be shown in the right colors.)
+ */
+static void
+install_screen_colormaps (Screen *screen)
+{
+  int i;
+  Display *dpy = DisplayOfScreen (screen);
+  Window vroot, real_root;
+  Window parent, *kids = 0;
+  unsigned int nkids = 0;
+
+  XSync (dpy, False);
+  old_ehandler = XSetErrorHandler (BadWindow_ehandler);
+
+  vroot = VirtualRootWindowOfScreen (screen);
+  if (XQueryTree (dpy, vroot, &real_root, &parent, &kids, &nkids))
+    for (i = 0; i < nkids; i++)
+      {
+	XWindowAttributes xgwa;
+	Window client;
+#ifdef HAVE_XMU
+	/* #### need to put XmuClientWindow() in xmu.c, sigh... */
+	if (! (client = XmuClientWindow (dpy, kids[i])))
+#endif
+	  client = kids[i];
+	xgwa.colormap = 0;
+	XGetWindowAttributes (dpy, client, &xgwa);
+	if (xgwa.colormap && xgwa.map_state == IsViewable)
+	  XInstallColormap (dpy, xgwa.colormap);
+      }
+  XInstallColormap (dpy, DefaultColormapOfScreen (screen));
+  XSync (dpy, False);
+  XSetErrorHandler (old_ehandler);
+  XSync (dpy, False);
+
+  if (kids)
+    XFree ((char *) kids);
+}
+
+
 void
 grab_screen_image (Screen *screen, Window window)
 {
   Display *dpy = DisplayOfScreen (screen);
   XWindowAttributes xgwa;
-  Window real_root = RootWindowOfScreen (screen);
+  Window real_root = XRootWindowOfScreen (screen);  /* not vroot */
   Bool root_p = (window == real_root);
-  Bool saver_p = screensaver_window_p (dpy, window);
+  Bool saver_p = xscreensaver_window_p (dpy, window);
   Bool grab_mouse_p = False;
   int unmap_time = 0;
 
@@ -166,6 +228,7 @@ grab_screen_image (Screen *screen, Window window)
   if (unmap_time > 0)
     {
       XUnmapWindow (dpy, window);
+      install_screen_colormaps (screen);
       XSync (dpy, True);
       usleep(unmap_time); /* wait for everyone to swap in and handle exposes */
     }
@@ -196,6 +259,7 @@ grab_screen_image (Screen *screen, Window window)
       if (! read_display(screen, window, pixmap, True))
 #endif
 	{
+	  Window real_root = XRootWindowOfScreen (xgwa.screen); /* not vroot */
 	  XGCValues gcv;
 	  GC gc;
 
@@ -208,7 +272,7 @@ grab_screen_image (Screen *screen, Window window)
 	  gcv.function = GXcopy;
 	  gcv.subwindow_mode = IncludeInferiors;
 	  gc = XCreateGC (dpy, window, GCFunction | GCSubwindowMode, &gcv);
-	  XCopyArea (dpy, RootWindowOfScreen (xgwa.screen), pixmap, gc,
+	  XCopyArea (dpy, real_root, pixmap, gc,
 		     xgwa.x, xgwa.y, xgwa.width, xgwa.height, 0, 0);
 	  XFreeGC (dpy, gc);
 	}
@@ -523,7 +587,7 @@ make_cubic_colormap (Screen *screen, Window window, Visual *visual)
   XSetWindowColormap (dpy, window, cmap);
 
   /* Gag, install the colormap.
-     This is definitely right in the `if screensaver_window_p' case, since
+     This is definitely right in the `if xscreensaver_window_p' case, since
      it will never get installed otherwise.  But, if we don't do it
      unconditionally, then the new colormap won't get installed until the
      window (re-)gains focus.  It's generally very antisocial to install

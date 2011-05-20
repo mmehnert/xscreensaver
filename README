@@ -129,6 +129,8 @@ http://www.netscape.com/people/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 2.01:	Fixes for compiling with the MIT saver extension.
+			Made the yow/fortune program be a configure option.
 Changes since 2.00:	Added `goop' and `starfish' hacks.
 			Added colomap cycling to `halo'.
 			Made `attraction' use the new colormap allocator.

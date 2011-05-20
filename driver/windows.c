@@ -589,7 +589,7 @@ initialize_screensaver_window_1 (saver_screen_info *ssi)
 
   if (p->fade_p)
     {
-      cmap2 = copy_colormap (si->screen, ssi->cmap, 0);
+      cmap2 = copy_colormap (si->screen, ssi->current_visual, ssi->cmap, 0);
       if (! cmap2)
 	p->fade_p = p->unfade_p = 0;
     }
@@ -635,7 +635,7 @@ initialize_screensaver_window_1 (saver_screen_info *ssi)
   printed_visual_info = True;
 
 #ifdef HAVE_MIT_SAVER_EXTENSION
-  if (use_mit_saver_extension)
+  if (p->use_mit_saver_extension)
     {
       XScreenSaverInfo *info;
       Window root = RootWindowOfScreen (ssi->screen);
@@ -670,15 +670,15 @@ initialize_screensaver_window_1 (saver_screen_info *ssi)
 	 window, we'd have to reimplement the ACTIVATE ClientMessage to
 	 tell the *server* to tell *us* to turn on, to cause the window
 	 to get created at the right time.  Gag.  */
-      XScreenSaverSetAttributes (dpy, root,
+      XScreenSaverSetAttributes (si->dpy, root,
 				 0, 0, width, height, 0,
 				 current_depth, InputOutput, visual,
 				 attrmask, &attrs);
-      XSync (dpy, False);
+      XSync (si->dpy, False);
 #endif /* 0 */
 
       info = XScreenSaverAllocInfo ();
-      XScreenSaverQueryInfo (dpy, root, info);
+      XScreenSaverQueryInfo (si->dpy, root, info);
       ssi->server_mit_saver_window = info->window;
       if (! ssi->server_mit_saver_window) abort ();
       XFree (info);
@@ -715,7 +715,7 @@ initialize_screensaver_window_1 (saver_screen_info *ssi)
 
 #ifdef HAVE_MIT_SAVER_EXTENSION
   if (!p->use_mit_saver_extension ||
-      window_exists_p (dpy, ssi->screensaver_window))
+      window_exists_p (si->dpy, ssi->screensaver_window))
     /* When using the MIT-SCREEN-SAVER extension, the window pointed to
        by screensaver_window only exists while the saver is active.
        So we must be careful to only try and manipulate it while it
@@ -729,7 +729,8 @@ initialize_screensaver_window_1 (saver_screen_info *ssi)
       class_hints.res_class = progclass;
       XSetClassHint (si->dpy, ssi->screensaver_window, &class_hints);
       XStoreName (si->dpy, ssi->screensaver_window, "screensaver");
-      XChangeProperty (si->dpy, ssi->screensaver_window, XA_SCREENSAVER_VERSION,
+      XChangeProperty (si->dpy, ssi->screensaver_window,
+		       XA_SCREENSAVER_VERSION,
 		       XA_STRING, 8, PropModeReplace,
 		       (unsigned char *) si->version,
 		       strlen (si->version));
@@ -835,8 +836,8 @@ raise_window (saver_info *si,
 
 #ifdef HAVE_MIT_SAVER_EXTENSION
 	  if (ssi->server_mit_saver_window &&
-	      window_exists_p (dpy, ssi->server_mit_saver_window))
-	    XUnmapWindow (dpy, ssi->server_mit_saver_window);
+	      window_exists_p (si->dpy, ssi->server_mit_saver_window))
+	    XUnmapWindow (si->dpy, ssi->server_mit_saver_window);
 #endif /* HAVE_MIT_SAVER_EXTENSION */
 
 	  /* Once the saver window is up, restore the colormap.

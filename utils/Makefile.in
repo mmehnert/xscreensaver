@@ -29,7 +29,8 @@ OBJS		= alpha.o colors.o fade.o grabscreen.o hsv.o overlay.o \
 		  resources.o spline.o usleep.o visual.o xmu.o xroger.o \
 		  yarandom.o
 HDRS		= alpha.h colors.h fade.h grabscreen.h hsv.h resources.h \
-		  spline.h usleep.h utils.h version.h visual.h xmu.h yarandom.h
+		  spline.h usleep.h utils.h version.h visual.h vroot.h xmu.h \
+		  yarandom.h
 EXTRAS		= README Makefile.in ad2c
 
 TARFILES	= $(EXTRAS) $(SRCS) $(HDRS)

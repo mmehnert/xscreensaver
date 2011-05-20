@@ -121,6 +121,13 @@
  */
 #undef HAVE_MESA_GL
 
+/*  Some screenhacks like to run an external program to generate random pieces
+    of text; set this to the one you like ("yow" and "fortune" are the most
+    likely prospects.)  Note that this is just the default; X resources can
+    be used to override it.
+ */
+#define ZIPPY_PROGRAM "fortune"
+
 
 
 /* *************************************************************************
@@ -222,6 +229,12 @@
 
 /* Define if you have the select function.  */
 #undef HAVE_SELECT
+
+/* Define if you have the getcwd function.  */
+#undef HAVE_GETCWD
+
+/* Define if you have the getcwd function.  */
+#undef HAVE_GETWD
 
 /* Define if you have the strdup function.  */
 #undef HAVE_STRDUP

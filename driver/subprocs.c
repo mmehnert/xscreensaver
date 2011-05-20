@@ -126,10 +126,15 @@ exec_simple_command (const char *command)
 #  endif
 # endif
 	char path[PATH_MAX];
-	*path = 0;
 	fprintf (stderr, "\n");
+	*path = 0;
+# if defined(HAVE_GETCWD)
+	getcwd (path, sizeof(path));
+# elif defined(HAVE_GETWD)
 	getwd (path);
-	fprintf (stderr, "    Current directory is: %s\n", path);
+# endif
+	if (*path)
+	  fprintf (stderr, "    Current directory is: %s\n", path);
 	fprintf (stderr, "    PATH is:\n");
 	token = strtok (strdup(token), ":");
 	while (token)

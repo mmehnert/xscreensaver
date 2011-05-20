@@ -19,13 +19,12 @@
 
 
 Colormap
-copy_colormap (Screen *screen, Colormap cmap, Colormap into_cmap)
+copy_colormap (Screen *screen, Visual *visual,
+	       Colormap cmap, Colormap into_cmap)
 {
   int i;
   Display *dpy = DisplayOfScreen (screen);
-  Visual *visual = DefaultVisualOfScreen (screen);
   Window window = RootWindowOfScreen (screen);
-  int vclass = visual_class (screen, visual);
   int ncolors = CellsOfScreen (screen);
   XColor *colors = 0;
 
@@ -34,7 +33,7 @@ copy_colormap (Screen *screen, Colormap cmap, Colormap into_cmap)
   if (ncolors <= 2 || ncolors > 4096)
     return 0;
   /* If this is a non-writable visual, bug out. */
-  if (vclass == StaticGray || vclass == StaticColor || vclass == TrueColor)
+  if (!has_writable_cells (screen, visual))
     return 0;
 
   if (! into_cmap)

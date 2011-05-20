@@ -87,17 +87,19 @@ install-strip:
 	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
 
 install-program:
-	@for program in $(EXES); do					\
+	@exes="$(EXES)" ;						\
+	for program in $$exes; do					\
 	  echo $(INSTALL_PROGRAM) $$program $(HACKDIR)/$$program ;	\
 	  $(INSTALL_PROGRAM) $$program $(HACKDIR)/$$program ;		\
 	done
 
 install-man:
-#	@for man in $(MEN); do						\
-#	  instname=`echo $$man | sed 's/\.man$$/\.$(mansuffix)/'` ;	\
-#	  echo $(INSTALL_DATA) $$man $(man1dir)/$$instname ;		\
-#	  $(INSTALL_DATA) $$man $(man1dir)/$$instname ;			\
-#	done
+	@men="$(MEN)" ;							\
+	for man in $$men; do						\
+	  instname=`echo $$man | sed 's/\.man$$/\.$(mansuffix)/'` ;	\
+	  echo $(INSTALL_DATA) $$man $(man1dir)/$$instname ;		\
+	  $(INSTALL_DATA) $$man $(man1dir)/$$instname ;			\
+	done
 
 uninstall-program:
 	@for program in $(EXES); do					\

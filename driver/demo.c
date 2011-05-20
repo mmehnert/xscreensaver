@@ -928,11 +928,16 @@ demo_mode (saver_info *si)
 #ifdef HAVE_MIT_SAVER_EXTENSION
 	  if (event.type == si->mit_saver_ext_event_number)
 	    {
-	      /* Get the "real" server window out of the way as soon
+	      /* Get the "real" server window(s) out of the way as soon
 		 as possible. */
-	      if (si->server_mit_saver_window &&
-		  window_exists_p (dpy, si->server_mit_saver_window))
-		XUnmapWindow (dpy, si->server_mit_saver_window);
+	      int i = 0;
+	      for (i = 0; i < si->nscreens; i++)
+		{
+		  saver_screen_info *ssi = &si->screens[i];
+		  if (ssi->server_mit_saver_window &&
+		      window_exists_p (si->dpy, ssi->server_mit_saver_window))
+		    XUnmapWindow (si->dpy, ssi->server_mit_saver_window);
+		}
 	    }
 	  else
 #endif /* HAVE_MIT_SAVER_EXTENSION */

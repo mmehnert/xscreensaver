@@ -93,7 +93,7 @@ XLOCK_OBJS	= screenhack-xlock.o xlockmore.o $(COLOR_OBJS) $(HACK_OBJS_1)
 COLOR_OBJS	= $(UTILS_BIN)/hsv.o $(UTILS_BIN)/colors.o
 GRAB_OBJS	= $(UTILS_BIN)/grabscreen.o $(COLOR_OBJS)
 
-HDRS		= bubbles.h screenhack.h vroot.h xlockmore.h xlockmoreI.h
+HDRS		= bubbles.h screenhack.h xlockmore.h xlockmoreI.h
 MEN		= attraction.man blitspin.man bouboule.man braid.man \
 		  bubbles.man decayscreen.man deco.man drift.man flag.man \
 		  flame.man forest.man fract.man galaxy.man grav.man \

@@ -21,5 +21,6 @@ extern int screen_number (Screen *);
 extern Visual *find_similar_visual (Screen *, Visual *old);
 extern void describe_visual (FILE *f, Screen *, Visual *);
 extern Visual *get_overlay_visual (Screen *, unsigned long *pixel_return);
+extern Bool has_writable_cells (Screen *screen, Visual *visual);
 
 #endif /* __VISUAL_H__ */
