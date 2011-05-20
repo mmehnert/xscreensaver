@@ -73,6 +73,11 @@ http://www.jwz.org/xscreensaver/.
 
                               ============
 
+Changes since 2.31:   * Added reading and writing of a ~/.xscreensaver file,
+			so that the Preferences panel can save its settings.
+		      * New version of `rubik'.
+		      * Added `-select N' argument to `xscreensaver-command'.
+		      * Oops, left out some of the `bubbles3d' files...
 Changes since 2.30:   * The cursor was invisible in the password dialog. Fixed.
 		      * Made configure warn against MesaGL 2.6.
 		      * Fixed X error at startup when using non-default visual.

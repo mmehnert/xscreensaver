@@ -191,7 +191,7 @@ text_field_set_string (Widget widget, char *text, int position)
 
 #else /* HAVE_ATHENA */
   char *buf;
-  int end_pos;
+  int end_pos = -1;
 
   XawTextBlock block;
   block.firstPos = 0;
@@ -203,8 +203,6 @@ text_field_set_string (Widget widget, char *text, int position)
       buf = XawDialogGetValueString(passwd_form);
       if (buf)
 	end_pos = strlen(buf);
-      else
-	end_pos = -1;
     }
   XawTextReplace (widget, 0, end_pos, &block);
   XawTextSetInsertionPoint (widget, position);

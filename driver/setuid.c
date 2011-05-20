@@ -124,8 +124,8 @@ hack_uid (saver_info *si)
 	 instead.
        */
 
-      if (p->pw_gid == -1) p->pw_gid = -2;
-      if (p->pw_uid == -1) p->pw_uid = -2;
+      if (p->pw_gid == (gid_t) -1) p->pw_gid = (gid_t) -2;
+      if (p->pw_uid == (uid_t) -1) p->pw_uid = (uid_t) -2;
 
 
       /* Change the gid to be a safe one, then change the uid to be a safe

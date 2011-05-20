@@ -56,7 +56,7 @@ struct saver_preferences {
 
   int nice_inferior;		/* nice value for subprocs */
 
-  int initial_delay;		/* how long to sleep after launch */
+  Time initial_delay;		/* how long to sleep after launch */
   Time splash_duration;		/* how long the splash screen stays up */
   Time timeout;			/* how much idle time before activation */
   Time lock_timeout;		/* how long after activation locking starts */
@@ -174,9 +174,10 @@ struct saver_info {
      remote control
      ======================================================================= */
 
-  int next_mode_p;		/* Set to 1 if the NEXT ClientMessage has just
-				   been received; set to 2 if PREV has just
-				   been received.  (#### This is nasty.) */
+  int selection_mode;		/* Set to -1 if the NEXT ClientMessage has just
+				   been received; set to -2 if PREV has just
+				   been received; set to N if SELECT has
+				   been received.  (This is kind of nasty.) */
 
   /* =======================================================================
      subprocs
@@ -377,6 +378,14 @@ extern FILE *real_stdout;
 extern void initialize_stderr (saver_info *si);
 extern void reset_stderr (saver_screen_info *ssi);
 extern void clear_stderr (saver_screen_info *ssi);
+
+/* =======================================================================
+   the .xscreensaver file
+   ======================================================================= */
+
+extern void read_init_file (saver_info *si);
+extern void write_init_file (saver_info *si);
+
 
 /* =======================================================================
    misc

@@ -62,7 +62,7 @@ tar:
   mv xscreensaver.lsm.$$$$ xscreensaver.lsm ;				    \
   NAME=`sed -n								    \
   's/[^0-9]*\([0-9]\.[0-9][0-9]*\).*/xscreensaver-\1/p' utils/version.h` ;  \
-  rm -f $$NAME ; ln -s . $$NAME ;					    \
+  rm -rf $$NAME ; ln -s . $$NAME ;					    \
   FILES= ;								    \
   for subdir in $(SUBDIRS) ; do						    \
     d=`pwd` ;								    \
@@ -150,6 +150,60 @@ bump-version::
   rm -f $$TMP;								    \
   echo "overwrote $$SRC"; 						    \
   ls -lFd $$SRC
+
+test-tar::
+	@								    \
+  VERS=`sed -n 's/[^0-9]*\([0-9]\.[0-9][0-9]*\).*/\1/p' utils/version.h` ;  \
+  D=xscreensaver-$$VERS ;						    \
+  NAME="$$D.tar.gz" ;							    \
+  if [ ! -f $$NAME ]; then						    \
+    echo "$$NAME does not exist!  Did you forget to \`make tar'?" ;	    \
+    exit 1 ; 								    \
+  fi ;									    \
+									    \
+  set -e ;								    \
+  set -x ;								    \
+									    \
+  if [ -d $$D ]; then							    \
+   chmod -R u+w $$D ;							    \
+  fi ;									    \
+  rm -rf $$D ;								    \
+  zcat $$D.tar.gz | tar -xf - ;						    \
+  cd $$D ;								    \
+  chmod -R a-w . ;							    \
+  chmod u+w . ;								    \
+  mkdir BIN ;								    \
+  mkdir BIN/athena ;							    \
+  mkdir BIN/motif ;							    \
+  mkdir BIN/lesstif ;							    \
+  chmod a-w . ;								    \
+									    \
+  ( cd BIN/athena ;							    \
+    CC=cc ;								    \
+    export CC ;								    \
+    ../../configure --with-athena ;					    \
+    echo --------------------------------------------------------------- ;  \
+    gmake ;								    \
+    echo --------------------------------------------------------------- ); \
+									    \
+  ( cd BIN/motif ;							    \
+    CC=cc ;								    \
+    export CC ;								    \
+    ../../configure --with-motif=/usr/local/motif ;			    \
+    echo --------------------------------------------------------------- ;  \
+    gmake ;								    \
+    echo --------------------------------------------------------------- ); \
+									    \
+  ( cd BIN/lesstif ;							    \
+    CC=cc ;								    \
+    export CC ;								    \
+    ../../configure --with-motif=/usr/local/lesstif ;			    \
+    echo --------------------------------------------------------------- ;  \
+    gmake ;								    \
+    echo --------------------------------------------------------------- ); \
+									    \
+  chmod -R u+w . ;							    \
+
 
 www::
 	@								    \

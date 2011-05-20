@@ -900,6 +900,8 @@ res_done_cb (Widget button, XtPointer client_data, XtPointer call_data)
 	}
     }
 #endif /* HAVE_MIT_SAVER_EXTENSION || HAVE_SGI_SAVER_EXTENSION */
+
+  write_init_file (si);
 }
 
 

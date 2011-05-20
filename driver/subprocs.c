@@ -52,9 +52,12 @@
 #define SIGCHLD SIGCLD
 #endif
 
+#if 0 /* putenv() is declared in stdlib.h on modern linux systems. */
 #ifdef HAVE_PUTENV
 extern int putenv (/* const char * */);	/* getenv() is in stdlib.h... */
 #endif
+#endif
+
 extern int kill (pid_t, int);		/* signal() is in sys/signal.h... */
 
 /* This file doesn't need the Xt headers, so stub these types out... */
@@ -766,11 +769,13 @@ spawn_screenhack_1 (saver_screen_info *ssi, Bool first_time_p)
 	AGAIN:
 	  if (p->screenhacks_count == 1)
 	    new_hack = 0;
-	  else if (si->next_mode_p == 1)
+	  else if (si->selection_mode == -1)
 	    new_hack = (ssi->current_hack + 1) % p->screenhacks_count;
-	  else if (si->next_mode_p == 2)
+	  else if (si->selection_mode == -2)
 	    new_hack = ((ssi->current_hack + p->screenhacks_count - 1)
 			% p->screenhacks_count);
+	  else if (si->selection_mode > 0)
+	    new_hack = ((si->selection_mode - 1) % p->screenhacks_count);
 	  else
 	    while ((new_hack = random () % p->screenhacks_count)
 		   == ssi->current_hack)
@@ -797,7 +802,7 @@ spawn_screenhack_1 (saver_screen_info *ssi, Bool first_time_p)
 		goto AGAIN;
 	    }
 	}
-      si->next_mode_p = 0;
+      si->selection_mode = 0;
 
 
       /* If there's a visual description on the front of the command, nuke it.

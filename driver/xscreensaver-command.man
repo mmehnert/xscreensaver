@@ -11,7 +11,7 @@
 .if n .sp 1
 .if t .sp .5
 ..
-.TH XScreenSaver 1 "02-Oct-98 (2.31)" "X Version 11"
+.TH XScreenSaver 1 "04-Oct-98 (2.32)" "X Version 11"
 .SH NAME
 xscreensaver-command - control a running xscreensaver process
 .SH SYNOPSIS
@@ -90,6 +90,12 @@ an easier way to accomplish that.)
 .TP 8
 .B \-prev
 This is like \fI\-next\fP, but cycles in the other direction.
+.TP 8
+.B \-select \fInumber\fP
+Like \fI\-activate\fP, but runs the \fIN\fPth element in the list of hacks.
+By knowing what is in the \fIprograms\fP list, and in what order, you can use
+this to activate the screensaver with a particular graphics demo.  (The first
+element in the list is numbered 1, not 0.)
 .TP 8
 .B \-exit
 Causes the xscreensaver process to exit gracefully.  This is roughly the same

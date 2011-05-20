@@ -972,7 +972,7 @@ raise_window (saver_info *si,
       /* Note!  The server is grabbed, and this will take several seconds
 	 to complete! */
       fade_screens (si->dpy, current_maps, current_windows,
-		    p->fade_seconds, p->fade_ticks, True, !dont_clear);
+		    p->fade_seconds/1000, p->fade_ticks, True, !dont_clear);
 
       free(current_maps);
       free(current_windows);
@@ -1103,7 +1103,7 @@ unblank_screen (saver_info *si)
 
 
       fade_screens (si->dpy, 0, current_windows,
-		    p->fade_seconds, p->fade_ticks,
+		    p->fade_seconds/1000, p->fade_ticks,
 		    False, False);
 
       free(current_windows);

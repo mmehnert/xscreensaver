@@ -159,7 +159,7 @@ XrmDatabase db = 0;
 
 
 static Atom XA_ACTIVATE, XA_DEACTIVATE, XA_CYCLE, XA_NEXT, XA_PREV;
-static Atom XA_EXIT, XA_RESTART, XA_LOCK;
+static Atom XA_EXIT, XA_RESTART, XA_LOCK, XA_SELECT;
 Atom XA_DEMO, XA_PREFS;
 
 
@@ -388,6 +388,8 @@ get_resources (saver_info *si)
   char *s;
   saver_preferences *p = &si->prefs;
 
+  read_init_file (si);
+
   p->xsync_p	    = get_boolean_resource ("synchronous", "Synchronous");
   if (p->xsync_p)
     XSynchronize(si->dpy, True);
@@ -397,12 +399,12 @@ get_resources (saver_info *si)
   p->lock_p	    = get_boolean_resource ("lock", "Boolean");
   p->fade_p	    = get_boolean_resource ("fade", "Boolean");
   p->unfade_p	    = get_boolean_resource ("unfade", "Boolean");
-  p->fade_seconds   = get_seconds_resource ("fadeSeconds", "Time");
+  p->fade_seconds   = 1000 * get_seconds_resource ("fadeSeconds", "Time");
   p->fade_ticks	    = get_integer_resource ("fadeTicks", "Integer");
   p->install_cmap_p = get_boolean_resource ("installColormap", "Boolean");
   p->nice_inferior  = get_integer_resource ("nice", "Nice");
 
-  p->initial_delay   = get_seconds_resource ("initialDelay", "Time");
+  p->initial_delay   = 1000 * get_seconds_resource ("initialDelay", "Time");
   p->splash_duration = 1000 * get_seconds_resource ("splashDuration", "Time");
   p->timeout         = 1000 * get_minutes_resource ("timeout", "Time");
   p->lock_timeout    = 1000 * get_minutes_resource ("lockTimeout", "Time");
@@ -689,6 +691,7 @@ initialize_connection (saver_info *si, int argc, char **argv)
   XA_CYCLE = XInternAtom (si->dpy, "CYCLE", False);
   XA_NEXT = XInternAtom (si->dpy, "NEXT", False);
   XA_PREV = XInternAtom (si->dpy, "PREV", False);
+  XA_SELECT = XInternAtom (si->dpy, "SELECT", False);
   XA_EXIT = XInternAtom (si->dpy, "EXIT", False);
   XA_DEMO = XInternAtom (si->dpy, "DEMO", False);
   XA_PREFS = XInternAtom (si->dpy, "PREFS", False);
@@ -918,12 +921,12 @@ initialize (saver_info *si, int argc, char **argv)
 	  if (p->verbose_p)
 	    {
 	      fprintf (stderr, "%s: waiting for %d second%s...", blurb(),
-		       (int) p->initial_delay,
-		       (p->initial_delay == 1 ? "" : "s"));
+		       (int) p->initial_delay/1000,
+		       (p->initial_delay == 1000 ? "" : "s"));
 	      fflush (stderr);
 	      fflush (stdout);
 	    }
-	  sleep (p->initial_delay);
+	  usleep (p->initial_delay);
 	  if (p->verbose_p)
 	    fprintf (stderr, " done.\n");
 	}
@@ -1127,7 +1130,27 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
       if (p->verbose_p)
 	fprintf (stderr, "%s: %s ClientMessage received.\n", blurb(),
 		(type == XA_NEXT ? "NEXT" : "PREV"));
-      si->next_mode_p = 1 + (type == XA_PREV);
+      si->selection_mode = (type == XA_NEXT ? -1 : -2);
+
+      if (! until_idle_p)
+	{
+	  if (si->cycle_id)
+	    XtRemoveTimeOut (si->cycle_id);
+	  si->cycle_id = 0;
+	  cycle_timer ((XtPointer) si, 0);
+	}
+      else
+	return True;
+    }
+  else if (type == XA_SELECT)
+    {
+      long which = event->xclient.data.l[1];
+
+      if (p->verbose_p)
+	fprintf (stderr, "%s: SELECT %ld ClientMessage received.\n", blurb(),
+		 which);
+      if (which < 1) which = 1;
+      si->selection_mode = which;
 
       if (! until_idle_p)
 	{
@@ -1191,7 +1214,7 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
 #ifdef NO_DEMO_MODE
       fprintf (stderr, "%s: not compiled with support for DEMO mode\n",
 	       blurb());
-#else
+#else /* !NO_DEMO_MODE */
       if (until_idle_p)
 	{
 	  if (p->verbose_p)
@@ -1201,14 +1224,14 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
 	}
       fprintf (stderr,
 	       "%s: DEMO ClientMessage received while active.\n", blurb());
-#endif
+#endif /* !NO_DEMO_MODE */
     }
   else if (type == XA_PREFS)
     {
 #ifdef NO_DEMO_MODE
       fprintf (stderr, "%s: not compiled with support for DEMO mode\n",
 	       blurb());
-#else
+#else /* !NO_DEMO_MODE */
       if (until_idle_p)
 	{
 	  if (p->verbose_p)
@@ -1218,14 +1241,14 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
 	}
       fprintf (stderr,
 	       "%s: PREFS ClientMessage received while active.\n", blurb());
-#endif
+#endif /* !NO_DEMO_MODE */
     }
   else if (type == XA_LOCK)
     {
 #ifdef NO_LOCKING
       fprintf (stderr, "%s: not compiled with support for LOCK mode\n",
 	       blurb());
-#else
+#else /* !NO_LOCKING */
       if (si->locking_disabled_p)
 	fprintf (stderr,
 	       "%s: LOCK ClientMessage received, but locking is disabled.\n",
@@ -1260,7 +1283,7 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
 		}
 	    }
 	}
-#endif
+#endif /* !NO_LOCKING */
     }
   else
     {

@@ -36,7 +36,8 @@
 #ifdef STANDALONE
   static char *progname;
   static Atom XA_VROOT;
-  static Atom XA_SCREENSAVER, XA_SCREENSAVER_VERSION, XA_SCREENSAVER_TIME;
+  static Atom XA_SCREENSAVER, XA_SCREENSAVER_VERSION;
+  static Atom XA_SCREENSAVER_TIME, XA_SELECT;
 #else  /* !STANDALONE */
 # include "xscreensaver.h"
 #endif /* !STANDALONE */
@@ -91,7 +92,7 @@ find_screensaver_window (Display *dpy, char **version)
 
 
 void
-xscreensaver_command (Display *dpy, Atom command)
+xscreensaver_command (Display *dpy, Atom command, long argument)
 {
   char *v = 0;
   Window window = find_screensaver_window (dpy, &v);
@@ -180,12 +181,17 @@ xscreensaver_command (Display *dpy, Atom command)
   else
     {
       XEvent event;
+      long arg1 = (command == XA_SELECT ? argument : 0L);
       event.xany.type = ClientMessage;
       event.xclient.display = dpy;
       event.xclient.window = window;
       event.xclient.message_type = XA_SCREENSAVER;
       event.xclient.format = 32;
       event.xclient.data.l[0] = (long) command;
+      event.xclient.data.l[1] = arg1;
+      event.xclient.data.l[2] = 0L;
+      event.xclient.data.l[3] = 0L;
+      event.xclient.data.l[4] = 0L;
       if (! XSendEvent (dpy, window, False, 0L, &event))
 	{
 	  fprintf (stderr, "%s: XSendEvent(dpy, 0x%x ...) failed.\n",
@@ -240,6 +246,12 @@ usage: %s -<option>\n\
 \n\
   -prev         Like -next, but goes in the other direction.\n\
 \n\
+  -select <N>   Like -activate, but runs the Nth element in the list of\n\
+                hacks.  By knowing what is in the `programs' list, and in\n\
+                what order, you can use this to activate the screensaver\n\
+                with a particular graphics demo.  (The first element in the\n\
+                list is numbered 1, not 0.)\n\
+\n\
   -exit         Causes the xscreensaver process to exit gracefully.  This is\n\
                 roughly the same as killing the process with `kill', but it\n\
                 is easier, since you don't need to first figure out the pid.\n\
@@ -278,6 +290,7 @@ main (int argc, char **argv)
   int i;
   char *dpyname = 0;
   Atom *cmd = 0;
+  long arg = 0L;
 
   progname = argv[0];
   screensaver_version = (char *) malloc (5);
@@ -298,6 +311,7 @@ main (int argc, char **argv)
       else if (!strncmp (s, "-cycle", L))      cmd = &XA_CYCLE;
       else if (!strncmp (s, "-next", L))       cmd = &XA_NEXT;
       else if (!strncmp (s, "-prev", L))       cmd = &XA_PREV;
+      else if (!strncmp (s, "-select", L))     cmd = &XA_SELECT;
       else if (!strncmp (s, "-exit", L))       cmd = &XA_EXIT;
       else if (!strncmp (s, "-restart", L))    cmd = &XA_RESTART;
       else if (!strncmp (s, "-demo", L))       cmd = &XA_DEMO;
@@ -307,6 +321,15 @@ main (int argc, char **argv)
       else if (!strncmp (s, "-version", L))    cmd = &XA_SCREENSAVER_VERSION;
       else if (!strncmp (s, "-time", L))       cmd = &XA_SCREENSAVER_TIME;
       else USAGE ();
+
+      if (cmd == &XA_SELECT)
+	{
+	  char junk;
+	  i++;
+	  if (i >= argc ||
+	      (1 != sscanf(argv[i], " %ld %c", &arg, &junk)))
+	    USAGE ();
+	}
     }
   if (!cmd)
     USAGE ();
@@ -330,6 +353,7 @@ main (int argc, char **argv)
   XA_CYCLE = XInternAtom (dpy, "CYCLE", False);
   XA_NEXT = XInternAtom (dpy, "NEXT", False);
   XA_PREV = XInternAtom (dpy, "PREV", False);
+  XA_SELECT = XInternAtom (dpy, "SELECT", False);
   XA_EXIT = XInternAtom (dpy, "EXIT", False);
   XA_DEMO = XInternAtom (dpy, "DEMO", False);
   XA_PREFS = XInternAtom (dpy, "PREFS", False);
@@ -338,12 +362,12 @@ main (int argc, char **argv)
   XSync (dpy, 0);
 
   if (*cmd == XA_ACTIVATE || *cmd == XA_LOCK ||
-      *cmd == XA_NEXT || *cmd == XA_PREV)
+      *cmd == XA_NEXT || *cmd == XA_PREV || *cmd == XA_SELECT)
     /* People never guess that KeyRelease deactivates the screen saver too,
        so if we're issuing an activation command, wait a second. */
     sleep (1);
 
-  xscreensaver_command(dpy, *cmd);
+  xscreensaver_command(dpy, *cmd, arg);
 
   fflush (stdout);
   fflush (stderr);

@@ -21,6 +21,10 @@
 # include <unistd.h>
 #endif
 
+#ifdef HAVE_CRYPT_H
+# include <crypt.h>
+#endif
+
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
@@ -88,7 +92,7 @@
 #define False 0
 
 
-extern char *progname;
+extern const char *blurb(void);
 
 static char *encrypted_root_passwd = 0;
 static char *encrypted_user_passwd = 0;
