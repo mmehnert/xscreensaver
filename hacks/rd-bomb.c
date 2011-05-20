@@ -231,10 +231,14 @@ screenhack (Display *dpy, Window win)
     if (verbose) {
       double tm = 0;
       struct timeval tp;
-      struct timezone tzp;
       if (!(frame%100)) {
 	double tm2;
+#ifdef GETTIMEOFDAY_TWO_ARGS
+        struct timezone tzp;
 	gettimeofday(&tp, &tzp);
+#else
+        gettimeofday(&tp);
+#endif
 	tm2 = tp.tv_sec + tp.tv_usec * 1e-6;
 	if (frame > 0)
 	  printf("fps = %2.4g\n", 100.0 / (tm2 - tm));

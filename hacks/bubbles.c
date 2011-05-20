@@ -1,6 +1,6 @@
 /* bubbles.c - frying pan / soft drink in a glass simulation */
 
-/*$Id: bubbles.c,v 1.8 1997/07/26 19:16:33 jwz Exp $*/
+/*$Id: bubbles.c,v 1.9 1997/11/18 06:53:17 jwz Exp $*/
 
 /*
  *  Copyright (C) 1995-1996 James Macnicol
@@ -90,7 +90,7 @@ char *defaults [] = {
   "*foreground: white",
   "*simple:     false",
   "*broken:     false",
-  "*delay:      2000",
+  "*delay:      800",
 #ifdef BUBBLES_IO
   "*file:       (default)",
   "*directory:  (default)",

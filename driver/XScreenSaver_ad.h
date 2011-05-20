@@ -34,6 +34,7 @@
 		imsmap -root						\\n\
 		slidescreen -root					\\n\
 		decayscreen -root					\\n\
+		blitspin -root -grab					\\n\
 		hypercube -root						\\n\
 		halo -root						\\n\
 		maze -root						\\n\
@@ -45,7 +46,7 @@
 		kaleidescope -root					\\n\
 		lightning -root						\\n\
 		strange -root						\\n\
-		fract -root						\\n\
+		vines -root						\\n\
 		spiral -root						\\n\
 		laser -root						\\n\
 		grav -root						\\n\
@@ -64,12 +65,19 @@
 		sphere -root						\\n\
 		forest -root						\\n\
 		lisa -root						\\n\
+		lissie -root						\\n\
 		goop -root						\\n\
 		starfish -root						\\n\
 		starfish -root -blob					\\n\
 		munch -root						\\n\
 		fadeplot -root						\\n\
 		coral -root						\\n\
+		mountain -root						\\n\
+		triangle -root						\\n\
+		worm -root						\\n\
+		rotor -root						\\n\
+		ant -root						\\n\
+		xjack -root						\\n\
 									  \
 	mono:	rocks -root						\\n\
 	color:	rocks -root -fg darksalmon				\\n\

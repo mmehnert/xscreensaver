@@ -345,7 +345,35 @@ copy_default_colormap_contents (Screen *screen,
 
   got_cells = max_cells;
   allocate_writable_colors (dpy, to_cmap, pixels, &got_cells);
-  XStoreColors (dpy, to_cmap, old_colors, got_cells);
+
+#ifdef DEBUG
+  if (got_cells != max_cells)
+    fprintf(stderr, "%s: got only %d of %d cells\n", progname,
+	    got_cells, max_cells);
+#endif /* DEBUG */
+
+  if (got_cells <= 0)					 /* we're screwed */
+    ;
+  else if (got_cells == max_cells &&			 /* we're golden */
+	   from_cells == to_cells)
+    XStoreColors (dpy, to_cmap, old_colors, got_cells);
+  else							 /* try to cope... */
+    {
+      for (i = 0; i < got_cells; i++)
+	{
+	  XColor *c = old_colors + i;
+	  int j;
+	  for (j = 0; j < got_cells; j++)
+	    if (pixels[j] == c->pixel)
+	      {
+		/* only store this color value if this is one of the pixels
+		   we were able to allocate. */
+		XStoreColors (dpy, to_cmap, c, 1);
+		break;
+	      }
+	}
+    }
+
 
 #ifdef DEBUG
   fprintf(stderr, "%s: installing copy of default colormap\n", progname);

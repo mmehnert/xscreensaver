@@ -99,15 +99,22 @@ window, which are pointed at by the screensaver's default resource settings.
    spiral	- Circular color-cycling interference patterns.
    strange	- Animating strange attractors.
    flag		- A waving flag of an arbitrary bitmap or text.
-   sphere	- draw a bunch of shaded spheres.
+   sphere	- Draws a bunch of shaded spheres.
    forest	- grows a fractal forest.
    lisa		- draws animated full-loop lisajous figures.
+   lissie	- another lisajous path.
    goop		- Squishy transparent oil-and-bubble images
    starfish	- Radially-symmetric throbbing colormap-hacking blobs.
    munch	- The classic 1962-vintage "munching squares" hack.
    rd-bomb      - Reaction-diffusion fractals.
    coral        - Simulation of coral growth, sort of.
    fadeplot	- Draws a swimming ribbon.
+   mountain	- Generates mountains on a square grid.
+   triangle	- Generates mountains on a triangular grid.
+   worm		- Draws wiggly worms.
+   rotor	- Draws a rotating spiral pattern.
+   ant		- A cellular automaton.
+   xjack	- Simulates a schizophrenic typist.
    escher	- Draws some escher-like scenes (GLX only.)
    gears	- Draws interlocking rotating gears (GLX only.)
    morph3d	- Draws shiny shape-changing 3d forms (GLX only.)
@@ -142,10 +149,24 @@ http://people.netscape.com/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
-Changes since 2.09:	Fixed color bugs in rd-bomb; sped up coral.
-Changes since 2.07:	New hacks "rd-bomb" and "coral".
-			New version of "maze" with some new algorithms.
-			New colorized version of "rocks".
+Changes since 2.10:	Tweaked `blitspin', added it to the default list.
+			Added `lissie', `mountain', `triangle', `worm',
+			`rotor', and `ant' from xlockmore.
+			Updated `sierpinski', `galaxy', and `lisa'.
+			Thickened the lines in `braid' and `lmorph'.
+			Updated VMS makefiles.
+			Renamed `fract' to `vines'.
+			Added `xjack' hack.
+			Made a few more hacks use erase.c, and added a few
+			more wipe styles.
+			Fixed compilation problem with Sun's version of OpenGL.
+			Added ability to use sigaction() instead of signal()
+			to work around a SCO kernel bug.
+Changes since 2.09:	Fixed colormap bugs in `rd-bomb'; sped up `coral'.
+			Configure tweaks for *BSD.
+Changes since 2.07:	New hacks `rd-bomb' and `coral'.
+			New version of `maze' with some new algorithms.
+			New colorized version of `rocks'.
 			Fixed a bug in qix on 64-bit machines.
 			Fixed a bug in the -time option.
 			Fixed a bug in configure related to LessTif.
