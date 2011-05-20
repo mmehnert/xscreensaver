@@ -26,7 +26,8 @@ now be used as a screensaver without modification.  The programs that
 are being run as screensavers don't need to have any special knowledge
 about what it means to be a screensaver.
 
-The XIdle extension will be used if you have it (win win.)
+The XIDLE or MIT-SCREEN-SAVER server extensions will be used if you have
+them (win win.)
 
 Unfortunately, locking doesn't work if you don't have Motif.
 
@@ -37,6 +38,7 @@ window, which are pointed at by the screensaver's default resource settings.
    qix		- My own implementation of this, with many more options
 		  than you would have thought qix could have.
    helix	- Generates spirally "stringart" patterns.
+   pedal	- Draws a different kind of spirally pattern.
    rorschach	- Random inkblot patterns.
    attraction	- A bouncing ball demo, or a qix-like demo, or a wild
 		  color-cycling thing, with some odd rules.
@@ -85,6 +87,14 @@ The latest version of xscreensaver is on FTP.X.ORG.
 	-- Jamie Zawinski <jwz@mcom.com>
 
 
+Changes since 1.24:	Made it capture the stdout/stderr of its subprocesses
+			and present them on the screensaver window itself.
+			Made demo mode work correctly with non-default visuals
+			and color maps, instead of always using the defaults.
+			Added -visual argument to all included screenhacks.
+			Support for the R6 MIT-SCREEN-SAVER server extension.
+			Made the demo mode list scroll properly.
+			Added `pedal' hack.
 Changes since 1.23:	Fixed some private-colormap oddities in slidescreen,
 			decayscreen, and xroger.  Fixed apparent conservation-
 			of-mass problem in pyro; made the shrapnel round.

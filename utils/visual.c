@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1993 Jamie Zawinski <jwz@mcom.com>
+/* xscreensaver, Copyright (c) 1993, 1994, 1995 Jamie Zawinski <jwz@mcom.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -10,12 +10,13 @@
  */
 
 /* This file contains some code for intelligently picking the best visual
-   (where "best" is somewhat biased in the direction of writable cells...)
+   (where "best" is biased in the direction of high color counts...)
  */
 
 #if __STDC__
 #include <stdlib.h>
 #include <unistd.h>
+#include <string.h>
 #endif
 
 #include <stdio.h>
@@ -41,9 +42,9 @@ extern char *get_string_resource P((char *, char *));
 static Visual *pick_best_visual P ((Screen *));
 static Visual *pick_best_visual_of_class P((Screen *, int));
 static Visual *id_to_visual P((Screen *, int));
-static int visual_depth P((Display *, Visual *));
 static int screen_number P((Screen *));
 static Visual *id_to_visual P((Screen *screen, int id));
+int get_visual_depth P((Display *dpy, Visual *visual));
 
 
 #define DEFAULT_VISUAL	-1
@@ -121,7 +122,7 @@ pick_best_visual (screen)
   Display *dpy = DisplayOfScreen (screen);
   Visual *visual;
   if ((visual = pick_best_visual_of_class (screen, TrueColor)) &&
-      visual_depth (dpy, visual) >= 16)
+      get_visual_depth (dpy, visual) >= 16)
     return visual;
   if ((visual = pick_best_visual_of_class (screen, PseudoColor)))
     return visual;
@@ -266,23 +267,6 @@ screen_number (screen)
     if (ScreenOfDisplay (dpy, i) == screen)
       return i;
   abort ();
-}
-
-static int
-visual_depth (dpy, visual)
-	Display *dpy;
-	Visual *visual;
-{
-  XVisualInfo vi_in, *vi_out;
-  int out_count, d;
-  vi_in.screen = DefaultScreen (dpy);
-  vi_in.visualid = XVisualIDFromVisual (visual);
-  vi_out = XGetVisualInfo (dpy, VisualScreenMask|VisualIDMask,
-			   &vi_in, &out_count);
-  if (! vi_out) abort ();
-  d = vi_out [0].depth;
-  XFree ((char *) vi_out);
-  return d;
 }
 
 int

@@ -1,4 +1,4 @@
-/*    xscreensaver, Copyright (c) 1993 Jamie Zawinski <jwz@mcom.com>
+/*    xscreensaver, Copyright (c) 1993-1995 Jamie Zawinski <jwz@mcom.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -52,7 +52,8 @@ extern Widget passwd_text;
 extern Widget passwd_done;
 extern Widget passwd_cancel;
 
-extern create_passwd_dialog ();
+extern create_passwd_dialog P((Widget));
+extern void ungrab_keyboard_and_mouse P((void));
 
 static enum { pw_read, pw_ok, pw_fail, pw_cancel, pw_time } passwd_state;
 static char typed_passwd [1024];

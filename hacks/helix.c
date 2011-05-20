@@ -10,8 +10,7 @@
  */
 
 #include "screenhack.h"
-#include <math.h>
-#if __STDC__
+#ifdef __STDC__
 #include <math.h>	/* for M_PI */
 #endif
 

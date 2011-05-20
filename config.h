@@ -1,39 +1,47 @@
 /*
- * Config file for xscreensaver, Copyright (c) 1991-1994 Jamie Zawinski.
+ * Config file for xscreensaver, Copyright (c) 1991-1995 Jamie Zawinski.
  * This file is included by the various Imakefiles.
  */
 
-/*  Uncomment the following line if you have the XIdle extension installed.
- *  XIdle comes on the X11r5 contrib tape, in .../contrib/extensions/xidle/
- *  (and maybe it will be on the r6 tape as well but I'm not sure where.)
- *  Installing it is the morally superior thing to do, but xscreensaver will
- *  work without it.
- *
- *  Actually it's likely that the R6 `screensaver' server extension will turn
- *  out to be the better thing to use, but I haven't had time to add support
- *  for it yet.  (See README to find the latest version of this program.)
+/*  Uncomment the following line if you have the MIT-SCREEN-SAVER extension
+ *  installed.  This extension resides in .../contrib/extensions/screensaver/
+ *  on the X11R6 contrib tape.  (Turning on this flag lets XScreenSaver work
+ *  better with servers which support this extension; but it will still work
+ *  with servers which do not suport this extension, so it's a good idea to
+ *  compile in support for it if you can.)
  */
-/* #define HAVE_XIDLE */
+/* #define HAVE_SAVER_EXTENSION */
+
+/*  Uncomment the following line if you have the XIDLE extension installed.
+ *  This extension resides in .../contrib/extensions/xidle/ on the X11R5
+ *  contrib tape.  (Turning on this flag lets XScreenSaver work better with
+ *  servers which support this extension; but it will still work with servers
+ *  which do not suport this extension, so it's a good idea to compile in
+ *  support for it if you can.)
+ */
+/* #define HAVE_XIDLE_EXTENSION */
 
 /*  Uncomment the following line if you have the XPM library installed.
- *  Some of the demos can make use of this.
+ *  Some of the demos can make use of this if it is available.
  */
 #define HAVE_XPM
 
 /*  Uncomment the following line if you don't have Motif.  If you don't have
  *  Motif, then the screensaver won't have any dialog boxes, which means
  *  that it won't be compiled with support for demo-mode or display-locking.
+ *  But other than that, it will work fine.
  */
 /* #define NO_MOTIF */
 
-/* Uncomment the following line if for some reason the locking code doesn't
- * work (for example, if you don't have the crypt() system call, or if you
- * don't use standard passwd files.)
+/*  Uncomment the following line if for some reason the locking code doesn't
+ *  work (for example, if you don't have the crypt() system call, or if you
+ *  don't use standard passwd files.)  If you need to do this, please let me
+ *  know.
  */
 /* #define NO_LOCKING */
 
 /*  Uncomment the following line if your system doesn't have the select()
- *  system call.
+ *  system call.  If you need to do this, please let me know.
  */
 /* #define NO_SELECT */
 

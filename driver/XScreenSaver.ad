@@ -12,6 +12,12 @@
 *fadeSeconds:	1
 *fadeTicks:	75
 
+*captureStderr: 	True
+*captureStdout: 	True
+*textForeground:	Yellow
+*textBackground:	Black
+*font:			*-medium-r-*-140-*-m-*
+
 ! Turning on "installColormap" interacts erratically with twm and tvtwm,
 ! but seems to work fine with mwm and olwm.  Try it and see.
 !
@@ -28,6 +34,7 @@
 			-orbit -vmult 0.5				\n\
 		pyro -root						\n\
 		helix -root						\n\
+		pedal -root						\n\
 		rorschach -root -offset 7				\n\
 		hopalong -root						\n\
 		greynetic -root						\n\
@@ -95,7 +102,7 @@
 *demoDialog.maxWidth:		600
 
 *label1.labelString:		XScreenSaver %s
-*label2.labelString: Copyright © 1991-1994 by Jamie Zawinski <jwz@mcom.com>
+*label2.labelString: Copyright © 1991-1995 by Jamie Zawinski <jwz@mcom.com>
 *demoList.visibleItemCount:	10
 *demoList.automaticSelection:	True
 *next.labelString:		Run Next
