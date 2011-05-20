@@ -911,8 +911,9 @@ if test $enable_locking = yes; then
       AC_DEFINE(HAVE_ENHANCED_PASSWD)
 
       # On SCO, getprpwnam() is in -lprot (which uses nap() from -lx)
+      # (I'm told it needs -lcurses too, but I don't understand why.)
       AC_CHECK_LIB(prot, getprpwnam, 
-		   [PASSWD_LIBS="$PASSWD_LIBS -lprot -lx"],
+		   [PASSWD_LIBS="$PASSWD_LIBS -lprot -lcurses -lx"],
 		   [# On DEC, getprpwnam() is in -lsecurity
 		    AC_CHECK_LIB(security, getprpwnam, 
 				 [PASSWD_LIBS="$PASSWD_LIBS -lsecurity"])],

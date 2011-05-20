@@ -36,6 +36,7 @@ static const char sccsid[] = "@(#)morph3d.c	4.02 97/04/01 xlockmore";
  * Marcelo F. Vianna (Feb-13-1997)
  *
  * Revision History:
+ * 27-Jul-97: Speed ups by Marcelo F. Vianna.
  * 08-May-97: Speed ups by Marcelo F. Vianna.
  *
  */
@@ -50,8 +51,20 @@ static const char sccsid[] = "@(#)morph3d.c	4.02 97/04/01 xlockmore";
  * due to a Bug/feature in VMS X11/Intrinsic.h has to be placed before xlock.
  * otherwise caddr_t is not defined correctly
  */
+
 #include <X11/Intrinsic.h>
-#include "xlock.h"
+
+#ifdef STANDALONE
+# define PROGCLASS		"Morph3d"
+# define HACK_INIT		init_morph3d
+# define HACK_DRAW		draw_morph3d
+# define morph3d_opts		xlockmore_opts
+# define DEFAULTS		"*delay: 1000 \n" \
+				"*count: 0 \n"
+# include "xlockmore.h"		/* from the xscreensaver distribution */
+#else /* !STANDALONE */
+# include "xlock.h"		/* from the xlockmore distribution */
+#endif /* !STANDALONE */
 
 #ifdef USE_GL
 
@@ -99,7 +112,7 @@ typedef struct {
 	GLfloat     seno;
 	int         object;
 	int         edgedivisions;
-        int         VisibleSpikes;
+	int         VisibleSpikes;
 	void        (*draw_object) (ModeInfo * mi);
 	float       Magnitude;
 	float      *MaterialColor[20];
@@ -144,49 +157,46 @@ static morph3dstruct *morph3d = NULL;
 
 #define TRIANGLE(Edge, Amp, Divisions, Z, VS)                                                                    \
 {                                                                                                                \
-  GLfloat   Xf,Yf,Xa,Yb,Xf2,Yf2;                                                                                 \
-  GLfloat   Factor=0.0,Factor1,Factor2;                                                                              \
+  GLfloat   Xf,Yf,Xa,Yb,Xf2,Yf2,Yf_2,Yb2,Yb_2;                                                                   \
+  GLfloat   Factor=0.0,Factor1,Factor2;                                                                          \
   GLfloat   VertX,VertY,VertZ,NeiAX,NeiAY,NeiAZ,NeiBX,NeiBY,NeiBZ;                                               \
-  GLfloat   Ax,Ay,Bx;                                                                                            \
+  GLfloat   Ax,Ay;                                                                                               \
   int       Ri,Ti;                                                                                               \
   GLfloat   Vr=(Edge)*SQRT3/3;                                                                                   \
   GLfloat   AmpVr2=(Amp)/sqr(Vr);                                                                                \
   GLfloat   Zf=(Edge)*(Z);                                                                                       \
                                                                                                                  \
   Ax=(Edge)*(+0.5/(Divisions)), Ay=(Edge)*(-SQRT3/(2*Divisions));                                                \
-  Bx=(Edge)*(-0.5/(Divisions));                                                                                  \
                                                                                                                  \
+  Yf=Vr+Ay; Yb=Yf+0.001;                                                                                         \
   for (Ri=1; Ri<=(Divisions); Ri++) {                                                                            \
     glBegin(GL_TRIANGLE_STRIP);                                                                                  \
+    Xf=(float)Ri*Ax; Xa=Xf+0.001;                                                                                \
+    Yf2=sqr(Yf); Yf_2=sqr(Yf-Ay);                                                                                \
+    Yb2=sqr(Yb); Yb_2=sqr(Yb-Ay);                                                                                \
     for (Ti=0; Ti<Ri; Ti++) {                                                                                    \
-      Xf=(float)(Ri-Ti)*Ax + (float)Ti*Bx;                                                                       \
-      Yf=Vr+(float)(Ri-Ti)*Ay + (float)Ti*Ay;                                                                    \
-      Xa=Xf+0.001; Yb=Yf+0.001;                                                                                  \
-      Factor=1-(((Xf2=sqr(Xf))+(Yf2=sqr(Yf)))*AmpVr2);                                                           \
+      Factor=1-(((Xf2=sqr(Xf))+Yf2)*AmpVr2);                                                                     \
       Factor1=1-((sqr(Xa)+Yf2)*AmpVr2);                                                                          \
-      Factor2=1-((Xf2+sqr(Yb))*AmpVr2);                                                                          \
+      Factor2=1-((Xf2+Yb2)*AmpVr2);                                                                              \
       VertX=Factor*Xf;        VertY=Factor*Yf;        VertZ=Factor*Zf;                                           \
       NeiAX=Factor1*Xa-VertX; NeiAY=Factor1*Yf-VertY; NeiAZ=Factor1*Zf-VertZ;                                    \
       NeiBX=Factor2*Xf-VertX; NeiBY=Factor2*Yb-VertY; NeiBZ=Factor2*Zf-VertZ;                                    \
       glNormal3f(VectMul(NeiAX, NeiAY, NeiAZ, NeiBX, NeiBY, NeiBZ));                                             \
       glVertex3f(VertX, VertY, VertZ);                                                                           \
                                                                                                                  \
-      Xf=(float)(Ri-Ti-1)*Ax + (float)Ti*Bx;                                                                     \
-      Yf=Vr+(float)(Ri-Ti-1)*Ay + (float)Ti*Ay;                                                                  \
-      Xa=Xf+0.001; Yb=Yf+0.001;                                                                                  \
-      Factor=1-(((Xf2=sqr(Xf))+(Yf2=sqr(Yf)))*AmpVr2);                                                           \
-      Factor1=1-((sqr(Xa)+Yf2)*AmpVr2);                                                                          \
-      Factor2=1-((Xf2+sqr(Yb))*AmpVr2);                                                                          \
+      Xf-=Ax; Yf-=Ay; Xa-=Ax; Yb-=Ay;                                                                            \
+                                                                                                                 \
+      Factor=1-(((Xf2=sqr(Xf))+Yf_2)*AmpVr2);                                                                    \
+      Factor1=1-((sqr(Xa)+Yf_2)*AmpVr2);                                                                         \
+      Factor2=1-((Xf2+Yb_2)*AmpVr2);                                                                             \
       VertX=Factor*Xf;        VertY=Factor*Yf;        VertZ=Factor*Zf;                                           \
       NeiAX=Factor1*Xa-VertX; NeiAY=Factor1*Yf-VertY; NeiAZ=Factor1*Zf-VertZ;                                    \
       NeiBX=Factor2*Xf-VertX; NeiBY=Factor2*Yb-VertY; NeiBZ=Factor2*Zf-VertZ;                                    \
       glNormal3f(VectMul(NeiAX, NeiAY, NeiAZ, NeiBX, NeiBY, NeiBZ));                                             \
       glVertex3f(VertX, VertY, VertZ);                                                                           \
                                                                                                                  \
+      Xf-=Ax; Yf+=Ay; Xa-=Ax; Yb+=Ay;                                                                            \
     }                                                                                                            \
-    Xf=(float)Ri*Bx;                                                                                             \
-    Yf=Vr+(float)Ri*Ay;                                                                                          \
-    Xa=Xf+0.001; Yb=Yf+0.001;                                                                                    \
     Factor=1-(((Xf2=sqr(Xf))+(Yf2=sqr(Yf)))*AmpVr2);                                                             \
     Factor1=1-((sqr(Xa)+Yf2)*AmpVr2);                                                                            \
     Factor2=1-((Xf2+sqr(Yb))*AmpVr2);                                                                            \
@@ -195,16 +205,17 @@ static morph3dstruct *morph3d = NULL;
     NeiBX=Factor2*Xf-VertX; NeiBY=Factor2*Yb-VertY; NeiBZ=Factor2*Zf-VertZ;                                      \
     glNormal3f(VectMul(NeiAX, NeiAY, NeiAZ, NeiBX, NeiBY, NeiBZ));                                               \
     glVertex3f(VertX, VertY, VertZ);                                                                             \
+    Yf+=Ay; Yb+=Ay;                                                                                              \
     glEnd();                                                                                                     \
   }                                                                                                              \
-  VS=(Factor<0);                                                                                               \
+  VS=(Factor<0);                                                                                                 \
 }
 
 #define SQUARE(Edge, Amp, Divisions, Z, VS)                                                                      \
 {                                                                                                                \
   int       Xi,Yi;                                                                                               \
-  GLfloat   Xf,Yf,Y,Xf2,Yf2,Y2,Xa,Yb;                                                                            \
-  GLfloat   Factor=0.0,Factor1,Factor2;                                                                              \
+  GLfloat   Xf,Yf,Y,Xf2,Yf2,Y2,Xa,Xa2,Yb;                                                                        \
+  GLfloat   Factor=0.0,Factor1,Factor2;                                                                          \
   GLfloat   VertX,VertY,VertZ,NeiAX,NeiAY,NeiAZ,NeiBX,NeiBY,NeiBZ;                                               \
   GLfloat   Zf=(Edge)*(Z);                                                                                       \
   GLfloat   AmpVr2=(Amp)/sqr((Edge)*SQRT2/2);                                                                    \
@@ -221,7 +232,7 @@ static morph3dstruct *morph3d = NULL;
                                                                                                                  \
       Xa=Xf+0.001; Yb=Y+0.001;                                                                                   \
       Factor=1-((Xf2+Y2)*AmpVr2);                                                                                \
-      Factor1=1-((sqr(Xa)+Y2)*AmpVr2);                                                                           \
+      Factor1=1-(((Xa2=sqr(Xa))+Y2)*AmpVr2);                                                                     \
       Factor2=1-((Xf2+sqr(Yb))*AmpVr2);                                                                          \
       VertX=Factor*Xf;        VertY=Factor*Y;         VertZ=Factor*Zf;                                           \
       NeiAX=Factor1*Xa-VertX; NeiAY=Factor1*Y-VertY;  NeiAZ=Factor1*Zf-VertZ;                                    \
@@ -229,9 +240,9 @@ static morph3dstruct *morph3d = NULL;
       glNormal3f(VectMul(NeiAX, NeiAY, NeiAZ, NeiBX, NeiBY, NeiBZ));                                             \
       glVertex3f(VertX, VertY, VertZ);                                                                           \
                                                                                                                  \
-      Xa=Xf+0.001; Yb=Yf+0.001;                                                                                  \
+      Yb=Yf+0.001;                                                                                               \
       Factor=1-((Xf2+Yf2)*AmpVr2);                                                                               \
-      Factor1=1-((sqr(Xa)+Yf2)*AmpVr2);                                                                          \
+      Factor1=1-((Xa2+Yf2)*AmpVr2);                                                                              \
       Factor2=1-((Xf2+sqr(Yb))*AmpVr2);                                                                          \
       VertX=Factor*Xf;        VertY=Factor*Yf;        VertZ=Factor*Zf;                                           \
       NeiAX=Factor1*Xa-VertX; NeiAY=Factor1*Yf-VertY; NeiAZ=Factor1*Zf-VertZ;                                    \
@@ -241,22 +252,27 @@ static morph3dstruct *morph3d = NULL;
     }                                                                                                            \
     glEnd();                                                                                                     \
   }                                                                                                              \
-  VS=(Factor<0);                                                                                             \
+  VS=(Factor<0);                                                                                                 \
 }
 
 #define PENTAGON(Edge, Amp, Divisions, Z, VS)                                                                    \
 {                                                                                                                \
   int       Ri,Ti,Fi;                                                                                            \
   GLfloat   Xf,Yf,Xa,Yb,Xf2,Yf2;                                                                                 \
-  GLfloat   x[6],y[6];                                                                                           \
-  GLfloat   Factor=0.0,Factor1,Factor2;                                                                              \
+  GLfloat   Factor=0.0,Factor1,Factor2;                                                                          \
   GLfloat   VertX,VertY,VertZ,NeiAX,NeiAY,NeiAZ,NeiBX,NeiBY,NeiBZ;                                               \
   GLfloat   Zf=(Edge)*(Z);                                                                                       \
   GLfloat   AmpVr2=(Amp)/sqr((Edge)*cossec36_2);                                                                 \
                                                                                                                  \
-  for(Fi=0;Fi<6;Fi++) {                                                                                          \
-    x[Fi]=-cos( Fi*2*Pi/5 + Pi/10 )/(Divisions)*cossec36_2*(Edge);                                               \
-    y[Fi]=sin( Fi*2*Pi/5 + Pi/10 )/(Divisions)*cossec36_2*(Edge);                                                \
+  static    GLfloat x[6],y[6];                                                                                   \
+  static    arrayninit=1;                                                                                        \
+                                                                                                                 \
+  if (arrayninit) {                                                                                              \
+    for(Fi=0;Fi<6;Fi++) {                                                                                        \
+      x[Fi]=-cos( Fi*2*Pi/5 + Pi/10 )/(Divisions)*cossec36_2*(Edge);                                             \
+      y[Fi]=sin( Fi*2*Pi/5 + Pi/10 )/(Divisions)*cossec36_2*(Edge);                                              \
+    }                                                                                                            \
+    arrayninit=0;                                                                                                \
   }                                                                                                              \
                                                                                                                  \
   for (Ri=1; Ri<=(Divisions); Ri++) {                                                                            \
@@ -275,9 +291,8 @@ static morph3dstruct *morph3d = NULL;
         glNormal3f(VectMul(NeiAX, NeiAY, NeiAZ, NeiBX, NeiBY, NeiBZ));                                           \
 	glVertex3f(VertX, VertY, VertZ);                                                                         \
                                                                                                                  \
-        Xf=(float)(Ri-Ti-1)*x[Fi] + (float)Ti*x[Fi+1];                                                           \
-        Yf=(float)(Ri-Ti-1)*y[Fi] + (float)Ti*y[Fi+1];                                                           \
-        Xa=Xf+0.001; Yb=Yf+0.001;                                                                                \
+        Xf-=x[Fi]; Yf-=y[Fi]; Xa-=x[Fi]; Yb-=y[Fi];                                                              \
+                                                                                                                 \
 	Factor=1-(((Xf2=sqr(Xf))+(Yf2=sqr(Yf)))*AmpVr2);                                                         \
 	Factor1=1-((sqr(Xa)+Yf2)*AmpVr2);                                                                        \
 	Factor2=1-((Xf2+sqr(Yb))*AmpVr2);                                                                        \
@@ -352,7 +367,7 @@ draw_cube(ModeInfo * mi)
 	list = glGenLists(1);
 	glNewList(list, GL_COMPILE_AND_EXECUTE);
 	SQUARE(2, mp->seno, mp->edgedivisions, 0.5, mp->VisibleSpikes)
-	glEndList();
+		glEndList();
 
 	glRotatef(cubeangle, 1, 0, 0);
 	glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, mp->MaterialColor[1]);
@@ -512,7 +527,7 @@ draw_icosa(ModeInfo * mi)
 
 	list = glGenLists(1);
 	glNewList(list, GL_COMPILE_AND_EXECUTE);
-	TRIANGLE(1.5, mp->seno, mp->edgedivisions, (3 * SQRT3 + SQRT15) / 12,mp->VisibleSpikes);
+	TRIANGLE(1.5, mp->seno, mp->edgedivisions, (3 * SQRT3 + SQRT15) / 12, mp->VisibleSpikes);
 	glEndList();
 
 	glPushMatrix();
@@ -647,19 +662,23 @@ draw_morph3d(ModeInfo * mi)
 
 	mp->seno = (sin(mp->step) + 1.0 / 3.0) * (4.0 / 5.0) * mp->Magnitude;
 
-        if (mp->VisibleSpikes) {
+	if (mp->VisibleSpikes) {
 #ifdef DEBUG_CULL_FACE
-          int loop;
-	  for (loop = 0; loop < 20; loop++) mp->MaterialColor[loop] = MaterialGray;
+		int         loop;
+
+		for (loop = 0; loop < 20; loop++)
+			mp->MaterialColor[loop] = MaterialGray;
 #endif
-          glDisable(GL_CULL_FACE);
-        } else {
+		glDisable(GL_CULL_FACE);
+	} else {
 #ifdef DEBUG_CULL_FACE
-          int loop;
-	  for (loop = 0; loop < 20; loop++) mp->MaterialColor[loop] = MaterialWhite;
+		int         loop;
+
+		for (loop = 0; loop < 20; loop++)
+			mp->MaterialColor[loop] = MaterialWhite;
 #endif
-          glEnable(GL_CULL_FACE);
-        }
+		glEnable(GL_CULL_FACE);
+	}
 
 	mp->draw_object(mi);
 
@@ -809,7 +828,7 @@ init_morph3d(ModeInfo * mi)
 	}
 	mp = &morph3d[screen];
 	mp->step = NRAND(90);
-        mp->VisibleSpikes=1;
+	mp->VisibleSpikes = 1;
 
 	mp->glx_context = init_GL(mi);
 

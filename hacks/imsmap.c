@@ -360,18 +360,29 @@ draw_map (Display *dpy, Window window)
 	   x += xstep)
 	{
 	  x1 = x + xnextStep;
-	  if (x1 >= xmax)
+	  if (x1 < 0)
+	    x1 = xmax-1;
+	  else if (x1 >= xmax)
 	    x1 = 0;
+
 	  x2 = x + xstep;
-	  if (x2 >= xmax)
+	  if (x2 < 0)
+	    x2 = xmax-1;
+	  else if (x2 >= xmax)
 	    x2 = 0;
+
 	  for (y = 0; y < ymax; y += ystep)
 	    {
 	      y1 = y + ynextStep;
-	      if (y1 >= ymax)
+	      if (y1 < 0)
+		y1 = ymax-1;
+	      else if (y1 >= ymax)
 		y1 = 0;
+
 	      y2 = y + ystep;
-	      if (y2 >= ymax)
+	      if (y2 < 0)
+		y2 = ymax-1;
+	      else if (y2 >= ymax)
 		y2 = 0;
 
 	      qpixels [0] = colors [HEIGHT_TO_PIXEL (CELL (x, y))].pixel;

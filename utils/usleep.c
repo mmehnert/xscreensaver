@@ -12,6 +12,14 @@
 
 #ifdef HAVE_CONFIG_H
 # include "config.h"
+#else  /* !HAVE_CONFIG_H */
+# ifndef NO_SELECT
+#  define HAVE_SELECT
+# endif
+#endif /* !HAVE_CONFIG_H */
+
+#ifdef __STDC__
+# include <stdlib.h>
 #endif
 
 #if defined(VMS)

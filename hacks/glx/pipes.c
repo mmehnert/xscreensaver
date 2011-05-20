@@ -2,7 +2,7 @@
  * pipes.c - Shows 3D selfbuiding pipe system (xlock Version)
  */
 #if !defined( lint ) && !defined( SABER )
-static const char sccsid[] = "@(#)pipes.c   	4.02 97/04/29 xlockmore";
+static const char sccsid[] = "@(#)pipes.c	4.04 97/07/28 xlockmore";
 #endif
 /* Permission to use, copy, modify, and distribute this software and its
  * documentation for any purpose and without fee is hereby granted,
@@ -15,7 +15,6 @@ static const char sccsid[] = "@(#)pipes.c   	4.02 97/04/29 xlockmore";
  * trade secrets or any patents by this file or any part thereof.  In no
  * event will the author be liable for any lost revenue or profits or
  * other special, indirect and consequential damages.
- *
  *
  * This program was inspired on a WindowsNT(R)'s screen saver. It was written 
  * from scratch and it was not based on any other source code.
@@ -49,12 +48,8 @@ static const char sccsid[] = "@(#)pipes.c   	4.02 97/04/29 xlockmore";
  * due to a Bug/feature in VMS X11/Intrinsic.h has to be placed before xlock.
  * otherwise caddr_t is not defined correctly
  */
-#include <X11/Intrinsic.h>
 
-#define DEF_FACTORY     "2"
-#define DEF_FISHEYE     "True"
-#define DEF_TIGHTTURNS  "False"
-#define DEF_ROTATEPIPES "True"
+#include <X11/Intrinsic.h>
 
 #ifdef STANDALONE
 # define PROGCLASS					"Pipes"
@@ -77,8 +72,12 @@ static const char sccsid[] = "@(#)pipes.c   	4.02 97/04/29 xlockmore";
 #ifdef USE_GL
 
 #include <GL/glu.h>
-#include "glx/buildlwo.h"
+#include "buildlwo.h"
 
+#define DEF_FACTORY     "2"
+#define DEF_FISHEYE     "True"
+#define DEF_TIGHTTURNS  "False"
+#define DEF_ROTATEPIPES "True"
 #define NofSysTypes     3
 
 static int  factory;
@@ -112,7 +111,6 @@ static OptionStruct desc[] =
 ModeSpecOpt pipes_opts =
 {7, opts, 4, vars, desc};
 
-
 #define Scale4Window               0.1
 #define Scale4Iconic               0.07
 
@@ -134,12 +132,14 @@ ModeSpecOpt pipes_opts =
 /*************************************************************************/
 
 typedef struct {
+#if defined( MESA ) && defined( SLOW )
+	int         flip;
+#endif
 	GLint       WindH, WindW;
 	int         Cells[HCELLS][VCELLS][HCELLS];
 	int         usedcolors[DEFINEDCOLORS];
 	int         directions[6];
 	int         ndirections;
-	int         flip;
 	int         nowdir, olddir;
 	int         system_number;
 	int         counter;
@@ -490,12 +490,11 @@ draw_pipes(ModeInfo * mi)
 
 	glXMakeCurrent(display, window, pp->glx_context);
 
-	if (MI_WIN_IS_INROOT(mi) || MI_WIN_IS_INWINDOW(mi)) {
-		glDrawBuffer(GL_BACK);
-	} else {
-		glDrawBuffer(GL_FRONT);
-	}
-
+#if defined( MESA ) && defined( SLOW )
+	glDrawBuffer(GL_BACK);
+#else
+	glDrawBuffer(GL_FRONT);
+#endif
 	glPushMatrix();
 
 	glTranslatef(0.0, 0.0, fisheye ? -3.8 : -4.8);
@@ -526,14 +525,15 @@ draw_pipes(ModeInfo * mi)
 		glTranslatef((pp->PX - 16) / 3.0 * 4.0, (pp->PY - 12) / 3.0 * 4.0, (pp->PZ - 16) / 3.0 * 4.0);
 		/* Finish the system with another sphere */
 		mySphere(0.6);
-		if (MI_WIN_IS_INROOT(mi) || MI_WIN_IS_INWINDOW(mi))
-			glXSwapBuffers(display, window);
+#if defined( MESA ) && defined( SLOW )
+		glXSwapBuffers(display, window);
+#endif
 		glPopMatrix();
 
 		/* If the maximum number of system was drawn, restart (clearing the screen), */
 		/* else start a new system. */
 		if (++pp->system_number > pp->number_of_systems) {
-			sleep(1);
+			(void) sleep(1);
 			pinit(mi, 1);
 		} else {
 			pinit(mi, 0);
@@ -763,10 +763,11 @@ draw_pipes(ModeInfo * mi)
 
 	glFlush();
 
+#if defined( MESA ) && defined( SLOW )
 	pp->flip = !pp->flip;
-	if (pp->flip && (MI_WIN_IS_INROOT(mi) || MI_WIN_IS_INWINDOW(mi))) {
+	if (pp->flip)
 		glXSwapBuffers(display, window);
-	}
+#endif
 }
 
 static void
@@ -815,7 +816,7 @@ pinit(ModeInfo * mi, int zera)
 		pp->system_number = 1;
 		glDrawBuffer(GL_FRONT_AND_BACK);
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-		memset(pp->Cells, 0, sizeof (pp->Cells));
+		(void) memset(pp->Cells, 0, sizeof (pp->Cells));
 		for (X = 0; X < HCELLS; X++) {
 			for (Y = 0; Y < VCELLS; Y++) {
 				pp->Cells[X][Y][0] = 1;
@@ -830,7 +831,7 @@ pinit(ModeInfo * mi, int zera)
 				pp->Cells[X][VCELLS - 1][Z] = 1;
 			}
 		}
-		memset(pp->usedcolors, 0, sizeof (pp->usedcolors));
+		(void) memset(pp->usedcolors, 0, sizeof (pp->usedcolors));
 		if ((pp->initial_rotation += 10.0) > 45.0) {
 			pp->initial_rotation -= 90.0;
 		}

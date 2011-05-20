@@ -2,7 +2,7 @@
  * sproingies.c --- 3D sproingies
  */
 #if !defined( lint ) && !defined( SABER )
-static const char sccsid[] = "@(#)sproingiewrap.c	4.2 97/04/26 xlockmore";
+static const char sccsid[] = "@(#)sproingiewrap.c	4.04 97/07/28 xlockmore";
 #endif
 /*
  * sproingiewrap.c - Copyright 1996 Sproingie Technologies Incorporated.
@@ -40,21 +40,21 @@ static const char sccsid[] = "@(#)sproingiewrap.c	4.2 97/04/26 xlockmore";
  */
 
 /*-
-The sproingies have six "real" 
-frames, (s1_1 to s1_6) that show a sproingie jumping off a block, headed
-down and to the right.  But the program thinks of sproingies as having
-twelve "virtual" frames, with the latter six being copies of the first,
-only lowered and rotated by 90 degrees (jumping to the left).  So after
-going through 12 frames, a sproingie has gone down two rows but not moved
-horizontally. 
-
-To have the sproingies randomly choose left/right jumps at each block, the
-program should go back to thinking of only 6 frames, and jumping down
-only one row when it is done.  Then it can pick a direction for the next
-row.
-
- (Falling off the end might not be so bad either.  :) )  
-*/
+ * The sproingies have six "real" frames, (s1_1 to s1_6) that show a
+ * sproingie jumping off a block, headed down and to the right.  But
+ * the program thinks of sproingies as having twelve "virtual" frames,
+ * with the latter six being copies of the first, only lowered and
+ * rotated by 90 degrees (jumping to the left).  So after going
+ * through 12 frames, a sproingie has gone down two rows but not
+ * moved horizontally. 
+ *
+ * To have the sproingies randomly choose left/right jumps at each
+ * block, the program should go back to thinking of only 6 frames,
+ * and jumping down only one row when it is done.  Then it can pick a
+ * direction for the next row.
+ *
+ * (Falling off the end might not be so bad either.  :) )  
+ */
 
 #ifdef STANDALONE
 # define PROGCLASS					"Sproingies"
@@ -71,10 +71,10 @@ row.
 # include "xlock.h"					/* from the xlockmore distribution */
 #endif /* !STANDALONE */
 
+#ifdef USE_GL
+
 ModeSpecOpt sproingies_opts = {
   0, NULL, 0, NULL, NULL };
-
-#ifdef USE_GL
 
 #define MINSIZE 32
 
@@ -84,7 +84,9 @@ ModeSpecOpt sproingies_opts = {
 void        NextSproingie(int screen);
 void        NextSproingieDisplay(int screen);
 void        DisplaySproingies(int screen);
+#if 0
 void        ReshapeSproingies(int w, int h);
+#endif
 void        CleanupSproingies(int screen);
 void        InitSproingies(int wfmode, int grnd, int mspr, int screen, int numscreens, int mono);
 

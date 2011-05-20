@@ -1,3 +1,4 @@
+
 #if !defined( lint ) && !defined( SABER )
 static const char sccsid[] = "@(#)s1_1.c	4.2 97/04/20 xlockmore";
 
@@ -10,18 +11,19 @@ static const char sccsid[] = "@(#)s1_1.c	4.2 97/04/20 xlockmore";
  * not edit by hand.
  */
 
-#ifdef STANDALONE
-# include <GL/glx.h>
-#else
-# include "xlock.h"
+#ifndef STANDALONE
+#include "xlock.h"
 #endif
-
+ 
 #ifdef USE_GL
-
+ 
+#ifdef STANDALONE
+#include <GL/glx.h>
+#endif
 #include <GL/gl.h>
-#include "glx/buildlwo.h"
+#include "buildlwo.h"
 
-GLfloat     s1_1_PNTS[] =
+static GLfloat s1_1_PNTS[] =
 {
 	(GLfloat) 0.332422, (GLfloat) 0.132531, (GLfloat) - 0.332422,
 	(GLfloat) 0.332422, (GLfloat) 0.132531, (GLfloat) - 0.667578,
@@ -315,7 +317,7 @@ GLfloat     s1_1_PNTS[] =
 	(GLfloat) 0.500000, (GLfloat) - 0.007972, (GLfloat) - 0.402250,
 };
 
-GLfloat     s1_1_normals[] =
+static GLfloat s1_1_normals[] =
 {
 	(GLfloat) 0.844155, (GLfloat) - 0.175691, (GLfloat) - 0.506493,
 	(GLfloat) 0.844155, (GLfloat) - 0.175690, (GLfloat) - 0.506493,
@@ -895,7 +897,7 @@ GLfloat     s1_1_normals[] =
 	(GLfloat) 0.039656, (GLfloat) - 0.992607, (GLfloat) 0.114709,
 };
 
-unsigned short int s1_1_POLS[] =
+static unsigned short int s1_1_POLS[] =
 {
       3, 12, 76, 74, 1, 3, 12, 74, 82, 1, 3, 76, 22, 78, 1, 3, 78, 74, 76, 1,
       3, 78, 20, 80, 1, 3, 80, 74, 78, 1, 3, 80, 28, 82, 1, 3, 82, 74, 80, 1,

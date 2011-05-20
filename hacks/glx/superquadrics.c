@@ -2,7 +2,7 @@
  * superquadrics.c --- 3D mathematical shapes
  */
 #if !defined( lint ) && !defined( SABER )
-static const char sccsid[] = "@(#)superquadrics.c	4.0 97/03/30 xlockmore";
+static const char sccsid[] = "@(#)superquadrics.c	4.04 97/07/28 xlockmore";
 #endif
 /* Permission to use, copy, modify, and distribute this software and its
  * documentation for any purpose and without fee is hereby granted,
@@ -26,8 +26,6 @@ static const char sccsid[] = "@(#)superquadrics.c	4.0 97/03/30 xlockmore";
  * change from round to square edges.  Superquadrics extend this
  * idea into 3 dimensions, using two exponents to modify a
  * quadric surface in a similar fashion.
- *
- * ***************************************************************************
  *
  * Revision History:
  * 30-Mar-97: Turned into a module for xlockmore 4.02 alpha.  The code
@@ -74,6 +72,7 @@ static const char sccsid[] = "@(#)superquadrics.c	4.0 97/03/30 xlockmore";
  * due to a Bug/feature in VMS X11/Intrinsic.h has to be placed before xlock.
  * otherwise caddr_t is not defined correctly
  */
+
 #include <X11/Intrinsic.h>
 
 #ifdef STANDALONE
@@ -91,7 +90,6 @@ static const char sccsid[] = "@(#)superquadrics.c	4.0 97/03/30 xlockmore";
 #endif /* !STANDALONE */
 
 #ifdef USE_GL
-#include <GL/glu.h>
 
 /*-
  * Note for low-CPU-speed machines:  If your frame rate is so low that
@@ -100,9 +98,9 @@ static const char sccsid[] = "@(#)superquadrics.c	4.0 97/03/30 xlockmore";
  * all of your CPU power, but it may look nicer.
  */
 
-static float spinspeed;
-
 #define DEF_SPINSPEED  "5.0"
+
+static float spinspeed;
 
 static XrmOptionDescRec opts[] =
 {
@@ -119,6 +117,8 @@ static OptionStruct desc[] =
 
 ModeSpecOpt superquadrics_opts =
 {1, opts, 1, vars, desc};
+
+#include <GL/glu.h>
 
 #define MaxRes          50
 #define MinRes          5
@@ -151,7 +151,7 @@ static superquadricsstruct *superquadrics = NULL;
 
 #define CLIP_NORMALS 10000.0
 
-void        ReshapeSuperquadrics(int w, int h);
+static void ReshapeSuperquadrics(int w, int h);
 
 static int
 myrand(int range)
@@ -379,8 +379,7 @@ DoneScale(superquadricsstruct * sp)
 						glVertex3f(sp->Prevxx[iv - 1], sp->Prevyy[iv - 1], sp->Prevzz[iv - 1]);
 					}
 /* PURIFY 4.0.1 reports an unitialized memory read on the next line when using
-   * MesaGL 2.2 and -mono.  This has been tracked to MesaGL 2.2 src/lines.c *
-   line 222. */
+   * MesaGL 2.2 and -mono.  This has been fixed in MesaGL 2.3 and later. */
 					glEnd();
 				}
 			} else {
@@ -441,7 +440,7 @@ DoneScale(superquadricsstruct * sp)
 
 /**** End of really old code ****/
 
-void
+static void
 SetCull(int init, superquadricsstruct * sp)
 {
 	static int  cullmode;
@@ -470,7 +469,7 @@ SetCull(int init, superquadricsstruct * sp)
 	}
 }
 
-void
+static void
 SetCurrentShape(superquadricsstruct * sp)
 {
 	int         t;
@@ -493,7 +492,7 @@ SetCurrentShape(superquadricsstruct * sp)
 	inputs(sp);
 }
 
-void
+static void
 NextSuperquadric(superquadricsstruct * sp)
 {
 	double      fnow, flater;
@@ -540,7 +539,7 @@ NextSuperquadric(superquadricsstruct * sp)
 	}
 }
 
-void
+static void
 DisplaySuperquadrics(superquadricsstruct * sp)
 {
 	glDrawBuffer(GL_BACK);
@@ -568,7 +567,7 @@ DisplaySuperquadrics(superquadricsstruct * sp)
 	/* Remember to flush & swap the buffers after calling this function! */
 }
 
-void
+static void
 NextSuperquadricDisplay(superquadricsstruct * sp)
 {
 	NextSuperquadric(sp);
@@ -576,7 +575,7 @@ NextSuperquadricDisplay(superquadricsstruct * sp)
 }
 
 #define MINSIZE 200
-void
+static void
 ReshapeSuperquadrics(int w, int h)
 {
 	static int  last_w = 0, last_h = 0;
@@ -608,7 +607,7 @@ ReshapeSuperquadrics(int w, int h)
 	glLoadIdentity();
 }
 
-void
+static void
 InitSuperquadrics(int wfmode, int snorm, int res, int count, float speed, superquadricsstruct * sp)
 {
 	GLfloat     ambient[] =

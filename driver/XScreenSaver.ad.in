@@ -103,6 +103,7 @@
 		starfish -root						\n\
 		starfish -root -blob					\n\
 		munch -root						\n\
+		fadeplot -root						\n\
 									  \
 	mono:	rocks -root						\n\
 	color:	rocks -root -fg darksalmon				\n\
@@ -121,9 +122,11 @@
 @GL_KLUDGE_1@
 @GL_KLUDGE_2@	gears -root					  	\n\
 @GL_KLUDGE_2@	superquadrics -root				  	\n\
+@GL_KLUDGE_2@	morph3d -root					  	\n\
 @GL_KLUDGE_2@	escher -root					  	\n\
 @GL_KLUDGE_2@	pipes -root					  	\n\
-@GL_KLUDGE_2@	sproingies -root				  	\n
+@GL_KLUDGE_2@	sproingies -root				  	\n\
+@GL_KLUDGE_2@	rubik -root					  	\n
  
 
 ! A few of the hacks require OpenGL, and will only be built if you have it.

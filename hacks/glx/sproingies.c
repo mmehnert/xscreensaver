@@ -2,7 +2,7 @@
  * sproingies.c --- 3D sproingies
  */
 #if !defined( lint ) && !defined( SABER )
-static const char sccsid[] = "@(#)sproingies.c	4.2 97/04/26 xlockmore";
+static const char sccsid[] = "@(#)sproingies.c	4.04 97/07/26 xlockmore";
 #endif
 /* Copyright 1996 by Ed Mackey, 12/7/96 freely distributable.
  * Permission to use, copy, modify, and distribute this software and its
@@ -20,16 +20,18 @@ static const char sccsid[] = "@(#)sproingies.c	4.2 97/04/26 xlockmore";
 
 #ifdef STANDALONE
 # include "xlockmoreI.h"			/* from the xscreensaver distribution */
+#else  /* !STANDALONE */
+# include "xlock.h"         /* from the xlockmore distribution */
 #endif /* !STANDALONE */
 
 #ifdef USE_GL
 
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include "glx/buildlwo.h"
+#include "buildlwo.h"
 
 #define MAXSPROING 100
-#define T_COUNT 40;
+#define T_COUNT 40
 #define BOOM_FRAME 50
 
 struct sPosColor {
@@ -155,9 +157,9 @@ LayGround(int sx, int sy, int sz, int width, int height, sp_instance * si)
 			glVertex3i(x + 2, y - 1, z);
 			glVertex3i(x + 2, y - 2, z);
 			glVertex3i(x + 1, y - 2, z);
-/* PURIFY 4.0.1 reports an unitialized memory read on the next line when using
-   * MesaGL 2.2 and -mono.  This has been tracked to MesaGL 2.2 src/lines.c *
-   line 222. */
+/*-
+ * PURIFY 4.0.1 reports an unitialized memory read on the next line when using
+ * MesaGL 2.2 and -mono.  This has been fixed in MesaGL 2.3 and later. */
 			glEnd();
 			++x;
 			--z;
@@ -247,8 +249,9 @@ AdvanceSproingie(int t, sp_instance * si)
 			thisSproingie->frame = 0;
 
 			for (t2 = 0; t2 < si->maxsproingies; ++t2) {
-				if ((t2 != t) && (thisSproingie->x == S2->x) && (thisSproingie->y == S2->y) &&
-				    (thisSproingie->z == S2->z) && (S2->life > 10) && (S2->frame < 6)) {
+				if ((t2 != t) && (thisSproingie->x == S2->x) &&
+				    (thisSproingie->y == S2->y) && (thisSproingie->z == S2->z) &&
+				    (S2->life > 10) && (S2->frame < 6)) {
 #if 0
 					if (thisSproingie->life > S2->life) {
 						S2->life = 10;
@@ -271,13 +274,15 @@ AdvanceSproingie(int t, sp_instance * si)
 				++S2;
 			}
 		}
-		if ((thisSproingie->life == 10) && (thisSproingie->frame > 0) && (thisSproingie->frame < BOOM_FRAME)) {
-			/* wait here for frame 0 to come about. */
-		} else if ((--(thisSproingie->life)) < 1) {
-			thisSproingie->life = RESET_SPROINGIE;
-		} else if (thisSproingie->life < 9) {
-			thisSproingie->frame -= 2;
-		}
+		if (!((thisSproingie->life == 10) &&
+		      (thisSproingie->frame > 0) &&
+		      (thisSproingie->frame < BOOM_FRAME))) {
+			if ((--(thisSproingie->life)) < 1) {
+				thisSproingie->life = RESET_SPROINGIE;
+			} else if (thisSproingie->life < 9) {
+				thisSproingie->frame -= 2;
+			}
+		}		/* else wait here for frame 0 to come about. */
 	} else if (++(thisSproingie->life) >= 0) {
 		if (t > 1) {
 			g_higher = -3 + myrand(5);
@@ -300,8 +305,9 @@ AdvanceSproingie(int t, sp_instance * si)
 		thisSproingie->b = (GLfloat) (40 + myrand(200)) / 255.0;
 
 		for (t2 = 0; t2 < si->maxsproingies; ++t2) {
-			if ((t2 != t) && (thisSproingie->x == S2->x) && (thisSproingie->y == S2->y) &&
-			    (thisSproingie->z == S2->z) && (S2->life > 10) && (S2->frame < 0)) {
+			if ((t2 != t) && (thisSproingie->x == S2->x) &&
+			    (thisSproingie->y == S2->y) && (thisSproingie->z == S2->z) &&
+			    (S2->life > 10) && (S2->frame < 0)) {
 				/* If one is already being born, just wait. */
 				thisSproingie->life = -1;
 			}
@@ -310,7 +316,7 @@ AdvanceSproingie(int t, sp_instance * si)
 	}
 }
 
-void
+static void
 NextSproingie(int screen)
 {
 	sp_instance *si = &si_list[screen];
@@ -349,7 +355,8 @@ NextSproingie(int screen)
 		else if (si->target_dist > si->dist)
 			++si->dist;
 
-		if ((si->target_rx == si->rotx) && (si->target_ry == si->roty) && (si->target_dist == si->dist)) {
+		if ((si->target_rx == si->rotx) && (si->target_ry == si->roty) &&
+		    (si->target_dist == si->dist)) {
 			si->target_count = T_COUNT;
 			if (si->target_dist <= 32)
 				si->target_count >>= 2;
@@ -484,7 +491,8 @@ RenderSproingie(int t, sp_instance * si)
 	if (thisSproingie->frame < 0) {
 		glEnable(GL_CLIP_PLANE0);
 		glTranslatef((GLfloat) (thisSproingie->x),
-			     (GLfloat) (thisSproingie->y) + ((GLfloat) (thisSproingie->frame) / 9.0),
+			     (GLfloat) (thisSproingie->y) +
+			     ((GLfloat) (thisSproingie->frame) / 9.0),
 			     (GLfloat) (thisSproingie->z));
 		clipplane[3] = ((GLdouble) (thisSproingie->frame) / 9.0) +
 			(si->wireframe ? 0.0 : 0.1);
@@ -492,7 +500,9 @@ RenderSproingie(int t, sp_instance * si)
 		glCallList(si->sproingies[0]);
 		glDisable(GL_CLIP_PLANE0);
 	} else if (thisSproingie->frame >= BOOM_FRAME) {
-		glTranslatef((GLfloat) (thisSproingie->x) + 0.5, (GLfloat) (thisSproingie->y) + 0.5, (GLfloat) (thisSproingie->z) - 0.5);
+		glTranslatef((GLfloat) (thisSproingie->x) + 0.5,
+			     (GLfloat) (thisSproingie->y) + 0.5,
+			     (GLfloat) (thisSproingie->z) - 0.5);
 		scale = (GLfloat) (1 << (thisSproingie->frame - BOOM_FRAME));
 		glScalef(scale, scale, scale);
 		if (!si->wireframe) {
@@ -500,21 +510,25 @@ RenderSproingie(int t, sp_instance * si)
 				glColor3fv(mat_color);
 			glDisable(GL_LIGHTING);
 		}
-		pointsize = (GLfloat) ((BOOM_FRAME + 8) - thisSproingie->frame) - (si->dist / 64.0);
+		pointsize = (GLfloat) ((BOOM_FRAME + 8) - thisSproingie->frame) -
+			(si->dist / 64.0);
 		glPointSize((pointsize < 1.0) ? 1.0 : pointsize);
-/* PURIFY 4.0.1 reports an unitialized memory read on the next line when using
-   * MesaGL 2.2.  This has been tracked to MesaGL 2.2 src/points.c line 313. */
+/*-
+ * PURIFY 4.0.1 reports an unitialized memory read on the next line when using
+ * MesaGL 2.2.  This has been tracked to MesaGL 2.2 src/points.c line 313. */
 		glCallList(si->SproingieBoom);
 		glPointSize(1.0);
 		if (!si->wireframe) {
 			glEnable(GL_LIGHTING);
 		}
 	} else if (thisSproingie->frame > 5) {
-		glTranslatef((GLfloat) (thisSproingie->x + 1), (GLfloat) (thisSproingie->y - 1), (GLfloat) (thisSproingie->z - 1));
+		glTranslatef((GLfloat) (thisSproingie->x + 1),
+			     (GLfloat) (thisSproingie->y - 1), (GLfloat) (thisSproingie->z - 1));
 		glRotatef((GLfloat) - 90.0, 0.0, 1.0, 0.0);
 		glCallList(si->sproingies[thisSproingie->frame - 6]);
 	} else {
-		glTranslatef((GLfloat) (thisSproingie->x), (GLfloat) (thisSproingie->y), (GLfloat) (thisSproingie->z));
+		glTranslatef((GLfloat) (thisSproingie->x), (GLfloat) (thisSproingie->y),
+			     (GLfloat) (thisSproingie->z));
 		glCallList(si->sproingies[thisSproingie->frame]);
 	}
 
@@ -609,7 +623,8 @@ DisplaySproingies(int screen)
 	glPopMatrix();
 #endif
 
-	glTranslatef((GLfloat) si->sframe * (-1.0 / 12.0) - 0.75, (GLfloat) si->sframe * (2.0 / 12.0) - 0.5,
+	glTranslatef((GLfloat) si->sframe * (-1.0 / 12.0) - 0.75,
+		     (GLfloat) si->sframe * (2.0 / 12.0) - 0.5,
 		     (GLfloat) si->sframe * (-1.0 / 12.0) + 0.75);
 
 	if (si->wireframe)
@@ -635,6 +650,7 @@ NextSproingieDisplay(int screen)
 	DisplaySproingies(screen);
 }
 
+#if 0
 void
 ReshapeSproingies(int w, int h)
 {
@@ -645,6 +661,8 @@ ReshapeSproingies(int w, int h)
 	glMatrixMode(GL_MODELVIEW);
 	glLoadIdentity();
 }
+
+#endif
 
 void
 CleanupSproingies(int screen)
@@ -673,7 +691,8 @@ CleanupSproingies(int screen)
 }
 
 void
-InitSproingies(int wfmode, int grnd, int mspr, int screen, int numscreens, int mono)
+InitSproingies(int wfmode, int grnd, int mspr, int screen, int numscreens,
+	       int mono)
 {
 	GLfloat     ambient[] =
 	{0.2, 0.2, 0.2, 1.0};
@@ -722,7 +741,8 @@ InitSproingies(int wfmode, int grnd, int mspr, int screen, int numscreens, int m
 	si->maxsproingies = mspr;
 
 	if (si->maxsproingies) {
-		si->positions = (struct sPosColor *) calloc(si->maxsproingies, sizeof (struct sPosColor));
+		si->positions = (struct sPosColor *) calloc(si->maxsproingies,
+						  sizeof (struct sPosColor));
 
 		if (!(si->positions))
 			si->maxsproingies = 0;
@@ -747,23 +767,23 @@ InitSproingies(int wfmode, int grnd, int mspr, int screen, int numscreens, int m
 #endif
 
 	if (!(si->TopsSides = build_TopsSides(si->wireframe)))
-		exit(1);
+		(void) fprintf(stderr, "build_TopsSides\n");
 
 	if (!(si->sproingies[0] = BuildLWO(si->wireframe, &LWO_s1_1)))
-		exit(1);
+		(void) fprintf(stderr, "BuildLWO - 1\n");
 	if (!(si->sproingies[1] = BuildLWO(si->wireframe, &LWO_s1_2)))
-		exit(1);
+		(void) fprintf(stderr, "BuildLWO - 2\n");
 	if (!(si->sproingies[2] = BuildLWO(si->wireframe, &LWO_s1_3)))
-		exit(1);
+		(void) fprintf(stderr, "BuildLWO - 3\n");
 	if (!(si->sproingies[3] = BuildLWO(si->wireframe, &LWO_s1_4)))
-		exit(1);
+		(void) fprintf(stderr, "BuildLWO - 4\n");
 	if (!(si->sproingies[4] = BuildLWO(si->wireframe, &LWO_s1_5)))
-		exit(1);
+		(void) fprintf(stderr, "BuildLWO - 5\n");
 	if (!(si->sproingies[5] = BuildLWO(si->wireframe, &LWO_s1_6)))
-		exit(1);
+		(void) fprintf(stderr, "BuildLWO - 6\n");
 
 	if (!(si->SproingieBoom = BuildLWO(si->wireframe, &LWO_s1_b)))
-		exit(1);
+		(void) fprintf(stderr, "BuildLWO - b\n");
 
 	if (si->wireframe) {
 		glShadeModel(GL_FLAT);

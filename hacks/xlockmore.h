@@ -42,8 +42,8 @@ ERROR!  Sorry, xlockmore.h requires ANSI C (gcc, for example.)
 
 #define MI_DISPLAY(MI)		((MI)->dpy)
 #define MI_WINDOW(MI)		((MI)->window)
-#define MI_NUM_SCREENS(MI)	(1)
-#define MI_SCREEN(MI)		(DefaultScreen(MI_DISPLAY(MI)))
+#define MI_NUM_SCREENS(MI)	(1)	/* Only manage one screen at a time; */
+#define MI_SCREEN(MI)		(0)	/*  this might be fragile... */
 #define MI_WIN_WHITE_PIXEL(MI)	((MI)->white)
 #define MI_WIN_BLACK_PIXEL(MI)	((MI)->black)
 #define MI_NPIXELS(MI)		((MI)->npixels)

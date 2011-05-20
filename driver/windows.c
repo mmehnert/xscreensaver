@@ -17,22 +17,14 @@
 #ifdef VMS
 # include <unixlib.h>		/* for getpid() */
 # include "vms-gtod.h"		/* for gettimeofday() */
-
-/* Is this needed? */
-/*
-# if !defined(__DECC) || (__DECC_VER < 50200000)
-   typedef char * caddr_t;
-# endif
-*/
-
-# ifndef HAVE_UNAME
-#  if (__VMS_VER >= 70000000)
-#   include <sys/utsname.h>	/* for uname() */
-#   define HAVE_UNAME 1
-#  endif
+# if !defined(HAVE_UNAME) && (__VMS_VER >= 70000000)
+#  define HAVE_UNAME 1
 # endif /* !HAVE_UNAME */
-
 #endif /* VMS */
+
+# ifdef HAVE_UNAME
+#  include <sys/utsname.h>	/* for uname() */
+# endif /* HAVE_UNAME */
 
 #include <stdio.h>
 #include <X11/Xproto.h>		/* for CARD32 */

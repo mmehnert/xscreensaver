@@ -105,6 +105,14 @@ window, which are pointed at by the screensaver's default resource settings.
    goop		- Squishy transparent oil-and-bubble images
    starfish	- Radially-symmetric throbbing colormap-hacking blobs.
    munch	- The classic 1962-vintage "munching squares" hack.
+   fadeplot	- Draws a swimming ribbon.
+   escher	- Draws some escher-like scenes (GLX only.)
+   gears	- Draws interlocking rotating gears (GLX only.)
+   morph3d	- Draws shiny shape-changing 3d forms (GLX only.)
+   superquadrics - More shiny shape-changing 3d forms (GLX only.)
+   pipes	- Generates a field of intertwined plumbing (GLX only.)
+   rubik	- Solves a Rubik's Cube (GLX only.)
+   sproingies	- Marble Madness meets Q-Bert (GLX only.)
 
 All of these will pop up their own window unless given that -root option.
 See their man pages for more details.
@@ -132,6 +140,11 @@ http://people.netscape.com/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 2.06:	Minor header tweaks in windows.c and flag.c.
+			Made multi-architecture (VPATH) builds work properly.
+			Merged new GL stuff from xlockmore (rubik, morph3d.)
+			Fixed intermittent crashes in `imsmap' and `munch'.
+			Added `fadeplot' hack from xlockmore.
 Changes since 2.05:	Merged in VMS support from Patrick Moreau.
 Changes since 2.04:	Fixed a MIT-SCREEN-SAVER-related crash, and tweaked 
 			configure to detect the extra-random -Xss library.

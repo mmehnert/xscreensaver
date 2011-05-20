@@ -53,12 +53,6 @@ the Unix version the execvp() call is used).
 
 The VMS passord checking programs were picked up in the Xlock distribution.
 
-bugs:
-
-- IMSMAP often crashes
-- MUNCH sometimes crashes
-
-
 Enjoy,
 
 Patrick MOREAU - CENA/Athis-Mons - FRANCE  (pmoreau@cena.dgac.fr)

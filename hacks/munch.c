@@ -227,21 +227,23 @@ screenhack (dpy, w) Display *dpy; Window w;
 		  thiswidth, /* Width, in pixels */
 		  
 		  /* draw at this location */
-		  random() % (xgwa.width - thiswidth),
-		  random() % (xgwa.height - thiswidth),
+		  (random() % (xgwa.width <= thiswidth ? 1
+			       : xgwa.width - thiswidth)),
+		  (random() % (xgwa.height <= thiswidth ? 1
+			       : xgwa.width - thiswidth)),
 		  
 		  /* wrap-around by these values; no need to %
 		     as we end up doing that later anyway*/
-		  ((shiftk && randflags & SHIFT_KX) ?
-		   random() % thiswidth: 0),
-		  ((shiftk && randflags & SHIFT_KT) ?
-		   random() % thiswidth: 0),
-		  ((shiftk && randflags & SHIFT_KY) ?
-		   random() % thiswidth : 0),
+		  ((shiftk && (randflags & SHIFT_KX))
+		   ? (random() % thiswidth) : 0),
+		  ((shiftk && (randflags & SHIFT_KT))
+		   ? (random() % thiswidth) : 0),
+		  ((shiftk && (randflags & SHIFT_KY))
+		   ? (random() % thiswidth) : 0),
 		  
 		  /* set the gravity of the munch, or rather,
 		     which direction we draw stuff in. */
-		  randflags & GRAV
+		  (randflags & GRAV)
 		  );
 	
 	if (hold) usleep(hold);

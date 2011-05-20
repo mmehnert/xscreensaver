@@ -68,6 +68,7 @@
 		starfish -root						\\n\
 		starfish -root -blob					\\n\
 		munch -root						\\n\
+		fadeplot -root						\\n\
 									  \
 	mono:	rocks -root						\\n\
 	color:	rocks -root -fg darksalmon				\\n\
@@ -86,9 +87,11 @@
 									  \
 		gears -root					  	\\n\
 		superquadrics -root				  	\\n\
+		morph3d -root					  	\\n\
 		escher -root					  	\\n\
 		pipes -root					  	\\n\
-		sproingies -root				  	\\n",
+		sproingies -root				  	\\n\
+		rubik -root					  	\\n",
 " ",
 "*fontList:                       *-helvetica-medium-r-*-*-*-120-*-*-*-iso8859-1",
 "*demoDialog*label1.fontList:     *-helvetica-medium-r-*-*-*-140-*-*-*-iso8859-1",

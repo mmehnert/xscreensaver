@@ -10,18 +10,19 @@ static const char sccsid[] = "@(#)s1_b.c	4.2 97/04/20 xlockmore";
  * not edit by hand.
  */
 
-#ifdef STANDALONE
-# include <GL/glx.h>
-#else
-# include "xlock.h"
+#ifndef STANDALONE
+#include "xlock.h"
 #endif
-
+ 
 #ifdef USE_GL
-
+ 
+#ifdef STANDALONE
+#include <GL/glx.h>
+#endif
 #include <GL/gl.h>
-#include "glx/buildlwo.h"
+#include "buildlwo.h"
 
-GLfloat     s1_b_PNTS[] =
+static GLfloat s1_b_PNTS[] =
 {
 	(GLfloat) - 0.137893, (GLfloat) 0.043508, (GLfloat) - 0.125711,
 	(GLfloat) - 0.095845, (GLfloat) - 0.165656, (GLfloat) 0.072892,

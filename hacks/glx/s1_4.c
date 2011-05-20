@@ -10,18 +10,19 @@ static const char sccsid[] = "@(#)s1_4.c	4.2 97/04/20 xlockmore";
  * not edit by hand.
  */
 
-#ifdef STANDALONE
-# include <GL/glx.h>
-#else
-# include "xlock.h"
+#ifndef STANDALONE
+#include "xlock.h"
 #endif
-
+ 
 #ifdef USE_GL
-
+ 
+#ifdef STANDALONE
+#include <GL/glx.h>
+#endif
 #include <GL/gl.h>
-#include "glx/buildlwo.h"
+#include "buildlwo.h"
 
-GLfloat     s1_4_PNTS[] =
+static GLfloat s1_4_PNTS[] =
 {
 	(GLfloat) 0.691977, (GLfloat) 0.424648, (GLfloat) - 0.335934,
 	(GLfloat) 0.691977, (GLfloat) 0.424648, (GLfloat) - 0.664066,
@@ -315,7 +316,7 @@ GLfloat     s1_4_PNTS[] =
 	(GLfloat) 0.704334, (GLfloat) 0.231264, (GLfloat) - 0.402250,
 };
 
-GLfloat     s1_4_normals[] =
+static GLfloat s1_4_normals[] =
 {
 	(GLfloat) - 0.797489, (GLfloat) - 0.388285, (GLfloat) - 0.461786,
 	(GLfloat) - 0.806184, (GLfloat) - 0.357959, (GLfloat) - 0.471096,
@@ -895,7 +896,7 @@ GLfloat     s1_4_normals[] =
 	(GLfloat) - 0.607657, (GLfloat) - 0.785872, (GLfloat) 0.114709,
 };
 
-unsigned short int s1_4_POLS[] =
+static unsigned short int s1_4_POLS[] =
 {
       3, 82, 12, 76, 1, 3, 76, 74, 82, 1, 3, 22, 78, 74, 1, 3, 22, 74, 76, 1,
       3, 78, 20, 80, 1, 3, 80, 74, 78, 1, 3, 28, 82, 74, 1, 3, 28, 74, 80, 1,

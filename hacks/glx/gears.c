@@ -27,13 +27,6 @@ static const char sccsid[] = "@(#)gears.c	4.02 97/04/01 xlockmore";
  */
 
 /*-
-   It actually took almost no work on my part to port to xlock.
-   The gears code was taken from Mesa's example programs gears.
-   Obviously you will need MesaGL (or OpenGL) to get this to work.
-   It may not really worth running on a 486-66.
- */
-
-/*-
  * PURIFY 3.0a on SunOS4 reports an unitialized memory read on each of
  * the glCallList() functions below when using MesaGL 2.1.  This has
  * been fixed in MesaGL 2.2 and later releases.
@@ -43,6 +36,7 @@ static const char sccsid[] = "@(#)gears.c	4.02 97/04/01 xlockmore";
  * due to a Bug/feature in VMS X11/Intrinsic.h has to be placed before xlock.
  * otherwise caddr_t is not defined correctly
  */
+
 #include <X11/Intrinsic.h>
 
 #ifdef STANDALONE
@@ -286,8 +280,7 @@ draw(ModeInfo * mi)
 	glTranslatef(-3.0, -2.0, 0.0);
 	glRotatef(gp->angle, 0.0, 0.0, 1.0);
 /* PURIFY 4.0.1 reports an unitialized memory read on the next line when using
-   * MesaGL 2.2 and -mono.  This has been tracked to MesaGL 2.2 src/lines.c *
-   line 222. */
+   * MesaGL 2.2 and -mono.  This has been fixed in MesaGL 2.3 and later. */
 	glCallList(gp->gear1);
 	glPopMatrix();
 

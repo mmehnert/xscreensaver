@@ -45,7 +45,7 @@ AD_DIR		= @APPDEFAULTS@
 UTILS_SRC	= $(srcdir)/../utils
 UTILS_BIN	= ../utils
 
-INCLUDES	= -I$(srcdir) -I$(srcdir)/.. -I$(UTILS_SRC) @INCLUDES@
+INCLUDES	= -I. -I$(srcdir) -I$(srcdir)/.. -I$(UTILS_SRC) @INCLUDES@
 
 PASSWD_LIBS	= @PASSWD_LIBS@
 MOTIF_SRCS	= dialogs-Xm.c
@@ -144,10 +144,11 @@ install-ad:
 	$(INSTALL_DATA) XScreenSaver.ad $(AD_DIR)/XScreenSaver
 
 install-man:
-	@for man in $(MEN); do						\
+	@men="$(MEN)" ;							\
+	for man in $$men; do						\
 	  instname=`echo $$man | sed 's/\.man$$/\.$(mansuffix)/'` ;	\
-	  echo $(INSTALL_DATA) $$man $(man1dir)/$$instname ;		\
-	  $(INSTALL_DATA) $$man $(man1dir)/$$instname ;			\
+	  echo $(INSTALL_DATA) $(srcdir)/$$man $(man1dir)/$$instname ;	\
+	  $(INSTALL_DATA) $(srcdir)/$$man $(man1dir)/$$instname ;	\
 	done
 
 uninstall-program:
@@ -160,7 +161,8 @@ uninstall-ad:
 	rm -f $(AD_DIR)/XScreenSaver
 
 uninstall-man:
-	@for man in $(MEN); do						\
+	@men="$(MEN)" ;							\
+	for man in $$men; do						\
 	  instname=`echo $$man | sed 's/\.man$$/\.$(mansuffix)/'` ;	\
 	  echo rm -f $(man1dir)/$$instname ;				\
 	  rm -f $(man1dir)/$$instname ;					\
@@ -193,7 +195,8 @@ distdepend: XScreenSaver_ad.h
 	  awk '/^# .*Makefile.in ---/,/^# DO .*distdepend/' < Makefile.in ; \
 	  sed -e 's@ \./@ @g;s@ /[^ ]*@@g;/^.*:$$/d'			    \
 	      -e 's@\.\./utils@$$(UTILS_SRC)@g'				    \
-	      -e 's@ \([^$$]\)@ $$(srcdir)/\1@g' ;			    \
+	      -e 's@ \([^$$]\)@ $$(srcdir)/\1@g'			    \
+	      -e 's@$$.*\(XScreenSaver_ad\)@\1@g' ;			    \
 	  echo ''							    \
 	) > /tmp/distdepend.$$$$ &&					    \
 	mv Makefile.in Makefile.in.bak &&				    \
@@ -233,7 +236,7 @@ $(UTIL_OBJS):
 # How we build the default app-defaults file into the program.
 #
 XScreenSaver_ad.h: XScreenSaver.ad
-	$(SHELL) $(UTILS_SRC)/ad2c $(srcdir)/XScreenSaver.ad > $@
+	$(SHELL) $(UTILS_SRC)/ad2c XScreenSaver.ad > $@
 
 # The executables linked in this directory.
 #
@@ -270,7 +273,7 @@ xscreensaver.o: $(UTILS_SRC)/version.h
 xscreensaver.o: $(UTILS_SRC)/yarandom.h
 xscreensaver.o: $(UTILS_SRC)/resources.h
 xscreensaver.o: $(UTILS_SRC)/visual.h
-xscreensaver.o: $(srcdir)/XScreenSaver_ad.h
+xscreensaver.o: XScreenSaver_ad.h
 xset.o: $(srcdir)/../config.h
 xset.o: $(srcdir)/xscreensaver.h
 xscreensaver-command.o: $(srcdir)/../config.h

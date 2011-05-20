@@ -17,18 +17,18 @@ static const char sccsid[] = "@(#)buildlwo.c	4.02 97/04/20 xlockmore";
  *
  */
 
-
-#ifdef STANDALONE
-# include <GL/glx.h>
-#else
-# include "xlock.h"
+#ifndef STANDALONE
+#include "xlock.h"
 #endif
 
 #ifdef USE_GL
 
+#ifdef STANDALONE
+#include <GL/glx.h>
+#endif
 #include <GL/gl.h>
 #include <GL/glu.h>
-#include "glx/buildlwo.h"
+#include "buildlwo.h"
 
 GLuint
 BuildLWO(int wireframe, struct lwo *object)
