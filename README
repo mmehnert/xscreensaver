@@ -187,6 +187,9 @@ http://people.netscape.com/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 2.22:   * The fix for SGI's "scheme" nonsense broke things, and
+			let the user's "*background" resource show through.
+			Fixed it in a different way.
 Changes since 2.21:   * Added support for the DPMS server extension (Display
 			Power Management System.)
 		      * Made configure advertize the --enable-subdir option a

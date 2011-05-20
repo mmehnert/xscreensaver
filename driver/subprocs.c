@@ -1024,7 +1024,7 @@ hack_environment (saver_info *si)
 {
 #if defined(HAVE_PUTENV) && defined(DEFAULT_PATH_PREFIX)
   static const char *def_path = DEFAULT_PATH_PREFIX;
-  if (def_path && def_path)
+  if (def_path && *def_path)
     {
       const char *opath = getenv("PATH");
       char *npath = (char *) malloc(strlen(def_path) + strlen(opath) + 20);

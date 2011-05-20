@@ -103,8 +103,8 @@ static Window      window;
 char *progclass = "LMorph";
 
 char *defaults [] = {
-    "*background: black",
-    "*foreground: blue",
+    ".background: black",
+    ".foreground: blue",
     "*points: 150",
     "*steps: 0",
     "*delay: 50000",

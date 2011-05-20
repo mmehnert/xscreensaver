@@ -676,29 +676,29 @@ macsbug (Display *dpy, Window window, int delay)
 char *progclass = "BSOD";
 
 char *defaults [] = {
-  "*delay:			30",
+  "*delay:		 30",
 
-  "BSOD.Windows.font:		-*-courier-bold-r-*-*-*-120-*-*-m-*-*-*",
-  "BSOD.Windows.font2:		-*-courier-bold-r-*-*-*-180-*-*-m-*-*-*",
-  "BSOD.Windows.foreground:	White",
-  "BSOD.Windows.background:	Blue",
+  ".Windows.font:	 -*-courier-bold-r-*-*-*-120-*-*-m-*-*-*",
+  ".Windows.font2:	 -*-courier-bold-r-*-*-*-180-*-*-m-*-*-*",
+  ".Windows.foreground:	 White",
+  ".Windows.background:	 Blue",
 
-  "BSOD.Amiga.font:		-*-courier-bold-r-*-*-*-120-*-*-m-*-*-*",
-  "BSOD.Amiga.font2:		-*-courier-bold-r-*-*-*-180-*-*-m-*-*-*",
-  "BSOD.Amiga.foreground:	Red",
-  "BSOD.Amiga.background:	Black",
-  "BSOD.Amiga.background2:	White",
+  ".Amiga.font:		 -*-courier-bold-r-*-*-*-120-*-*-m-*-*-*",
+  ".Amiga.font2:	 -*-courier-bold-r-*-*-*-180-*-*-m-*-*-*",
+  ".Amiga.foreground:	 Red",
+  ".Amiga.background:	 Black",
+  ".Amiga.background2:	 White",
 
-  "BSOD.Mac.font:		-*-courier-bold-r-*-*-*-120-*-*-m-*-*-*",
-  "BSOD.Mac.foreground:		PaleTurquoise1",
-  "BSOD.Mac.background:		Black",
+  ".Mac.font:		 -*-courier-bold-r-*-*-*-120-*-*-m-*-*-*",
+  ".Mac.foreground:	 PaleTurquoise1",
+  ".Mac.background:	 Black",
 
-  "BSOD.MacsBug.font:		-*-courier-medium-r-*-*-*-100-*-*-m-*-*-*",
-  "BSOD.MacsBug.font2:		-*-courier-bold-r-*-*-*-120-*-*-m-*-*-*",
-  "BSOD.MacsBug.font3:		-*-courier-bold-r-*-*-*-140-*-*-m-*-*-*",
-  "BSOD.MacsBug.foreground:	Black",
-  "BSOD.MacsBug.background:	White",
-  "BSOD.MacsBug.borderColor:	#AAAAAA",
+  ".MacsBug.font:	 -*-courier-medium-r-*-*-*-100-*-*-m-*-*-*",
+  ".MacsBug.font2:	 -*-courier-bold-r-*-*-*-120-*-*-m-*-*-*",
+  ".MacsBug.font3:	 -*-courier-bold-r-*-*-*-140-*-*-m-*-*-*",
+  ".MacsBug.foreground:	 Black",
+  ".MacsBug.background:	 White",
+  ".MacsBug.borderColor: #AAAAAA",
   0
 };
 
