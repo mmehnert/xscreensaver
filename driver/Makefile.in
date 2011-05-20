@@ -132,8 +132,8 @@ SAVER_OBJS	= $(SAVER_OBJS_1) prefs.o $(LOCK_OBJS) \
 CMD_SRCS	= remote.c xscreensaver-command.c
 CMD_OBJS	= remote.o xscreensaver-command.o
 
-DEMO_SRCS_1	= prefs.c demo.c
-DEMO_OBJS_1	= prefs.o demo-Xm.o demo-Gtk.o demo-Xaw.o
+DEMO_SRCS_1	= prefs.c demo.c $(XMU_SRCS)
+DEMO_OBJS_1	= prefs.o demo-Xm.o demo-Gtk.o demo-Xaw.o $(XMU_OBJS)
 
 DEMO_SRCS	= prefs.c remote.c $(DEMO_UTIL_SRCS) demo.c
 DEMO_OBJS	= prefs.o remote.o $(DEMO_UTIL_OBJS)
@@ -294,6 +294,9 @@ install-pam:
  $$e ""									     ;\
  $$e	"	$$dest	auth required	/usr/lib/security/pam_unix.so.1"     ;\
  $$e ""									     ;\
+ $$e "           Be careful: if you mess up that file, you could completely" ;\
+ $$e "           hose your machine (e.g., \`login' and \`su' won't work, and";\
+ $$e "           you'll have to boot single-user to fix it.)"                ;\
  $$e "  ####################################################################";\
 	    echo "";							\
 	  fi ;								\
@@ -468,18 +471,23 @@ TEST_PASSWD_OBJS = test-passwd.o $(LOCK_OBJS_1) $(PASSWD_OBJS) \
 	$(SAVER_UTIL_OBJS)
 test-passwd.o: XScreenSaver_ad.h
 
+tests:: test-passwd
 test-passwd: $(TEST_PASSWD_OBJS) XScreenSaver_ad.h
 	$(CC) $(LDFLAGS) -o $@ $(TEST_PASSWD_OBJS) $(SAVER_LIBS)
 
+tests:: test-uid
 test-uid: test-uid.o
 	$(CC) $(LDFLAGS) -o $@ test-uid.o
 
+tests:: test-xdpms
 test-xdpms: test-xdpms.o
 	$(CC) $(LDFLAGS) -o $@ test-xdpms.o $(SAVER_LIBS)
 
+tests:: test-grab
 test-grab: test-grab.o
 	$(CC) $(LDFLAGS) -o $@ test-grab.o $(SAVER_LIBS)
 
+tests:: test-apm
 test-apm: test-apm.o
 	$(CC) $(LDFLAGS) -o $@ test-apm.o $(SAVER_LIBS) -lapm
 

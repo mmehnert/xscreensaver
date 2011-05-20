@@ -67,7 +67,7 @@
 # endif /* VMS */
 #endif /* HAVE_XMU */
 
-#define MAX             255
+#define MAX_VAL             255
 
 static Display         *display;
 static Window          window;
@@ -443,21 +443,21 @@ FlameAdvance(void)
               v3   = (v1 * vspread) >> 8;
               v2   = (int)*(ptr2);
               v2  += v3;
-              if (v2 > MAX) 
-                v2 = MAX;
+              if (v2 > MAX_VAL) 
+                v2 = MAX_VAL;
 
               *(ptr2) = (unsigned char)v2;
               v3  = (v1 * hspread) >> 8;
               v2  = (int)*(ptr2 + 1);
               v2 += v3;
-              if (v2 > MAX) 
-                v2 = MAX;
+              if (v2 > MAX_VAL) 
+                v2 = MAX_VAL;
           
               *(ptr2 + 1) = (unsigned char)v2;
               v2          = (int)*(ptr2 - 1);
               v2         += v3;
-              if (v2 > MAX) 
-                v2 = MAX;
+              if (v2 > MAX_VAL) 
+                v2 = MAX_VAL;
           
               *(ptr2 - 1) = (unsigned char)v2;
         

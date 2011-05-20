@@ -58,6 +58,7 @@ BadWindow_ehandler (Display *dpy, XErrorEvent *error)
   else
     {
       fprintf (stderr, "%s: ", progname);
+      if (!old_handler) abort();
       return (*old_handler) (dpy, error);
     }
 }
@@ -88,14 +89,30 @@ find_screensaver_window (Display *dpy, char **version)
       int format;
       unsigned long nitems, bytesafter;
       char *v;
+      int status;
 
-      if (XGetWindowProperty (dpy, kids[i],
-			      XA_SCREENSAVER_VERSION,
-			      0, 200, False, XA_STRING,
-			      &type, &format, &nitems, &bytesafter,
-			      (unsigned char **) &v)
-	  == Success
-	  && type != None)
+      /* We're walking the list of root-level windows and trying to find
+         the one that has a particular property on it.  We need to trap
+         BadWindows errors while doing this, because it's possible that
+         some random window might get deleted in the meantime.  (That
+         window won't have been the one we're looking for.)
+       */
+      XSync (dpy, False);
+      if (old_handler) abort();
+      old_handler = XSetErrorHandler (BadWindow_ehandler);
+      status = XGetWindowProperty (dpy, kids[i],
+                                   XA_SCREENSAVER_VERSION,
+                                   0, 200, False, XA_STRING,
+                                   &type, &format, &nitems, &bytesafter,
+                                   (unsigned char **) &v);
+      XSync (dpy, False);
+      XSetErrorHandler (old_handler);
+      old_handler = 0;
+
+      if (got_badwindow)
+        status = BadWindow;
+
+      if (status == Success && type != None)
 	{
 	  if (version)
 	    *version = v;
@@ -286,15 +303,18 @@ xscreensaver_command_response (Display *dpy, Window window, Bool verbose_p)
 	      unsigned long nitems, bytesafter;
 	      char *msg = 0;
 
-	      old_handler = XSetErrorHandler (BadWindow_ehandler);
 	      XSync (dpy, False);
-
+              if (old_handler) abort();
+	      old_handler = XSetErrorHandler (BadWindow_ehandler);
 	      st2 = XGetWindowProperty (dpy, window,
 					XA_SCREENSAVER_RESPONSE,
 					0, 1024, True,
 					AnyPropertyType,
 					&type, &format, &nitems, &bytesafter,
 					(unsigned char **) &msg);
+	      XSync (dpy, False);
+              XSetErrorHandler (old_handler);
+              old_handler = 0;
 
 	      if (got_badwindow)
 		{
@@ -367,6 +387,8 @@ server_xscreensaver_version (Display *dpy,
 
   if (version_ret)
     *version_ret = 0;
+  if (user_ret)
+    *user_ret = 0;
   if (host_ret)
     *host_ret = 0;
 

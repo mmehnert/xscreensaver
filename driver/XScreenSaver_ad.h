@@ -122,6 +122,10 @@
 		critical -root						\\n\
 		phosphor -root						\\n\
 		xmatrix -root						\\n\
+		petri -root -size 1 -count 20				\\n\
+		petri -root -minlifespeed 0.02 -maxlifespeed 0.03	  \
+		   -minlifespan 1 -maxlifespan 1 -instantdeathchan 0	  \
+		   -minorchan 0 -anychan 0.3				\\n\
 									  \
 	mono:	rocks -root						\\n\
 	color:	rocks -root -fg darksalmon				\\n\

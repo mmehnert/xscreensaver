@@ -58,6 +58,7 @@ $ noseguy	:== $'mydir'noseguy
 $ pedal		:== $'mydir'pedal
 $ penetrate	:== $'mydir'penetrate
 $ penrose	:== $'mydir'penrose
+$ petri		:== $'mydir'petri
 $ phosphor	:== $'mydir'phosphor
 $ pyro		:== $'mydir'pyro
 $ qix		:== $'mydir'qix

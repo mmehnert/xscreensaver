@@ -11,7 +11,7 @@
 .if n .sp 1
 .if t .sp .5
 ..
-.TH XScreenSaver 1 "31-May-99 (3.13)" "X Version 11"
+.TH XScreenSaver 1 "11-Jun-99 (3.14)" "X Version 11"
 .SH NAME
 xscreensaver - graphics hack and screen locker, launched when the user is idle
 .SH SYNOPSIS
@@ -1125,6 +1125,8 @@ overengineered and broken \fBMIT-SCREEN-SAVER\fP extension.
 If you're running Irix 6.3, you might find that your monitor is powering down
 after an hour or two even if you've told it not to.  This is fixed by SGI
 patches 2447 and 2537.
+
+If you're running Irix 6.5, this bug is back.  I don't know a fix.
 .TP 8
 .B MesaGL and Voodoo Cards
 If you have a 3Dfx/Voodoo card, the default settings for xscreensaver will
@@ -1272,6 +1274,7 @@ http://www.jwz.org/xscreensaver/
 .BR pedal (1),
 .BR penetrate (1),
 .BR penrose (1),
+.BR petri (1),
 .BR phosphor (1),
 .BR pipes (1),
 .BR pulsar (1),
@@ -1335,16 +1338,21 @@ to comp.sources.x on 13-Aug-1992.
 
 Please let me know if you find any bugs or make any improvements.
 .SH ACKNOWLEDGEMENTS
+Thanks to the many people who have contributed graphics demos to the package.
+
 Thanks to David Wojtowicz for implementing \fIlockTimeout\fP.
 
 Thanks to Martin Kraemer for adding support for shadow passwords and
 locking-disabled diagnostics.
 
-Thanks to the many people who have contributed graphics demos to the package.
-
 Thanks to Patrick Moreau for the VMS port.
 
 Thanks to Mark Bowyer for figuring out how to hook it up to CDE.
 
-And huge thanks to Jon A. Christopher for implementing the Athena dialog
-support, back in the days before Lesstif was a viable alternative to Motif.
+Thanks to Nat Lanza for the Kerberos support.
+
+Thanks to Bill Nottingham for the initial PAM support.
+
+And thanks to Jon A. Christopher for implementing the Athena dialog
+support, back in the days before Lesstif or Gtk were viable alternatives
+to Motif.

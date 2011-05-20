@@ -140,7 +140,7 @@ fade_screens (Display *dpy, Colormap *cmaps, Window *black_windows,
    that all screens really go black.
 
    I'm told that this trick also works with XInside's AcceleratedX when using
-   the Matrox Millenium card (which also allows multiple PseudoColor and
+   the Matrox Millennium card (which also allows multiple PseudoColor and
    TrueColor visuals to co-exist and display properly at the same time.)  
 
    This trick works ok on the 24-bit Indy video hardware, but doesn't work at

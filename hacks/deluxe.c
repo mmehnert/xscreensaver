@@ -11,6 +11,7 @@
 
 #include <math.h>
 #include "screenhack.h"
+#include "alpha.h"
 
 #ifdef HAVE_DOUBLE_BUFFER_EXTENSION
 # include "xdbe.h"
@@ -18,6 +19,10 @@
 
 #define countof(x) (sizeof(x)/sizeof(*(x)))
 #define ABS(x) ((x)<0?-(x):(x))
+
+static Bool transparent_p;
+static int nplanes;
+static unsigned long base_pixel, *plane_masks;
 
 struct throbber {
   int x, y;
@@ -120,6 +125,7 @@ static struct throbber *
 make_throbber (Display *dpy, Drawable d, int w, int h, unsigned long pixel)
 {
   XGCValues gcv;
+  unsigned long flags;
   struct throbber *t = (struct throbber *) malloc (sizeof (*t));
   t->x = w / 2;
   t->y = h / 2;
@@ -137,15 +143,25 @@ make_throbber (Display *dpy, Drawable d, int w, int h, unsigned long pixel)
   else
     t->size = t->thickness, t->speed = -t->speed;
 
-  gcv.foreground = pixel;
+  flags = GCForeground;
+  if (transparent_p)
+    {
+      gcv.foreground = ~0L;
+      gcv.plane_mask = base_pixel | plane_masks[random() % nplanes];
+      flags |= GCPlaneMask;
+    }
+  else
+    {
+      gcv.foreground = pixel;
+    }
+
   gcv.line_width = t->thickness;
   gcv.line_style = LineSolid;
   gcv.cap_style = CapProjecting;
   gcv.join_style = JoinMiter;
-  t->gc = XCreateGC (dpy, d,
-                     (GCForeground|GCLineWidth|GCLineStyle|
-                      GCCapStyle|GCJoinStyle),
-                     &gcv);
+
+  flags |= (GCLineWidth | GCLineStyle | GCCapStyle | GCJoinStyle);
+  t->gc = XCreateGC (dpy, d, flags, &gcv);
 
   switch (random() % 11) {
   case 0: case 1: case 2: case 3: t->draw = draw_star; break;
@@ -201,6 +217,8 @@ char *defaults [] = {
   "*thickness:		50",
   "*speed:		15",
   "*ncolors:		20",
+  "*nlayers:		0",
+  "*transparent:	False",
   "*doubleBuffer:	True",
 #ifdef HAVE_DOUBLE_BUFFER_EXTENSION
   "*useDBE:		True",
@@ -214,6 +232,8 @@ XrmOptionDescRec options [] = {
   { "-count",		".count",	XrmoptionSepArg, 0 },
   { "-ncolors",		".ncolors",	XrmoptionSepArg, 0 },
   { "-speed",		".speed",	XrmoptionSepArg, 0 },
+  { "-transparent",	".transparent",	 XrmoptionNoArg,  "True" },
+  { "-opaque",		".transparent",	 XrmoptionNoArg,  "False" },
   { "-db",		".doubleBuffer", XrmoptionNoArg,  "True" },
   { "-no-db",		".doubleBuffer", XrmoptionNoArg,  "False" },
   { 0, 0, 0, 0 }
@@ -239,6 +259,8 @@ screenhack (Display *dpy, Window window)
 
   XGetWindowAttributes (dpy, window, &xgwa);
 
+  transparent_p = get_boolean_resource("transparent", "Transparent");
+
   if (get_boolean_resource("mono", "Boolean"))
     {
     MONO:
@@ -246,8 +268,27 @@ screenhack (Display *dpy, Window window)
       colors[0].pixel = get_pixel_resource("foreground", "Foreground",
                                            dpy, xgwa.colormap);
     }
+  else if (transparent_p)
+    {
+      nplanes = get_integer_resource ("planes", "Planes");
+      if (nplanes <= 0)
+        nplanes = (random() % (xgwa.depth-2)) + 2;
+
+      allocate_alpha_colors (xgwa.screen, xgwa.visual, xgwa.colormap,
+                             &nplanes, True, &plane_masks,
+			     &base_pixel);
+      if (nplanes <= 1)
+	{
+	  fprintf (stderr,
+         "%s: couldn't allocate any color planes; turning transparency off.\n",
+		   progname);
+          transparent_p = False;
+	  goto COLOR;
+	}
+    }
   else
     {
+    COLOR:
       make_random_colormap (dpy, xgwa.visual, xgwa.colormap,
                             colors, &ncolors, True, True, 0, True);
       if (ncolors < 2)

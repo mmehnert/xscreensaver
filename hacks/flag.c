@@ -350,9 +350,15 @@ make_flag_bits(ModeInfo *mi)
 				*s = 0;
 			  text = (char *) malloc(strlen(uts.nodename) +
 									 strlen(uts.sysname) +
+									 strlen(uts.version) +
 									 strlen(uts.release) + 10);
+# ifdef _AIX
+			  sprintf(text, "%s\n%s %s.%s",
+					  uts.nodename, uts.sysname, uts.version, uts.release);
+# else  /* !_AIX */
 			  sprintf(text, "%s\n%s %s",
 					  uts.nodename, uts.sysname, uts.release);
+# endif /* !_AIX */
 			}
 #else	/* !HAVE_UNAME */
 # ifdef VMS

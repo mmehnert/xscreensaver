@@ -4,8 +4,8 @@
 !            a screen saver and locker for the X window system
 !                            by Jamie Zawinski
 !
-!                              version 3.13
-!                                31-May-99
+!                              version 3.14
+!                                11-Jun-99
 !
 ! See "man xscreensaver" for more info.  The latest version is always
 ! available at http://www.jwz.org/xscreensaver/
@@ -198,6 +198,10 @@
 		critical -root						\n\
 		phosphor -root						\n\
 		xmatrix -root						\n\
+		petri -root -size 1 -count 20				\n\
+		petri -root -minlifespeed 0.02 -maxlifespeed 0.03	  \
+		   -minlifespan 1 -maxlifespan 1 -instantdeathchan 0	  \
+		   -minorchan 0 -anychan 0.3				\n\
 									  \
 	mono:	rocks -root						\n\
 	color:	rocks -root -fg darksalmon				\n\
@@ -250,17 +254,15 @@
 ! 
 ! To display a randomized slideshow of images, you can do something like this:
 !
-!     default-n: xv -root -rmode 5  image-1.gif  -quit
-!     default-n: xv -root -rmode 5  image-2.gif  -quit
-!     default-n: xv -root -rmode 5  image-3.gif  -quit
-!		...and so on...
+!     default-n:  xv -root -rmode 5 -random -viewonly -wloop              \
+!                    -wait 30 $HOME/bitmaps/*.jpg                       \n\
 !
 ! Note that we've used "default-n" as the visual name, rather than just
 ! "default": this means "default visual, no install", that is, it's like
 ! specifying the command-line arguments "-visual default -no-install".
 ! This is necessary because, when XV is running in "-root" mode, it always
 ! assumes that the default visual and colormap are being used, rather than 
-! examining the window it is drawing on to see what visual and colormap it 
+! examining the window it is drawing on to see what visual and colormap it
 ! has.  If we didn't force the default visual to be used, xv would get an
 ! X error.  If we didn't force the default colormap to be installed, the
 ! colors would be all wrong.  "default-i" may also be used as a visual name

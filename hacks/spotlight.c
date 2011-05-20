@@ -33,14 +33,13 @@
 
 static int sizex, sizey; /* screen size */
 static int delay;        /* in case it's too fast... */
-static GC gc;
+static GC window_gc;
 #ifdef DEBUG
 static GC white_gc;
 #endif
 static GC buffer_gc;     /* draw in buffer, then flush to screen
 			    to avoid flicker */
 static int radius;       /* radius of spotlight in pixels */
-static XGCValues gcv;
 
 static Pixmap pm;        /* pixmap grabbed from screen */
 static Pixmap clip_pm;   /* pixmap for clipping (spotlight shape) */
@@ -48,10 +47,10 @@ static Pixmap buffer;    /* pixmap for the buffer */
 
 static GC clip_gc;       /* GC for the clip pixmap */
 
-int x, y, s;             /* x & y coords of buffer (upper left corner) */
+static int x, y, s;      /* x & y coords of buffer (upper left corner) */
                          /* s is the width of the buffer */
 
-int oldx, oldy, max_x_speed, max_y_speed;
+static int oldx, oldy, max_x_speed, max_y_speed;
                          /* used to keep the new buffer position
 			    over the old spotlight image to make sure 
 			    the old image is completely erased */
@@ -75,6 +74,7 @@ currentTimeInMs(void)
 static void
 init_hack (Display *dpy, Window window)
 {
+  XGCValues gcv;
   XWindowAttributes xgwa;
   long gcflags;
   Colormap cmap;
@@ -98,41 +98,44 @@ init_hack (Display *dpy, Window window)
   gcv.subwindow_mode = IncludeInferiors;
   gcflags = GCForeground | GCFunction;
   gcv.foreground = bg;
-  gcv.background = fg;
 
 #ifdef NOPE
   if (use_subwindow_mode_p(xgwa.screen, window)) /* see grabscreen.c */
     gcflags |= GCSubwindowMode;
 #endif
-  gc = XCreateGC (dpy, window, gcflags, &gcv);
+  window_gc = XCreateGC(dpy, window, gcflags, &gcv);
 
 
   /* grab screen to window */
-  grab_screen_image (xgwa.screen, window);
+  grab_screen_image(xgwa.screen, window);
 
   /* save screen to pixmap for copying later */
   pm = XCreatePixmap(dpy, window, sizex, sizey, xgwa.depth);
-  XCopyArea(dpy, window, pm, gc, 0, 0, sizex, sizey, 0, 0);
+  XCopyArea(dpy, window, pm, window_gc, 0, 0, sizex, sizey, 0, 0);
 
 
   /* create buffer to reduce flicker */
   buffer = XCreatePixmap(dpy, window, sizex, sizey, xgwa.depth);
-  buffer_gc = XCreateGC (dpy, buffer, gcflags, &gcv);
+  buffer_gc = XCreateGC(dpy, buffer, gcflags, &gcv);
 
   /* blank out screen */
-  XFillRectangle(dpy,window,gc,0,0,sizex,sizey);
+  XFillRectangle(dpy, window, window_gc, 0, 0, sizex, sizey);
+  XSetWindowBackground (dpy, window, bg);
 
   /* create clip mask (so it's a circle, not a square) */
   clip_pm = XCreatePixmap(dpy, window, radius*4, radius*4, 1);
-  gcv.foreground=bg;
-  gcv.background=bg;
+
+  gcv.foreground = 0L;
   clip_gc = XCreateGC(dpy, clip_pm, gcflags, &gcv);
-  XFillRectangle(dpy,clip_pm,clip_gc,0,0,radius*4, radius*4);
-  XSetForeground(dpy,clip_gc,fg);
+  XFillRectangle(dpy, clip_pm, clip_gc, 0, 0, radius*4, radius*4);
+
+  XSetForeground(dpy, clip_gc, 1L);
   XFillArc(dpy, clip_pm, clip_gc, radius , radius,
 	   radius*2, radius*2, 0, 360*64);
+
   /* set buffer's clip mask to the one we just made */
   XSetClipMask(dpy, buffer_gc, clip_pm);
+
   /* free everything */
   XFreeGC(dpy, clip_gc);
   XFreePixmap(dpy, clip_pm);
@@ -143,7 +146,7 @@ init_hack (Display *dpy, Window window)
 #ifdef DEBUG
   /* create GC with white fg */
   gcv.foreground = fg;
-  white_gc = XCreateGC (dpy, window, gcflags, &gcv);
+  white_gc = XCreateGC(dpy, window, gcflags, &gcv);
 #endif
   
   /* initialize x and y to avoid initial `jump' across screen */
@@ -193,7 +196,7 @@ onestep (Display *dpy, Window window)
     XSetClipOrigin(dpy, buffer_gc, x,y);
     XCopyArea(dpy, pm, buffer, buffer_gc, x, y, s, s, x, y);
     /* copy buffer to screen (window) */
-    XCopyArea(dpy, buffer, window, gc, x , y, s, s, x, y);
+    XCopyArea(dpy, buffer, window, window_gc, x , y, s, s, x, y);
 
 #ifdef DEBUG
     /* draw a box around the buffer */

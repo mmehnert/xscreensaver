@@ -438,7 +438,6 @@ lock_initialization (saver_info *si, int *argc, char **argv)
   si->locking_disabled_p = True;
   si->nolock_reason = "not compiled with locking support";
 #else /* !NO_LOCKING */
-  si->locking_disabled_p = False;
 
   /* Finish initializing locking, now that we're out of privileged code. */
   if (! lock_init (*argc, argv, si->prefs.verbose_p))
@@ -954,7 +953,7 @@ main_loop (saver_info *si)
             p->lock_p &&                /* and locking is enabled */
             !si->locking_disabled_p &&  /* and locking is possible */
             lock_timeout == 0)          /* and locking is not timer-deferred */
-          si->locked_p = True;          /* then lock right now. */
+          set_locked_p (si, True);      /* then lock right now. */
 
         /* locked_p might be true already because of the above, or because of
            the LOCK ClientMessage.  But if not, and if we're supposed to lock
@@ -1006,7 +1005,7 @@ main_loop (saver_info *si)
       kill_screenhack (si);
       unblank_screen (si);
 
-      si->locked_p = False;
+      set_locked_p (si, False);
       si->emergency_lock_p = False;
       si->demoing_p = 0;
       si->selection_mode = 0;
@@ -1399,11 +1398,11 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
 	  char *response = (until_idle_p
 			    ? "activating and locking."
 			    : "locking.");
-	  si->locked_p = True;
-	  si->selection_mode = 0;
-	  si->demoing_p = False;
 	  sprintf (buf, "LOCK ClientMessage received; %s", response);
 	  clientmessage_response (si, window, False, buf, response);
+	  set_locked_p (si, True);
+	  si->selection_mode = 0;
+	  si->demoing_p = False;
 
 	  if (si->lock_id)	/* we're doing it now, so lose the timeout */
 	    {

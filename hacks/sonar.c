@@ -37,7 +37,7 @@
  * software for any purpose.  It is provided "as is" without express or 
  * implied warranty.
  *
- * $Revision: 1.10 $
+ * $Revision: 1.11 $
  *
  * Version 1.0 April 27, 1998.
  * - Initial version
@@ -115,6 +115,10 @@
 
 #undef MY_MIN
 #define MY_MIN(a,b) ((a)<(b)?(a - 50):(b - 10))
+
+#ifndef LINE_MAX
+# define LINE_MAX 2048
+#endif
 
 /* Frigging icmp */
 
@@ -680,6 +684,10 @@ subnetHostsList(void)
 
     /* Construct targets for all addresses in this subnet */
 
+    /* #### jwz: actually, this is wrong, since it assumes a
+       netmask of 255.255.255.0.  But I'm not sure how to find
+       the local netmask.
+     */
     for (i = 254; i > 0; i--) {
 	sprintf(p, "%d", i);
 	new = newHost(address);
@@ -762,8 +770,10 @@ init_ping(void)
 
 	/* Unknown source */
 
-	fprintf(stderr, "%s: illegal pingSource: %s\n", progname, src);
-	goto ping_init_error;
+	fprintf(stderr,
+               "%s: pingSource must be `file', `list', or `subnet', not: %s\n",
+                progname, src);
+        exit (1);
     }
 
     /* Make sure there is something to ping */

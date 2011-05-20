@@ -27,9 +27,23 @@
 # include <syslog.h>
 #endif /* HAVE_SYSLOG */
 
+#ifdef HAVE_XHPDISABLERESET
+# include <X11/XHPlib.h>
+  static void hp_lock_reset (saver_info *si, Bool lock_p);
+#endif /* HAVE_XHPDISABLERESET */
+
+#ifdef HAVE_VT_LOCKSWITCH
+# include <fcntl.h>
+# include <sys/ioctl.h>
+# include <sys/vt.h>
+  static void linux_lock_vt_switch (saver_info *si, Bool lock_p);
+#endif /* HAVE_VT_LOCKSWITCH */
+
 #ifdef HAVE_XF86VMODE
 # include <X11/extensions/xf86vmode.h>
+  static void xfree_lock_mode_switch (saver_info *si, Bool lock_p);
 #endif /* HAVE_XF86VMODE */
+
 
 #ifdef _VROOT_H_
 ERROR!  You must not include vroot.h in this file.
@@ -112,7 +126,6 @@ static void update_passwd_window (saver_info *si, const char *printed_passwd,
 				  float ratio);
 static void destroy_passwd_window (saver_info *si);
 static void undo_vp_motion (saver_info *si);
-static void set_vp_mode_switch_locked (saver_info *si, Bool locked_p);
 
 
 static void
@@ -360,7 +373,6 @@ make_passwd_window (saver_info *si)
 
   move_mouse_grab (si, si->passwd_dialog, si->screens[0].cursor);
   undo_vp_motion (si);
-  set_vp_mode_switch_locked (si, True);
 
   si->pw_data = pw;
 
@@ -656,7 +668,6 @@ destroy_passwd_window (saver_info *si)
 
   move_mouse_grab (si, RootWindowOfScreen(si->screens[0].screen),
                    si->screens[0].cursor);
-  set_vp_mode_switch_locked (si, False);
 
   if (si->passwd_dialog)
     {
@@ -715,6 +726,157 @@ destroy_passwd_window (saver_info *si)
   si->pw_data = 0;
 }
 
+
+#ifdef HAVE_XHPDISABLERESET
+/* This function enables and disables the C-Sh-Reset hot-key, which
+   normally resets the X server (logging out the logged-in user.)
+   We don't want random people to be able to do that while the
+   screen is locked.
+ */
+static void
+hp_lock_reset (saver_info *si, Bool lock_p)
+{
+  static Bool hp_locked_p = False;
+
+  /* Calls to XHPDisableReset and XHPEnableReset must be balanced,
+     or BadAccess errors occur.  (It's ok for this to be global,
+     since it affects the whole machine, not just the current screen.)
+  */
+  if (hp_locked_p == lock_p)
+    return;
+
+  if (lock_p)
+    XHPDisableReset (si->dpy);
+  else
+    XHPEnableReset (si->dpy);
+  hp_locked_p = lock_p;
+}
+#endif /* HAVE_XHPDISABLERESET */
+
+
+
+/* This function enables and disables the C-Sh-F1 ... F12 hot-keys,
+   which, on Linux systems, switches to another virtual console.
+   We'd like the whole screen/keyboard to be locked, not just one
+   virtual console, so this function disables that while the X
+   screen is locked.
+
+   Unfortunately, this doesn't work -- this ioctl only works when
+   called by root, and we have disavowed our privileges long ago.
+ */
+#ifdef HAVE_VT_LOCKSWITCH
+static void
+linux_lock_vt_switch (saver_info *si, Bool lock_p)
+{
+  saver_preferences *p = &si->prefs;
+  static Bool vt_locked_p = False;
+  const char *dev_console = "/dev/console";
+  int fd;
+
+  if (lock_p == vt_locked_p)
+    return;
+
+  if (lock_p && !p->lock_vt_p)
+    return;
+
+  fd = open (dev_console, O_RDWR);
+  if (fd < 0)
+    {
+      char buf [255];
+      sprintf (buf, "%s: couldn't %s VTs: %s", blurb(),
+	       (lock_p ? "lock" : "unlock"),
+	       dev_console);
+#if 1 /* #### doesn't work yet, so don't bother complaining */
+      perror (buf);
+#endif
+      return;
+    }
+
+  if (ioctl (fd, (lock_p ? VT_LOCKSWITCH : VT_UNLOCKSWITCH)) == 0)
+    {
+      vt_locked_p = lock_p;
+
+      if (p->verbose_p)
+	fprintf (stderr, "%s: %s VTs\n", blurb(),
+		 (lock_p ? "locked" : "unlocked"));
+    }
+  else
+    {
+      char buf [255];
+      sprintf (buf, "%s: couldn't %s VTs: ioctl", blurb(),
+	       (lock_p ? "lock" : "unlock"));
+#if 0 /* #### doesn't work yet, so don't bother complaining */
+      perror (buf);
+#endif
+    }
+
+  close (fd);
+}
+#endif /* HAVE_VT_LOCKSWITCH */
+
+
+/* This function enables and disables the C-Alt-Plus and C-Alt-Minus
+   hot-keys, which normally change the resolution of the X server.
+   We don't want people to be able to switch the server resolution
+   while the screen is locked, because if they switch to a higher
+   resolution, it could cause part of the underlying desktop to become
+   exposed.
+ */
+#ifdef HAVE_XF86VMODE
+
+static int ignore_all_errors_ehandler (Display *dpy, XErrorEvent *error);
+static Bool vp_got_error = False;
+
+static void
+xfree_lock_mode_switch (saver_info *si, Bool lock_p)
+{
+  static Bool mode_locked_p = False;
+  saver_preferences *p = &si->prefs;
+  int screen = 0;  /* always screen 0 */
+  int event, error;
+  Bool status;
+  XErrorHandler old_handler;
+
+  if (mode_locked_p == lock_p)
+    return;
+  if (!XF86VidModeQueryExtension (si->dpy, &event, &error))
+    return;
+
+  XSync (si->dpy, False);
+  old_handler = XSetErrorHandler (ignore_all_errors_ehandler);
+  status = XF86VidModeLockModeSwitch (si->dpy, screen, lock_p);
+  XSync (si->dpy, False);
+  XSetErrorHandler (old_handler);
+  if (vp_got_error) status = False;
+
+  if (status)
+    mode_locked_p = lock_p;
+
+  if (!status && (p->verbose_p || !lock_p))
+    /* Only print this when verbose, or when we locked but can't unlock.
+       I tried printing this message whenever it comes up, but
+       mode-locking always fails if DontZoom is set in XF86Config. */
+    fprintf (stderr, "%s: unable to %s mode switching!\n",
+             blurb(), (lock_p ? "lock" : "unlock"));
+  else if (p->verbose_p)
+    fprintf (stderr, "%s: %s mode switching.\n",
+             blurb(), (lock_p ? "locked" : "unlocked"));
+}
+
+static int
+ignore_all_errors_ehandler (Display *dpy, XErrorEvent *error)
+{
+  vp_got_error = True;
+  return 0;
+}
+
+#endif /* HAVE_XF86VMODE */
+
+
+/* If the viewport has been scrolled since the screen was blanked,
+   then scroll it back to where it belongs.  This function only exists
+   to patch over a very brief race condition.
+ */
 static void
 undo_vp_motion (saver_info *si)
 {
@@ -754,29 +916,6 @@ undo_vp_motion (saver_info *si)
     fprintf (stderr, "%s: vp moved to (%d,%d); moved it back to (%d,%d).\n",
              blurb(), x, y, ssi->blank_vp_x, ssi->blank_vp_y);
 
-#endif /* HAVE_XF86VMODE */
-}
-
-
-static void
-set_vp_mode_switch_locked (saver_info *si, Bool locked_p)
-{
-#ifdef HAVE_XF86VMODE
-  saver_preferences *p = &si->prefs;
-  int screen = 0;  /* always screen 0 */
-  int event, error;
-  Bool status;
-
-  if (!XF86VidModeQueryExtension (si->dpy, &event, &error))
-    return;
-  status = XF86VidModeLockModeSwitch (si->dpy, screen, locked_p);
-
-  if (!status)
-    fprintf (stderr, "%s: unable to %s vp switching!\n",
-             blurb(), (locked_p ? "lock" : "unlock"));
-  else if (p->verbose_p)
-    fprintf (stderr, "%s: %s vp switching.\n",
-             blurb(), (locked_p ? "locked" : "unlocked"));
 #endif /* HAVE_XF86VMODE */
 }
 
@@ -1019,6 +1158,23 @@ unlock_p (saver_info *si)
   if (cmap) XInstallColormap (si->dpy, cmap);
 
   return status;
+}
+
+
+void
+set_locked_p (saver_info *si, Bool locked_p)
+{
+  si->locked_p = locked_p;
+
+#ifdef HAVE_XHPDISABLERESET
+  hp_lock_reset (si, locked_p);                 /* turn off/on C-Sh-Reset */
+#endif
+#ifdef HAVE_VT_LOCKSWITCH
+  linux_lock_vt_switch (si, locked_p);          /* turn off/on C-Alt-F1 */
+#endif
+#ifdef HAVE_XF86VMODE
+  xfree_lock_mode_switch (si, locked_p);        /* turn off/on C-Alt-Plus */
+#endif
 }
 
 #endif /* !NO_LOCKING -- whole file */

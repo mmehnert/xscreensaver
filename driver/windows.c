@@ -45,16 +45,6 @@
 # include <X11/extensions/xf86vmode.h>
 #endif /* HAVE_XF86VMODE */
 
-#ifdef HAVE_XHPDISABLERESET
-# include <X11/XHPlib.h>
-
- /* Calls to XHPDisableReset and XHPEnableReset must be balanced,
-    or BadAccess errors occur.  (Ok for this to be global, since it
-    affects the whole machine, not just the current screen.) */
-  Bool hp_locked_p = False;
-
-#endif /* HAVE_XHPDISABLERESET */
-
 
 /* This file doesn't need the Xt headers, so stub these types out... */
 #undef XtPointer
@@ -67,14 +57,6 @@
 #include "xscreensaver.h"
 #include "visual.h"
 #include "fade.h"
-
-
-#ifdef HAVE_VT_LOCKSWITCH
-# include <fcntl.h>
-# include <sys/ioctl.h>
-# include <sys/vt.h>
-  static void lock_vt (saver_info *si, Bool lock_p);
-#endif /* HAVE_VT_LOCKSWITCH */
 
 
 extern int kill (pid_t, int);		/* signal() is in sys/signal.h... */
@@ -1269,19 +1251,6 @@ blank_screen (saver_info *si)
   store_activate_time (si, si->screen_blanked_p);
   raise_window (si, False, False, False);
 
-#ifdef HAVE_XHPDISABLERESET
-  if (si->locked_p && !hp_locked_p)
-    {
-      XHPDisableReset (si->dpy);	/* turn off C-Sh-Reset */
-      hp_locked_p = True;
-    }
-#endif
-
-#ifdef HAVE_VT_LOCKSWITCH
-  if (si->locked_p)
-      lock_vt (si, True);		/* turn off C-Alt-Fn */
-#endif
-
   si->screen_blanked_p = True;
   si->last_wall_clock_time = 0;
 
@@ -1395,18 +1364,6 @@ unblank_screen (saver_info *si)
 
   ungrab_keyboard_and_mouse (si);
   restore_real_vroot (si);
-
-#ifdef HAVE_XHPDISABLERESET
-  if (hp_locked_p)
-    {
-      XHPEnableReset (si->dpy);	/* turn C-Sh-Reset back on */
-      hp_locked_p = False;
-    }
-#endif
-
-#ifdef HAVE_VT_LOCKSWITCH
-  lock_vt (si, False);		/* turn C-Alt-Fn back on */
-#endif
 
   /* Unmap the windows a second time, dammit -- just to avoid a race
      with the screen-grabbing hacks.  (I'm not sure if this is really
@@ -1579,56 +1536,3 @@ select_visual (saver_screen_info *ssi, const char *visual_name)
 
   return got_it;
 }
-
-
-/* VT locking */
-
-#ifdef HAVE_VT_LOCKSWITCH
-static void
-lock_vt (saver_info *si, Bool lock_p)
-{
-  saver_preferences *p = &si->prefs;
-  static Bool locked_p = False;
-  const char *dev_console = "/dev/console";
-  int fd;
-
-  if (lock_p == locked_p)
-    return;
-
-  if (lock_p && !p->lock_vt_p)
-    return;
-
-  fd = open (dev_console, O_RDWR);
-  if (fd < 0)
-    {
-      char buf [255];
-      sprintf (buf, "%s: couldn't %s VTs: %s", blurb(),
-	       (lock_p ? "lock" : "unlock"),
-	       dev_console);
-#if 0 /* #### doesn't work yet, so don't bother complaining */
-      perror (buf);
-#endif
-      return;
-    }
-
-  if (ioctl (fd, (lock_p ? VT_LOCKSWITCH : VT_UNLOCKSWITCH)) == 0)
-    {
-      locked_p = lock_p;
-
-      if (p->verbose_p)
-	fprintf (stderr, "%s: %s VTs\n", blurb(),
-		 (lock_p ? "locked" : "unlocked"));
-    }
-  else
-    {
-      char buf [255];
-      sprintf (buf, "%s: couldn't %s VTs: ioctl", blurb(),
-	       (lock_p ? "lock" : "unlock"));
-#if 0 /* #### doesn't work yet, so don't bother complaining */
-      perror (buf);
-#endif
-    }
-
-  close (fd);
-}
-#endif /* HAVE_VT_LOCKSWITCH */

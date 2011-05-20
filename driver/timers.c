@@ -43,11 +43,6 @@
 #include <X11/extensions/XScreenSaver.h>
 #endif /* HAVE_SGI_SAVER_EXTENSION */
 
-#ifdef HAVE_XHPDISABLERESET
-# include <X11/XHPlib.h>
-  extern Bool hp_locked_p;	/* from windows.c */
-#endif /* HAVE_XHPDISABLERESET */
-
 #include "xscreensaver.h"
 
 #ifdef HAVE_PROC_INTERRUPTS
@@ -269,15 +264,7 @@ activate_lock_timer (XtPointer closure, XtIntervalId *id)
 
   if (p->verbose_p)
     fprintf (stderr, "%s: timed out; activating lock.\n", blurb());
-  si->locked_p = True;
-
-#ifdef HAVE_XHPDISABLERESET
-  if (!hp_locked_p)
-    {
-      XHPDisableReset (si->dpy);	/* turn off C-Sh-Reset */
-      hp_locked_p = True;
-    }
-#endif
+  set_locked_p (si, True);
 }
 
 

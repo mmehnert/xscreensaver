@@ -72,6 +72,16 @@
 #include <X11/IntrinsicP.h>
 #include <X11/ShellP.h>
 
+#ifdef HAVE_XMU
+# ifndef VMS
+#  include <X11/Xmu/Error.h>
+# else /* VMS */
+#  include <Xmu/Error.h>
+# endif
+#else
+# include "xmu.h"
+#endif
+
 
 #ifdef HAVE_MOTIF
 # include <Xm/Xm.h>
@@ -193,6 +203,7 @@ extern WIDGET lock_toggle;
 # define widget_name(widget) XtName(widget)
 # define widget_display(widget) XtDisplay(widget)
 # define widget_screen(widget) XtScreen(widget)
+# define CB_ARGS(a,b,c) (a,b,c)
 
 #elif defined(HAVE_ATHENA)
 
@@ -209,6 +220,7 @@ extern WIDGET lock_toggle;
 # define widget_name(widget) XtName(widget)
 # define widget_display(widget) XtDisplay(widget)
 # define widget_screen(widget) XtScreen(widget)
+# define CB_ARGS(a,b,c) (a,b,c)
 
 #elif defined(HAVE_GTK)
 
@@ -230,6 +242,7 @@ extern WIDGET lock_toggle;
 # define widget_name(widget) gtk_widget_get_name(GTK_WIDGET(widget))
 # define widget_display(widget) (gdk_display)
 # define widget_screen(widget) (DefaultScreenOfDisplay(widget_display(widget)))
+# define CB_ARGS(a,b,c) (b,a)
 
 #endif /* HAVE_GTK */
 
@@ -466,13 +479,14 @@ ensure_selected_item_visible (WIDGET list)
    - change the corresponding element in `screenhacks';
    - write the .xscreensaver file;
    - tell the xscreensaver daemon to run that hack.
+
+   (Note: in GTK, this one has a different arg list than the other callbacks.)
  */
 static void
-text_cb
 #ifdef HAVE_GTK
-  (WIDGET text_widget, void *client_data)
+text_cb (WIDGET text_widget, POINTER client_data)
 #else  /* !HAVE_GTK */
-  (WIDGET text_widget, POINTER client_data, POINTER call_data)
+text_cb (WIDGET text_widget, POINTER client_data, POINTER call_data)
 #endif /* !HAVE_GTK */
 {
   saver_preferences *p = (saver_preferences *) client_data;
@@ -644,12 +658,7 @@ next_internal (GtkEntry *entry, gboolean next_p)
 /* Callback for the Run Next button.
  */
 static void
-next_cb
-#ifdef HAVE_GTK
-  (void *client_data, gpointer call_data)
-#else  /* !HAVE_GTK */
-  (WIDGET button, POINTER client_data, POINTER call_data)
-#endif /* !HAVE_GTK */
+next_cb CB_ARGS(WIDGET button, POINTER client_data, POINTER ignored)
 {
 #ifdef HAVE_ATHENA
   XawListReturnStruct *current = XawListShowCurrent(demo_list);
@@ -703,12 +712,7 @@ next_cb
 /* Callback for the Run Previous button.
  */
 static void
-prev_cb
-#ifdef HAVE_GTK
-  (void *client_data, gpointer call_data)
-#else  /* !HAVE_GTK */
-  (WIDGET button, POINTER client_data, POINTER call_data)
-#endif /* !HAVE_GTK */
+prev_cb CB_ARGS(WIDGET button, POINTER client_data, POINTER ignored)
 {
 #ifdef HAVE_ATHENA
   XawListReturnStruct *current = XawListShowCurrent(demo_list);
@@ -760,6 +764,7 @@ prev_cb
 
 
 /* Callback run when a list element is double-clicked.
+   (Note: in GTK, this one has a different arg list than the other callbacks.)
  */
 #ifdef HAVE_GTK
 static gint
@@ -790,7 +795,6 @@ select_cb (WIDGET button, POINTER client_data, POINTER call_data)
     XtFree (string);
 
 #elif defined(HAVE_GTK)
-
   char *string = 0;
   gtk_label_get (GTK_LABEL (GTK_BIN(button)->child), &string);
   set_text_string (text_line, (string ? string : ""));
@@ -808,19 +812,13 @@ select_cb (WIDGET button, POINTER client_data, POINTER call_data)
 }
 
 
-
 static void pop_preferences_dialog (prefs_pair *pair);
 static void make_preferences_dialog (prefs_pair *pair, Widget parent);
 
 /* Callback for the Preferences button.
  */
 static void
-preferences_cb
-#ifdef HAVE_GTK
-  (void *client_data, WIDGET button)
-#else  /* !HAVE_GTK */
-  (WIDGET button, POINTER client_data, POINTER call_data)
-#endif /* !HAVE_GTK */
+preferences_cb CB_ARGS(WIDGET button, POINTER client_data, POINTER ignored)
 {
   prefs_pair *pair = (prefs_pair *) client_data;
 #ifdef HAVE_GTK
@@ -843,12 +841,7 @@ preferences_cb
 /* Callback for the Quit button.
  */
 static void
-quit_cb
-#ifdef HAVE_GTK
-  (void *client_data, gpointer call_data)
-#else  /* !HAVE_GTK */
-  (WIDGET button, POINTER client_data, POINTER call_data)
-#endif /* !HAVE_GTK */
+quit_cb CB_ARGS(WIDGET button, POINTER client_data, POINTER ignored)
 {
   /* Save here?  Right now we don't need to, because we save every time
      the text field is edited, or the Preferences OK button is pressed.
@@ -860,12 +853,7 @@ quit_cb
 /* Callback for the (now unused) Restart button.
  */
 static void
-restart_cb
-#ifdef HAVE_GTK
-  (void *client_data, WIDGET button)
-#else  /* !HAVE_GTK */
-  (WIDGET button, POINTER client_data, POINTER call_data)
-#endif /* !HAVE_GTK */
+restart_cb CB_ARGS(WIDGET button, POINTER client_data, POINTER ignored)
 {
   xscreensaver_command (widget_display (button), XA_RESTART, 0, False);
 }
@@ -904,7 +892,7 @@ destroy (GtkWidget *widget, gpointer data)
 /* Callback for the "Run" button to the right of the text entry line.
  */
 static void
-select_button_cb (GtkWidget *widget, gpointer data)
+select_button_cb CB_ARGS(WIDGET button, POINTER client_data, POINTER ignored)
 {
   gtk_signal_emit_by_name (GTK_OBJECT (text_line), "activate");
 }
@@ -1074,12 +1062,7 @@ hack_time_text (Display *dpy, char *line, Time *store, Bool sec_p)
    when not fully spelled out.  client_data is a Time* where the value goes.
  */
 static void
-prefs_sec_cb
-#ifdef HAVE_GTK
-  (void *client_data, WIDGET button)
-#else  /* !HAVE_GTK */
-  (WIDGET button, POINTER client_data, POINTER call_data)
-#endif /* !HAVE_GTK */
+prefs_sec_cb CB_ARGS(WIDGET button, POINTER client_data, POINTER ignored)
 {
   hack_time_text (widget_display (button), get_text_string (button),
                   (Time *) client_data, True);
@@ -1090,12 +1073,7 @@ prefs_sec_cb
    when not fully spelled out.  client_data is an Time* where the value goes.
  */
 static void
-prefs_min_cb
-#ifdef HAVE_GTK
-  (void *client_data, WIDGET button)
-#else  /* !HAVE_GTK */
-  (WIDGET button, POINTER client_data, POINTER call_data)
-#endif /* !HAVE_GTK */
+prefs_min_cb CB_ARGS(WIDGET button, POINTER client_data, POINTER ignored)
 {
   hack_time_text (widget_display (button), get_text_string (button),
                   (Time *) client_data, False);
@@ -1106,12 +1084,7 @@ prefs_min_cb
    client_data is an int* where the value goes.
  */
 static void
-prefs_int_cb
-#ifdef HAVE_GTK
-  (void *client_data, WIDGET button)
-#else  /* !HAVE_GTK */
-  (WIDGET button, POINTER client_data, POINTER call_data)
-#endif /* !HAVE_GTK */
+prefs_int_cb CB_ARGS(WIDGET button, POINTER client_data, POINTER ignored)
 {
   char *line = get_text_string (button);
   int *store = (int *) client_data;
@@ -1133,12 +1106,7 @@ prefs_int_cb
 /* Callback for toggle buttons.  client_data is a Bool* where the value goes.
  */
 static void
-prefs_bool_cb
-#ifdef HAVE_GTK
-  (void *client_data, WIDGET button)
-#else  /* !HAVE_GTK */
-  (WIDGET button, POINTER client_data, POINTER call_data)
-#endif /* !HAVE_GTK */
+prefs_bool_cb CB_ARGS(WIDGET button, POINTER client_data, POINTER call_data)
 {
   Bool *store = (Bool *) client_data;
 #ifdef HAVE_MOTIF
@@ -1156,12 +1124,7 @@ prefs_bool_cb
 /* Callback for the Cancel button on the Preferences dialog.
  */
 static void
-prefs_cancel_cb
-#ifdef HAVE_GTK
-  (void *client_data, WIDGET button)
-#else  /* !HAVE_GTK */
-  (WIDGET button, POINTER client_data, POINTER call_data)
-#endif /* !HAVE_GTK */
+prefs_cancel_cb CB_ARGS(WIDGET button, POINTER client_data, POINTER ignored)
 {
 #ifdef HAVE_GTK
   gdk_window_hide (GTK_WIDGET (preferences_dialog)->window);
@@ -1179,22 +1142,13 @@ prefs_cancel_cb
 /* Callback for the OK button on the Preferences dialog.
  */
 static void
-prefs_ok_cb
-#ifdef HAVE_GTK
-  (void *client_data, WIDGET button)
-#else  /* !HAVE_GTK */
-  (WIDGET button, POINTER client_data, POINTER call_data)
-#endif /* !HAVE_GTK */
+prefs_ok_cb CB_ARGS(WIDGET button, POINTER client_data, POINTER call_data)
 {
   prefs_pair *pair = (prefs_pair *) client_data;
   saver_preferences *p =  pair->a;
   saver_preferences *p2 = pair->b;
 
-#ifdef HAVE_GTK
-  prefs_cancel_cb (client_data, button);
-#else /* !HAVE_GTK */
-  prefs_cancel_cb (button, 0, call_data);
-#endif /* !HAVE_GTK */
+  prefs_cancel_cb CB_ARGS(button, client_data, call_data);
 
 #ifdef HAVE_ATHENA
   /* Athena doesn't let us put callbacks on these widgets, so run
@@ -1233,18 +1187,9 @@ prefs_ok_cb
 
 #ifdef HAVE_GTK
 static void
-close_prefs_cb
-#ifdef HAVE_GTK
-  (void *client_data, WIDGET button)
-#else  /* !HAVE_GTK */
-  (WIDGET button, POINTER client_data, POINTER call_data)
-#endif /* !HAVE_GTK */
+close_prefs_cb CB_ARGS(WIDGET button, POINTER client_data, POINTER call_data)
 {
-#ifdef HAVE_GTK
-  prefs_cancel_cb (0, 0);
-#else /* !HAVE_GTK */
-  prefs_cancel_cb (0, 0, 0);
-#endif /* !HAVE_GTK */
+  prefs_cancel_cb CB_ARGS(button, client_data, call_data);
 }
 #endif /* HAVE_GTK */
 
@@ -1379,23 +1324,17 @@ run_hack (Display *dpy, int n)
 }
 
 
+static void
+warning_dialog_dismiss_cb CB_ARGS(WIDGET button, POINTER client_data,
+                                  POINTER ignored)
+{
+  WIDGET shell = (WIDGET) client_data;
 #ifdef HAVE_GTK
-static void
-warning_dialog_dismiss_cb (WIDGET window, gpointer closure)
-{
-  gdk_window_hide (GTK_WIDGET (window)->window);
-}
-
+  gdk_window_hide (GTK_WIDGET (shell)->window);
 #else  /* !HAVE_GTK */
-
-static void
-warning_dialog_dismiss_cb (WIDGET button, POINTER client_data,
-                           POINTER call_data)
-{
-  Widget shell = (Widget) client_data;
   XtDestroyWidget (shell);
-}
 #endif /* !HAVE_GTK */
+}
 
 
 static void
@@ -1483,7 +1422,7 @@ warning_dialog (WIDGET parent, const char *message)
         GTK_WIDGET (label)->style = gtk_style_copy (GTK_WIDGET (label)->style);
         GTK_WIDGET (label)->style->font =
           gdk_font_load (get_string_resource (buf, "Dialog.Label.Font"));
-
+        /* gtk_misc_set_alignment (GTK_MISC (label), 0.0, 0.5); */
         gtk_box_pack_start (GTK_BOX (GTK_DIALOG (dialog)->vbox),
                             label, TRUE, TRUE, 0);
         gtk_widget_show (label);
@@ -1528,10 +1467,10 @@ warning_dialog (WIDGET parent, const char *message)
                                                "warning_dialog.Button.Label"));
   gtk_box_pack_start (GTK_BOX (label), ok, TRUE, FALSE, 0);
   gtk_window_set_position (GTK_WINDOW (dialog), GTK_WIN_POS_CENTER);
+  gtk_container_set_border_width (GTK_CONTAINER (dialog), 10);
   gtk_widget_show (ok);
   gtk_widget_show (label);
   gtk_widget_show (dialog);
-  gtk_container_set_border_width (GTK_CONTAINER (dialog), 10);
 /*  gtk_window_set_default (GTK_WINDOW (dialog), ok);*/
 
   gdk_window_set_transient_for (GTK_WIDGET (dialog)->window,
@@ -1688,7 +1627,27 @@ the_network_is_not_the_computer (WIDGET parent)
 }
 
 
+/* We use this error handler so that X errors are preceeded by the name
+   of the program that generated them.
+ */
+static int
+demo_ehandler (Display *dpy, XErrorEvent *error)
+{
+  fprintf (stderr, "\nX error in %s:\n", progname);
+  if (XmuPrintDefaultErrorMessage (dpy, error, stderr))
+    exit (-1);
+  else
+    fprintf (stderr, " (nonfatal.)\n");
+  return 0;
+}
+
+
 #ifdef HAVE_GTK
+
+/* We use this error handler so that Gtk/Gdk errors are preceeded by the name
+   of the program that generated them; and also that we can ignore one
+   particular bogus error message that Gdk madly spews.
+ */
 static void
 g_log_handler (const gchar *log_domain, GLogLevelFlags log_level,
                const gchar *message, gpointer user_data)
@@ -1699,8 +1658,19 @@ g_log_handler (const gchar *log_domain, GLogLevelFlags log_level,
      feels the need to complain about them.  So, just suppress any
      messages that look like that one.
    */
-  if (!strstr (message, "unknown window"))
-    fprintf (stderr, "%s: %s: %s", blurb(), log_domain, message);
+  if (strstr (message, "unknown window"))
+    return;
+
+  fprintf (stderr, "%s: %s-%s: %s%s", blurb(), log_domain,
+           (log_level == G_LOG_LEVEL_ERROR    ? "error" :
+            log_level == G_LOG_LEVEL_CRITICAL ? "critical" :
+            log_level == G_LOG_LEVEL_WARNING  ? "warning" :
+            log_level == G_LOG_LEVEL_MESSAGE  ? "message" :
+            log_level == G_LOG_LEVEL_INFO     ? "info" :
+            log_level == G_LOG_LEVEL_DEBUG    ? "debug" : "???"),
+           message,
+           ((!*message || message[strlen(message)-1] != '\n')
+            ? "\n" : ""));
 }
 #endif /* HAVE_GTK */
 
@@ -1735,23 +1705,48 @@ main (int argc, char **argv)
   memset (p,  0, sizeof (*p));
   memset (p2, 0, sizeof (*p2));
 
+  progname = real_progname;
+
+#ifdef HAVE_GTK
+  /* Register our error message logger for every ``log domain'' known.
+     There's no way to do this globally, so I grepped the Gtk/Gdk sources
+     for all of the domains that seem to be in use.
+  */
+  {
+    const char * const domains[] = { "Gtk", "Gdk", "GLib", "GModule",
+                                     "GThread", "Gnome", "GnomeUI", 0 };
+    for (i = 0; domains[i]; i++)
+      g_log_set_handler (domains[i], G_LOG_LEVEL_MASK, g_log_handler, 0);
+  }
+
+  /* This is gross, but Gtk understands --display and not -display... */
+  for (i = 1; i < argc; i++)
+    if (argv[i][0] && argv[i][1] && 
+        !strncmp(argv[i], "-display", strlen(argv[i])))
+      argv[i] = "--display";
+
+  /* Let Gtk open the X connection, then initialize Xt to use that
+     same connection.  Doctor Frankenstein would be proud. */   
+  gtk_init (&argc, &argv);
+#endif /* HAVE_GTK */
+
+
   /* We must read exactly the same resources as xscreensaver.
      That means we must have both the same progclass *and* progname,
      at least as far as the resource database is concerned.  So,
      put "xscreensaver" in argv[0] while initializing Xt.
    */
   argv[0] = "xscreensaver";
+  progname = argv[0];
+
 
 #ifdef HAVE_GTK
-  /* Let Gtk open the X connection, then initialize Xt to use that
-     same connection.  Doctor Frankenstein would be proud. */   
-  gtk_init (&argc, &argv);
-  g_log_set_handler ("Gdk", G_LOG_LEVEL_MASK, g_log_handler, 0);
-
+  /* If we're using Gtk, the X connection is already open.
+     Now teach Xt about it.
+   */
   XtToolkitInitialize ();
   app = XtCreateApplicationContext ();
   dpy = gdk_display;
-  progname = argv[0];
   XtAppSetFallbackResources (app, defaults);
   XtDisplayInitialize (app, dpy, progname, progclass, 0, 0, &argc, argv);
   toplevel_shell = XtAppCreateShell (progname, progclass,
@@ -1759,6 +1754,7 @@ main (int argc, char **argv)
                                      dpy, 0, 0);
 
 #else  /* !HAVE_GTK */
+  /* No Gtk -- open the X connection here. */
   toplevel_shell = XtAppInitialize (&app, progclass, 0, 0, &argc, argv,
 				    defaults, 0, 0);
 #endif /* !HAVE_GTK */
@@ -1766,7 +1762,10 @@ main (int argc, char **argv)
   dpy = XtDisplay (toplevel_shell);
   db = XtDatabase (dpy);
   XtGetApplicationNameAndClass (dpy, &progname, &progclass);
+  XSetErrorHandler (demo_ehandler);
 
+  /* Complain about unrecognized command-line arguments.
+   */
   for (i = 1; i < argc; i++)
     {
       char *s = argv[i];
@@ -1786,13 +1785,18 @@ main (int argc, char **argv)
   memcpy (short_version, screensaver_id + 17, 4);
   short_version [4] = 0;
 
+  /* Load the init file, which may end up consulting the X resource database
+     and the site-wide app-defaults file.  Note that at this point, it's
+     important that `progname' be "xscreensaver", rather than whatever
+     was in argv[0].
+   */
   p->db = db;
   load_init_file (p);
   *p2 = *p;
 
-
-  /* Now that Xt has been initialized, we can set our `progname' variable
-     to something that makes more sense (like our "real" argv[0].)
+  /* Now that Xt has been initialized, and the resources have been read,
+     we can set our `progname' variable to something more in line with
+     reality.
    */
   progname = real_progname;
 

@@ -59,7 +59,8 @@ int timewait=40000;
 
 #define frac(argument) argument-floor(argument)
 
-#define abs(x) ((x)<0.0 ? -(x) : (x))
+#undef ABS
+#define ABS(x) ((x)<0.0 ? -(x) : (x))
 
 static Colormap cmap;
 /* static XColor gray1; */
@@ -512,7 +513,7 @@ fill_kugel(int i, Pixmap buf, int setcol)
 {
   double ra;
   int m,col,inc=1,inr=3,d;
-  d=(int)((abs(kugeln[i].r1)*2));
+  d=(int)((ABS(kugeln[i].r1)*2));
   if (d==0) d=1;
   
 #ifdef FASTDRAW
@@ -533,7 +534,7 @@ fill_kugel(int i, Pixmap buf, int setcol)
   else
 #endif
     {
-      if(abs(kugeln[i].r1)<6.0) inr=9;
+      if(ABS(kugeln[i].r1)<6.0) inr=9;
       
       for (m=0;m<=28;m+=inr)
 	{

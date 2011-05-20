@@ -77,7 +77,20 @@ http://www.jwz.org/xscreensaver/.
 
                               ============
 
-Changes since 3.12:   * Ported `xscreensaver-demo' to GTK.
+Changes since 3.13:   * Various improvements to the Gtk port.
+                      * Turned off PAM by default on Solaris, since PAM seems
+                        generally to be misconfigured out-of-the-box.
+                      * Made the `--without-gtk' configure option work.
+                      * Made configure check the Gtk version number, since it
+                        requires 1.2.
+                      * Fixed a bug in the code that attempted to prevent
+                        changes of screen resolution while the screen is
+                        locked.
+                      * Fixed a race condition in `xscreensaver-demo' that
+                        could cause an X error at startup.
+                      * Added `-transparent' option to `deluxe'.
+                      * Added `petri' hack.
+Changes since 3.12:   * Ported `xscreensaver-demo' to Gtk.
                       * Made it possible to build Motif, Gtk, and Athena
                         versions of `xscreensaver-demo' in the same directory
                         without reconfiguring.

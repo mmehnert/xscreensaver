@@ -628,14 +628,21 @@ void GenerateQuad(void)
 
   quad_list = glGenLists(1);
   glNewList(quad_list,GL_COMPILE);
+#if 1
   glBegin(GL_QUADS);
   glColor4f(1,0,0,.4); glNormal3f(0,0,1);  glTexCoord2f(0,0); glVertex2f(-1, -1);
   glColor4f(0,1,0,.4); glNormal3f(0,0,1);  glTexCoord2f(0,1); glVertex2f(-1,  1);
   glColor4f(0,0,1,.4); glNormal3f(0,0,1);  glTexCoord2f(1,1); glVertex2f( 1,  1);
   glColor4f(1,1,1,1); glNormal3f(0,0,1);  glTexCoord2f(1,0); glVertex2f( 1,  -1);
+#else
+  glBegin(GL_TRIANGLE_STRIP);
+  glColor4f(0,1,0,.4); glNormal3f(0,0,1);  glTexCoord2f(0,1); glVertex2f(-1,  1);
+  glColor4f(1,0,0,.4); glNormal3f(0,0,1);  glTexCoord2f(0,0); glVertex2f(-1, -1);
+  glColor4f(0,0,1,.4); glNormal3f(0,0,1);  glTexCoord2f(1,1); glVertex2f( 1,  1);
+  glColor4f(1,1,1,.4); glNormal3f(0,0,1);  glTexCoord2f(1,0); glVertex2f( 1,  -1);
+#endif
   glEnd();
   glEndList();
-
 
   quads = (struct quad *) malloc(sizeof(struct quad) * num_quads);
   for (i=0; i < num_quads; i++)

@@ -20,11 +20,18 @@
    is that the topmost one only has 2 planes, while the next one has 8.
 
    Rumor has it that SGI, HP, DEC, and IBM all use the same mechanism.
+   Does Sun?
 
    This code selects the topmost one, regardless of depth.  Maybe that's not
    the right thing.  Well, in XScreenSaver, we only need to allocate two
    colors from it (it's only used to display the stderr output, so that the
    text can overlay the graphics without being obliterated by it.)
+
+   Documentation, such as it is, on SERVER_OVERLAY_VISUALS found on the web:
+
+     http://www.hp.com/xwindow/sharedInfo/Whitepapers/Visuals/server_overlay_visuals.html
+    http://www.xig.com/Pages/Ed-Overlays.html
+
  */
 
 

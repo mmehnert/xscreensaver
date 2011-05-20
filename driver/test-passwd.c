@@ -56,6 +56,7 @@ int BadWindow_ehandler (Display *dpy, XErrorEvent *error) { exit(1); }
 const char *signal_name(int signal) { return "???"; }
 void restore_real_vroot (saver_info *si) {}
 void saver_exit (saver_info *si, int status, const char *core) { exit(status);}
+int move_mouse_grab (saver_info *si, Window to, Cursor cursor) { return 0; }
 
 const char *blurb(void) { return progname; }
 Atom XA_SCREENSAVER, XA_DEMO, XA_PREFS;

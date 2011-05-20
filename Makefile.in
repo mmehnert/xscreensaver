@@ -174,8 +174,15 @@ update_spec_version::
 rpm::
 	@								    \
   VERS=`sed -n 's/[^0-9]*\([0-9]\.[0-9][0-9]*\).*/\1/p' utils/version.h` ;  \
-  cp -p xscreensaver-$$VERS.tar.gz /usr/src/redhat/SOURCES/ ;		    \
-  rpm -ba xscreensaver.spec
+  DIR=/usr/src/redhat ;							    \
+  cp -p xscreensaver-$$VERS.tar.gz $$DIR/SOURCES/ ;			    \
+  rpm -ba xscreensaver.spec ;						    \
+  rm -f $$DIR/xscreensaver-$$VERS.tar.gz ;				    \
+  rm -rf $$DIR/BUILD/xscreensaver-$$VERS ;				    \
+  mv $$DIR/RPMS/i386/xscreensaver-$$VERS-*.rpm . ;			    \
+  mv $$DIR/SRPMS/xscreensaver-$$VERS-*.rpm . ;				    \
+  echo '' ;								    \
+  ls -lFG xscreensaver-$$VERS-*.rpm
 
 test-tar::
 	@								    \
@@ -210,6 +217,7 @@ test-tar::
 		    --with-motif=/usr/local/motif ;			    \
     echo --------------------------------------------------------------- ;  \
     gmake all ;								    \
+    ( cd driver; gmake tests ) ;					    \
     echo --------------------------------------------------------------- ); \
 									    \
   ( cd BIN/lesstif ;							    \
@@ -218,7 +226,6 @@ test-tar::
     ../../configure --with-motif=/usr/local/lesstif ;			    \
     echo --------------------------------------------------------------- ;  \
     ( cd utils; gmake all ) ;						    \
-    ( cd driver; gmake all ) ;						    \
     ( cd driver; gmake all ) ;						    \
     echo --------------------------------------------------------------- ); \
 									    \
