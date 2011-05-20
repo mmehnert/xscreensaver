@@ -1230,12 +1230,21 @@ main_loop (saver_info *si)
           if (p->timeout < retry)
             retry = p->timeout;
 
-          fprintf (stderr,
+          if (p->debug_p)
+            {
+              fprintf (stderr,
+                  "%s: DEBUG MODE: unable to grab -- BLANKING ANYWAY.\n",
+                       blurb());
+            }
+          else
+            {
+              fprintf (stderr,
                   "%s: unable to grab keyboard or mouse!  Blanking aborted.\n",
-                   blurb());
+                       blurb());
 
-          schedule_wakeup_event (si, retry, p->debug_p);
-          continue;
+              schedule_wakeup_event (si, retry, p->debug_p);
+              continue;
+            }
         }
 
       kill_screenhack (si);

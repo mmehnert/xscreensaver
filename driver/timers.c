@@ -80,7 +80,8 @@ idle_timer (XtPointer closure, XtIntervalId *id)
   /* If we are the timer that just went off, clear the pointer to the id. */
   if (id)
     {
-      if (*id != si->timer_id) abort();  /* oops, scheduled timer twice?? */
+      if (si->timer_id && *id != si->timer_id)
+        abort();  /* oops, scheduled timer twice?? */
       si->timer_id = 0;
     }
 }

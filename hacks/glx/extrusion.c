@@ -448,7 +448,7 @@ initializeGL(ModeInfo *mi, GLsizei width, GLsizei height)
   glClearColor(0,0,0,0);
 /*    glCullFace(GL_BACK); */
 /*    glEnable(GL_CULL_FACE); */
-  glLightModeli (GL_LIGHT_MODEL_TWO_SIDE, TRUE);
+  glLightModeli (GL_LIGHT_MODEL_TWO_SIDE, True);
   glShadeModel(GL_SMOOTH);
 
   if (do_light)

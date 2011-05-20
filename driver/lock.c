@@ -1163,7 +1163,7 @@ passwd_animate_timer (XtPointer closure, XtIntervalId *id)
   else
     pw->timer = 0;
 
-  idle_timer ((XtPointer) si, id);
+  idle_timer ((XtPointer) si, 0);
 }
 
 

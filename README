@@ -76,6 +76,7 @@ the XScreenSaver FAQ about that: http://www.jwz.org/xscreensaver/faq.html
 
                               ============
 
+Changes since 4.17:   * Oops, pay no attention to the man behind the curtain.
 Changes since 4.16:   * New hacks, `anemotaxis' and `memscroller'.
                       * Fixed a bad bug that caused `vidwhacker' to never die.
                       * Fixed normals and lighting in `polyhedra'.
