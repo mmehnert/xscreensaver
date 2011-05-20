@@ -1,5 +1,5 @@
 /*
- * Imakefile file for xscreensaver, Copyright (c) 1993-1996 Jamie Zawinski.
+ * Imakefile file for xscreensaver, Copyright (c) 1993-1997 Jamie Zawinski.
  *
  * You should not need to edit this file; edit ../config.h instead.
  *
@@ -53,46 +53,46 @@
 #endif
 
 #ifdef NO_MOTIF
-# define MOTIF_DEF -DNO_MOTIF
-# define MOTIF_SRC $(UTILS)/xroger.c
-# define MOTIF_OBJ $(UTILS)/xroger.o
-# define MOTIF_LIB -lXaw
-# define MOTIF_INC
+# define DBOX_DEF -DNO_MOTIF
+# define DBOX_SRC $(ATHENA_SRCS)
+# define DBOX_OBJ $(ATHENA_OBJS)
+# define DBOX_LIB -lXaw
+# define DBOX_INC
 #else
-# define MOTIF_DEF
-# define MOTIF_SRC $(DBOX_SRCS) $(UTILS)/xroger.c
-# define MOTIF_OBJ $(DBOX_OBJS) $(UTILS)/xroger.o
-# define MOTIF_LIB $(MOTIFLDOPTIONS) $(MOTIFLIBS)
-# define MOTIF_INC $(MOTIFINCLUDES)
+# define DBOX_DEF
+# define DBOX_SRC $(MOTIF_SRCS)
+# define DBOX_OBJ $(MOTIF_OBJS)
+# define DBOX_LIB $(MOTIFLDOPTIONS) $(MOTIFLIBS)
+# define DBOX_INC $(MOTIFINCLUDES)
 #endif
 
          UTILS = ../utils
-      INCLUDES = -I$(UTILS) MOTIF_INC
+      INCLUDES = -I$(UTILS) DBOX_INC
        DEFINES = SETUID_DEF XIDLE_DEF MIT_SAVER_DEF SGI_SAVER_DEF \
-		 MOTIF_DEF LOCKING_DEF SHADOW_DEF R5ISMS
+		 DBOX_DEF LOCKING_DEF SHADOW_DEF R5ISMS
      SAVERLIBS = $(XMULIB) $(XTOOLLIB) $(XSSLIB) $(EXTENSIONLIB) \
 		 $(XLIB) $(DEC_ENHANCED_LIB)
       COMMLIBS = $(XLIB)
      UTIL_SRCS = $(UTILS)/resources.c $(UTILS)/fade.c $(UTILS)/visual.c \
-		 $(UTILS)/usleep.c $(UTILS)/yarandom.c
+		 $(UTILS)/usleep.c $(UTILS)/yarandom.c $(UTILS)/xroger.c
      UTIL_OBJS = $(UTILS)/resources.o $(UTILS)/fade.o $(UTILS)/visual.o \
-		 $(UTILS)/usleep.o $(UTILS)/yarandom.o
-     DBOX_SRCS = dialogs.c
-     DBOX_OBJS = dialogs.o
-     LOCK_SRCS = lock.c
-     LOCK_OBJS = lock.o
+		 $(UTILS)/usleep.o $(UTILS)/yarandom.o $(UTILS)/xroger.o
+    MOTIF_SRCS = dialogs-Xm.c
+    MOTIF_OBJS = dialogs-Xm.o
+   ATHENA_SRCS = dialogs-Xaw.c
+   ATHENA_OBJS = dialogs-Xaw.o
      SAVERSRCS = xscreensaver.c timers.c windows.c xset.c subprocs.c \
-		 stderr.c demo.c
+		 stderr.c demo.c lock.c passwd.c
      SAVEROBJS = xscreensaver.o timers.o windows.o xset.o subprocs.o \
-		 stderr.o demo.o
-         SRCS1 = $(SAVERSRCS) MOTIF_SRC $(LOCK_SRCS) $(UTIL_SRCS)
-         OBJS1 = $(SAVEROBJS) MOTIF_OBJ $(LOCK_OBJS) $(UTIL_OBJS)
+		 stderr.o demo.o lock.o passwd.o
+         SRCS1 = $(SAVERSRCS) DBOX_SRC $(UTIL_SRCS)
+         OBJS1 = $(SAVEROBJS) DBOX_OBJ $(UTIL_OBJS)
       COMMSRCS = xscreensaver-command.c
       COMMOBJS = xscreensaver-command.o
          SRCS2 = $(COMMSRCS)
          OBJS2 = $(COMMOBJS)
            MEN = xscreensaver.man xscreensaver-command.man
-      TARFILES = README Imakefile $(SAVERSRCS) $(DBOX_SRCS) $(LOCK_SRCS) \
+      TARFILES = README Imakefile $(SAVERSRCS) $(MOTIF_SRCS) $(ATHENA_SRCS) \
                  $(COMMSRCS) xscreensaver.h XScreenSaver.ad dialogs.xd \
                  $(MEN) .gdbinit
           NULL =
@@ -128,7 +128,7 @@ depend:: XScreenSaver.ad.h
 #define InstallProgram(p,d) InstallProgramWithFlags(p,d,$(INSTUIDFLAGS))
 #endif
 
-ComplexProgramTarget_1(xscreensaver,MOTIF_LIB $(SAVERLIBS), $(NULL))
+ComplexProgramTarget_1(xscreensaver,DBOX_LIB $(SAVERLIBS), $(NULL))
 
 #ifdef INSTALL_SETUID
 #undef  InstallProgram
@@ -168,6 +168,6 @@ program.pure: deplist							@@\
 	$(CCENVSETUP) $(PURIFY) $(PURIFYOPTIONS) $(CC)			  \
 	  -o $@ $(LDOPTIONS) linklist $(EXTRA_LOAD_FLAGS)
 
-PurifyProgramTarget(xscreensaver,$(OBJS1),$(OBJS1) MOTIF_LIB $(SAVERLIBS))
+PurifyProgramTarget(xscreensaver,$(OBJS1),$(OBJS1) DBOX_LIB $(SAVERLIBS))
 
 #endif /* Purify */

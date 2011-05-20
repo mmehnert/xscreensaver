@@ -314,11 +314,11 @@ init_drift(ModeInfo * mi)
 
 	if (MI_WIN_IS_FULLRANDOM(mi)) {
 #if 1 /* jwz: even up the odds */
-	  switch ((int) (LRAND() & 3)) {
-	  case 0:  dp->grow = False; dp->liss = False; break;
-	  case 1:  dp->grow = True;  dp->liss = False; break;
-	  case 2:  dp->grow = False; dp->liss = True;  break;
-	  default: dp->grow = True;  dp->liss = True;  break;
+	  switch ((int) (LRAND() % 3)) {
+	  case 0:   dp->grow = True;  dp->liss = False; break;
+	  case 1:   dp->grow = False; dp->liss = True;  break;
+	  default:  dp->grow = False; dp->liss = False; break;
+		/* liss and grow don't work together. */
 	  }
 #else /* 0 */
 		if (LRAND() & 1)

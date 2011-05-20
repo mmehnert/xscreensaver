@@ -70,6 +70,11 @@ MapNotify_event_p (dpy, event, window)
 	  event->xvisibility.window == (Window) window);
 }
 
+#ifdef DEBUG
+extern char *progname;
+#endif /* DEBUG */
+
+
 static void
 #ifdef __STDC__
 raise_window(Display *dpy, Window window, Bool dont_wait)
@@ -80,6 +85,12 @@ raise_window(dpy, window, dont_wait)
   Bool dont_wait;
 #endif /* !__STDC__ */
 {
+#ifdef DEBUG
+  fprintf(stderr, "%s: raising window 0x%08X (%s)\n",
+	  progname, (unsigned long) window,
+	  (dont_wait ? "not waiting" : "waiting"));
+#endif /* DEBUG */
+
   if (! dont_wait)
     {
       XWindowAttributes xgwa;
@@ -164,6 +175,19 @@ grab_screen_image (dpy, window)
 	unmap_time =  660000;  /* 2/3rd second */
     }
 
+#ifdef DEBUG
+  fprintf(stderr,
+	  "\n%s: window 0x%08X root: %d saver: %d grab: %d wait: %.1f\n",
+	  progname, (unsigned long) window,
+	  root_p, saver_p, grab_mouse_p, ((double)unmap_time)/1000000.0);
+  {
+    XWindowAttributes xgwa2;
+    XGetWindowAttributes (dpy, window, &xgwa2);
+    fprintf(stderr, "%s: ", progname);
+    describe_visual(stderr, dpy, xgwa2.visual);
+  }
+#endif /* DEBUG */
+
   if (!root_p)
     XSetWindowBackgroundPixmap (dpy, window, None);
 
@@ -193,6 +217,9 @@ grab_screen_image (dpy, window)
       if (! read_display(dpy, window, 0, saver_p))
 #endif /* HAVE_READ_DISPLAY_EXTENSION */
 	{
+#if defined(HAVE_READ_DISPLAY_EXTENSION) && defined(DEBUG)
+	  fprintf(stderr, "%s: read_display() failed\n", progname);
+#endif /* DEBUG */
 	  copy_default_colormap_contents (dpy, xgwa.colormap, xgwa.visual);
 	  raise_window(dpy, window, saver_p);
 	}
@@ -210,6 +237,10 @@ grab_screen_image (dpy, window)
 	{
 	  XGCValues gcv;
 	  GC gc;
+
+#if defined(HAVE_READ_DISPLAY_EXTENSION) && defined(DEBUG)
+	  fprintf(stderr, "%s: read_display() failed\n", progname);
+#endif /* DEBUG */
 
 	  copy_default_colormap_contents (dpy, xgwa.colormap, xgwa.visual);
 
@@ -294,6 +325,10 @@ copy_default_colormap_contents (dpy, to_cmap, to_visual)
   allocate_writable_colors (dpy, to_cmap, pixels, &got_cells);
   XStoreColors (dpy, to_cmap, old_colors, got_cells);
 
+#ifdef DEBUG
+  fprintf(stderr, "%s: installing copy of default colormap\n", progname);
+#endif /* DEBUG */
+
   free (old_colors);
   free (new_colors);
   free (pixels);
@@ -332,6 +367,7 @@ read_display (dpy, window, into_pixmap, dont_wait)
   XGCValues gcv;
   int class;
   GC gc;
+  Bool install_p = False;
 
   /* Check to see if the server supports the extension, and bug out if not.
    */
@@ -357,7 +393,7 @@ read_display (dpy, window, into_pixmap, dont_wait)
       else
 	/* Install a colormap that makes this visual behave like
 	   a TrueColor visual of the same depth. */
-	make_cubic_colormap(dpy, window, xgwa.visual);
+	install_p = True;
     }
 
 
@@ -401,6 +437,12 @@ read_display (dpy, window, into_pixmap, dont_wait)
 				     8, 0);
       if (!image2)
 	return False;
+
+#ifdef DEBUG
+      fprintf(stderr, "%s: converting from depth %d to depth %d\n",
+	      progname, image->depth, xgwa.depth);
+#endif /* DEBUG */
+
       for (y = 0; y < image->height; y++)
 	for (x = 0; x < image->width; x++)
 	  {
@@ -468,6 +510,10 @@ read_display (dpy, window, into_pixmap, dont_wait)
       image->data = 0;
     }
   XDestroyImage(image);
+
+  if (install_p)
+    make_cubic_colormap (dpy, window, xgwa.visual);
+
   return True;
 }
 
@@ -487,6 +533,9 @@ make_cubic_colormap (dpy, window, visual)
   int depth;
   XColor colors[4097];
   int i;
+#ifdef DEBUG
+  int foo = 0;
+#endif /* DEBUG */
 
   depth = visual_depth(dpy, visual);
   switch (depth)
@@ -521,13 +570,21 @@ make_cubic_colormap (dpy, window, visual)
 	    }
 	  else
 	    {
-	      colors[i].red   = (r << 8) | (r << 4) | r;
-	      colors[i].green = (g << 8) | (g << 4) | g;
-	      colors[i].blue  = (b << 8) | (b << 4) | b;
+	      colors[i].red   = (r << 12) | (r << 8) | (r << 4) | r;
+	      colors[i].green = (g << 12) | (g << 8) | (g << 4) | g;
+	      colors[i].blue  = (b << 12) | (b << 8) | (b << 4) | b;
 	    }
 	}
+
+#ifdef DEBUG
+  fprintf(stderr, "%s: installing cubic colormap\n", progname);
+#endif /* DEBUG */
+
   XStoreColors (dpy, cmap, colors, cells);
   XSetWindowColormap (dpy, window, cmap);
+
+  if (screensaver_window_p (dpy, window))  /* gag... */
+    XInstallColormap (dpy, cmap);
 }
 
 

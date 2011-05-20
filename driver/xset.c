@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1991-1997 Jamie Zawinski <jwz@netscape.com>
+/* xset.c --- interacting with server extensions and the builtin screensaver.
+ * xscreensaver, Copyright (c) 1991-1997 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -16,12 +17,15 @@
 #include <X11/Xos.h>
 #include <X11/Xmu/SysUtil.h>
 
-#include "xscreensaver.h"
+/* This file doesn't need the Xt headers, so stub these types out... */
+#undef XtPointer
+#define XtAppContext void*
+#define XrmDatabase  void*
+#define XtIntervalId void*
+#define XtPointer    void*
+#define Widget       void*
 
-extern Time timeout;
-extern Bool screen_blanked_p;
-extern Bool use_mit_saver_extension;
-extern Bool use_sgi_saver_extension;
+#include "xscreensaver.h"
 
 
 /* MIT SCREEN-SAVER server extension hackery.
@@ -30,20 +34,18 @@ extern Bool use_sgi_saver_extension;
 #ifdef HAVE_MIT_SAVER_EXTENSION
 
 # include <X11/extensions/scrnsaver.h>
-int mit_saver_ext_event_number = 0;
-int mit_saver_ext_error_number = 0;
-Window server_mit_saver_window = 0;
 
 Bool
 #ifdef __STDC__
-query_mit_saver_extension (Display *dpy)
+query_mit_saver_extension (saver_info *si)
 #else  /* !__STDC__ */
-query_mit_saver_extension (dpy) Display *dpy;
+query_mit_saver_extension (si)
+	saver_info *si;
 #endif /* !__STDC__ */
 {
-  return XScreenSaverQueryExtension (dpy,
-				     &mit_saver_ext_event_number,
-				     &mit_saver_ext_error_number);
+  return XScreenSaverQueryExtension (si->dpy,
+				     &si->mit_saver_ext_event_number,
+				     &si->mit_saver_ext_error_number);
 }
 
 static int
@@ -57,30 +59,35 @@ ignore_all_errors_ehandler (dpy, error) Display *dpy; XErrorEvent *error;
 }
 
 static void
-init_mit_saver_extension P((void))
+#ifdef __STDC__
+init_mit_saver_extension (saver_info *si)
+#else  /* !__STDC__ */
+init_mit_saver_extension (si)
+	saver_info *si;
+#endif /* !__STDC__ */
 {
   XID kill_id;
   Atom kill_type;
-  Window root = RootWindowOfScreen (screen);
-  Pixmap blank_pix = XCreatePixmap (dpy, root, 1, 1, 1);
+  Window root = RootWindowOfScreen (si->screen);
+  Pixmap blank_pix = XCreatePixmap (si->dpy, root, 1, 1, 1);
 
   /* Kill off the old MIT-SCREEN-SAVER client if there is one.
      This tends to generate X errors, though (possibly due to a bug
      in the server extension itself?) so just ignore errors here. */
-  if (XScreenSaverGetRegistered (dpy, XScreenNumberOfScreen (screen),
+  if (XScreenSaverGetRegistered (si->dpy, XScreenNumberOfScreen (si->screen),
 				 &kill_id, &kill_type)
       && kill_id != blank_pix)
     {
       int (*old_handler) ();
       old_handler = XSetErrorHandler (ignore_all_errors_ehandler);
-      XKillClient (dpy, kill_id);
-      XSync (dpy, False);
+      XKillClient (si->dpy, kill_id);
+      XSync (si->dpy, False);
       XSetErrorHandler (old_handler);
     }
 
-  XScreenSaverSelectInput (dpy, root, ScreenSaverNotifyMask);
+  XScreenSaverSelectInput (si->dpy, root, ScreenSaverNotifyMask);
 
-  XScreenSaverRegister (dpy, XScreenNumberOfScreen (screen),
+  XScreenSaverRegister (si->dpy, XScreenNumberOfScreen (si->screen),
 			(XID) blank_pix, XA_PIXMAP);
 }
 #endif /* HAVE_MIT_SAVER_EXTENSION */
@@ -92,37 +99,42 @@ init_mit_saver_extension P((void))
 #ifdef HAVE_SGI_SAVER_EXTENSION
 
 # include <X11/extensions/XScreenSaver.h>
-int sgi_saver_ext_event_number = 0;
-int sgi_saver_ext_error_number = 0;
 
 Bool
 #ifdef __STDC__
-query_sgi_saver_extension (Display *dpy)
+query_sgi_saver_extension (saver_info *si)
 #else  /* !__STDC__ */
-query_sgi_saver_extension (dpy) Display *dpy;
+query_sgi_saver_extension (si)
+	saver_info *si;
 #endif /* !__STDC__ */
 {
-  return XScreenSaverQueryExtension (dpy,
-				     &sgi_saver_ext_event_number,
-				     &sgi_saver_ext_error_number);
+  return XScreenSaverQueryExtension (si->dpy,
+				     &si->sgi_saver_ext_event_number,
+				     &si->sgi_saver_ext_error_number);
 }
 
 static void
-init_sgi_saver_extension P((void))
+#ifdef __STDC__
+init_sgi_saver_extension (saver_info *si)
+#else  /* !__STDC__ */
+init_sgi_saver_extension (si)
+	saver_info *si;
+#endif /* !__STDC__ */
 {
-  if (screen_blanked_p)
+  saver_preferences *p = &si->prefs;
+  if (si->screen_blanked_p)
     /* If you mess with this while the server thinks it's active,
        the server crashes. */
     return;
 
-  XScreenSaverDisable (dpy, XScreenNumberOfScreen(screen));
-  if (! XScreenSaverEnable (dpy, XScreenNumberOfScreen(screen)))
+  XScreenSaverDisable (si->dpy, XScreenNumberOfScreen(si->screen));
+  if (! XScreenSaverEnable (si->dpy, XScreenNumberOfScreen(si->screen)))
     {
       fprintf (stderr,
-       "%s: %sSGI SCREEN_SAVER extension exists, but can't be initialized;\n\
+       "%s: SGI SCREEN_SAVER extension exists, but can't be initialized;\n\
 		perhaps some other screensaver program is already running?\n",
-	       progname, (verbose_p ? "## " : ""));
-      use_sgi_saver_extension = False;
+	       progname);
+      p->use_sgi_saver_extension = False;
     }
 }
 
@@ -135,18 +147,20 @@ init_sgi_saver_extension P((void))
 
 void
 #ifdef __STDC__
-disable_builtin_screensaver (Bool turn_off_p)
+disable_builtin_screensaver (saver_info *si, Bool turn_off_p)
 #else  /* !__STDC__ */
-disable_builtin_screensaver (turn_off_p)
-  Bool turn_off_p;
+disable_builtin_screensaver (si, turn_off_p)
+	saver_info *si;
+	Bool turn_off_p;
 #endif /* !__STDC__ */
 {
+  saver_preferences *p = &si->prefs;
   int current_server_timeout, current_server_interval;
   int current_prefer_blank, current_allow_exp;
   int desired_server_timeout, desired_server_interval;
   int desired_prefer_blank, desired_allow_exp;
 
-  XGetScreenSaver (dpy, &current_server_timeout, &current_server_interval,
+  XGetScreenSaver (si->dpy, &current_server_timeout, &current_server_interval,
 		   &current_prefer_blank, &current_allow_exp);
 
   desired_server_timeout = current_server_timeout;
@@ -168,13 +182,13 @@ disable_builtin_screensaver (turn_off_p)
   desired_allow_exp = AllowExposures;
 
 #if defined(HAVE_MIT_SAVER_EXTENSION) || defined(HAVE_SGI_SAVER_EXTENSION)
-  if (use_mit_saver_extension || use_sgi_saver_extension)
+  if (p->use_mit_saver_extension || p->use_sgi_saver_extension)
     {
-      desired_server_timeout = (timeout / 1000);
+      desired_server_timeout = (p->timeout / 1000);
 
       /* The SGI extension won't give us events unless blanking is on.
 	 I think (unsure right now) that the MIT extension is the opposite. */
-      if (use_sgi_saver_extension)
+      if (p->use_sgi_saver_extension)
 	desired_prefer_blank = PreferBlanking;
       else
 	desired_prefer_blank = DontPreferBlanking;
@@ -193,17 +207,19 @@ disable_builtin_screensaver (turn_off_p)
       if (desired_server_timeout == 0)
 	printf ("%s%sisabling server builtin screensaver.\n\
 	You can re-enable it with \"xset s on\".\n",
-		(verbose_p ? "" : progname), (verbose_p ? "\n\tD" : ": d"));
+		(p->verbose_p ? "" : progname),
+		(p->verbose_p ? "\n\tD" : ": d"));
 
-      if (verbose_p)
+      if (p->verbose_p)
 	fprintf (stderr, "%s: (xset s %d %d %s %s)\n", progname,
 		 desired_server_timeout, desired_server_interval,
 		 (desired_prefer_blank ? "blank" : "noblank"),
 		 (desired_allow_exp ? "noexpose" : "expose"));
 
-      XSetScreenSaver (dpy, desired_server_timeout, desired_server_interval,
+      XSetScreenSaver (si->dpy,
+		       desired_server_timeout, desired_server_interval,
 		       desired_prefer_blank, desired_allow_exp);
-      XSync(dpy, False);
+      XSync(si->dpy, False);
     }
 
 
@@ -214,10 +230,10 @@ disable_builtin_screensaver (turn_off_p)
       {
 	extension_initted = True;
 # ifdef HAVE_MIT_SAVER_EXTENSION
-	if (use_mit_saver_extension) init_mit_saver_extension();
+	if (p->use_mit_saver_extension) init_mit_saver_extension(si);
 # endif
 # ifdef HAVE_SGI_SAVER_EXTENSION
-	if (use_sgi_saver_extension) init_sgi_saver_extension();
+	if (p->use_sgi_saver_extension) init_sgi_saver_extension(si);
 # endif
       }
   }
@@ -225,5 +241,5 @@ disable_builtin_screensaver (turn_off_p)
 
   if (turn_off_p)
     /* Turn off the server builtin saver if it is now running. */
-    XForceScreenSaver (dpy, ScreenSaverReset);
+    XForceScreenSaver (si->dpy, ScreenSaverReset);
 }

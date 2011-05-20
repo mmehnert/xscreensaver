@@ -79,7 +79,10 @@ window, which are pointed at by the screensaver's default resource settings.
    slip		- Sucks your desktop through a jet engine.
    spiral	- Circular color-cycling interference patterns.
    strange	- Animating strange attractors.
-
+   flag		- A waving flag of an arbitrary bitmap or text.
+   sphere	- draw a bunch of shaded spheres.
+   forest	- grows a fractal forest.
+   lisa		- draws animated full-loop lisajous figures.
 
 All of these will pop up their own window unless given that -root option.
 See their man pages for more details.
@@ -107,6 +110,17 @@ http://www.netscape.com/people/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 1.31:	Removed *colorPrograms and *monoPrograms resources:
+			made it possible to specify the desired visual on a
+			per-hack basis.
+			Cleaned up / restructured the driver: no more globals.
+			Made the Motif and Athena dialogs share more code.
+			Probably fixed some Athena colormap-installation bugs.
+			Fixed screen grabbing (cmap) on SGI 12-bit PseudoColor.
+			Fixed divide-by-zero in bright random colormaps.
+			Added an improved version of xlock's `flag' hack.
+			Made unfading work better, and not flicker on SGIs.
+			Added `sphere', `forest', `lisa' hacks from xlockmore.
 Changes since 1.30:	Improved colors and colormap cycling of many hacks.
 			Cleaned up xlockmore compatibility layer.
 			Made `blitspin' able to grab an image off the screen.

@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1991-1996 Jamie Zawinski <jwz@netscape.com>
+/* stderr.c --- capturing stdout/stderr output onto the screensaver window.
+ * xscreensaver, Copyright (c) 1991-1997 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -24,65 +25,79 @@
 #include <X11/Intrinsic.h>
 
 #include "xscreensaver.h"
-
-extern XtAppContext app;
-extern Colormap cmap;
-extern Window screensaver_window;
-
 #include "resources.h"
-
-static char stderr_buffer [1024];
-static char *stderr_tail = 0;
-static time_t stderr_last_read = 0;
-static XtIntervalId stderr_popup_timer = 0;
 
 FILE *real_stderr = 0;
 FILE *real_stdout = 0;
 
-static int text_x = 0;
-static int text_y = 0;
+
+/* It's ok for these to be global, since they refer to the one and only
+   stderr stream, not to a particular screen or window or visual.
+ */
+static char stderr_buffer [4096];
+static char *stderr_tail = 0;
+static time_t stderr_last_read = 0;
+
 
 void
-reset_stderr P((void))
+#ifdef __STDC__
+reset_stderr (saver_info *si)
+#else  /* !__STDC__ */
+reset_stderr (si)
+	saver_info *si;
+#endif /* !__STDC__ */
 {
-  text_x = text_y = 0;
+  si->stderr_text_x = si->stderr_text_y = 0;
+
+  if (si->stderr_gc)
+    XFreeGC (si->dpy, si->stderr_gc);
+  si->stderr_gc = 0;
 }
 
 static void
 #ifdef __STDC__
-print_stderr (char *string)
-#else /* ! __STDC__ */
-print_stderr (string) char *string;
-#endif /* ! __STDC__ */
+print_stderr (saver_info *si, char *string)
+#else  /* !__STDC__ */
+print_stderr (si, string)
+	saver_info *si;
+	char *string;
+#endif /* !__STDC__ */
 {
+  saver_preferences *p = &si->prefs;
+  Display *dpy = si->dpy;
+  Screen *screen = si->screen;
+  Window window = si->screensaver_window;
+  Colormap cmap = si->cmap;
   int h_border = 20;
   int v_border = 20;
-  static int line_height;
-  static XFontStruct *font = 0;
-  static GC gc = 0;
   char *head = string;
   char *tail;
 
   /* In verbose mode, copy it to stderr as well. */
-  if (verbose_p)
+  if (p->verbose_p)
     fprintf (real_stderr, "%s", string);
 
-  if (! gc)
+  if (! si->stderr_font)
+    {
+      char *font_name = get_string_resource ("font", "Font");
+      if (!font_name) font_name = "fixed";
+      si->stderr_font = XLoadQueryFont (dpy, font_name);
+      if (! si->stderr_font) si->stderr_font = XLoadQueryFont (dpy, "fixed");
+      si->stderr_line_height = (si->stderr_font->ascent +
+				si->stderr_font->descent);
+    }
+
+  if (! si->stderr_gc)
     {
       XGCValues gcv;
       Pixel fg, bg;
-      char *font_name = get_string_resource ("font", "Font");
-      if (!font_name) font_name = "fixed";
-      font = XLoadQueryFont (dpy, font_name);
-      if (! font) font = XLoadQueryFont (dpy, "fixed");
-      line_height = font->ascent + font->descent;
       fg = get_pixel_resource ("textForeground", "Foreground", dpy, cmap);
       bg = get_pixel_resource ("textBackground", "Background", dpy, cmap);
-      gcv.font = font->fid;
+      gcv.font = si->stderr_font->fid;
       gcv.foreground = fg;
       gcv.background = bg;
-      gc = XCreateGC (dpy, screensaver_window,
-		      (GCFont | GCForeground | GCBackground), &gcv);
+      si->stderr_gc = XCreateGC (dpy, window,
+				 (GCFont | GCForeground | GCBackground), &gcv);
     }
 
   for (tail = string; *tail; tail++)
@@ -91,32 +106,33 @@ print_stderr (string) char *string;
 	{
 	  int maxy = HeightOfScreen (screen) - v_border - v_border;
 	  if (tail != head)
-	    XDrawImageString (dpy, screensaver_window, gc,
-			      text_x + h_border,
-			      text_y + v_border + font->ascent,
+	    XDrawImageString (dpy, window, si->stderr_gc,
+			      si->stderr_text_x + h_border,
+			      si->stderr_text_y + v_border +
+			      si->stderr_font->ascent,
 			      head, tail - head);
-	  text_x = 0;
-	  text_y += line_height;
+	  si->stderr_text_x = 0;
+	  si->stderr_text_y += si->stderr_line_height;
 	  head = tail + 1;
 	  if (*tail == '\r' && *head == '\n')
 	    head++, tail++;
 
-	  if (text_y > maxy - line_height)
+	  if (si->stderr_text_y > maxy - si->stderr_line_height)
 	    {
 #if 0
-	      text_y = 0;
+	      si->stderr_text_y = 0;
 #else
-	      int offset = line_height * 5;
-	      XCopyArea (dpy, screensaver_window, screensaver_window, gc,
+	      int offset = si->stderr_line_height * 5;
+	      XCopyArea (dpy, window, window, si->stderr_gc,
 			 0, v_border + offset,
 			 WidthOfScreen (screen),
 			 (HeightOfScreen (screen) - v_border - v_border
 			  - offset),
 			 0, v_border);
-	      XClearArea (dpy, screensaver_window,
+	      XClearArea (dpy, window,
 			  0, HeightOfScreen (screen) - v_border - offset,
 			  WidthOfScreen (screen), offset, False);
-	      text_y -= offset;
+	      si->stderr_text_y -= offset;
 #endif
 	    }
 	}
@@ -125,12 +141,13 @@ print_stderr (string) char *string;
     {
       int direction, ascent, descent;
       XCharStruct overall;
-      XDrawImageString (dpy, screensaver_window, gc,
-			text_x + h_border, text_y + v_border + font->ascent,
+      XDrawImageString (dpy, window, si->stderr_gc,
+			si->stderr_text_x + h_border,
+			si->stderr_text_y + v_border + si->stderr_font->ascent,
 			head, tail - head);
-      XTextExtents (font, tail, tail - head,
+      XTextExtents (si->stderr_font, tail, tail - head,
 		    &direction, &ascent, &descent, &overall);
-      text_x += overall.width;
+      si->stderr_text_x += overall.width;
     }
 }
 
@@ -144,6 +161,7 @@ stderr_popup_timer_fn (closure, id)
      XtIntervalId *id;
 #endif /* ! __STDC__ */
 {
+  saver_info *si = (saver_info *) closure;
   char *s = stderr_buffer;
   if (*s)
     {
@@ -154,11 +172,11 @@ stderr_popup_timer_fn (closure, id)
       if (strlen (s) > max)
 	strcpy (s + max, trailer);
       /* Now show the user. */
-      print_stderr (s);
+      print_stderr (si, s);
     }
 
   stderr_tail = stderr_buffer;
-  stderr_popup_timer = 0;
+  si->stderr_popup_timer = 0;
 }
 
 
@@ -172,6 +190,7 @@ stderr_callback (closure, fd, id)
      XtIntervalId *id;
 #endif /* ! __STDC__ */
 {
+  saver_info *si = (saver_info *) closure;
   char *s;
   int left;
   int size;
@@ -220,16 +239,22 @@ stderr_callback (closure, fd, id)
    */
   if (read_this_time > 0)
     {
-      if (stderr_popup_timer)
-	XtRemoveTimeOut (stderr_popup_timer);
+      if (si->stderr_popup_timer)
+	XtRemoveTimeOut (si->stderr_popup_timer);
 
-      stderr_popup_timer =
-	XtAppAddTimeOut (app, 1 * 1000, stderr_popup_timer_fn, 0);
+      si->stderr_popup_timer =
+	XtAppAddTimeOut (si->app, 1 * 1000, stderr_popup_timer_fn,
+			 (XtPointer) si);
     }
 }
 
 void
-initialize_stderr P((void))
+#ifdef __STDC__
+initialize_stderr (saver_info *si)
+#else  /* !__STDC__ */
+initialize_stderr (si)
+	saver_info *si;
+#endif /* !__STDC__ */
 {
   static Boolean done = False;
   int fds [2];
@@ -238,17 +263,19 @@ initialize_stderr P((void))
   int stdout_fd = 1;
   int stderr_fd = 2;
   int flags;
-  Boolean stderr_dialog_p = get_boolean_resource ("captureStderr", "Boolean");
-  Boolean stdout_dialog_p = get_boolean_resource ("captureStdout", "Boolean");
+  Boolean stderr_dialog_p, stdout_dialog_p;
 
-  real_stderr = stderr;
-  real_stdout = stdout;
+  if (done) return;
+  done = True;
+
+  stderr_dialog_p = get_boolean_resource ("captureStderr", "Boolean");
+  stdout_dialog_p = get_boolean_resource ("captureStdout", "Boolean");
 
   if (!stderr_dialog_p && !stdout_dialog_p)
     return;
 
-  if (done) return;
-  done = True;
+  real_stderr = stderr;
+  real_stdout = stdout;
 
   if (pipe (fds))
     {
@@ -332,5 +359,6 @@ initialize_stderr P((void))
 	}
     }
 
-  XtAppAddInput (app, in, (XtPointer) XtInputReadMask, stderr_callback, 0);
+  XtAppAddInput (si->app, in, (XtPointer) XtInputReadMask, stderr_callback,
+		 (XtPointer) si);
 }

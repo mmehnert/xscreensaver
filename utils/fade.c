@@ -164,7 +164,10 @@ fade_colormap (dpy, cmap, cmap2, seconds, ticks, out_p, install_p)
 
       XSync (dpy, False);
 
-      /* If there is user activity, bug out.
+      /* If there is user activity, bug out.  (Bug out on keypresses or
+	 mouse presses, but not motion, and not release events.  Bugging
+	 out on motion made the unfade hack be totally useless, I think.)
+
 	 We put the event back so that the calling code can notice it too.
 	 It would be better to not remove it at all, but that's harder
 	 because Xlib has such a non-design for this kind of crap, and
@@ -172,10 +175,7 @@ fade_colormap (dpy, cmap, cmap2, seconds, ticks, out_p, install_p)
 	 of order, so in the grand unix tradition we say "fuck it" and
 	 do something that mostly works for the time being.
        */
-      if (XCheckMaskEvent (dpy, (KeyPressMask | KeyReleaseMask |
-				 ButtonPressMask | ButtonReleaseMask |
-				 PointerMotionMask),
-			   &dummy_event))
+      if (XCheckMaskEvent (dpy, (KeyPressMask|ButtonPressMask), &dummy_event))
 	{
 	  XPutBackEvent (dpy, &dummy_event);
 	  goto DONE;

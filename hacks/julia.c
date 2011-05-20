@@ -197,34 +197,19 @@ init_julia(ModeInfo * mi)
 
 
 /* hack: moved here by jwz. */
-static void
-XEraseImage(Display * display, Window window, GC gc,
-	    int x, int y, int xlast, int ylast, int xsize, int ysize)
-{
-  if (ylast < y) {
-    if (y < ylast + ysize)
-      XFillRectangle(display, window, gc, xlast, ylast, xsize, y - ylast);
-    else
-      XFillRectangle(display, window, gc, xlast, ylast, xsize, ysize);
-  } else if (ylast > y) {
-    if (y > ylast - ysize)
-      XFillRectangle(display, window, gc, xlast, y + ysize, xsize, ylast - y);
-    else
-      XFillRectangle(display, window, gc, xlast, ylast, xsize, ysize);
-  }
-  if (xlast < x) {
-    if (x < xlast + xsize)
-      XFillRectangle(display, window, gc, xlast, ylast, x - xlast, ysize);
-    else
-      XFillRectangle(display, window, gc, xlast, ylast, xsize, ysize);
-  } else if (xlast > x) {
-    if (x > xlast - xsize)
-      XFillRectangle(display, window, gc, x + xsize, ylast, xlast - x, ysize);
-    else
-      XFillRectangle(display, window, gc, xlast, ylast, xsize, ysize);
-  }
-}
-
+#define ERASE_IMAGE(d,w,g,x,y,xl,yl,xs,ys) \
+if (yl<y) \
+(y<yl+ys)?XFillRectangle(d,w,g,xl,yl,xs,y-yl): \
+XFillRectangle(d,w,g,xl,yl,xs,ys); \
+else if (yl>y) \
+(y>yl-ys)?XFillRectangle(d,w,g,xl,y+ys,xs,yl-y): \
+XFillRectangle(d,w,g,xl,yl,xs,ys); \
+if (xl<x) \
+(x<xl+xs)?XFillRectangle(d,w,g,xl,yl,x-xl,ys): \
+XFillRectangle(d,w,g,xl,yl,xs,ys); \
+else if (xl>x) \
+(x>xl-xs)?XFillRectangle(d,w,g,x+xs,yl,xl-x,ys): \
+XFillRectangle(d,w,g,xl,yl,xs,ys)
 
 
 void
@@ -239,18 +224,13 @@ draw_julia(ModeInfo * mi)
 	int         k = 64, rnd = 0, i, j;
 	XPoint     *xp = jp->pointBuffer[jp->buffer], old_circle, new_circle;
 
-/*
-	extern void XEraseImage(Display * display, Window window, GC gc,
-		   int x, int y, int xlast, int ylast, int xsize, int ysize);
- */
-
 	old_circle.x = (int) (jp->centerx * jp->cr / 2) + jp->centerx - 2;
 	old_circle.y = (int) (jp->centery * jp->ci / 2) + jp->centery - 2;
 	incr(jp);
 	new_circle.x = (int) (jp->centerx * jp->cr / 2) + jp->centerx - 2;
 	new_circle.y = (int) (jp->centery * jp->ci / 2) + jp->centery - 2;
 	XSetForeground(display, gc, MI_WIN_BLACK_PIXEL(mi));
-	XEraseImage(display, window, gc, new_circle.x, new_circle.y,
+	ERASE_IMAGE(display, window, gc, new_circle.x, new_circle.y,
 		    old_circle.x, old_circle.y, jp->circsize, jp->circsize);
 	/* draw a circle at the c-parameter so you can see it's effect on the
 	   structure of the julia set */

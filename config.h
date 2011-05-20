@@ -121,7 +121,7 @@
  *  that is, the passwords live in /etc/shadow instead of /etc/passwd,
  *  and one reads them with getspnam() instead of getpwnam().  (Note that
  *  SCO systems do some random other thing; others might as well.  See the
- *  ifdefs in driver/lock.c if you're having trouble related to reading
+ *  ifdefs in driver/passwd.c if you're having trouble related to reading
  *  passwords.)
  */
 /* #define HAVE_SHADOW */
@@ -132,6 +132,13 @@
  * and one reads them with getprpwnam() instead of getpwnam().
  */
 /* #define HAVE_DEC_ENHANCED */
+
+/* Uncomment the following line if your system is Solaris with ``adjunct''
+   passwords (this is the version where one gets at the passwords with
+   getpwanam() instead of getpwnam().)  I haven't tested this one, let
+   me know if it works.
+ */
+/* #define HAVE_ADJUNCT_PASSWD */
 
 
 /* Define this if you have the XReadDisplay extension (I think this is an

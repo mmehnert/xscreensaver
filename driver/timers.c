@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1991-1997 Jamie Zawinski <jwz@netscape.com>
+/* timers.c --- detecting when the user is idle, and other timer-related tasks.
+ * xscreensaver, Copyright (c) 1991-1997 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -23,56 +24,26 @@
 
 #ifdef HAVE_MIT_SAVER_EXTENSION
 #include <X11/extensions/scrnsaver.h>
-extern int mit_saver_ext_event_number;
-extern Window server_mit_saver_window;
 #endif /* HAVE_MIT_SAVER_EXTENSION */
 
 #ifdef HAVE_SGI_SAVER_EXTENSION
 #include <X11/extensions/XScreenSaver.h>
-extern int sgi_saver_ext_event_number;
 #endif /* HAVE_SGI_SAVER_EXTENSION */
 
 #include "xscreensaver.h"
 
-#ifdef __STDC__
-# define P(x)x
-#else
-#define P(x)()
-#endif
-
-extern XtAppContext app;
-Time cycle;
-Time timeout;
-Time pointer_timeout;
-Time notice_events_timeout;
-Time watchdog_timeout;
-
-extern Bool use_xidle_extension;
-extern Bool use_mit_saver_extension;
-extern Bool use_sgi_saver_extension;
-extern Bool dbox_up_p;
-extern Bool locked_p;
-extern Window screensaver_window;
-
-extern Bool handle_clientmessage P((XEvent *, Bool));
-
-extern void disable_builtin_screensaver P((Bool turn_off_p));
-extern Bool screenhack_running_p P((void));
-
-static time_t last_activity_time; /* for when we have no server extensions */
-static XtIntervalId timer_id = 0;
-static XtIntervalId check_pointer_timer_id = 0;
-XtIntervalId cycle_id = 0;
-XtIntervalId lock_id = 0;
-XtIntervalId watchdog_id = 0;
 
 void
 #ifdef __STDC__
-idle_timer (void *junk1, XtPointer junk2)
-#else /* ! __STDC__ */
-idle_timer (junk1, junk2) void *junk1; XtPointer junk2;
-#endif /* ! __STDC__ */
+idle_timer (XtPointer closure, XtIntervalId *id)
+#else  /* !__STDC__ */
+idle_timer (closure, id)
+	XtPointer closure;
+	XtIntervalId *id;
+#endif /* !__STDC__ */
 {
+  saver_info *si = (saver_info *) closure;
+
   /* What an amazingly shitty design.  Not only does Xt execute timeout
      events from XtAppNextEvent() instead of from XtDispatchEvent(), but
      there is no way to tell Xt to block until there is an X event OR a
@@ -86,36 +57,38 @@ idle_timer (junk1, junk2) void *junk1; XtPointer junk2;
    */
   XEvent fake_event;
   fake_event.type = 0;	/* XAnyEvent type, ignored. */
-  fake_event.xany.display = dpy;
+  fake_event.xany.display = si->dpy;
   fake_event.xany.window  = 0;
-  XPutBackEvent (dpy, &fake_event);
+  XPutBackEvent (si->dpy, &fake_event);
 }
 
 
 static void
 #ifdef __STDC__
-notice_events (Window window, Bool top_p)
-#else
-notice_events (window, top_p)
-     Window window;
-     Bool top_p;
-#endif
+notice_events (saver_info *si, Window window, Bool top_p)
+#else  /* !__STDC__ */
+notice_events (si, window, top_p)
+	saver_info *si;
+	Window window;
+	Bool top_p;
+#endif /* !__STDC__ */
 {
+  saver_preferences *p = &si->prefs;
   XWindowAttributes attrs;
   unsigned long events;
   Window root, parent, *kids;
   unsigned int nkids;
 
-  if (XtWindowToWidget (dpy, window))
+  if (XtWindowToWidget (si->dpy, window))
     /* If it's one of ours, don't mess up its event mask. */
     return;
 
-  if (!XQueryTree (dpy, window, &root, &parent, &kids, &nkids))
+  if (!XQueryTree (si->dpy, window, &root, &parent, &kids, &nkids))
     return;
   if (window == root)
     top_p = False;
 
-  XGetWindowAttributes (dpy, window, &attrs);
+  XGetWindowAttributes (si->dpy, window, &attrs);
   events = ((attrs.all_event_masks | attrs.do_not_propagate_mask)
 	    & KeyPressMask);
 
@@ -123,9 +96,9 @@ notice_events (window, top_p)
      Select for KeyPress on all windows that already have it selected.
      Do we need to select for ButtonRelease?  I don't think so.
    */
-  XSelectInput (dpy, window, SubstructureNotifyMask | events);
+  XSelectInput (si->dpy, window, SubstructureNotifyMask | events);
 
-  if (top_p && verbose_p && (events & KeyPressMask))
+  if (top_p && p->verbose_p && (events & KeyPressMask))
     {
       /* Only mention one window per tree (hack hack). */
       printf ("%s: selected KeyPress on 0x%lX\n", progname,
@@ -136,7 +109,7 @@ notice_events (window, top_p)
   if (kids)
     {
       while (nkids)
-	notice_events (kids [--nkids], top_p);
+	notice_events (si, kids [--nkids], top_p);
       XFree ((char *) kids);
     }
 }
@@ -158,22 +131,55 @@ BadWindow_ehandler (dpy, error) Display *dpy; XErrorEvent *error;
       error->error_code == BadMatch ||
       error->error_code == BadDrawable)
     return 0;
-  XmuPrintDefaultErrorMessage (dpy, error, stderr);
-  exit (1);
+  else
+    return saver_ehandler (dpy, error);
+}
+
+
+struct notice_events_timer_arg {
+  saver_info *si;
+  Window w;
+};
+
+static void
+#ifdef __STDC__
+notice_events_timer (XtPointer closure, XtIntervalId *id)
+#else  /* !__STDC__ */
+notice_events_timer (closure, id)
+	XtPointer closure;
+	XtIntervalId *id;
+#endif /* !__STDC__ */
+{
+  struct notice_events_timer_arg *arg =
+    (struct notice_events_timer_arg *) closure;
+
+  XErrorHandler old_handler = XSetErrorHandler (BadWindow_ehandler);
+
+  saver_info *si = arg->si;
+  Window window = arg->w;
+
+  free(arg);
+  notice_events (si, window, True);
+  XSync (si->dpy, False);
+  XSetErrorHandler (old_handler);
 }
 
 void
 #ifdef __STDC__
-notice_events_timer (XtPointer closure, XtIntervalId *timer)
-#else /* ! __STDC__ */
-notice_events_timer (closure, timer) XtPointer closure; XtIntervalId *timer;
-#endif /* ! __STDC__ */
+start_notice_events_timer (saver_info *si, Window w)
+#else  /* !__STDC__ */
+start_notice_events_timer (si, w)
+	saver_info *si;
+	Window w;
+#endif /* !__STDC__ */
 {
-  Window window = (Window) closure;
-  XErrorHandler old_handler = XSetErrorHandler (BadWindow_ehandler);
-  notice_events (window, True);
-  XSync (dpy, False);
-  XSetErrorHandler (old_handler);
+  saver_preferences *p = &si->prefs;
+  struct notice_events_timer_arg *arg =
+    (struct notice_events_timer_arg *) malloc(sizeof(*arg));
+  arg->si = si;
+  arg->w = w;
+  XtAppAddTimeOut (si->app, p->notice_events_timeout, notice_events_timer,
+		   (XtPointer) arg);
 }
 
 
@@ -182,30 +188,34 @@ notice_events_timer (closure, timer) XtPointer closure; XtIntervalId *timer;
  */
 void
 #ifdef __STDC__
-cycle_timer (void *junk1, XtPointer junk2)
-#else /* ! __STDC__ */
-cycle_timer (junk1, junk2) void *junk1; XtPointer junk2;
-#endif /* ! __STDC__ */
+cycle_timer (XtPointer closure, XtIntervalId *id)
+#else  /* !__STDC__ */
+cycle_timer (closure, id)
+	XtPointer closure;
+	XtIntervalId id;
+#endif /* !__STDC__ */
 {
-  Time how_long = cycle;
-  if (dbox_up_p)
+  saver_info *si = (saver_info *) closure;
+  saver_preferences *p = &si->prefs;
+  Time how_long = p->cycle;
+  if (si->dbox_up_p)
     {
-      if (verbose_p)
+      if (p->verbose_p)
 	printf ("%s: dbox up; delaying hack change.\n", progname);
       how_long = 30000; /* 30 secs */
     }
   else
     {
-      if (verbose_p)
+      if (p->verbose_p)
 	printf ("%s: changing graphics hacks.\n", progname);
-      kill_screenhack ();
-      spawn_screenhack (False);
+      kill_screenhack (si);
+      spawn_screenhack (si, False);
     }
-  cycle_id = XtAppAddTimeOut (app, how_long,
-			      (XtTimerCallbackProc) cycle_timer, 0);
+  si->cycle_id = XtAppAddTimeOut (si->app, how_long, cycle_timer,
+				  (XtPointer) si);
 
 #ifdef DEBUG_TIMERS
-  if (verbose_p)
+  if (p->verbose_p)
     printf ("%s: starting cycle_timer (%ld, %ld)\n",
 	    progname, how_long, cycle_id);
 #endif
@@ -214,42 +224,52 @@ cycle_timer (junk1, junk2) void *junk1; XtPointer junk2;
 
 void
 #ifdef __STDC__
-activate_lock_timer (void *junk1, XtPointer junk2)
-#else /* ! __STDC__ */
-activate_lock_timer (junk1, junk2) void *junk1; XtPointer junk2;
-#endif /* ! __STDC__ */
+activate_lock_timer (XtPointer closure, XtIntervalId *id)
+#else  /* !__STDC__ */
+activate_lock_timer (closure, id)
+	XtPointer closure;
+	XtIntervalId *id;
+#endif /* !__STDC__ */
 {
-  if (verbose_p)
+  saver_info *si = (saver_info *) closure;
+  saver_preferences *p = &si->prefs;
+
+  if (p->verbose_p)
     printf ("%s: timed out; activating lock\n", progname);
-  locked_p = True;
+  si->locked_p = True;
 }
 
 
 /* Call this when user activity (or "simulated" activity) has been noticed.
  */
 static void
-reset_timers P((void))
+#ifdef __STDC__
+reset_timers (saver_info *si)
+#else  /* !__STDC__ */
+reset_timers (si) saver_info *si;
+#endif /* !__STDC__ */
 {
-  if (use_mit_saver_extension || use_sgi_saver_extension)
+  saver_preferences *p = &si->prefs;
+  if (p->use_mit_saver_extension || p->use_sgi_saver_extension)
     return;
 
 #ifdef DEBUG_TIMERS
-  if (verbose_p)
+  if (p->verbose_p)
     printf ("%s: restarting idle_timer (%ld, %ld)\n",
 	    progname, timeout, timer_id);
 #endif
-  XtRemoveTimeOut (timer_id);
-  timer_id = XtAppAddTimeOut (app, timeout,
-			      (XtTimerCallbackProc) idle_timer, 0);
-  if (cycle_id) abort ();
+  XtRemoveTimeOut (si->timer_id);
+  si->timer_id = XtAppAddTimeOut (si->app, p->timeout, idle_timer,
+				  (XtPointer) si);
+  if (si->cycle_id) abort ();
 
 #ifdef DEBUG_TIMERS
-  if (verbose_p)
+  if (p->verbose_p)
     printf ("%s: starting idle_timer (%ld, %ld)\n",
-	    progname, timeout, timer_id);
+	    progname, p->timeout, si->timer_id);
 #endif
 
-  last_activity_time = time ((time_t *) 0);
+  si->last_activity_time = time ((time_t *) 0);
 }
 
 /* When we aren't using a server extension, this timer is used to periodically
@@ -258,87 +278,91 @@ reset_timers P((void))
  */
 static void
 #ifdef __STDC__
-check_pointer_timer (void *closure, XtPointer this_timer)
-#else /* ! __STDC__ */
-check_pointer_timer (closure, this_timer)
-     void *closure;
-     XtPointer this_timer;
-#endif /* ! __STDC__ */
+check_pointer_timer (XtPointer closure, XtIntervalId *id)
+#else  /* !__STDC__ */
+check_pointer_timer (closure, id)
+	XtPointer closure;
+	XtIntervalId *id;
+#endif /* !__STDC__ */
 {
-  static int last_root_x = -1;
-  static int last_root_y = -1;
-  static Window last_child = (Window) -1;
-  static unsigned int last_mask = 0;
+  saver_info *si = (saver_info *) closure;
+  saver_preferences *p = &si->prefs;
   Window root, child;
   int root_x, root_y, x, y;
   unsigned int mask;
-  XtIntervalId *timerP = (XtIntervalId *) closure;
 
-  if (use_xidle_extension ||
-      use_mit_saver_extension ||
-      use_sgi_saver_extension)
+  if (p->use_xidle_extension ||
+      p->use_mit_saver_extension ||
+      p->use_sgi_saver_extension)
     abort ();
 
-  *timerP = XtAppAddTimeOut (app, pointer_timeout,
-			     (XtTimerCallbackProc) check_pointer_timer,
-			     closure);
+  si->check_pointer_timer_id =
+    XtAppAddTimeOut (si->app, p->pointer_timeout, check_pointer_timer,
+		     (XtPointer) si);
 
-  XQueryPointer (dpy, screensaver_window, &root, &child,
+  XQueryPointer (si->dpy, si->screensaver_window, &root, &child,
 		 &root_x, &root_y, &x, &y, &mask);
-  if (root_x == last_root_x && root_y == last_root_y &&
-      child == last_child && mask == last_mask)
+  if (root_x == si->poll_mouse_last_root_x &&
+      root_y == si->poll_mouse_last_root_y &&
+      child  == si->poll_mouse_last_child &&
+      mask   == si->poll_mouse_last_mask)
     return;
 
 #ifdef DEBUG_TIMERS
   if (verbose_p && this_timer)
-    if (root_x == last_root_x && root_y == last_root_y && child == last_child)
+    if (root_x == si->poll_mouse_last_root_x &&
+	root_y == si->poll_mouse_last_root_y &&
+	child  == si->poll_mouse_last_child)
       printf ("%s: modifiers changed at %s.\n", progname, timestring ());
     else
       printf ("%s: pointer moved at %s.\n", progname, timestring ());
 #endif
 
-  last_root_x = root_x;
-  last_root_y = root_y;
-  last_child = child;
-  last_mask = mask;
+  si->poll_mouse_last_root_x = root_x;
+  si->poll_mouse_last_root_y = root_y;
+  si->poll_mouse_last_child  = child;
+  si->poll_mouse_last_mask   = mask;
 
-  reset_timers ();
+  reset_timers (si);
 }
 
 
 void
 #ifdef __STDC__
-sleep_until_idle (Bool until_idle_p)
-#else /* ! __STDC__ */
-sleep_until_idle (until_idle_p) Bool until_idle_p;
-#endif /* ! __STDC__ */
+sleep_until_idle (saver_info *si, Bool until_idle_p)
+#else  /* !__STDC__ */
+sleep_until_idle (si, until_idle_p)
+	saver_info *si;
+	Bool until_idle_p;
+#endif /* !__STDC__ */
 {
+  saver_preferences *p = &si->prefs;
   XEvent event;
 
   if (until_idle_p)
     {
-      if (!use_mit_saver_extension && !use_sgi_saver_extension)
+      if (!p->use_mit_saver_extension && !p->use_sgi_saver_extension)
 	{
 	  /* Wake up periodically to ask the server if we are idle. */
-	  timer_id = XtAppAddTimeOut (app, timeout,
-				      (XtTimerCallbackProc) idle_timer, 0);
+	  si->timer_id = XtAppAddTimeOut (si->app, p->timeout, idle_timer,
+					  (XtPointer) si);
 #ifdef DEBUG_TIMERS
 	  if (verbose_p)
 	    printf ("%s: starting idle_timer (%ld, %ld)\n",
-		    progname, timeout, timer_id);
+		    progname, p->timeout, si->timer_id);
 #endif
 	}
 
-      if (!use_xidle_extension &&
-	  !use_mit_saver_extension &&
-	  !use_sgi_saver_extension)
+      if (!p->use_xidle_extension &&
+	  !p->use_mit_saver_extension &&
+	  !p->use_sgi_saver_extension)
 	/* start polling the mouse position */
-	check_pointer_timer (&check_pointer_timer_id, 0);
+	check_pointer_timer ((XtPointer) si, 0);
     }
 
   while (1)
     {
-      XtAppNextEvent (app, &event);
+      XtAppNextEvent (si->app, &event);
 
       switch (event.xany.type) {
       case 0:		/* our synthetic "timeout" event has been signalled */
@@ -346,19 +370,18 @@ sleep_until_idle (until_idle_p) Bool until_idle_p;
 	  {
 	    Time idle;
 #ifdef HAVE_XIDLE_EXTENSION
-	    if (use_xidle_extension)
+	    if (p->use_xidle_extension)
 	      {
-		if (! XGetIdleTime (dpy, &idle))
+		if (! XGetIdleTime (si->dpy, &idle))
 		  {
-		    fprintf (stderr, "%s: %sXGetIdleTime() failed.\n",
-			     progname, (verbose_p ? "## " : ""));
-		    exit (1);
+		    fprintf (stderr, "%s: XGetIdleTime() failed.\n", progname);
+		    saver_exit (si, 1);
 		  }
 	      }
 	    else
 #endif /* HAVE_XIDLE_EXTENSION */
 #ifdef HAVE_MIT_SAVER_EXTENSION
-	      if (use_mit_saver_extension)
+	      if (p->use_mit_saver_extension)
 		{
 		  /* We don't need to do anything in this case - the synthetic
 		     event isn't necessary, as we get sent specific events
@@ -368,7 +391,7 @@ sleep_until_idle (until_idle_p) Bool until_idle_p;
 	    else
 #endif /* HAVE_MIT_SAVER_EXTENSION */
 #ifdef HAVE_SGI_SAVER_EXTENSION
-	      if (use_sgi_saver_extension)
+	      if (p->use_sgi_saver_extension)
 		{
 		  /* We don't need to do anything in this case - the synthetic
 		     event isn't necessary, as we get sent specific events
@@ -378,44 +401,42 @@ sleep_until_idle (until_idle_p) Bool until_idle_p;
 	    else
 #endif /* HAVE_SGI_SAVER_EXTENSION */
 	      {
-		idle = 1000 * (last_activity_time - time ((time_t *) 0));
+		idle = 1000 * (si->last_activity_time - time ((time_t *) 0));
 	      }
 	    
-	    if (idle >= timeout)
+	    if (idle >= p->timeout)
 	      goto DONE;
-	    else if (!use_mit_saver_extension && !use_sgi_saver_extension)
+	    else if (!p->use_mit_saver_extension &&
+		     !p->use_sgi_saver_extension)
 	      {
-		timer_id = XtAppAddTimeOut (app, timeout - idle,
-					    (XtTimerCallbackProc) idle_timer,
-					    0);
+		si->timer_id = XtAppAddTimeOut (si->app, p->timeout - idle,
+						idle_timer, (XtPointer) si);
 #ifdef DEBUG_TIMERS
-		if (verbose_p)
+		if (p->verbose_p)
 		  printf ("%s: starting idle_timer (%ld, %ld)\n",
-			  progname, timeout - idle, timer_id);
+			  progname, p->timeout - idle, si->timer_id);
 #endif /* DEBUG_TIMERS */
 	      }
 	  }
 	break;
 
       case ClientMessage:
-	if (handle_clientmessage (&event, until_idle_p))
+	if (handle_clientmessage (si, &event, until_idle_p))
 	  goto DONE;
 	break;
 
       case CreateNotify:
-	if (!use_xidle_extension &&
-	    !use_mit_saver_extension &&
-	    !use_sgi_saver_extension)
+	if (!p->use_xidle_extension &&
+	    !p->use_mit_saver_extension &&
+	    !p->use_sgi_saver_extension)
 	  {
-	    XtAppAddTimeOut (app, notice_events_timeout,
-			     (XtTimerCallbackProc) notice_events_timer,
-			     (XtPointer) event.xcreatewindow.window);
+	    start_notice_events_timer (si, event.xcreatewindow.window);
 #ifdef DEBUG_TIMERS
 	    if (verbose_p)
 	      printf ("%s: starting notice_events_timer for 0x%X (%lu)\n",
 		      progname,
 		      (unsigned int) event.xcreatewindow.window,
-		      notice_events_timeout);
+		      p->notice_events_timeout);
 #endif /* DEBUG_TIMERS */
 	  }
 	break;
@@ -441,13 +462,13 @@ sleep_until_idle (until_idle_p) Bool until_idle_p;
 	if (!until_idle_p)
 	  goto DONE;
 	else
-	  reset_timers ();
+	  reset_timers (si);
 	break;
 
       default:
 
 #ifdef HAVE_MIT_SAVER_EXTENSION
-	if (event.type == mit_saver_ext_event_number)
+	if (event.type == si->mit_saver_ext_event_number)
 	  {
 	    XScreenSaverNotifyEvent *sevent =
 	      (XScreenSaverNotifyEvent *) &event;
@@ -461,9 +482,9 @@ sleep_until_idle (until_idle_p) Bool until_idle_p;
 
 		/* Get the "real" server window out of the way as soon
 		   as possible. */
-		if (server_mit_saver_window &&
-		    window_exists_p (dpy, server_mit_saver_window))
-		  XUnmapWindow (dpy, server_mit_saver_window);
+		if (si->server_mit_saver_window &&
+		    window_exists_p (dpy, si->server_mit_saver_window))
+		  XUnmapWindow (dpy, si->server_mit_saver_window);
 
 		if (sevent->kind != ScreenSaverExternal)
 		  {
@@ -499,7 +520,7 @@ sleep_until_idle (until_idle_p) Bool until_idle_p;
 
 
 #ifdef HAVE_SGI_SAVER_EXTENSION
-	if (event.type == (sgi_saver_ext_event_number + ScreenSaverStart))
+	if (event.type == (si->sgi_saver_ext_event_number + ScreenSaverStart))
 	  {
 # ifdef DEBUG_TIMERS
 	    if (verbose_p)
@@ -510,7 +531,8 @@ sleep_until_idle (until_idle_p) Bool until_idle_p;
 	    if (until_idle_p)
 	      goto DONE;
 	  }
-	else if (event.type == (sgi_saver_ext_event_number + ScreenSaverEnd))
+	else if (event.type == (si->sgi_saver_ext_event_number +
+				ScreenSaverEnd))
 	  {
 # ifdef DEBUG_TIMERS
 	    if (verbose_p)
@@ -528,18 +550,31 @@ sleep_until_idle (until_idle_p) Bool until_idle_p;
     }
  DONE:
 
-  if (check_pointer_timer_id)
+
+  /* If there's a user event on the queue, swallow it.
+     If we're using a server extension, and the user becomes active, we
+     get the extension event before the user event -- so the keypress or
+     motion or whatever is still on the queue.  This makes "unfade" not
+     work, because it sees that event, and bugs out.  (This problem
+     doesn't exhibit itself without an extension, because in that case,
+     there's only one event generated by user activity, not two.)
+   */
+  XCheckMaskEvent (si->dpy, (KeyPressMask|ButtonPressMask|PointerMotionMask),
+		   &event);
+
+
+  if (si->check_pointer_timer_id)
     {
-      XtRemoveTimeOut (check_pointer_timer_id);
-      check_pointer_timer_id = 0;
+      XtRemoveTimeOut (si->check_pointer_timer_id);
+      si->check_pointer_timer_id = 0;
     }
-  if (timer_id)
+  if (si->timer_id)
     {
-      XtRemoveTimeOut (timer_id);
-      timer_id = 0;
+      XtRemoveTimeOut (si->timer_id);
+      si->timer_id = 0;
     }
 
-  if (until_idle_p && cycle_id)
+  if (until_idle_p && si->cycle_id)
     abort ();
 
   return;
@@ -564,37 +599,37 @@ sleep_until_idle (until_idle_p) Bool until_idle_p;
    don't want the error message to burn in.)
  */
 
-extern Bool screen_blanked_p;
-extern Bool demo_mode_p;
-
 void
 #ifdef __STDC__
-watchdog_timer (void *closure, XtPointer this_timer)
-#else /* ! __STDC__ */
-watchdog_timer (closure, this_timer)
-     void *closure;
-     XtPointer this_timer;
-#endif /* ! __STDC__ */
+watchdog_timer (XtPointer closure, XtIntervalId *id)
+#else  /* !__STDC__ */
+watchdog_timer (closure, id)
+	XtPointer closure;
+	XtIntervalId *id;
+#endif /* !__STDC__ */
 {
-  if (!demo_mode_p)
+  saver_info *si = (saver_info *) closure;
+  saver_preferences *p = &si->prefs;
+
+  if (!si->demo_mode_p)
     {
-      disable_builtin_screensaver (False);
-      if (screen_blanked_p)
+      disable_builtin_screensaver (si, False);
+      if (si->screen_blanked_p)
 	{
-	  Bool running_p = screenhack_running_p();
+	  Bool running_p = screenhack_running_p(si);
 #ifdef DEBUG_TIMERS
-	  if (verbose_p)
+	  if (p->verbose_p)
 	    printf ("%s: watchdog timer raising %sscreen.\n",
 		    progname, (running_p ? "" : "and clearing "));
 #endif
-	  raise_window (True, True, running_p);
+	  raise_window (si, True, True, running_p);
 	}
     }
 
-  if (watchdog_timeout)
+  if (p->watchdog_timeout)
     {
-      watchdog_id = XtAppAddTimeOut (app, watchdog_timeout,
-				     (XtTimerCallbackProc) watchdog_timer, 0);
+      si->watchdog_id = XtAppAddTimeOut (si->app, p->watchdog_timeout,
+					 watchdog_timer, (XtPointer) si);
 
 #ifdef DEBUG_TIMERS
       if (verbose_p)

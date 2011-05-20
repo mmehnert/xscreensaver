@@ -29,15 +29,34 @@
 
 
 ! Any program which can draw on the root window will work as a screensaver.
-! The following three resources enumerate them.
-
+! The following resource enumerates them.
+!
+! Programs are separated by newlines (specified in resource files with \n).
+! Lines may be continued with a lone \ at the end of the line.
+!
+! Each line is an `sh' command.
+!
+! But, if the first word on the line is the name of a visual followed by a
+! colon, then that visual will be used for the program, if it is available.
+! If no such visual is available, then the program will be skipped.  In
+! this way, you can specify that you want certain programs to run only
+! on color screens, and others only on mono screens, by making use of the
+! magic visual names "color" and "mono".  Likewise, if some hacks prefer
+! colormaps, but others prefer 24-bit windows, that also can be arranged
+! (in this case, by using "PseudoColor:" versus "TrueColor:".)
+!
+! All programs must be launched in such a way that they draw on the root
+! window; they should not be spawned in the background with "&".  If shell
+! metacharacters are used, they must be understandable to `sh', not `csh'
+! (the $SHELL variable is not consulted, for unfortunate but good reasons.)
+!
 *programs:	qix -root						\n\
 		qix -root -solid -delay 0 -segments 100			\n\
 		qix -root -linear -count 10 -size 100 -segments 200	\n\
 		attraction -root -mode balls				\n\
 		attraction -root -mode lines -points 3 -segments 200	\n\
 		attraction -root -mode splines -segments 300		\n\
-		attraction -root -mode lines -radius 300		\
+		attraction -root -mode lines -radius 300		  \
 			-orbit -vmult 0.5				\n\
 		pyro -root						\n\
 		helix -root						\n\
@@ -64,6 +83,7 @@
 		spiral -root						\n\
 		laser -root						\n\
 		grav -root						\n\
+		grav -root -trail -decay				\n\
 		drift -root						\n\
 		ifs -root						\n\
 		julia -root						\n\
@@ -73,30 +93,31 @@
 		galaxy -root						\n\
 		slip -root						\n\
 		bouboule -root						\n\
-		swirl -root						\n
-
-
-! Programs on this list are run only for monochrome screens.
-! (These are in addition to those listed in "*programs".)
-*monoPrograms:	qix -root -linear -count 5 -size 200 -spread 30		\
+		swirl -root						\n\
+		flag -root						\n\
+		sphere -root						\n\
+		forest -root						\n\
+		lisa -root						\n\
+									  \
+	mono:	rocks -root						\n\
+	color:	rocks -root -fg darksalmon				\n\
+									  \
+	mono:	qix -root -linear -count 5 -size 200 -spread 30		  \
 			-segments 75 -solid -xor			\n\
-		rocks -root						\n
-
-! Programs on this list are run only for color (really, non-mono) screens.
-! (These are in addition to those listed in "*programs".)
-*colorPrograms:	qix -root -count 4 -solid -transparent			\n\
-		qix -root -count 5 -solid -transparent -linear		\
-			-segments 250 -size 100				\n\
-		attraction -root -mode polygons				\n\
-		attraction -root -mode filled-splines -segments 0	\n\
-		attraction -root -glow -points 10			\n\
-		rocks -root -fg darksalmon				\n\
-		bubbles -root						\n
+									  \
+	color:	attraction -root -mode polygons				\n\
+	color:	attraction -root -mode filled-splines -segments 0	\n\
+	color:	attraction -root -glow -points 10			\n\
+	color:	bubbles -root						\n\
+									  \
+  PseudoColor:	qix -root -count 4 -solid -transparent			\n\
+  PseudoColor:	qix -root -count 5 -solid -transparent -linear		  \
+			-segments 250 -size 100				\n
 
 
 ! Some other programs that you might want to track down (these work as
 ! XScreenSaver helpers, but are not distributed with it):
-! 
+!
 !		xdaliclock -root -builtin2				\n\
 !		xswarm -r 2>&-						\n\
 !		xwave -root						\n\
@@ -104,22 +125,29 @@
 !		ico -r -faces -sleep 1 -obj ico				\n\
 !		xsplinefun						\n\
 !		kaleid -root						\n\
-!		xfishtank -c black -d -r 2				\n\
-!		xtacy -root -delay 100 -gravity				\n\
-
-
-! To display a slideshow of images, add commands like this to *programs:
+!	color:	xfishtank -c black -d -r 2				\n\
 !
-!		xv -root -rmode 5  image-1.gif  -quit
-!		xv -root -rmode 5  image-2.gif  -quit
-!		xv -root -rmode 5  image-3.gif  -quit
+! xtacy is nice, but it only works on the default visual.  We can satisfy
+! that constraint like so:
+!
+!     default:	xtacy -root -delay 100 -funky -number 3			\n\
+!     default:	xtacy -root -delay 100 -gravity				\n\
+!     default:	xtacy -root -delay 100 -mixer				\n\
+!     default:	xtacy -root -delay 100 -taffy -pal 4			\n\
+! 
+! To display a slideshow of images, you can do something like this:
+!
+!     default:	xv -root -rmode 5  image-1.gif  -quit
+!     default:	xv -root -rmode 5  image-2.gif  -quit
+!     default:	xv -root -rmode 5  image-3.gif  -quit
 !		...and so on...
 !
 ! however, for this to work, you must also have started the screensaver so
 ! that it uses the default colormap (the "-no-install" command-line option, or
 ! the "installColormap: False" resource) because when XV is running in "-root"
 ! mode, it always assumes that the default colormap is being used, rather than
-! examining the window it is drawing on to see what colormap it has.
+! examining the window it is drawing on to see what colormap it has.  (It
+! also assumes the default visual, but we've taken care of that above.)
 
 
 ! Some SGI GL programs work with XScreenSaver; most don't.
@@ -227,7 +255,7 @@
 *passwd_dialog*font:		*-helvetica-bold-r-*-*-*-120-*-*-*-iso8859-1
 *demo_dialog*label1.font:	*-helvetica-bold-r-*-*-*-140-*-*-*-iso8859-1
 *resources_dialog*label1.font:	*-helvetica-bold-r-*-*-*-140-*-*-*-iso8859-1
-*List*font:			*-courier-medium-r-*-*-*-120-*-*-*-iso8859-1
+*demo_dialog*List.font:		*-courier-medium-r-*-*-*-120-*-*-*-iso8859-1
 
 ! This is a hack to make the typed password invisible.
 ! Surely someone can do better than this...

@@ -29,7 +29,8 @@ LOCAL_LIBRARIES = $(XMULIB) $(XTOOLLIB)        $(EXTENSIONLIB) $(XLIB) -lm
 		  kaleidescope.c bubbles.c bubbles.h bubbles_default.c \
 		  lightning.c strange.c fract.c spiral.c laser.c grav.c \
 		  drift.c ifs.c julia.c penrose.c sierpinski.c braid.c \
-		  galaxy.c slip.c bouboule.c swirl.c
+		  galaxy.c slip.c bouboule.c swirl.c flag.c sphere.c forest.c \
+		  lisa.c
             MEN = attraction.man greynetic.man helix.man hopalong.man \
                   noseguy.man pyro.man xroger.man qix.man rocks.man \
                   rorschach.man blitspin.man imsmap.man slidescreen.man \
@@ -39,10 +40,10 @@ LOCAL_LIBRARIES = $(XMULIB) $(XTOOLLIB)        $(EXTENSIONLIB) $(XLIB) -lm
 		  lightning.man strange.man fract.man spiral.man laser.man \
 		  grav.man drift.man ifs.man julia.man penrose.man \
 		  sierpinski.man braid.man galaxy.man slip.man bouboule.man \
-		  swirl.man
+		  swirl.man flag.man sphere.man forest.man lisa.man
        TARFILES = README Imakefile screenhack.c $(HACKS) screenhack.h \
 		  xlockmore.c xlockmore.h xlockmoreI.h vroot.h xlock.h \
-		  default.xbm $(MEN) .gdbinit \
+		  default.xbm bob.xbm $(MEN) .gdbinit \
 		  noses/nose-$(STAR).xbm noses/nose-$(STAR).xpm \
 		  bubbles-tools/bubbles$(STAR) \
 		  bubbles-tools/xpm$(STAR) \
@@ -149,6 +150,10 @@ ScreenhackTarget_xlockmore (galaxy,	  $(NULL))
 ScreenhackTarget_xlockmore (slip,	  $(UTILS)/grabscreen.o)
 ScreenhackTarget_xlockmore (bouboule,	  $(NULL))
 ScreenhackTarget_xlockmore (swirl,	  $(NULL))
+ScreenhackTarget_xlockmore (flag,	  $(NULL))
+ScreenhackTarget_xlockmore (sphere,	  $(NULL))
+ScreenhackTarget_xlockmore (forest,	  $(NULL))
+ScreenhackTarget_xlockmore (lisa,	  $(NULL))
 
 SRCS=$(HACKS)
 DependTarget()

@@ -12,6 +12,7 @@
 #ifndef __VISUAL_H__
 #define __VISUAL_H__
 
+extern Visual *get_visual P((Display *, const char *name, Bool, Bool));
 extern Visual *get_visual_resource P((Display *, char *, char *, Bool));
 extern int visual_depth P((Display *, Visual *));
 extern int visual_class P((Display *dpy, Visual *visual));

@@ -21,5 +21,5 @@
 #handle 15 pass nostop
 #handle 19 pass nostop
 b exit
-set args -sync -verbose -idelay 0
+set args -debug
 #b purify_stop_here

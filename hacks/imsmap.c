@@ -313,7 +313,7 @@ floyd_steinberg (dpy, window)
   XImage *image =
     XCreateImage (dpy, xgwa.visual,
 		  1, XYBitmap, 0,		/* depth, format, offset */
-		  (char *) calloc ((xmax + 1) / 8, 1),	/* data */
+		  (char *) calloc ((xmax + 8) / 8, 1),	/* data */
 		  xmax, 1, 8, 0);		/* w, h, pad, bpl */
 
   XSetForeground (dpy, gc, colors[0].pixel);

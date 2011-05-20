@@ -18,9 +18,9 @@
 #ifdef __STDC__
 # include <stdlib.h>
 # include <unistd.h>
-# include <string.h>
 #endif
 
+#include <string.h>
 #include <stdio.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -29,6 +29,9 @@
 # define P(x)x
 #else
 # define P(x)()
+# ifndef const
+#  define const /**/
+# endif
 #endif
 
 #ifndef isupper
@@ -42,32 +45,37 @@
 
 extern char *progname;
 
-static Visual *pick_best_visual P ((Screen *, Bool));
+static Visual *pick_best_visual P ((Display *, Screen *, Bool, Bool));
+static Visual *pick_mono_visual P ((Display *, Screen *));
 static Visual *pick_best_visual_of_class P((Screen *, int));
 static Visual *id_to_visual P((Screen *, int));
 static int screen_number P((Screen *));
 static Visual *id_to_visual P((Screen *screen, int id));
 int visual_depth P((Display *dpy, Visual *visual));
+int visual_class P((Display *dpy, Visual *visual));
 
 
 #define DEFAULT_VISUAL	-1
 #define BEST_VISUAL	-2
-#define SPECIFIC_VISUAL	-3
+#define MONO_VISUAL	-3
+#define GRAY_VISUAL	-4
+#define COLOR_VISUAL	-5
+#define SPECIFIC_VISUAL	-6
 
 Visual *
 #ifdef __STDC__
-get_visual_resource (Display *dpy, char *name, char *class,
-		     Bool prefer_writable_cells)
-#else /* !__STDC__ */
-get_visual_resource (dpy, name, class, prefer_writable_cells)
-     Display *dpy;
-     char *name, *class;
-     Bool prefer_writable_cells;
+get_visual (Display *dpy, const char *string, Bool prefer_writable_cells,
+	    Bool verbose_p)
+#else  /* !__STDC__ */
+get_visual (dpy, string, prefer_writable_cells, verbose_p)
+	Display *dpy;
+	const char *string;
+	Bool prefer_writable_cells, verbose_p;
 #endif /* !__STDC__ */
 {
   Screen *screen = DefaultScreenOfDisplay (dpy);
-  char c, *v = get_string_resource (name, class);
-  char *tmp;
+  char *v = strdup(string);
+  char c, *tmp;
   int vclass;
   unsigned long id;
   Visual *result = 0;
@@ -79,10 +87,16 @@ get_visual_resource (dpy, name, class, prefer_writable_cells)
   if (!v)					  vclass = BEST_VISUAL;
   else if (!strcmp (v, "default"))		  vclass = DEFAULT_VISUAL;
   else if (!strcmp (v, "best")) 		  vclass = BEST_VISUAL;
+  else if (!strcmp (v, "mono")) 		  vclass = MONO_VISUAL;
+  else if (!strcmp (v, "monochrome")) 		  vclass = MONO_VISUAL;
+  else if (!strcmp (v, "gray")) 		  vclass = GRAY_VISUAL;
+  else if (!strcmp (v, "grey")) 		  vclass = GRAY_VISUAL;
+  else if (!strcmp (v, "color")) 		  vclass = COLOR_VISUAL;
   else if (!strcmp (v, "staticgray"))	 	  vclass = StaticGray;
   else if (!strcmp (v, "staticcolor"))		  vclass = StaticColor;
   else if (!strcmp (v, "truecolor"))		  vclass = TrueColor;
   else if (!strcmp (v, "grayscale"))		  vclass = GrayScale;
+  else if (!strcmp (v, "greyscale"))		  vclass = GrayScale;
   else if (!strcmp (v, "pseudocolor"))		  vclass = PseudoColor;
   else if (!strcmp (v, "directcolor"))		  vclass = DirectColor;
   else if (1 == sscanf (v, " %ld %c", &id, &c))	  vclass = SPECIFIC_VISUAL;
@@ -96,13 +110,50 @@ get_visual_resource (dpy, name, class, prefer_writable_cells)
   if (vclass == DEFAULT_VISUAL)
     result = DefaultVisualOfScreen (screen);
   else if (vclass == BEST_VISUAL)
-    result = pick_best_visual (screen, prefer_writable_cells);
+    result = pick_best_visual (dpy, screen, prefer_writable_cells, False);
+  else if (vclass == MONO_VISUAL)
+    {
+      result = pick_mono_visual (dpy, screen);
+      if (!result && verbose_p)
+	fprintf (stderr, "%s: no monochrome visuals.\n", progname);
+    }
+  else if (vclass == GRAY_VISUAL)
+    {
+      if (prefer_writable_cells)
+	result = pick_best_visual_of_class (screen, GrayScale);
+      if (!result)
+	result = pick_best_visual_of_class (screen, StaticGray);
+      if (!result)
+	result = pick_best_visual_of_class (screen, GrayScale);
+      if (!result && verbose_p)
+	fprintf (stderr, "%s: no GrayScale or StaticGray visuals.\n", progname,
+		 (unsigned int) id);
+    }
+  else if (vclass == COLOR_VISUAL)
+    {
+      int class;
+      /* First see if the default visual will do. */
+      result = DefaultVisualOfScreen (screen);
+      class = visual_class(dpy, result);
+      if (class != TrueColor &&
+	  class != PseudoColor &&
+	  class != DirectColor &&
+	  class != StaticColor)
+	result = 0;
+      if (result && visual_depth(dpy, result) <= 1)
+	result = 0;
+
+      /* Else, find the best non-default color visual */
+      if (!result)
+	result = pick_best_visual (dpy, screen, prefer_writable_cells, True);
+
+      if (!result && verbose_p)
+	fprintf (stderr, "%s: no color visuals.\n", progname);
+    }
   else if (vclass == SPECIFIC_VISUAL)
     {
-      Visual *visual = id_to_visual (screen, id);
-      if (visual)
-	result = visual;
-      else
+      result = id_to_visual (screen, id);
+      if (!result && verbose_p)
 	fprintf (stderr, "%s: no visual with id 0x%x.\n", progname,
 		 (unsigned int) id);
     }
@@ -111,24 +162,47 @@ get_visual_resource (dpy, name, class, prefer_writable_cells)
       Visual *visual = pick_best_visual_of_class (screen, vclass);
       if (visual)
 	result = visual;
-      else
+      else if (verbose_p)
 	fprintf (stderr, "%s: no visual of class %s.\n", progname, v);
     }
 
   if (v) free (v);
-  if (result)
-    return result;
+  return result;
+}
+
+Visual *
+#ifdef __STDC__
+get_visual_resource (Display *dpy, char *name, char *class,
+		     Bool prefer_writable_cells)
+#else /* !__STDC__ */
+get_visual_resource (dpy, name, class, prefer_writable_cells)
+     Display *dpy;
+     char *name, *class;
+     Bool prefer_writable_cells;
+#endif /* !__STDC__ */
+{
+  Screen *screen = DefaultScreenOfDisplay (dpy);
+  char *string = get_string_resource (name, class);
+  Visual *v = get_visual (dpy, string, prefer_writable_cells, True);
+  if (string)
+    free(string);
+  if (v)
+    return v;
   else
     return DefaultVisualOfScreen (screen);
 }
 
+
 static Visual *
 #ifdef __STDC__
-pick_best_visual (Screen *screen, Bool prefer_writable_cells)
+pick_best_visual (Display *dpy, Screen *screen,
+		  Bool prefer_writable_cells, Bool color_only)
 #else /* !__STDC__ */
-pick_best_visual (screen, prefer_writable_cells)
+pick_best_visual (dpy, screen, prefer_writable_cells, color_only)
+	Display *dpy;
 	Screen *screen;
 	Bool prefer_writable_cells;
+	Bool color_only;
 #endif /* !__STDC__ */
 {
   Visual *visual;
@@ -150,18 +224,56 @@ pick_best_visual (screen, prefer_writable_cells)
 	return visual;
     }
 
-  if ((visual = pick_best_visual_of_class (screen, PseudoColor)))
+#define TRY_CLASS(CLASS) \
+  if ((visual = pick_best_visual_of_class (screen, CLASS)) && \
+      (!color_only || visual_depth(dpy, visual) > 1)) \
+    return visual
+  TRY_CLASS(PseudoColor);
+  TRY_CLASS(TrueColor);
+  TRY_CLASS(DirectColor);
+  TRY_CLASS(StaticColor);
+  if (!color_only)
+    {
+      TRY_CLASS(GrayScale);
+      TRY_CLASS(StaticGray);
+    }
+#undef TRY_CLASS
+
+  visual = DefaultVisualOfScreen (screen);
+  if (!color_only || visual_depth(dpy, visual) > 1)
     return visual;
-  if ((visual = pick_best_visual_of_class (screen, TrueColor)))
-    return visual;
-  if ((visual = pick_best_visual_of_class (screen, DirectColor)))
-    return visual;
-  if ((visual = pick_best_visual_of_class (screen, GrayScale)))
-    return visual;
-  if ((visual = pick_best_visual_of_class (screen, StaticGray)))
-    return visual;
-  return DefaultVisualOfScreen (screen);
+  else
+    return 0;
 }
+
+static Visual *
+#ifdef __STDC__
+pick_mono_visual (Display *dpy, Screen *screen)
+#else /* !__STDC__ */
+pick_mono_visual (dpy, screen)
+	Display *dpy;
+	Screen *screen;
+#endif /* !__STDC__ */
+{
+  XVisualInfo vi_in, *vi_out;
+  int out_count;
+
+  vi_in.depth = 1;
+  vi_in.screen = screen_number (screen);
+  vi_out = XGetVisualInfo (dpy, (VisualDepthMask | VisualScreenMask),
+			   &vi_in, &out_count);
+  if (vi_out)
+    {
+      Visual *v = (out_count > 0 ? vi_out [0].visual : 0);
+      if (v && vi_out[0].depth != 1)
+	v = 0;
+      XFree ((char *) vi_out);
+      return v;
+    }
+  else
+    return 0;
+}
+
 
 static Visual *
 #ifdef __STDC__
@@ -199,7 +311,7 @@ pick_best_visual_of_class (screen, visual_class)
 	    ((vi_out [i].depth == vi_out [best].depth) &&
 	     (vi_out [i].colormap_size > vi_out [best].colormap_size)))
 	  best = i;
-      visual = vi_out [best].visual;
+      visual = (best < out_count ? vi_out [best].visual : 0);
       XFree ((char *) vi_out);
       return visual;
     }

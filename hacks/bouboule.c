@@ -37,7 +37,7 @@ static const char sccsid[] = "@(#)bouboule.c	4.00 97/01/01 xlockmore";
  *   Use: batchcount is the number of stars.
  *        cycles is the maximum size for a star
  *
- * 10-May-97: jwz@netscape.com: turned into a standalone program.
+ * 15-May-97: jwz@netscape.com: turned into a standalone program.
  * 04-Sep-96: Added 3d support (Henrik Theiling, theiling@coli-uni-sb.de)
  * 20-Feb-96: Added tests so that already malloced objects are not
  *            malloced twice, thanks to the report from <mccomb@interport.net>
@@ -75,7 +75,7 @@ static const char sccsid[] = "@(#)bouboule.c	4.00 97/01/01 xlockmore";
  */
 
 #ifdef STANDALONE
-# define PROGCLASS					"Braid"
+# define PROGCLASS					"Bouboule"
 # define HACK_INIT					init_bouboule
 # define HACK_DRAW					draw_bouboule
 # define DEF_BATCHCOUNT				100

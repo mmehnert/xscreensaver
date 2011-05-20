@@ -19,5 +19,6 @@ extern double get_float_resource P((char*,char*));
 extern unsigned int get_pixel_resource P((char*,char*,Display*,Colormap));
 extern unsigned int get_minutes_resource P((char*,char*));
 extern unsigned int get_seconds_resource P((char*,char*));
+extern int parse_time P((char *string, Bool seconds_default_p, Bool silent_p));
 
 #endif /* __XSCREENSAVER_RESOURCES_H__ */

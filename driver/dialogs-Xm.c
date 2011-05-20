@@ -1,4 +1,5 @@
-/*    xscreensaver, Copyright (c) 1993-1997 Jamie Zawinski <jwz@netscape.com>
+/* dialogs-Xm.c --- Motif widgets for demo, options, and password dialogs.
+ * xscreensaver, Copyright (c) 1993-1997 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -12,7 +13,6 @@
 /* The code in this file started off its life as the output of XDesigner,
    but I've since hacked it by hand...  It's a mess, avert your eyes.
  */
-
 
 #ifndef __STDC__
 # define _NO_PROTO
@@ -36,10 +36,17 @@
 
 #include <Xm/SelectioB.h>
 
-extern Visual *visual;
-extern int visualdepth;
-extern Colormap cmap;
+#include <stdio.h>
+#ifdef __STDC__
+# define P(x)x
+#else
+# define P(x)()
+# ifndef const
+#  define const /**/
+# endif
+#endif
 
+#include "visual.h"	/* for visual_depth() */
 
 Widget passwd_dialog;
 Widget passwd_form;
@@ -84,10 +91,12 @@ Widget spacer;
 
 void
 #ifdef __STDC__
-create_passwd_dialog( Widget parent )
-#else /* !__STDC__ */
-create_passwd_dialog( parent )
-Widget parent;
+create_passwd_dialog(Widget parent, Visual *visual, Colormap colormap)
+#else  /* !__STDC__ */
+create_passwd_dialog (parent, visual, colormap)
+	Widget parent;
+	Visual *visual;
+	Colormap colormap;
 #endif /* !__STDC__ */
 {
   Widget shell;
@@ -99,14 +108,21 @@ Widget parent;
   Widget    text;
   Widget    ok, cancel;
   Widget w;
+  Arg al[64];
+  int ac = 0;
 
-  shell = XmCreateDialogShell (parent, "passwdDialog", 0, 0);
+  ac = 0;
+  XtSetArg (al[ac], XmNvisual, visual); ac++;
+  XtSetArg (al[ac], XmNcolormap, colormap); ac++;
+  XtSetArg (al[ac], XmNdepth, visual_depth(XtDisplay(parent), visual)); ac++;
+
+  shell = XmCreateDialogShell (parent, "passwdDialog", al, ac);
 
   form1 = XmCreateForm (shell, "form", 0, 0);
 
   roger = XmCreateDrawnButton (form1, "rogerLabel", 0, 0);
 
-  dialog = XmCreateSelectionBox (form1, "passwdForm", 0, 0);
+  dialog = XmCreateSelectionBox (form1, "passwdForm", al, ac);
 
   form2 = XmCreateForm ( dialog, "form", 0, 0);
   label1 = XmCreateLabel ( form2, "passwdLabel1", 0, 0);
@@ -204,10 +220,12 @@ Widget parent;
 
 void
 #ifdef __STDC__
-create_resources_dialog( Widget parent )
-#else /* !__STDC__ */
-create_resources_dialog( parent )
-Widget parent;
+create_resources_dialog(Widget parent, Visual *visual, Colormap colormap)
+#else  /* !__STDC__ */
+create_resources_dialog (parent, visual, colormap)
+	Widget parent;
+	Visual *visual;
+	Colormap colormap;
 #endif /* !__STDC__ */
 {
   Widget children[22];      /* Children to manage */
@@ -226,11 +244,10 @@ Widget parent;
   Widget real_dialog;
   Widget w;
 
-
   ac = 0;
   XtSetArg (al[ac], XmNvisual, visual); ac++;
-  XtSetArg (al[ac], XmNcolormap, cmap); ac++;
-  XtSetArg (al[ac], XmNdepth, visualdepth); ac++;
+  XtSetArg (al[ac], XmNcolormap, colormap); ac++;
+  XtSetArg (al[ac], XmNdepth, visual_depth(XtDisplay(parent), visual)); ac++;
 
   real_dialog = XmCreatePromptDialog (parent, "resourcesForm", al, ac);
   resources_dialog = XtParent(real_dialog);
@@ -255,7 +272,7 @@ Widget parent;
   ac = 0;
 
   widget12 = XmCreateLabel ( resources_form, "resourcesLabel", al, ac );
-  widget13 = XmCreateSeparator ( resources_form, "widget13", al, ac );
+  widget13 = XmCreateSeparator ( resources_form, "separator", al, ac );
   XtSetArg(al[ac], XmNalignment, XmALIGNMENT_END); ac++;
   widget14 = XmCreateLabel ( resources_form, "timeoutLabel", al, ac );
   ac = 0;
@@ -295,7 +312,7 @@ Widget parent;
   XtSetArg(al[ac], XmNalignment, XmALIGNMENT_BEGINNING); ac++;
   lock_toggle = XmCreateToggleButton ( resources_form, "lockToggle", al, ac );
   ac = 0;
-  widget29 = XmCreateSeparator ( resources_form, "widget29", al, ac );
+  widget29 = XmCreateSeparator ( resources_form, "separator", al, ac );
 
   res_done = XmSelectionBoxGetChild (real_dialog, XmDIALOG_OK_BUTTON);
   res_cancel = XmSelectionBoxGetChild (real_dialog, XmDIALOG_CANCEL_BUTTON);
@@ -581,13 +598,14 @@ Widget parent;
 }
 
 
-
 void
 #ifdef __STDC__
-create_demo_dialog( Widget parent )
-#else /* !__STDC__ */
-create_demo_dialog( parent )
-Widget parent;
+create_demo_dialog(Widget parent, Visual *visual, Colormap colormap)
+#else  /* !__STDC__ */
+create_demo_dialog (parent, visual, colormap)
+	Widget parent;
+	Visual *visual;
+	Colormap colormap;
 #endif /* !__STDC__ */
 {
   Arg al[64];           /* Arg List */
@@ -599,8 +617,8 @@ Widget parent;
 
   ac = 0;
   XtSetArg (al[ac], XmNvisual, visual); ac++;
-  XtSetArg (al[ac], XmNcolormap, cmap); ac++;
-  XtSetArg (al[ac], XmNdepth, visualdepth); ac++;
+  XtSetArg (al[ac], XmNcolormap, colormap); ac++;
+  XtSetArg (al[ac], XmNdepth, visual_depth(XtDisplay(parent), visual)); ac++;
 
 
   real_dialog = XmCreatePromptDialog (parent, "demoForm", al, ac);
@@ -636,6 +654,31 @@ Widget parent;
   text_line = XmSelectionBoxGetChild (real_dialog, XmDIALOG_TEXT);
   XtManageChild(text_line);
 
+  /* #### ARRGH!  This is apparently the only way to make hitting return in
+     the text field not *ALSO* activate the most-recently-selected button!
+
+     This has the unfortunate side effect of making the buttons not be
+     keyboard-traversable, but that's less bad than not being able to try
+     out new switches by typing them into the text field.
+
+     XmSelectionBox(3M) says in the "Additional Behavior" section:
+	  KActivate:
+		    Calls the activate callbacks for the button with
+		    the keyboard focus.  [... ]  In a List widget or
+		    single-line Text widget, the List or Text action
+		    associated with KActivate is called before the
+		    SelectionBox actions associated with KActivate."
+
+     So they take it as a given that when running activateCallback on a single-
+     line Text widget, you'll also want to run activateCallback on whatever the
+     currently-focussed button is as well!  Morons!  Villains!  Shitheads!
+
+     (Perhaps there's some way to override XmSelectionBox's KActivate behavior.
+     I doubt it, but if there is, I don't know it.)
+  */
+  ac = 0;
+  XtSetArg(al[ac], XmNtraversalOn, False); ac++;
+
   next = XmCreatePushButton ( real_dialog, "next", al, ac );
   prev = XmCreatePushButton ( real_dialog, "prev", al, ac );
   edit = XmCreatePushButton ( real_dialog, "edit", al, ac );
@@ -647,6 +690,7 @@ Widget parent;
   XtManageChild(done);
   XtManageChild(restart);
 
+  ac = 0;
   XtSetArg(al[ac], XmNtopAttachment, XmATTACH_FORM); ac++;
   XtSetArg(al[ac], XmNtopOffset, 5); ac++;
   XtSetArg(al[ac], XmNbottomAttachment, XmATTACH_NONE); ac++;

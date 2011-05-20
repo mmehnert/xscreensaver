@@ -46,7 +46,7 @@
  *            Scott Draves.
  * 27-Jun-91: vary number of functions used.
  * 24-Jun-91: fixed portability problem with integer mod (%).
- * 06-Jun-91: Written. (received from Scott Graves, spot@cs.cmu.edu).
+ * 06-Jun-91: Written. (received from Scott Draves, spot@cs.cmu.edu).
  */
 
 #include <math.h>

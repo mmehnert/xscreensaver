@@ -11,7 +11,7 @@
 .if n .sp 1
 .if t .sp .5
 ..
-.TH XScreenSaver 1 "6-Jan-95" "X Version 11"
+.TH XScreenSaver 1 "25-May-97" "X Version 11"
 .SH NAME
 xscreensaver - graphics hack and screen locker, launched when the user is idle
 .SH SYNOPSIS
@@ -116,6 +116,16 @@ the default.
 Use the screen's default visual (the visual of the root window.)  This is
 not necessarily the most colorful visual, which is why it is not the default.
 .TP 8
+.B mono
+Use a monochrome visual, if there is one.
+.TP 8
+.B gray
+Use a grayscale or staticgray visual, if there is one and it has more than
+one plane (that is, it's not monochrome.)
+.TP 8
+.B color
+Use the best of the color visuals, if there are any.
+.TP 8
 .I class
 One of \fBStaticGray\fP, \fBStaticColor\fP, \fBTrueColor\fP, \fBGrayScale\fP, 
 \fBPseudoColor\fP, or \fBDirectColor\fP.  Selects the deepest visual of
@@ -126,14 +136,20 @@ A number (decimal or hex) is interpreted as a visual id number, as reported
 by the
 .BR xdpyinfo (1)
 program; in this way you can select a shallower visual if desired.
+
+Note that this option specifies only the \fIdefault\fP visual that will
+be used: the visual used may be overridden on a program-by-program basis.
+See the description of the \fBprograms\fP resource, below.
 .RE
-.TP 8
-.B \-no\-install
-Use the default colormap.  This is the default.
 .TP 8
 .B \-install
 Install a private colormap while the screensaver is on, so that the graphics
-hacks can get as many colors as possible.
+hacks can get as many colors as possible.    This is the default.  (This only
+applies when the screen's default visual is being used; non-default visuals 
+get their own colormaps automatically.)
+.TP 8
+.B \-no\-install
+Use the default colormap.
 .TP 8
 .B \-demo
 Enter the interactive demo mode immediately after startup.  Normally
@@ -198,7 +214,7 @@ dialog box is up (for security purposes) and leaving the server grabbed for
 too long can cause problems.
 .TP 8
 .B visualID \fR(class \fBVisualID\fP)
-Same as the \fI\-visual\fP command-line option.  Default \fBbest\fP.
+Same as the \fI\-visual\fP command-line option.  Default \fBdefault\fP.
 .TP 8
 .B captureStderr \fR(class \fBBoolean\fP)
 Whether \fIxscreensaver\fP should redirect its standard-error stream to the
@@ -225,27 +241,25 @@ The background color used for the stdout/stderr text, if \fBcaptureStdout\fP
 or \fBcaptureStderr\fP are true.  Default: Black.
 .TP 8
 .B programs \fR(class \fBPrograms\fP)
-The graphics hacks which \fIxscreensaver\fP runs when the user is idle,
-in addition to those specified in colorPrograms or monoPrograms (as 
-appropriate.)  The value of this resource is a string, one \fIsh\fP command 
-per line.  Each line must contain exactly one command -- no semicolons.
+The graphics hacks which \fIxscreensaver\fP runs when the user is idle.
+The value of this resource is a string, one \fIsh\fP command per line.  
+Each line must contain exactly one command -- no semicolons, no ampersands.
 
 When the screensaver starts up, one of these is selected at random, and
 run.  After the \fIcycle\fP period expires, it is killed, and another
 is selected and run.
 
-If the value of this resource (and the applicable one of \fBcolorPrograms\fP
-or \fBmonoPrograms\fP) is empty, then no programs will be run; the screen
-will simply be made black.
+If the value of this resource is empty, then no programs will be run; the
+screen will simply be made black.
 
 Note that you must escape the newlines; here is an example of how you
 might set this in your \fI.Xdefaults\fP file:
 .EX
 xscreensaver.programs:  \\
-        qix -root                        \\n\\
-        ico -r -faces -sleep 1 -obj ico  \\n\\
-        xdaliclock -builtin2 -root       \\n\\
-        xwave -root
+        qix -root                          \\n\\
+        ico -r -faces -sleep 1 -obj ico    \\n\\
+        xdaliclock -builtin2 -root         \\n\\
+        xv -root -rmode 5 image.gif -quit  \\n
 .EE
 To use a program as a screensaver, two things are required: that that
 program draw on the root window (or be able to be configured to draw on
@@ -256,22 +270,26 @@ It is quite easy to make programs understand virtual roots if they
 don't already: you merely need to include the file \fI"vroot.h"\fP in
 them after the standard X includes, and recompile.  This file is distributed
 with X11r5, and is included with xscreensaver as well.
-.TP 8
-.B monoPrograms \fR(class \fBMonoPrograms\fP)
-This resource is appended to the value of the \fIprograms\fP resource if
-the display on which the screensaver is running is monochrome.
-.TP 8
-.B colorPrograms \fR(class \fBColorPrograms\fP)
-This resource is appended to the value of the \fIprograms\fP resource if
-the display on which the screensaver is running is not monochrome.
+
+If there are some programs that you want to run only when using a color
+display, and others that you want to run only when using a monochrome
+display, you can specify that like this:
+.EX
+        mono:   mono-program  -root        \\n\\
+        color:  color-program -root        \\n\\
+.EE
+More generally, you can specify the kind of visual that should be used for
+the window on which the program will be drawing.  For example, if one 
+program works best if it has a colormap, but another works best if it has
+a 24-bit visual, both can be accomidated:
+.EX
+        PseudoColor: cmap-program  -root   \\n\\
+        TrueColor:   24bit-program -root   \\n\\
+.EE
+(This sort of thing used to be accomplished with the \fIcolorPrograms\fP
+and \fImonoPrograms\fP resources, but those resources have now been removed;
+a warning will be issued if they are used.)
 .PP
-.RS 4
-\fBNOTE: this means that if you want to completely replace the list of 
-programs which xscreensaver runs, you must set at least \fItwo\fP,
-possibly \fIthree\fP resources.  It is not enough to just set 
-the \fBprograms\fP resource -- you must also set \fBcolorPrograms\fP 
-or \fBmonoPrograms\fP or both.\fP
-.RE
 .PP
 Normally you won't need to change the following resources:
 .TP 8
@@ -458,11 +476,9 @@ automatically return to demo mode after restarting.
 .BR bongo (1),
 .BR xfishtank (1)
 .SH BUGS
-If you think you have changed the \fBprograms\fP resource but the
-screensaver is ignoring it, you are confused -- you need to set 
-the \fBcolorPrograms\fP and/or \fBmonoPrograms\fP resources as well.
-(This is not a bug, but I mention it here because people think that
-it is with great regularity.)
+Note that as of release 1.32, the \fBcolorPrograms\fP and \fBmonoPrograms\fP
+resources are no longer used: they have been supplanted by the extended syntax
+of the \fBprograms\fP resource (see above.)
 .PP
 If you are not making use of one of the server extensions (\fBXIDLE\fP,
 \fBSCREEN_SAVER\fP, or \fBMIT-SCREEN-SAVER\fP), then it is possible, in rare

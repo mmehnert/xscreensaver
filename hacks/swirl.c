@@ -137,6 +137,7 @@ typedef struct swirl_data {
 	int         dshift;	/* colourmap shift while drawing */
 	XColor      fgcol, bgcol;	/* foreground and background colour specs */
 #endif /* !STANDALONE */
+	Bool       off_screen;
 } SWIRL    , *SWIRL_P;
 
 #define SWIRLCOLOURS 13
@@ -163,7 +164,6 @@ random_no(unsigned int n)
 {
 	return ((int) ((n + 1) * (double) LRAND() / MAXRAND));
 }
-
 
 /****************************************************************/
 
@@ -350,7 +350,6 @@ initialise_colours(COLOUR * colours, float saturate)
 }
 #endif /* !STANDALONE */
 
-
 /****************************************************************/
 
 #ifndef STANDALONE
@@ -388,7 +387,6 @@ set_black_and_white(SWIRL_P swirl, XColor * values)
 	values[swirl->fg] = swirl->fgcol;
 	values[swirl->bg] = swirl->bgcol;
 }
-
 
 /****************************************************************/
 
@@ -492,7 +490,6 @@ get_colour(SWIRL_P swirl, XColor ** value, COLOUR_P c)
 	}
 }
 #endif /* !STANDALONE */
-
 
 /****************************************************************/
 
@@ -711,13 +708,14 @@ static void
 create_colourmap(ModeInfo * mi, SWIRL_P swirl)
 {
 	Display    *display = MI_DISPLAY(mi);
-  XVisualInfo *default_info;
 	int         preserve;
 	int         n_rotations;
 	int         i;
+	Bool        truecolor;
+  unsigned long redmask, greenmask, bluemask;
 
 	swirl->fixed_colourmap = !setupColormap(mi, &(swirl->colours),
-     &default_info);
+    &truecolor, &redmask, &greenmask, &bluemask);
 	preserve = preserveColors(swirl->fg, swirl->bg, swirl->white, swirl->black);
 
 	/* how many colours should we animate? */
@@ -755,32 +753,27 @@ create_colourmap(ModeInfo * mi, SWIRL_P swirl)
 		/* store the colours in the colour map */
 		XStoreColors(display, swirl->cmap, swirl->rgb_values, swirl->colours);
 	} else {
-#if defined(__cplusplus) || defined(c_plusplus)
-		if (default_info->c_class == TrueColor)
-#else
-		if (default_info->class == TrueColor)
-#endif
-		{
+		if (truecolor) {
 			int         rsh, gsh, bsh;
 			unsigned long int t;
 
-			t = default_info->red_mask;
+			t = redmask;
 			for (i = 0; (int) t > 0; i++, t >>= 1);
 			rsh = 16 - i;
-			t = default_info->green_mask;
+			t = greenmask;
 			for (i = 0; (int) t > 0; i++, t >>= 1);
 			gsh = 16 - i;
-			t = default_info->blue_mask;
+			t = bluemask;
 			for (i = 0; (int) t > 0; i++, t >>= 1);
 			bsh = 16 - i;
 			for (i = 0; i < swirl->colours; i++)
 				swirl->rgb_values[i].pixel =
 					((rsh > 0 ? (swirl->rgb_values[i].red) >> rsh :
-					  (swirl->rgb_values[i].red) << (-rsh)) & default_info->red_mask) |
+					  (swirl->rgb_values[i].red) << (-rsh)) & redmask) |
 					((gsh > 0 ? (swirl->rgb_values[i].green) >> gsh :
-					  (swirl->rgb_values[i].green) << (-gsh)) & default_info->green_mask) |
+					  (swirl->rgb_values[i].green) << (-gsh)) & greenmask) |
 					((bsh > 0 ? (swirl->rgb_values[i].blue) >> bsh :
-					  (swirl->rgb_values[i].blue) << (-bsh)) & default_info->blue_mask);
+					  (swirl->rgb_values[i].blue) << (-bsh)) & bluemask);
 		} else {
 			/* lookup the colours in the fixed colour map */
 			for (i = 0; i < swirl->colours; i++)
@@ -789,7 +782,6 @@ create_colourmap(ModeInfo * mi, SWIRL_P swirl)
 		}
 	}
 }
-
 
 /****************************************************************/
 
@@ -1149,8 +1141,6 @@ draw_point(ModeInfo * mi, SWIRL_P swirl)
 static void
 next_point(SWIRL_P swirl)
 {
-	static Bool off_screen;
-
 	/* more to do in this direction? */
 	if (swirl->dir_done < swirl->dir_todo) {
 		/* move in the current direction */
@@ -1185,11 +1175,11 @@ next_point(SWIRL_P swirl)
 					swirl->y += (swirl->dir_todo * swirl->r);
 
 					/* check for finish */
-					if (off_screen)
+					if (swirl->off_screen)
 						swirl->drawing = False;
-					off_screen = True;
+					swirl->off_screen = True;
 				} else
-					off_screen = False;
+					swirl->off_screen = False;
 				break;
 			case DRAW_DOWN:
 				swirl->direction = DRAW_LEFT;
@@ -1200,11 +1190,11 @@ next_point(SWIRL_P swirl)
 					swirl->x -= (swirl->dir_todo * swirl->r);
 
 					/* check for finish */
-					if (off_screen)
+					if (swirl->off_screen)
 						swirl->drawing = False;
-					off_screen = True;
+					swirl->off_screen = True;
 				} else
-					off_screen = False;
+					swirl->off_screen = False;
 				break;
 			case DRAW_LEFT:
 				swirl->direction = DRAW_UP;
@@ -1214,11 +1204,11 @@ next_point(SWIRL_P swirl)
 					swirl->y -= (swirl->dir_todo * swirl->r);
 
 					/* check for finish */
-					if (off_screen)
+					if (swirl->off_screen)
 						swirl->drawing = False;
-					off_screen = True;
+					swirl->off_screen = True;
 				} else
-					off_screen = False;
+					swirl->off_screen = False;
 				break;
 			case DRAW_UP:
 				swirl->direction = DRAW_RIGHT;
@@ -1229,16 +1219,15 @@ next_point(SWIRL_P swirl)
 					swirl->x += (swirl->dir_todo * swirl->r);
 
 					/* check for finish */
-					if (off_screen)
+					if (swirl->off_screen)
 						swirl->drawing = False;
-					off_screen = True;
+					swirl->off_screen = True;
 				} else
-					off_screen = False;
+					swirl->off_screen = False;
 				break;
 		}
 	}
 }
-
 
 /****************************************************************/
 

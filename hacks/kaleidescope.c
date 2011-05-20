@@ -217,8 +217,8 @@ create_ksegment P((void))
   greenstep = new_color.green/(2 * g.ntrails);
   bluestep = new_color.blue/(2 * g.ntrails);
 
-  seg            = malloc(sizeof(Ksegment));
-  seg->xsegments = malloc(g.symmetry * sizeof(XSegment));
+  seg            = (Ksegment *) malloc(sizeof(Ksegment));
+  seg->xsegments = (XSegment  *) malloc(g.symmetry * sizeof(XSegment));
 
   prev = seg;
   for(i=0; i< (g.ntrails - 1); i++) {
@@ -227,8 +227,8 @@ create_ksegment P((void))
 
     kcopy_color(&(prev->color), &new_color);
 
-    prev->next              = malloc(sizeof(Ksegment));
-    (prev->next)->xsegments = malloc(g.symmetry * sizeof(XSegment));
+    prev->next              = (Ksegment*)malloc(sizeof(Ksegment));
+    (prev->next)->xsegments = (XSegment*)malloc(g.symmetry * sizeof(XSegment));
     prev->drawn             = 0;
     prev = (prev->next);
   } 
@@ -374,7 +374,7 @@ create_objects P((void))
 {
   int i;
 
-  objects = malloc(g.nobjects * sizeof(OBJECT));
+  objects = (OBJECT *) malloc(g.nobjects * sizeof(OBJECT));
 
   for (i=0; i< g.nsegments; i++) {
     objects[i].cur = create_ksegment();

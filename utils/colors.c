@@ -693,7 +693,7 @@ make_random_colormap (dpy, visual, cmap,
       colors[i].flags = DoRed|DoGreen|DoBlue;
       if (bright_p)
 	{
-	  int H = (360 * ncolors) / i;			   /* range 0-360    */
+	  int H = random() % 360;			   /* range 0-360    */
 	  double S = ((double) (random()%70) + 30)/100.0;  /* range 30%-100% */
 	  double V = ((double) (random()%34) + 66)/100.0;  /* range 66%-100% */
 	  hsv_to_rgb (H, S, V,

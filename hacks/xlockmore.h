@@ -201,6 +201,15 @@ char *defaults[] = {
   "*both3d:	Magenta",
   "*none3d:	Black",
 #endif
+#ifdef DEF_TEXT
+  "*text:	" DEF_TEXT,
+#endif
+#ifdef DEF_FONT
+  "*font:	" DEF_FONT,
+#endif
+#ifdef DEF_BITMAP
+  "*bitmap:	" DEF_BITMAP,
+#endif
   0
 };
 
@@ -256,6 +265,15 @@ XrmOptionDescRec options[] = {
   {"-right3d",	".right3d",		XrmoptionSepArg, 0 },
   {"-both3d",	".both3d",		XrmoptionSepArg, 0 },
   {"-none3d",	".none3d",		XrmoptionSepArg, 0 },
+#endif
+#ifdef DEF_TEXT
+  {"-text",	".text",		XrmoptionSepArg, 0 },
+#endif
+#ifdef DEF_FONT
+  {"-font",	".font",		XrmoptionSepArg, 0 },
+#endif
+#ifdef DEF_BITMAP
+  {"-bitmap",	".bitmap",		XrmoptionSepArg, 0 },
 #endif
 };
 int options_size = (sizeof (options) / sizeof (options[0]));

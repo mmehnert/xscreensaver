@@ -24,16 +24,16 @@ static const char sccsid[] = "@(#)galaxy.c	4.02 97/04/01 xlockmore";
  *
  * Revision History:
  * 10-May-97: jwz@netscape.com: turned into a standalone program.
+ * 18-Apr-97: Memory leak fixed by Tom Schmidt <tschmidt@micron.com>
+ * 07-Apr-97: Modified by Dave Mitchell <davem@magnet.com>
+ * 23-Oct-94: Modified by David Bagley <bagleyd@bigfoot.com>
+ *		random star sizes
+ *		colors change depending on velocity
+ * 10-Oct-94: Add colors by Hubert Feyer
+ * 30-Sep-94: Initial port by Hubert Feyer
  * 09-Mar-94: VMS can generate a random number 0.0 which results in a
  *            division by zero, corrected by Jouk Jansen
  *            <joukj@crys.chem.uva.nl>
- * 30-Sep-94: Initial port by Hubert Feyer
- * 10-Oct-94: Add colors by Hubert Feyer
- * 23-Oct-94: Modified by David Bagley <bagleyd@bigfoot.com>
- * 7-Apr-97: Modified by Dave Mitchell <davem@magnet.com>
- *		random star sizes
- *		colors change depending on velocity
- * 18-Apr-97: Memory leak fixed by Tom Schmidt <tschmidt@micron.com>
  */
 
 #ifdef STANDALONE
@@ -67,6 +67,7 @@ static const char sccsid[] = "@(#)galaxy.c	4.02 97/04/01 xlockmore";
 #define DEFAULT_STARS    1000
 #define DEFAULT_HITITERATIONS  7500
 #define DEFAULT_IDELTAT    200	/* 0.02 */
+#define EPSILON 0.0000001
 
 #define GALAXYRANGESIZE  0.1
 #define GALAXYMINSIZE  0.1
@@ -173,7 +174,7 @@ startover(ModeInfo * mi)
 
 	gp->step = 0;
 
-  if (MI_BATCHCOUNT(mi) < -MINGALAXIES)
+	if (MI_BATCHCOUNT(mi) < -MINGALAXIES)
 		free_galaxies(gp);
 	gp->ngalaxies = MI_BATCHCOUNT(mi);
 	if (gp->ngalaxies < -MINGALAXIES)
@@ -200,10 +201,10 @@ startover(ModeInfo * mi)
 		gt->stars = (Star *) malloc(gt->nstars * sizeof (Star));
 		w1 = 2.0 * M_PI * FLOATRAND;
 		w2 = 2.0 * M_PI * FLOATRAND;
-		sinw1 = sin(w1);
-		sinw2 = sin(w2);
-		cosw1 = cos(w1);
-		cosw2 = cos(w2);
+		sinw1 = SINF(w1);
+		sinw2 = SINF(w2);
+		cosw1 = COSF(w1);
+		cosw2 = COSF(w2);
 
 		gp->mat[0][0] = cosw2;
 		gp->mat[0][1] = -sinw1 * sinw2;
@@ -234,8 +235,8 @@ startover(ModeInfo * mi)
 			double      sinw, cosw;
 
 			w = 2.0 * M_PI * FLOATRAND;
-			sinw = sin(w);
-			cosw = cos(w);
+			sinw = SINF(w);
+			cosw = COSF(w);
 			d = FLOATRAND * gp->size;
 			h = FLOATRAND * exp(-2.0 * (d / gp->size)) / 5.0 * gp->size;
 			if (FLOATRAND < 0.5)
@@ -330,6 +331,8 @@ draw_galaxy(ModeInfo * mi)
 				gp->diff[2] = gtk->pos[2] - st->pos[2];
 				d = gp->diff[0] * gp->diff[0] + gp->diff[1] * gp->diff[1] +
 					gp->diff[2] * gp->diff[2];
+				if (d < EPSILON)
+					d = EPSILON;
 				d = gt->mass / (d * sqrt(d)) * gp->f_deltat * QCONS;
 				gp->diff[0] *= d;
 				gp->diff[1] *= d;
@@ -340,7 +343,7 @@ draw_galaxy(ModeInfo * mi)
 			}
 
 			st->color = COLORSTEP * gt->galcol + ((int) ((st->vel[0] * st->vel[0] +
-								      st->vel[1] * st->vel[1] + st->vel[2] * st->vel[2]) / 3.0)) % COLORSTEP;
+				st->vel[1] * st->vel[1] + st->vel[2] * st->vel[2]) / 3.0)) % COLORSTEP;
 
 			st->pos[0] += st->vel[0] * gp->f_deltat;
 			st->pos[1] += st->vel[1] * gp->f_deltat;
@@ -400,6 +403,8 @@ draw_galaxy(ModeInfo * mi)
 			gp->diff[2] = gtk->pos[2] - gt->pos[2];
 			d = gp->diff[0] * gp->diff[0] + gp->diff[1] * gp->diff[1] +
 				gp->diff[2] * gp->diff[2];
+			if (d < EPSILON)
+				d = EPSILON;
 			d = gt->mass * gt->mass / (d * sqrt(d)) * gp->f_deltat * QCONS;
 			gp->diff[0] *= d;
 			gp->diff[1] *= d;

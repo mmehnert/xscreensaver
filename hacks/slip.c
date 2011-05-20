@@ -227,11 +227,10 @@ draw_slip(ModeInfo * mi)
 				s2 = 2 * dx * dy / t;
 				dx = s1 * 5;
 				dy = s2 * 5;
-				if (s->backwards)	/* jwz: go the other way sometimes */
-				  {
+				if (s->backwards) {	/* jwz: go the other way sometimes */
 					dx = -dx;
 					dy = -dy;
-				  }
+				}
 				break;
 			case 1:
 				dx = erandom(3);

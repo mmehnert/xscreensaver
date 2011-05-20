@@ -185,9 +185,9 @@ xlockmore_screenhack (dpy, window,
   hack_init (&mi);
   do {
     hack_draw (&mi);
+    XSync(dpy, False);
     if (mi.pause)
       usleep(mi.pause);
-    XSync(dpy, False);
 
     if (hack_free)
       {
@@ -198,6 +198,7 @@ xlockmore_screenhack (dpy, window,
 	    start = now;
 	    hack_free (&mi);
 	    hack_init (&mi);
+	    XSync(dpy, False);
 	  }
       }
 

@@ -187,7 +187,7 @@ main (argc, argv)
   else if (query)
     {
       XClassHint hint;
-      memset (hint, 0, sizeof(hint));
+      memset (&hint, 0, sizeof(hint));
       if (!v || !*v)
 	{
 	  fprintf (stderr, "%s: version property not set on window 0x%x?\n",
