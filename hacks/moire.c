@@ -155,8 +155,7 @@ moire (Display *dpy, Window window, int offset, XColor *colors, int ncolors)
       image = XCreateImage (dpy, xgwa.visual,
 			    depth, ZPixmap, 0,	    /* depth, format, offset */
 			    0, xgwa.width, 1, 8, 0); /* data, w, h, pad, bpl */
-      image->data = (unsigned char *)
-	calloc(image->height, image->bytes_per_line);
+      image->data = (char *) calloc(image->height, image->bytes_per_line);
     }
 
   for (y = 0; y < xgwa.height; y++)

@@ -173,6 +173,7 @@ static XrmOptionDescRec options [] = {
   { "-no-install",	   ".installColormap",	XrmoptionNoArg, "off" },
   { "-verbose",		   ".verbose",		XrmoptionNoArg, "on" },
   { "-silent",		   ".verbose",		XrmoptionNoArg, "off" },
+  { "-timestamp",	   ".timestamp",	XrmoptionNoArg, "on" },
   { "-xidle-extension",	   ".xidleExtension",	XrmoptionNoArg, "on" },
   { "-no-xidle-extension", ".xidleExtension",	XrmoptionNoArg, "off" },
   { "-mit-extension",	   ".mitSaverExtension",XrmoptionNoArg, "on" },
@@ -180,7 +181,10 @@ static XrmOptionDescRec options [] = {
   { "-sgi-extension",	   ".sgiSaverExtension",XrmoptionNoArg, "on" },
   { "-no-sgi-extension",   ".sgiSaverExtension",XrmoptionNoArg, "off" },
   { "-idelay",		   ".initialDelay",	XrmoptionSepArg, 0 },
-  { "-nice",		   ".nice",		XrmoptionSepArg, 0 }
+  { "-nice",		   ".nice",		XrmoptionSepArg, 0 },
+
+  /* Actually this one is built in to Xt, but just to be sure... */
+  { "-synchronous",	   ".synchronous",	XrmoptionNoArg, "on" }
 };
 
 static char *defaults[] = {
@@ -191,27 +195,22 @@ static char *defaults[] = {
 static void
 do_help (saver_info *si)
 {
-  printf ("\
+  fflush (stdout);
+  fflush (stderr);
+  fprintf (stdout, "\
 xscreensaver %s, copyright (c) 1991-1998 by Jamie Zawinski <jwz@jwz.org>\n\
 The standard Xt command-line options are accepted; other options include:\n\
 \n\
-    -timeout <minutes>         When the screensaver should activate.\n\
-    -cycle <minutes>           How long to let each hack run.\n\
-    -lock-mode                 Require a password before deactivating.\n\
-    -no-lock-mode              Don't.\n\
-    -lock-timeout <minutes>    Grace period before locking; default 0.\n\
-    -visual <id-or-class>      Which X visual to run on.\n\
-    -install                   Install a private colormap.\n\
-    -no-install                Don't.\n\
-    -verbose                   Be loud.\n\
-    -silent                    Don't.\n\
-    -mit-extension             Use the R6 MIT_SCREEN_SAVER server extension.\n\
-    -no-mit-extension          Don't.\n\
-    -sgi-extension             Use the SGI SCREEN-SAVER server extension.\n\
-    -no-sgi-extension          Don't.\n\
-    -xidle-extension           Use the R5 XIdle server extension.\n\
-    -no-xidle-extension        Don't.\n\
-    -help                      This message.\n\
+    -timeout <minutes>       When the screensaver should activate.\n\
+    -cycle <minutes>         How long to let each hack run before switching.\n\
+    -lock-mode               Require a password before deactivating.\n\
+    -lock-timeout <minutes>  Grace period before locking; default 0.\n\
+    -visual <id-or-class>    Which X visual to run on.\n\
+    -install                 Install a private colormap.\n\
+    -verbose                 Be loud.\n\
+    -help                    This message.\n\
+\n\
+See the manual for other options and X resources.\n\
 \n\
 The `xscreensaver' program should be left running in the background.\n\
 Use the `xscreensaver-command' program to manipulate a running xscreensaver.\n\
@@ -219,21 +218,16 @@ Use the `xscreensaver-command' program to manipulate a running xscreensaver.\n\
 The `*programs' resource controls which graphics demos will be launched by\n\
 the screensaver.  See `man xscreensaver' or the web page for more details.\n\
 \n\
-For updates, check http://www.jwz.org/xscreensaver/\n\n",
+Just getting started?  Try this:\n\
+\n\
+        xscreensaver &\n\
+        xscreensaver-command -demo\n\
+\n\
+For updates, check http://www.jwz.org/xscreensaver/\n\
+\n",
 	  si->version);
-
-#ifdef NO_LOCKING
-  printf ("Support for locking was not enabled at compile-time.\n");
-#endif
-#ifdef NO_DEMO_MODE
-  printf ("Support for demo mode was not enabled at compile-time.\n");
-#endif
-#if !defined(HAVE_XIDLE_EXTENSION) && !defined(HAVE_MIT_SAVER_EXTENSION) && !defined(HAVE_SGI_SAVER_EXTENSION)
-  printf ("Support for the XIDLE, SCREEN_SAVER, and MIT-SCREEN-SAVER server\
- extensions\nwas not enabled at compile-time.\n");
-#endif /* !HAVE_XIDLE_EXTENSION && !HAVE_MIT_SAVER_EXTENSION && !HAVE_SGI_SAVER_EXTENSION */
-
   fflush (stdout);
+  fflush (stderr);
   exit (1);
 }
 
@@ -386,6 +380,7 @@ get_resources (saver_info *si)
   saver_preferences *p = &si->prefs;
 
   p->verbose_p	    = get_boolean_resource ("verbose", "Boolean");
+  p->xsync_p	    = get_boolean_resource ("synchronous", "Synchronous");
   p->timestamp_p    = get_boolean_resource ("timestamp", "Boolean");
   p->lock_p	    = get_boolean_resource ("lock", "Boolean");
   p->fade_p	    = get_boolean_resource ("fade", "Boolean");
@@ -488,6 +483,7 @@ get_resources (saver_info *si)
   if (p->debug_p)
     {
       XSynchronize(si->dpy, True);
+      p->xsync_p = True;
       p->verbose_p = True;
       p->timestamp_p = True;
       p->initial_delay = 0;
@@ -527,9 +523,21 @@ saver_ehandler (Display *dpy, XErrorEvent *error)
 {
   saver_info *si = global_si_kludge;	/* I hate C so much... */
 
-  fprintf (real_stderr, "\nX error in %s:\n", blurb());
+  fprintf (real_stderr, "\n"
+	   "#######################################"
+	   "#######################################\n\n"
+	   "%s: X Error!  PLEASE REPORT THIS BUG!\n\n"
+	   "#######################################"
+	   "#######################################\n\n",
+	   blurb());
   if (XmuPrintDefaultErrorMessage (dpy, error, real_stderr))
-    saver_exit (si, -1);
+    {
+      fprintf (real_stderr, "\n");
+      if (si->prefs.xsync_p)
+	saver_exit (si, -1, "because of synchronous X Error");
+      else
+	saver_exit (si, -1, 0);
+    }
   else
     fprintf (real_stderr, " (nonfatal.)\n");
   return 0;
@@ -582,7 +590,10 @@ initialize_connection (saver_info *si, int argc, char **argv)
 
   db = si->db;	/* resources.c needs this */
 
-  if (argc == 2 && !strcmp (argv[1], "-help"))
+  if (argc == 2 &&
+      (!strcmp (argv[1], "-h") ||
+       !strcmp (argv[1], "-help") ||
+       !strcmp (argv[1], "--help")))
     do_help (si);
 
   else if (argc == 2 && !strcmp (argv[1], "-debug"))
@@ -733,7 +744,7 @@ initialize (saver_info *si, int argc, char **argv)
   initialize_connection (si, argc, argv);
 
   if (p->verbose_p)
-    printf ("\
+    fprintf (stderr, "\
 %s %s, copyright (c) 1991-1998 by Jamie Zawinski <jwz@jwz.org>\n\
  pid = %d.\n", progname, si->version, (int) getpid ());
 
@@ -854,18 +865,21 @@ initialize (saver_info *si, int argc, char **argv)
 	{
 	  if (p->verbose_p)
 	    {
-	      printf ("%s: waiting for %d second%s...", blurb(),
-		      (int) p->initial_delay,
-		      (p->initial_delay == 1 ? "" : "s"));
+	      fprintf (stderr, "%s: waiting for %d second%s...", blurb(),
+		       (int) p->initial_delay,
+		       (p->initial_delay == 1 ? "" : "s"));
+	      fflush (stderr);
 	      fflush (stdout);
 	    }
 	  sleep (p->initial_delay);
 	  if (p->verbose_p)
-	    printf (" done.\n");
+	    fprintf (stderr, " done.\n");
 	}
       if (p->verbose_p)
 	{
-	  printf ("%s: selecting events on extant windows...", blurb());
+	  fprintf (stderr, "%s: selecting events on extant windows...",
+		   blurb());
+	  fflush (stderr);
 	  fflush (stdout);
 	}
 
@@ -877,7 +891,7 @@ initialize (saver_info *si, int argc, char **argv)
 				   RootWindowOfScreen (si->screens[i].screen));
 
       if (p->verbose_p)
-	printf (" done.\n");
+	fprintf (stderr, " done.\n");
     }
 }
 
@@ -897,8 +911,8 @@ main_loop (saver_info *si)
 #endif /* !NO_DEMO_MODE */
 	{
 	  if (p->verbose_p)
-	    printf ("%s: user is idle; waking up at %s.\n", blurb(),
-		    timestring());
+	    fprintf (stderr, "%s: user is idle; waking up at %s.\n", blurb(),
+		     timestring());
 	  blank_screen (si);
 	  spawn_screenhack (si, True);
 	  if (p->cycle)
@@ -944,10 +958,10 @@ main_loop (saver_info *si)
 		suspend_screenhack (si, True);
 		XUndefineCursor (si->dpy, ssi->screensaver_window);
 		if (p->verbose_p)
-		  printf ("%s: prompting for password.\n", blurb());
+		  fprintf (stderr, "%s: prompting for password.\n", blurb());
 		val = unlock_p (si);
 		if (p->verbose_p && val == False)
-		  printf ("%s: password incorrect!\n", blurb());
+		  fprintf (stderr, "%s: password incorrect!\n", blurb());
 		si->dbox_up_p = False;
 		XDefineCursor (si->dpy, ssi->screensaver_window, ssi->cursor);
 		suspend_screenhack (si, False);
@@ -985,8 +999,9 @@ main_loop (saver_info *si)
 #endif /* !NO_LOCKING */
 
 	  if (p->verbose_p)
-	    printf ("%s: user is active; going to sleep at %s.\n", blurb(),
-		    timestring ());
+	    fprintf (stderr,
+		     "%s: user is active; going to sleep at %s.\n", blurb(),
+		     timestring ());
 	}
     }
 }
@@ -1020,7 +1035,8 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
       if (until_idle_p)
 	{
 	  if (p->verbose_p)
-	    printf ("%s: ACTIVATE ClientMessage received.\n", blurb());
+	    fprintf (stderr,
+		     "%s: ACTIVATE ClientMessage received.\n", blurb());
 	  if (p->use_mit_saver_extension || p->use_sgi_saver_extension)
 	    {
 	      XForceScreenSaver (si->dpy, ScreenSaverActive);
@@ -1040,7 +1056,8 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
       if (! until_idle_p)
 	{
 	  if (p->verbose_p)
-	    printf ("%s: DEACTIVATE ClientMessage received.\n", blurb());
+	    fprintf (stderr, "%s: DEACTIVATE ClientMessage received.\n",
+		     blurb());
 	  if (p->use_mit_saver_extension || p->use_sgi_saver_extension)
 	    {
 	      XForceScreenSaver (si->dpy, ScreenSaverReset);
@@ -1060,7 +1077,7 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
       if (! until_idle_p)
 	{
 	  if (p->verbose_p)
-	    printf ("%s: CYCLE ClientMessage received.\n", blurb());
+	    fprintf (stderr, "%s: CYCLE ClientMessage received.\n", blurb());
 	  if (si->cycle_id)
 	    XtRemoveTimeOut (si->cycle_id);
 	  si->cycle_id = 0;
@@ -1073,7 +1090,7 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
   else if (type == XA_NEXT || type == XA_PREV)
     {
       if (p->verbose_p)
-	printf ("%s: %s ClientMessage received.\n", blurb(),
+	fprintf (stderr, "%s: %s ClientMessage received.\n", blurb(),
 		(type == XA_NEXT ? "NEXT" : "PREV"));
       si->next_mode_p = 1 + (type == XA_PREV);
 
@@ -1093,14 +1110,14 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
       if (until_idle_p || !si->locked_p)
 	{
 	  if (p->verbose_p)
-	    printf ("%s: EXIT ClientMessage received.\n", blurb());
+	    fprintf (stderr, "%s: EXIT ClientMessage received.\n", blurb());
 	  if (! until_idle_p)
 	    {
 	      unblank_screen (si);
 	      kill_screenhack (si);
 	      XSync (si->dpy, False);
 	    }
-	  saver_exit (si, 0);
+	  saver_exit (si, 0, 0);
 	}
       else
 	fprintf (stderr, "%s: EXIT ClientMessage received while locked.\n",
@@ -1114,7 +1131,7 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
       if (until_idle_p || !si->locked_p)
 	{
 	  if (p->verbose_p)
-	    printf ("%s: RESTART ClientMessage received.\n", blurb());
+	    fprintf (stderr, "%s: RESTART ClientMessage received.\n", blurb());
 	  if (! until_idle_p)
 	    {
 	      unblank_screen (si);
@@ -1143,7 +1160,7 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
       if (until_idle_p)
 	{
 	  if (p->verbose_p)
-	    printf ("%s: DEMO ClientMessage received.\n", blurb());
+	    fprintf (stderr, "%s: DEMO ClientMessage received.\n", blurb());
 	  si->demo_mode_p = True;
 	  return True;
 	}
@@ -1169,7 +1186,7 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
 	{
 	  si->locked_p = True;
 	  if (p->verbose_p) 
-	    printf ("%s: LOCK ClientMessage received;%s locking.\n",
+	    fprintf (stderr, "%s: LOCK ClientMessage received;%s locking.\n",
 		    blurb(), until_idle_p ? " activating and" : "");
 
 	  if (si->lock_id)	/* we're doing it now, so lose the timeout */

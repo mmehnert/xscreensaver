@@ -271,7 +271,7 @@ initialise_image(ModeInfo * mi, SWIRL_P swirl)
 								   0, 0, swirl->width, swirl->height,
 								   8, 0);
 	  swirl->ximage->data = swirl->image =
-		(unsigned char *) calloc(swirl->height, swirl->ximage->bytes_per_line);
+		(char *) calloc(swirl->height, swirl->ximage->bytes_per_line);
 	}
 }
 

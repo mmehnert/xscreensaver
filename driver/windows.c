@@ -327,8 +327,8 @@ kill_xsetroot_data (Display *dpy, Window window, Bool verbose_p)
 	  nitems == 1 && bytesafter == 0)
 	{
 	  if (verbose_p)
-	    printf ("%s: destroying xsetroot data (0x%lX).\n",
-		    blurb(), *dataP);
+	    fprintf (stderr, "%s: destroying xsetroot data (0x%lX).\n",
+		     blurb(), *dataP);
 	  XKillClient (dpy, *dataP);
 	}
       else
@@ -404,8 +404,9 @@ restore_real_vroot_2 (saver_screen_info *ssi)
   saver_info *si = ssi->global;
   saver_preferences *p = &si->prefs;
   if (p->verbose_p && ssi->real_vroot)
-    printf ("%s: restoring __SWM_VROOT property on the real vroot (0x%lx).\n",
-	    blurb(), (unsigned long) ssi->real_vroot);
+    fprintf (stderr,
+	     "%s: restoring __SWM_VROOT property on the real vroot (0x%lx).\n",
+	     blurb(), (unsigned long) ssi->real_vroot);
   remove_vroot_property (si->dpy, ssi->screensaver_window);
   if (ssi->real_vroot)
     {
@@ -546,7 +547,7 @@ catch_signal (saver_info *si, int sig, Bool on_p)
 	  char buf [255];
 	  sprintf (buf, "%s: couldn't catch %s", blurb(), signal_name(sig));
 	  perror (buf);
-	  saver_exit (si, 1);
+	  saver_exit (si, 1, 0);
 	}
     }
 }
@@ -555,8 +556,8 @@ static void
 handle_signals (saver_info *si, Bool on_p)
 {
 #if 0
-  if (on_p) printf ("handling signals\n");
-  else printf ("unhandling signals\n");
+  if (on_p) fprintf (stderr, "handling signals\n");
+  else fprintf (stderr, "unhandling signals\n");
 #endif
 
   catch_signal (si, SIGHUP,  on_p);
@@ -588,7 +589,7 @@ handle_signals (saver_info *si, Bool on_p)
 }
 
 void
-saver_exit (saver_info *si, int status)
+saver_exit (saver_info *si, int status, const char *dump_core_reason)
 {
   saver_preferences *p = &si->prefs;
   static Bool exiting = False;
@@ -614,11 +615,41 @@ saver_exit (saver_info *si, int status)
   else if (status == 1) status = -1;
 #endif
 
-  if (si->prefs.debug_p)
+  if (si->prefs.debug_p && !dump_core_reason)
+    dump_core_reason = "because of -debug";
+
+  if (dump_core_reason)
     {
-      fprintf(real_stderr, "%s: dumping core (because of -debug)\n", blurb());
-      /* Do this to drop a core file, so that we can get a stack trace. */
-      abort();
+      if (si->locking_disabled_p &&
+	  si->nolock_reason &&
+	  *si->nolock_reason)
+	{
+	  /* If locking is disabled, it's because xscreensaver was launched
+	     by root, and has relinquished its user id (most likely we are
+	     now running as "nobody".)  This means we won't be able to dump
+	     core, since "nobody" can't write files; so don't even try.
+	   */
+	  fprintf(real_stderr, "%s: NOT dumping core (%s)\n", blurb(),
+		  si->nolock_reason);
+	}
+      else
+	{
+	  char cwd[4096]; /* should really be PATH_MAX, but who cares. */
+	  fprintf(real_stderr, "%s: dumping core (%s)\n", blurb(),
+		  dump_core_reason);
+
+# if defined(HAVE_GETCWD)
+	  getcwd (cwd, sizeof(cwd));
+# elif defined(HAVE_GETWD)
+	  getwd (cwd);
+# else
+	  strcpy(cwd, "unknown.");
+# endif
+	  fprintf(real_stderr, "%s: current directory is %s\n", blurb(), cwd);
+
+	  /* Do this to drop a core file, so that we can get a stack trace. */
+	  abort();
+	}
     }
 
   exit (status);
@@ -1256,6 +1287,13 @@ select_visual (saver_screen_info *ssi, const char *visual_name)
       ssi->screensaver_window = 0;
 
       initialize_screensaver_window_1 (ssi);
+
+      /* stderr_overlay_window is a child of screensaver_window, so we need
+	 to destroy that as well (actually, we just need to invalidate and
+	 drop our pointers to it, but this will destroy it, which is ok so
+	 long as it happens before old_w itself is destroyed.) */
+      reset_stderr (ssi);
+
       raise_window (si, True, True, False);
       store_vroot_property (si->dpy,
 			    ssi->screensaver_window, ssi->screensaver_window);

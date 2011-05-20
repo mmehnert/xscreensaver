@@ -136,7 +136,8 @@ install-strip:
 		INSTALL_SETUID='$(INSTALL_SETUID) -s' \
 		install
 
-install-program:
+install-program: $(EXES)
+	@if [ ! -d $(bindir) ]; then $(INSTALL_DIRS) $(bindir) ; fi
 	@inst="$(INSTALL_PROGRAM)" ;					\
 	if [ @NEED_SETUID@ = yes ]; then				\
 	   me="`whoami`" ;						\
@@ -156,16 +157,15 @@ install-program:
  $$e ""									     ;\
 	   fi ; 							\
 	fi ;								\
-	if [ ! -d $(bindir) ]; then $(INSTALL_DIRS) $(bindir) ; fi ;	\
 	echo $$inst xscreensaver $(bindir)/xscreensaver ;		\
 	$$inst xscreensaver $(bindir)/xscreensaver
 	$(INSTALL_PROGRAM) xscreensaver-command $(bindir)/xscreensaver-command
 
-install-ad:
-	@if [ ! -d $(AD_DIR) ]; then $(INSTALL_DIRS) $(AD_DIR) ; fi ;	\
+install-ad: XScreenSaver.ad
+	@if [ ! -d $(AD_DIR) ]; then $(INSTALL_DIRS) $(AD_DIR) ; fi
 	$(INSTALL_DATA) XScreenSaver.ad $(AD_DIR)/XScreenSaver
 
-install-man:
+install-man: $(MEN)
 	@men="$(MEN)" ;							\
 	if [ ! -d $(man1dir) ]; then $(INSTALL_DIRS) $(man1dir) ; fi ;	\
 	for man in $$men; do						\
@@ -195,7 +195,7 @@ clean:
 	-rm -f *.o a.out core $(EXES) XScreenSaver_ad.h
 
 distclean: clean
-	-rm -f Makefile XScreenSaver.ad *~ "#"*
+	-rm -f Makefile XScreenSaver.ad TAGS *~ "#"*
 
 # Adds all current dependencies to Makefile
 depend: XScreenSaver_ad.h

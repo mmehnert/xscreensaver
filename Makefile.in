@@ -46,7 +46,7 @@ tags:
 clean:
 	@$(MAKE_SUBDIR)
 distclean: clean
-	-rm -f config.h Makefile config.status config.cache config.log *~ "#"*
+	-rm -f config.h Makefile config.status config.cache config.log TAGS *~ "#"*
 	@$(MAKE_SUBDIR)
 
 dist: tar

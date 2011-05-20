@@ -131,7 +131,7 @@ double_pixmap(Display *dpy, GC gc, Visual *visual, int depth, Pixmap pixmap,
   XImage *i1 = XGetImage(dpy, pixmap, 0, 0, pix_w, pix_h, ~0L, ZPixmap);
   XImage *i2 = XCreateImage(dpy, visual, depth, ZPixmap, 0, 0,
 			    pix_w*2, pix_h*2, 8, 0);
-  i2->data = (unsigned char *) calloc(i2->height, i2->bytes_per_line);
+  i2->data = (char *) calloc(i2->height, i2->bytes_per_line);
   for (y = 0; y < pix_h; y++)
     for (x = 0; x < pix_w; x++)
       {
@@ -565,11 +565,46 @@ macsbug (Display *dpy, Window window, int delay)
 			"                                | 4A1F\n"
 			"     +00888    40843718     $0004(A7),([0,A7[)"
 			"                  ; 04E8D0AE    | 66B8");
+
+#if 0
   const char *body = ("Bus Error at 4BF6D6CC\n"
 		      "while reading word from 4BF6D6CC in User data space\n"
 		      " Unable to access that address\n"
 		      "  PC: 2A0DE3E6\n"
 		      "  Frame Type: B008");
+#else
+  const char * body = ("PowerPC unmapped memory exception at 003AFDAC "
+						"BowelsOfTheMemoryMgr+04F9C\n"
+		      " Calling chain using A6/R1 links\n"
+		      "  Back chain  ISA  Caller\n"
+		      "  00000000    PPC  28C5353C  __start+00054\n"
+		      "  24DB03C0    PPC  28B9258C  main+0039C\n"
+		      "  24DB0350    PPC  28B9210C  MainEvent+00494\n"
+		      "  24DB02B0    PPC  28B91B40  HandleEvent+00278\n"
+		      "  24DB0250    PPC  28B83DAC  DoAppleEvent+00020\n"
+		      "  24DB0210    PPC  FFD3E5D0  "
+						"AEProcessAppleEvent+00020\n"
+		      "  24DB0132    68K  00589468\n"
+		      "  24DAFF8C    68K  00589582\n"
+		      "  24DAFF26    68K  00588F70\n"
+		      "  24DAFEB3    PPC  00307098  "
+						"EmToNatEndMoveParams+00014\n"
+		      "  24DAFE40    PPC  28B9D0B0  DoScript+001C4\n"
+		      "  24DAFDD0    PPC  28B9C35C  RunScript+00390\n"
+		      "  24DAFC60    PPC  28BA36D4  run_perl+000E0\n"
+		      "  24DAFC10    PPC  28BC2904  perl_run+002CC\n"
+		      "  24DAFA80    PPC  28C18490  Perl_runops+00068\n"
+		      "  24DAFA30    PPC  28BE6CC0  Perl_pp_backtick+000FC\n"
+		      "  24DAF9D0    PPC  28BA48B8  Perl_my_popen+00158\n"
+		      "  24DAF980    PPC  28C5395C  sfclose+00378\n"
+		      "  24DAF930    PPC  28BA568C  free+0000C\n"
+		      "  24DAF8F0    PPC  28BA6254  pool_free+001D0\n"
+		      "  24DAF8A0    PPC  FFD48F14  DisposePtr+00028\n"
+		      "  24DAF7C9    PPC  00307098  "
+						"EmToNatEndMoveParams+00014\n"
+		      "  24DAF780    PPC  003AA180  __DisposePtr+00010");
+#endif
+
   const char *s;
   int body_lines = 1;
 
@@ -638,8 +673,6 @@ macsbug (Display *dpy, Window window, int delay)
   draw_string(dpy, window, gc, &gcv, font, xoff, yoff, 10, 10, left, 0);
   draw_string(dpy, window, gc, &gcv, font, xoff+col_right, yoff+row_top,
 	      10, 10, bottom, 0);
-  draw_string(dpy, window, gc, &gcv, font,
-	      xoff + col_right + char_width, yoff + body_top, 10, 10, body, 0);
 
   XFillRectangle(dpy, window, gc, xoff + col_right, yoff, 2, page_bottom);
   XDrawLine(dpy, window, gc,
@@ -647,6 +680,13 @@ macsbug (Display *dpy, Window window, int delay)
   XDrawLine(dpy, window, gc,
 	    xoff+col_right, yoff+row_bottom, xoff+page_right, yoff+row_bottom);
   XDrawRectangle(dpy, window, gc,  xoff, yoff, page_right, page_bottom);
+
+  if (body_top > 4)
+    body_top = 4;
+
+  draw_string(dpy, window, gc, &gcv, font,
+	      xoff + col_right + char_width, yoff + body_top, 10, 10, body,
+	      500);
 
   while (delay > 0)
     {

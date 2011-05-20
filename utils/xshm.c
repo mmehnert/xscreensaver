@@ -21,17 +21,26 @@
    needed, anyway.)
 
    If you don't have man pages for this extension, see
-   http://devlab.cs.dartmouth.edu/cowen/docs/xshm.txt
- */
+   http://www.physik.uni-regensburg.de/~scs22156/sofie-0.2/mit-shm.html
+   or in the R6 sources as "xc/doc/specs/Xext/mit-shm.ms".
+
+   (This document seems not to ever remain available on the web in one place
+   for very long; you can search for it by the title, "MIT-SHM -- The MIT
+   Shared Memory Extension".)
+
+   To monitor the system's shared memory segments, run "ipcs -m".
+  */
 
 #include "utils.h"
 
 #ifdef HAVE_XSHM_EXTENSION	/* whole file */
 
-#include <X11/Xutil.h>	/* for XDestroyImage() */
+#include <errno.h>		/* for perror() */
+#include <X11/Xutil.h>		/* for XDestroyImage() */
 
 #include "xshm.h"
-#include "resources.h"  /* for get_string_resource() */
+#include "resources.h"		/* for get_string_resource() */
+
 
 extern char *progname;
 
@@ -51,12 +60,24 @@ create_xshm_image (Display *dpy, Visual *visual,
 
   image = XShmCreateImage(dpy, visual, depth,
 			      format, data, shm_info, width, height);
+#ifdef DEBUG
+  fprintf(stderr, "\n%s: XShmCreateImage(... %d, %d)\n", progname,
+	  width, height);
+#endif
+
   shm_info->shmid = shmget(IPC_PRIVATE,
 			   image->bytes_per_line * image->height,
 			   IPC_CREAT | 0777);
+#ifdef DEBUG
+  fprintf(stderr, "%s: shmget(IPC_PRIVATE, %d, IPC_CREAT | 0777) ==> %d\n",
+	  progname, image->bytes_per_line * image->height, shm_info->shmid);
+#endif
+
   if (shm_info->shmid == -1)
     {
-      fprintf (stderr, "%s: shmget failed!\n", progname);
+      char buf[1024];
+      sprintf (buf, "%s: shmget failed", progname);
+      perror(buf);
       XDestroyImage (image);
       image = 0;
       XSync(dpy, False);
@@ -66,6 +87,11 @@ create_xshm_image (Display *dpy, Visual *visual,
       shm_info->readOnly = False;
       image->data = shm_info->shmaddr = shmat(shm_info->shmid, 0, 0);
 
+#ifdef DEBUG
+      fprintf(stderr, "%s: shmat(%d, 0, 0) ==> %d\n", progname,
+	      shm_info->shmid, (int) image->data);
+#endif
+
       if (!XShmAttach(dpy, shm_info))
 	{
 	  fprintf (stderr, "%s: XShmAttach failed!\n", progname);
@@ -74,6 +100,11 @@ create_xshm_image (Display *dpy, Visual *visual,
 	  shmdt (shm_info->shmaddr);
 	  image = 0;
 	}
+
+#ifdef DEBUG
+      fprintf(stderr, "%s: XShmAttach(dpy, shm_info) ==> True\n", progname);
+#endif
+
       XSync(dpy, False);
 
       /* Delete the shared segment right now; the segment won't actually
@@ -83,8 +114,18 @@ create_xshm_image (Display *dpy, Visual *visual,
 	 (And note that, in the context of xscreensaver, abnormal
 	 termination is the rule rather than the exception, so this would
 	 leak like a sieve if we didn't do this...)
+
+	 #### Are we leaking anyway?  Perhaps because of the window of
+	 opportunity between here and the XShmAttach call above, during
+	 which we might be killed?  Do we need to establish a signal
+	 handler for this case?
        */
       shmctl (shm_info->shmid, IPC_RMID, 0);
+
+#ifdef DEBUG
+      fprintf(stderr, "%s: shmctl(%d, IPC_RMID, 0)\n\n", progname,
+	      shm_info->shmid);
+#endif
     }
 
   return image;

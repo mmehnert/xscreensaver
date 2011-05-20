@@ -256,9 +256,9 @@ exec_screenhack (saver_info *si, const char *command)
   Bool hairy_p = !!strpbrk (command, "*?$&!<>[];`'\\\"");
 
   if (p->verbose_p)
-    printf ("%s: spawning \"%s\" in pid %lu%s.\n",
-	    blurb(), command, (unsigned long) getpid (),
-	    (hairy_p ? " (via shell)" : ""));
+    fprintf (stderr, "%s: spawning \"%s\" in pid %lu%s.\n",
+	     blurb(), command, (unsigned long) getpid (),
+	     (hairy_p ? " (via shell)" : ""));
 
   if (hairy_p)
     /* If it contains any shell metacharacters, do it the hard way,
@@ -270,7 +270,8 @@ exec_screenhack (saver_info *si, const char *command)
 
 #else /* VMS */
   if (p->verbose_p)
-    printf ("%s: spawning \"%s\" in pid %lu.\n", blurb(), command, getpid());
+    fprintf (stderr, "%s: spawning \"%s\" in pid %lu.\n",
+	     blurb(), command, getpid());
   exec_vms_command (command);
 #endif /* VMS */
 
@@ -612,8 +613,8 @@ describe_dead_child (saver_info *si, pid_t kid, int wait_status)
 		 "%s: child pid %lu (%s) exited abnormally (code %d).\n",
 		 blurb(), (unsigned long) kid, name, exit_status);
       else if (p->verbose_p)
-	printf ("%s: child pid %lu (%s) exited normally.\n",
-		blurb(), (unsigned long) kid, name);
+	fprintf (stderr, "%s: child pid %lu (%s) exited normally.\n",
+		 blurb(), (unsigned long) kid, name);
 
       if (job)
 	job->status = job_dead;
@@ -826,7 +827,7 @@ spawn_screenhack_1 (saver_screen_info *ssi, Bool first_time_p)
 	  sprintf (buf, "%s: couldn't fork", blurb());
 	  perror (buf);
 	  restore_real_vroot (si);
-	  saver_exit (si, 1);
+	  saver_exit (si, 1, 0);
 
 	case 0:
 	  close (ConnectionNumber (si->dpy));	/* close display fd */
@@ -853,8 +854,9 @@ spawn_screenhack (saver_info *si, Bool first_time_p)
   if (!monitor_powered_on_p (si))
     {
       if (si->prefs.verbose_p)
-	printf ("%s: server reports that monitor has powered down; "
-		"not launching a new hack.\n", blurb());
+	fprintf (stderr,
+		 "%s: server reports that monitor has powered down; "
+		 "not launching a new hack.\n", blurb());
       return;
     }
 
@@ -1150,7 +1152,7 @@ hack_uid_warn (saver_info *si)
   else if (hack_uid_errno == 0)
     {
       if (p->verbose_p)
-	printf ("%s: %s\n", blurb(), hack_uid_error);
+	fprintf (stderr, "%s: %s\n", blurb(), hack_uid_error);
     }
   else
     {

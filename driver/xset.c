@@ -196,8 +196,9 @@ disable_builtin_screensaver (saver_info *si, Bool turn_off_p)
       desired_allow_exp != current_allow_exp)
     {
       if (desired_server_timeout == 0)
-	printf ("%s%sisabling server builtin screensaver.\n\
-	You can re-enable it with \"xset s on\".\n",
+	fprintf (stderr,
+		 "%s%sisabling server builtin screensaver.\n"
+		 "\tYou can re-enable it with \"xset s on\".\n",
 		(p->verbose_p ? "" : blurb()),
 		(p->verbose_p ? "\n\tD" : ": d"));
 

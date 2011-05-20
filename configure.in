@@ -19,8 +19,10 @@ if test -z "$GCC"; then
       CC="$CC -qlanglvl=ansi -qhalt=e"
     ;;
 
-# NOTE:   for Digital, need to add -std1 to get ANSI, but I'm not sure
-#         yet what $host pattern we should be testing for...
+    *-dec-*)
+      AC_MSG_RESULT(DEC: adding -std1)
+      CC="$CC -std1"
+    ;;
 
     *)
       AC_MSG_RESULT(no idea)
@@ -50,8 +52,41 @@ case "$host" in
 esac
 
 
+# Try and determine whether ${INSTALL} can create intermediate directories,
+# and if not, whether "mkdir -p" works instead.  This sets ${INSTALL_DIRS}.
+# (But autoconf should earn its keep and do this for us!)
+#
+AC_DEFUN(AC_PROG_INSTALL_DIRS,
+  [INSTALL_DIRS='${INSTALL} -d'
+   AC_MSG_CHECKING(whether \"\${INSTALL} -d\" creates intermediate directories)
+   rm -rf conftestdir
+   if mkdir conftestdir; then
+      cd conftestdir
+
+      ${INSTALL} -d `pwd`/dir1/dir2 >&- 2>&1
+      if test -d dir1/dir2 ; then
+        AC_MSG_RESULT(yes)
+      else
+        AC_MSG_RESULT(no)
+        AC_MSG_CHECKING(whether \"mkdir -p\" creates intermediate directories)
+        rm -rf dir1
+        mkdir -p dir1/dir2 >&- 2>&1
+        if test -d dir1/dir2/. ; then
+	  AC_MSG_RESULT(yes)
+	  INSTALL_DIRS='mkdir -p'
+        else
+	  AC_MSG_RESULT(no)
+        fi
+      fi
+      cd ..
+      rm -rf conftestdir
+   fi
+])
+
+
 AC_PROG_CPP
 AC_PROG_INSTALL
+AC_PROG_INSTALL_DIRS
 AC_PROG_MAKE_SET
 
 AC_C_CONST
@@ -327,9 +362,64 @@ if test $ac_cv_xpointer != yes; then
 fi
 
 
+# Random special-cases for certain pathological OSes.  You know who you are.
+#
 case "$host" in
   *-hpux*)
-    # Thanks for not making xmkmf find this by default, you losers.
+
+    # On HPUX 10.x, the only libXaw.sl is in /usr/lib/X11R4/.  However, the
+    # other X libs are symlinked to by /usr/lib/ (this was not the case on
+    # 9.x and earlier.)
+    #
+    # The Xaw and (more importantly) Xmu headers and libraries are not in
+    # /usr/lib/X11R6/ but are instead in /usr/contrib/X11R6/lib, because HP
+    # doesn't consider them "standard" enough or something.
+    #
+    # HPUX 9.x did not have R6 by default; but it could be installed as a
+    # patch, in which case, the whole thing went in /usr/contrib/X11R6/.
+    #
+    # Confused yet?
+    #
+    # So.  We try and put all of these directories on the -I and -L list,
+    # and in the right order.  Because depending on the system, there might
+    # be crucial files in any of them.
+    #
+
+    if test -d /usr/contrib/X11R6/include ; then
+      X_CFLAGS="-I/usr/contrib/X11R6/include $X_CFLAGS"
+      X_LIBS="-L/usr/contrib/X11R6/lib $X_LIBS"
+    fi
+
+    if test -d /usr/contrib/X11R5/include ; then
+      X_CFLAGS="-I/usr/contrib/X11R5/include $X_CFLAGS"
+      X_LIBS="-L/usr/contrib/X11R5/lib $X_LIBS"
+    fi
+
+    if test -d /usr/contrib/X11R4/include ; then
+      X_CFLAGS="-I/usr/contrib/X11R4/include $X_CFLAGS"
+      X_LIBS="-L/usr/contrib/X11R4/lib $X_LIBS"
+    fi
+
+
+    if test -d /usr/lib/X11R6 ; then
+      X_CFLAGS="-I/usr/include/X11R6 $X_CFLAGS"
+      X_LIBS="-L/usr/lib/X11R6 $X_LIBS"
+    fi
+
+    if test -d /usr/lib/X11R5 ; then
+      X_CFLAGS="-I/usr/include/X11R5 $X_CFLAGS"
+      X_LIBS="-L/usr/lib/X11R5 $X_LIBS"
+    fi
+
+    if test -d /usr/lib/X11R4 ; then
+      X_CFLAGS="-I/usr/include/X11R4 $X_CFLAGS"
+      X_LIBS="-L/usr/lib/X11R4 $X_LIBS"
+    fi
+
+
+    # Now find Motif.  Thanks for not making xmkmf find this by 
+    # default, you losers.
+    #
     if test -d /usr/lib/Motif1.2 ; then
       X_CFLAGS="-I/usr/include/Motif1.2 $X_CFLAGS"
       X_LIBS="-L/usr/lib/Motif1.2 $X_LIBS"
@@ -338,26 +428,38 @@ case "$host" in
       X_LIBS="-L/usr/lib/Motif1.1 $X_LIBS"
     fi
 
-    # This too.  You losers.
-    if test -d /usr/contrib/X11R6/include ; then
-      X_CFLAGS="-I/usr/contrib/X11R6/include $X_CFLAGS"
-      X_LIBS="-L/usr/contrib/X11R6/lib $X_LIBS"
-    elif test -d /usr/X11R6/include ; then
-      X_CFLAGS="-I/usr/X11R6/include $X_CFLAGS"
-      X_LIBS="-L/usr/X11R6/lib $X_LIBS"
-    elif test -d /usr/contrib/X11R5/include ; then
-      X_CFLAGS="-I/usr/contrib/X11R5/include $X_CFLAGS"
-      X_LIBS="-L/usr/contrib/X11R5/lib $X_LIBS"
-    elif test -d /usr/X11R5/include ; then
-      X_CFLAGS="-I/usr/X11R5/include $X_CFLAGS"
-      X_LIBS="-L/usr/X11R5/lib $X_LIBS"
+
+    # Now let's check for the pseudo-standard locations for OpenGL and XPM.
+    #
+    if test -d /opt/Mesa/lib ; then
+      X_CFLAGS="$X_CFLAGS -I/opt/Mesa/include"
+      X_LIBS="$X_LIBS -L/opt/Mesa/lib"
+    fi
+
+    if test -d /opt/xpm/lib/X11 ; then
+      X_CFLAGS="$X_CFLAGS -I/opt/xpm/include"
+      X_LIBS="$X_LIBS -L/opt/xpm/lib/X11"
+    fi
+
+    # On HPUX, default to installing in /opt/xscreensaver/ instead of
+    # in /usr/local/, unless there is already an xscreensaver in
+    # /usr/local/bin/.  This can be overridden with the --prefix arg
+    # to configure.  I'm not sure this is the right thing to do, but
+    # Richard Lloyd says so...
+    #
+    if test \! -x /usr/local/bin/xscreensaver ; then
+      ac_default_prefix=/opt/xscreensaver
     fi
 
   ;;
   *-solaris*)
-    # Same to you, pinheads.  (Is this really the standard location now?
-    # What happened to the joke that this kind of thing went in /opt?)
+
+    # Thanks for not making xmkmf find this by default, pinheads.
+    # And thanks for moving things around again, too.  Is this
+    # really the standard location now?  What happened to the
+    # joke that this kind of thing went in /opt?
     # cthomp says "answer: CDE (Common Disorganized Environment)"
+    #
     if test -f /usr/dt/include/Xm/Xm.h ; then
       X_CFLAGS="$X_CFLAGS -I/usr/dt/include"
       X_LIBS="$X_LIBS -L/usr/dt/lib -R:/usr/dt/lib"
@@ -1292,9 +1394,6 @@ DEPEND=makedepend
 DEPEND_FLAGS=
 DEPEND_DEFINES=
 
-
-# Autoconf doesn't seem to have an INSTALL_DIRS, so let's define our own...
-INSTALL_DIRS='$(INSTALL) -d'
 
 # Done testing things -- now substitute in some stuff for the Makefiles.
 #

@@ -129,7 +129,7 @@ clean:
 	-rm -f *.o a.out core
 
 distclean: clean
-	-rm -f config.h Makefile *~ "#"*
+	-rm -f Makefile TAGS *~ "#"*
 
 # Adds all current dependencies to Makefile
 depend:

@@ -205,10 +205,10 @@ static Atom XA_EXIT, XA_RESTART, XA_DEMO, XA_LOCK;
 static char *progname;
 static char *screensaver_version;
 static char *usage = "\n\
-usage: %s -<switch>\n\
+usage: %s -<option>\n\
 \n\
   This program provides external control of a running xscreensaver process.\n\
-  Version %s, copyright (c) 1991-1997 Jamie Zawinski <jwz@jwz.org>.\n\
+  Version %s, copyright (c) 1991-1998 Jamie Zawinski <jwz@jwz.org>.\n\
 \n\
   The xscreensaver program is a daemon that runs in the background.\n\
   You control a running xscreensaver process by sending it messages\n\

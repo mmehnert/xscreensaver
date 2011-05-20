@@ -40,6 +40,7 @@ struct saver_preferences {
   Bool verbose_p;		/* whether to print out lots of status info */
   Bool timestamp_p;		/* whether to mark messages with a timestamp */
   Bool debug_p;			/* pay no mind to the man behind the curtain */
+  Bool xsync_p;			/* whether XSynchronize has been called */
 
   Bool lock_p;			/* whether to lock as well as save */
   Bool fade_p;			/* whether to fade to black */
@@ -378,7 +379,7 @@ extern void clear_stderr (saver_screen_info *ssi);
 
 extern const char *blurb (void);
 extern void save_argv (int argc, char **argv);
-extern void saver_exit (saver_info *si, int status);
+extern void saver_exit (saver_info *si, int status, const char *core_reason);
 extern void restart_process (saver_info *si);
 
 extern int saver_ehandler (Display *dpy, XErrorEvent *error);

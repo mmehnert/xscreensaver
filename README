@@ -22,9 +22,10 @@ The most important hint is probably this:
 
 To build on VMS, see README.VMS.
 
-If you think you've found a bug, please let me know; but first, read
-the enlosed `README.debugging' file to find out what kind of information
-would be most helpful to include in your bug report.
+If you think you've found a bug, please let me know!  No bug report is too
+small.  But first, please read the enclosed `README.debugging' file to find
+out what kind of information would be most helpful to include in your bug
+report.
 
 Getting Started:
 
@@ -56,14 +57,14 @@ in the movies.
 However, xscreensaver can also be used as a screen locker, to prevent
 others from using your terminal while your are away.
 
-The benefit that this program has over the combination of the xlock and
-xautolock programs is the ease with which new graphics hacks can be
+One of the benefits that this program has over the combination of the xlock
+and xautolock programs is the ease with which new graphics hacks can be
 installed: you don't need to recompile this program to add a new display
 mode, you just change some resource settings.  Any program which can be
-invoked in such a way that it draws on the root window of the screen can
-now be used as a screensaver without modification.  The programs that
-are being run as screensavers don't need to have any special knowledge
-about what it means to be a screensaver.
+invoked in such a way that it draws on the root window of the screen can now
+be used as a screensaver without modification.  The programs that are being
+run as screensavers don't need to have any special knowledge about what it
+means to be a screensaver.
 
 The XIDLE, MIT-SCREEN-SAVER, and/or SGI SCREEN_SAVER server extensions
 will be used if you have them.
@@ -190,6 +191,14 @@ http://www.jwz.org/xscreensaver/.
 	-- Jamie Zawinski <jwz@jwz.org>
 
 
+Changes since 2.27:   * Better macsbug text in `bsod'.
+		      * New version of `distort' with many new modes.
+		      * Plugged a leak in `coral'.
+		      * Tweaked configure for HPUX.
+		      * Removed some compiler warnings.
+		      * More consistent usage of stderr versus stdout.
+		      * More diagnostics should an X error occur.
+		      * Fixed a possible crash in SGI-specific unfading code.
 Changes since 2.26:   * Improved version of `distort'.
 		      * Made `lament' compile against OpenGL 1.0 (though it
 			still requires 1.1 to work properly.)

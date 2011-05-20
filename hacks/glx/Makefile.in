@@ -130,7 +130,7 @@ clean:
 	-rm -f *.o a.out core $(EXES)
 
 distclean: clean
-	-rm -f Makefile *~ "#"*
+	-rm -f Makefile TAGS *~ "#"*
 
 # Adds all current dependencies to Makefile
 depend:

@@ -687,7 +687,7 @@ make_screenhack_dialog (saver_info *si)
     /* Why isn't the viewport getting centered? */
     XtVaGetValues(viewport,
 		  XtNx, &x, XtNy, &y, XtNheight, &h, XtNborderWidth, &bw, 0);
-    printf("%d %d %d %d\n", x, y, w, h);
+/*    printf("%d %d %d %d\n", x, y, w, h); */
     XtConfigureWidget(viewport, x, y, w2-x-x, h, bw);
 
     /* And the text line, too. */
@@ -1041,10 +1041,11 @@ demo_mode (saver_info *si)
 	      start_notice_events_timer (si, event.xcreatewindow.window);
 #ifdef DEBUG_TIMERS
 	      if (p->verbose_p)
-		printf ("%s: starting notice_events_timer for 0x%X (%lu)\n",
-			blurb(),
-			(unsigned int) event.xcreatewindow.window,
-			p->notice_events_timeout);
+		fprintf (stderr,
+			 "%s: starting notice_events_timer for 0x%X (%lu)\n",
+			 blurb(),
+			 (unsigned int) event.xcreatewindow.window,
+			 p->notice_events_timeout);
 #endif /* DEBUG_TIMERS */
 	    }
 	  break;

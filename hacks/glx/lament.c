@@ -222,7 +222,7 @@ parse_image_data(ModeInfo *mi)
   bpl = lc->texture->bytes_per_line;
   wpl = bpl/4;
 
-  lc->texture->data = (unsigned char *) malloc(xpm_image.height * bpl);
+  lc->texture->data = (char *) malloc(xpm_image.height * bpl);
 
   /* Parse the colors in the XPM into RGB values. */
   for (i = 0; i < xpm_image.ncolors; i++)
