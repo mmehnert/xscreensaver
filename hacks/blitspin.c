@@ -324,9 +324,9 @@ XrmOptionDescRec options [] = {
   { "-delay",		".delay",	XrmoptionSepArg, 0 },
   { "-delay2",		".delay2",	XrmoptionSepArg, 0 },
   { "-bitmap",		".bitmap",	XrmoptionSepArg, 0 },
-  { "-grab-screen",	".bitmap",	XrmoptionNoArg, "(screen)" }
+  { "-grab-screen",	".bitmap",	XrmoptionNoArg, "(screen)" },
+  { 0, 0, 0, 0 }
 };
-int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
 #ifdef __STDC__

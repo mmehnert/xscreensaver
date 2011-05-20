@@ -41,23 +41,6 @@
  */
 
 
-/* Sun's compiler really blows */
-#if defined(SVR4) && !defined(__svr4__)
-# define __svr4__ 1
-#endif
-#if defined(sun) && !defined(__sun)
-# define __sun 1
-#endif
-
-
-#if defined(__sun) && defined(__svr4__)
-  /* Solaris 2.4 and less use gettimeofday(tp) but Solaris 2.5 and greater
-     use gettimeofday(tp,tzp) unless you define _SVID_GETTOD.  Make up your
-     fucking minds, assholes. */
-# undef  _SVID_GETTOD
-# define _SVID_GETTOD
-#endif
-
 #include <unistd.h>   /* for getpid() */
 #include <sys/time.h> /* for gettimeofday() */
 
@@ -119,7 +102,7 @@ ya_rand_init(seed)
   if (seed == 0)
     {
       struct timeval tp;
-# if defined(__svr4__) && !defined(__sun)
+#ifdef GETTIMEOFDAY_TWO_ARGS
       struct timezone tzp;
       gettimeofday(&tp, &tzp);
 #else

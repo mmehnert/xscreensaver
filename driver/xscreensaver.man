@@ -347,6 +347,12 @@ When server extensions are not in use, \fIxscreensaver\fP will wait this many
 seconds before selecting events on existing windows, under the assumption that 
 \fIxscreensaver\fP is started during your login procedure, and the window 
 state may be in flux.  Default 30 seconds.
+.TP 8
+.B overlayStderr \fR(class \fBBoolean\fP)
+If \fBcaptureStderr\fP or \fBcaptureStdout\fP are True, and your server 
+supports ``overlay'' visuals, then the text will be written into one of
+the higher layers instead of into the same layer as the running screenhack.
+Set this to False to disable that (though you shouldn't need to.)
 .SH "HOW IT WORKS"
 When it is time to activate the screensaver, a full-screen black window is
 created on each screen of the display.  The window or windows is given the

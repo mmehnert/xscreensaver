@@ -51,21 +51,22 @@ static const char sccsid[] = "@(#)hop.c	4.02 97/04/01 xlockmore";
 # define HACK_INIT					init_hop
 # define HACK_DRAW					draw_hop
 # define HACK_FREE					release_hop
-# define DEF_BATCHCOUNT				1000
-# define DEF_CYCLES					2500
-# define DEF_DELAY					10000
-# define DEF_JONG					"False"
-# define DEF_SINE					"False"
-# define DEF_NCOLORS				200
+# define hop_opts					xlockmore_opts
+# define DEFAULTS	"*count:		1000    \n"			\
+					"*cycles:		2500    \n"			\
+					"*delay:		10000   \n"			\
+					"*ncolors:		200     \n"
 # define SMOOTH_COLORS
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */
 #endif /* !STANDALONE */
 
-#ifndef STANDALONE
 static Bool jong;
 static Bool sine;
+
+#define DEF_JONG "False"
+#define DEF_SINE "False"
 
 static XrmOptionDescRec opts[] =
 {
@@ -86,7 +87,6 @@ static OptionStruct desc[] =
 };
 
 ModeSpecOpt hop_opts = { 4, opts, 2, vars, desc };
-#endif /* !STANDALONE */
 
 
 #define SQRT 0

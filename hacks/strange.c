@@ -29,16 +29,17 @@ static const char sccsid[] = "@(#)strange.c	   4.02 97/04/01 xlockmore";
 # define PROGCLASS					"Strange"
 # define HACK_INIT					init_strange
 # define HACK_DRAW					draw_strange
-# define DEF_DELAY			   		2000
-# define DEF_NCOLORS		 		100
+# define strange_opts				xlockmore_opts
+# define DEFAULTS	"*delay:		2000  \n"			\
+					"*ncolors:		100   \n"
 # define SMOOTH_COLORS
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */
-  ModeSpecOpt strange_opts = {
-	0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
 
+ModeSpecOpt strange_opts = {
+  0, NULL, 0, NULL, NULL };
 
 /*****************************************************/
 /*****************************************************/

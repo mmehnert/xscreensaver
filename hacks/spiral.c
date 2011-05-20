@@ -38,17 +38,19 @@ static const char sccsid[] = "@(#)spiral.c	4.00 97/01/01 xlockmore";
 # define PROGCLASS					"Spiral"
 # define HACK_INIT					init_spiral
 # define HACK_DRAW					draw_spiral
-# define DEF_BATCHCOUNT				40
-# define DEF_CYCLES					350
-# define DEF_DELAY					50000
+# define spiral_opts				xlockmore_opts
+# define DEFAULTS	"*count:		40    \n"			\
+					"*cycles:		350   \n"			\
+					"*delay:		50000 \n"			\
+					"*ncolors:		64   \n"
 # define SMOOTH_COLORS
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */
-  ModeSpecOpt spiral_opts = {
-	0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
 
+ModeSpecOpt spiral_opts = {
+  0, NULL, 0, NULL, NULL };
 
 #define MAXTRAIL 512		/* The length of the trail */
 #define MAXDOTS 40

@@ -5,10 +5,19 @@
  *
  *         xmkmf
  *         make Makefiles
+ *         make depend
  *
  * in the top-level xscreensaver directory, or your changes to this
  * file may not take effect.
  */
+
+
+/*  Uncomment the following line if gettimeofday() on your system requres
+ *  two arguments.  It's pretty much a crap shoot whether it does; if you
+ *  don't know, try it and see if you get compilation errors.
+ */
+/* #define GETTIMEOFDAY_TWO_ARGS */
+
 
 /*  Uncomment the following line if you have the XPM library installed.
  *  Some of the demos can make use of this if it is available.
@@ -22,6 +31,21 @@
  *  you use Motif.  (I'm told that LessTif works as well.)
  */
 /* #define NO_MOTIF */
+
+
+/*  Uncomment the following line if you have OpenGL.  Some of the included
+ *  screen hacks depend on it.  (If you don't have it, you'll simply miss
+ *  out on a few of the demos.)  If you define this, make sure you go and
+ *  add the programs to the app-defaults file as well, as they're not 
+ *  included in the programs resource by default (since they're not built
+ *  by default.)
+ */
+/* #define HAVE_GL */
+
+/*  Define this if the variant of GL that you have is MesaGL, rather than
+ *  the real OpenGL (the library names are different.)
+ */
+/* #define HAVE_MESAGL */
 
 
 /*  Uncomment the following line if for some reason the locking code doesn't
@@ -116,6 +140,16 @@
  */
 /* #define NO_SETUID */
 
+/*  Uncomment the following line if you want to use kerberos authentication
+ *  to lock/unlock the screen instead of your local password. This currently
+ *  uses Kerberos V4, but a V5 server with V4 compatibility will work.
+ *  WARNING: DO NOT USE AFS string-to-key passwords with this option. This
+ *  option currently *only* works with standard Kerberos des_string_to_key.
+ *  If your password is an AFS password and not a kerberos password, it will
+ *  not authenticate properly. See the comments in driver/kpasswd.c for more
+ *  information if you need it. 
+ */
+/* #define USE_KERBEROS */
 
 /*  Uncomment the following line if your system uses `shadow' passwords,
  *  that is, the passwords live in /etc/shadow instead of /etc/passwd,
@@ -175,7 +209,8 @@
  */
 #if defined(HPArchitecture) || defined(AIXArchitecture) || \
     defined(HAVE_SHADOW) || defined(NetBSDArchitecture) || \
-    defined(HAVE_DEC_ENHANCED)
+    defined(HAVE_DEC_ENHANCED) || defined(HAVE_ADJUNCT_PASSWD) || \
+    defined(HAVE_HPUX_PASSWD)
 # define INSTALL_SETUID
 #endif
 
@@ -198,6 +233,10 @@
 # define R5ISMS -DXPointer="char*"
 #else /* r5 or better */
 # define R5ISMS
+#endif
+
+#if defined(HAVE_MESAGL) && !defined(HAVE_GL)
+# define HAVE_GL
 #endif
 
 /* It seems that some versions of Sun's dynamic X libraries are broken; if

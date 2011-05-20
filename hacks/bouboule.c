@@ -78,18 +78,19 @@ static const char sccsid[] = "@(#)bouboule.c	4.00 97/01/01 xlockmore";
 # define PROGCLASS					"Bouboule"
 # define HACK_INIT					init_bouboule
 # define HACK_DRAW					draw_bouboule
-# define DEF_BATCHCOUNT				100
-# define DEF_DELAY					5000
-# define DEF_SIZE					15
+# define bouboule_opts				xlockmore_opts
+# define DEFAULTS	"*count:		100     \n"			\
+					"*size:			15      \n"			\
+					"*delay:		5000    \n"			\
+					"*ncolors:		64      \n"
 # define SMOOTH_COLORS
-# define DEF_3D						False
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */
-  ModeSpecOpt bouboule_opts = {
-	0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
 
+ModeSpecOpt bouboule_opts = {
+  0, NULL, 0, NULL, NULL };
 
 #define USEOLDXARCS  1		/* If 1, we use old xarcs list for erasing.
 				   * else we just roughly erase the window.
@@ -693,23 +694,39 @@ draw_bouboule(ModeInfo * mi)
 		long        usec;
 
 		if (sp->hasbeenchecked > ADAPT_CHECKS) {
+#ifdef GETTIMEOFDAY_TWO_ARGS
 			(void) gettimeofday(&tv1, NULL);
+#else
+			(void) gettimeofday(&tv1);
+#endif
 			XFillRectangle(display, window, gc,
 				       x_1, y_1, x_2, y_2);
+#ifdef GETTIMEOFDAY_TWO_ARGS
 			(void) gettimeofday(&tv2, NULL);
+#else
+			(void) gettimeofday(&tv2);
+#endif
 			usec = (tv2.tv_sec - tv1.tv_sec) * 1000000;
 			if (usec + tv2.tv_usec - tv1.tv_usec > 0) {
 				sp->rect_time += usec + tv2.tv_usec - tv1.tv_usec;
 				sp->hasbeenchecked--;
 			}
 		} else {
+#ifdef GETTIMEOFDAY_TWO_ARGS
 			(void) gettimeofday(&tv1, NULL);
+#else
+			(void) gettimeofday(&tv1);
+#endif
 			XFillArcs(display, window, gc,
 				  sp->oldxarc, sp->NbStars);
 			if (MI_WIN_IS_USE3D(mi))
 				XFillArcs(display, window, gc,
 					  sp->oldxarcleft, sp->NbStars);
+#ifdef GETTIMEOFDAY_TWO_ARGS
 			(void) gettimeofday(&tv2, NULL);
+#else
+			(void) gettimeofday(&tv2);
+#endif
 			usec = (tv2.tv_sec - tv1.tv_sec) * 1000000;
 			if (usec + tv2.tv_usec - tv1.tv_usec > 0) {
 				sp->xarc_time += usec + tv2.tv_usec - tv1.tv_usec;

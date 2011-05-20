@@ -22,10 +22,11 @@
    -  create a variable `char *progclass' which names this program's
       resource class.
 
-   -  create a variable `char defaults []' for the default resources.
+   -  create a variable `char defaults []' for the default resources, and
+      null-terminate it.
 
-   -  create a variable `XrmOptionDescRec options []' for the command-line,
-      and `int options_size' which is `XtNumber (options)'.
+   -  create a variable `XrmOptionDescRec options[]' for the command-line,
+      and null-terminate it.
 
    And that's it...
  */
@@ -51,7 +52,8 @@ static XrmOptionDescRec default_options [] = {
   { "-mono",	".mono",		XrmoptionNoArg, "True" },
   { "-install",	".installColormap",	XrmoptionNoArg, "True" },
   { "-noinstall",".installColormap",	XrmoptionNoArg, "False" },
-  { "-visual",	".visualID",		XrmoptionSepArg, 0 }
+  { "-visual",	".visualID",		XrmoptionSepArg, 0 },
+  { 0, 0, 0, 0 }
 };
 
 static char *default_defaults[] = {
@@ -70,22 +72,34 @@ static char **merged_defaults;
 static void
 merge_options P((void))
 {
-  int options_sizeof = options_size * sizeof (options[0]);
-  int defaults_size;
-  merged_options_size = XtNumber (default_options) + options_size;
-  merged_options = (XrmOptionDescRec *)
-    malloc (sizeof (default_options) + options_sizeof);
-  memcpy (merged_options, options, options_sizeof);
-  memcpy (merged_options + options_size, default_options,
-	  sizeof (default_options));
+  int def_opts_size, opts_size;
+  int def_defaults_size, defaults_size;
 
-  for (defaults_size = 0; defaults [defaults_size]; defaults_size++);
+  for (def_opts_size = 0; default_options[def_opts_size].option;
+       def_opts_size++)
+    ;
+  for (opts_size = 0; options[opts_size].option; opts_size++)
+    ;
+
+  merged_options_size = def_opts_size + opts_size;
+  merged_options = (XrmOptionDescRec *)
+    malloc ((merged_options_size + 1) * sizeof(*default_options));
+  memcpy (merged_options, default_options,
+	  (def_opts_size * sizeof(*default_options)));
+  memcpy (merged_options + def_opts_size, options,
+	  ((opts_size + 1) * sizeof(*default_options)));
+
+  for (def_defaults_size = 0; default_defaults[def_defaults_size];
+       def_defaults_size++)
+    ;
+  for (defaults_size = 0; defaults[defaults_size]; defaults_size++)
+    ;
   merged_defaults = (char **)
-    malloc (sizeof (default_defaults) + (defaults_size * sizeof (char *)));
-  memcpy (merged_defaults, default_defaults, sizeof (default_defaults));
-  memcpy ((merged_defaults - 1 +
-	   (sizeof (default_defaults) / sizeof (default_defaults[0]))),
-	  defaults, ((defaults_size + 1) * sizeof (defaults[0])));
+    malloc ((def_defaults_size + defaults_size + 1) * sizeof (*defaults));;
+  memcpy (merged_defaults, default_defaults,
+	  def_defaults_size * sizeof(*defaults));
+  memcpy (merged_defaults + def_defaults_size, defaults,
+	  (defaults_size + 1) * sizeof(*defaults));
 }
 
 
@@ -125,6 +139,16 @@ MapNotify_event_p (dpy, event, window)
 }
 
 
+#ifdef USE_GL
+extern Visual *get_gl_visual P((Screen *, const char *, const char *));
+#endif
+
+#ifdef XLOCKMORE
+extern void pre_merge_options P((void));
+#endif
+
+
+
 void
 #ifdef __STDC__
 main (int argc, char **argv)
@@ -145,6 +169,9 @@ main (argc, argv)
   Boolean dont_clear /*, dont_map */;
   char version[255];
 
+#ifdef XLOCKMORE
+  pre_merge_options ();
+#endif
   merge_options ();
   toplevel = XtAppInitialize (&app, progclass, merged_options,
 			      merged_options_size, &argc, argv,
@@ -217,7 +244,12 @@ main (argc, argv)
     {
       Boolean def_visual_p;
       Screen *screen = XtScreen (toplevel);
+
+#ifdef USE_GL
+      visual = get_gl_visual (screen, "visualID", "VisualID");
+#else
       visual = get_visual_resource (screen, "visualID", "VisualID", False);
+#endif
 
       if (toplevel->core.width <= 0)
 	toplevel->core.width = 600;

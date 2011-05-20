@@ -489,9 +489,9 @@ XrmOptionDescRec options [] = {
   {"-no-3d",		".use3d",	XrmoptionNoArg, "False"},
   {"-left3d",		".left3d",	XrmoptionSepArg, 0 },
   {"-right3d",		".right3d",	XrmoptionSepArg, 0 },
-  {"-delta3d",		".delta3d",	XrmoptionSepArg, 0 }
+  {"-delta3d",		".delta3d",	XrmoptionSepArg, 0 },
+  { 0, 0, 0, 0 }
 };
-int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
 #ifdef __STDC__

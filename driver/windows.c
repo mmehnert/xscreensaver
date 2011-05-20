@@ -637,8 +637,6 @@ initialize_screensaver_window_1 (ssi)
   char id [2048];
   static Bool printed_visual_info = False;  /* only print the message once. */
 
-  reset_stderr(si);
-
   black.red = black.green = black.blue = 0;
 
   if (ssi->cmap == DefaultColormapOfScreen (ssi->screen))
@@ -793,6 +791,7 @@ initialize_screensaver_window_1 (ssi)
 	XCreateWindow (si->dpy, RootWindowOfScreen (ssi->screen), 0, 0,
 		       width, height, 0, ssi->current_depth, InputOutput,
 		       ssi->current_visual, attrmask, &attrs);
+      reset_stderr (ssi);
       store_activate_time(si, True);
       if (p->verbose_p)
 	fprintf (stderr, "%s: saver window is 0x%lx.\n",
@@ -877,7 +876,9 @@ raise_window (si, inhibit_fade, between_hacks_p, dont_clear)
 {
   saver_preferences *p = &si->prefs;
   int i;
+
   initialize_screensaver_window (si);
+  reset_watchdog_timer (si, True);
 
   if (p->fade_p && !inhibit_fade && !si->demo_mode_p)
     {
@@ -906,6 +907,11 @@ raise_window (si, inhibit_fade, between_hacks_p, dont_clear)
 	  if (grabbed != GrabSuccess)
 	    grabbed = grab_mouse (si->dpy, ssi->screensaver_window,
 				  (si->demo_mode_p ? 0 : ssi->cursor));
+
+	  if (!dont_clear || ssi->stderr_overlay_window)
+	    /* Do this before the fade, since the stderr cmap won't fade
+	       even if we uninstall it (beats me...) */
+	    clear_stderr (ssi);
 	}
 
       fade_screens (si->dpy, current_maps, p->fade_seconds, p->fade_ticks,
@@ -943,6 +949,8 @@ raise_window (si, inhibit_fade, between_hacks_p, dont_clear)
 	  saver_screen_info *ssi = &si->screens[i];
 	  if (!dont_clear)
 	    XClearWindow (si->dpy, ssi->screensaver_window);
+	  if (!dont_clear || ssi->stderr_overlay_window)
+	    clear_stderr (ssi);
 	  XMapRaised (si->dpy, ssi->screensaver_window);
 #ifdef HAVE_MIT_SAVER_EXTENSION
 	  if (ssi->server_mit_saver_window &&
@@ -964,7 +972,7 @@ raise_window (si, inhibit_fade, between_hacks_p, dont_clear)
  /* Calls to XHPDisableReset and XHPEnableReset must be balanced,
     or BadAccess errors occur.  (Ok for this to be global, since it
     affects the whole machine, not just the current screen.) */
-static Bool hp_locked_p = False;
+Bool hp_locked_p = False;
 #endif /* __hpux */
 
 
@@ -992,9 +1000,11 @@ blank_screen (si)
   grab_keyboard_and_mouse (si->dpy, si->screens[0].screensaver_window,
 			   (si->demo_mode_p ? 0 : si->screens[0].cursor));
 #ifdef __hpux
-  if (lock_p && !hp_locked_p)
-    XHPDisableReset (dpy);	/* turn off C-Sh-Reset */
-  hp_locked_p = True;
+  if (si->locked_p && !hp_locked_p)
+    {
+      XHPDisableReset (dpy);	/* turn off C-Sh-Reset */
+      hp_locked_p = True;
+    }
 #endif
 
   si->screen_blanked_p = True;
@@ -1010,7 +1020,10 @@ unblank_screen (si)
 {
   saver_preferences *p = &si->prefs;
   int i, j;
+
   store_activate_time (si, True);
+  reset_watchdog_timer (si, False);
+
   if (p->unfade_p && !si->demo_mode_p)
     {
       int grabbed = -1;
@@ -1044,6 +1057,7 @@ unblank_screen (si)
 	    grabbed = grab_mouse (si->dpy, RootWindowOfScreen (ssi->screen),
 				  0);
 	  XUnmapWindow (si->dpy, ssi->screensaver_window);
+	  clear_stderr (ssi);
 	}
       XUngrabServer (si->dpy);
 
@@ -1106,9 +1120,11 @@ unblank_screen (si)
   restore_real_vroot (si);
 
 #ifdef __hpux
-  if (p->lock_p && hp_locked_p)
-    XHPEnableReset (si->dpy);	/* turn C-Sh-Reset back on */
-  hp_locked_p = False;
+  if (hp_locked_p)
+    {
+      XHPEnableReset (si->dpy);	/* turn C-Sh-Reset back on */
+      hp_locked_p = False;
+    }
 #endif
 
   si->screen_blanked_p = False;
@@ -1125,7 +1141,7 @@ store_activate_time (si, use_last_p)
 #endif /* !__STDC__ */
 {
   static time_t last_time = 0;
-  time_t now = (use_last_p ? last_time : time ((time_t) 0));
+  time_t now = ((use_last_p && last_time) ? last_time : time ((time_t) 0));
   CARD32 now32 = (CARD32) now;
   int i;
   last_time = now;
@@ -1180,6 +1196,7 @@ select_visual (ssi, visual_name)
 #endif
 	}
 
+      reset_stderr (ssi);
       ssi->current_visual = new_v;
       ssi->current_depth = visual_depth(ssi->screen, new_v);
       ssi->cmap = 0;

@@ -26,6 +26,7 @@
 
 #include "xscreensaver.h"
 #include "resources.h"
+#include "visual.h"
 
 FILE *real_stderr = 0;
 FILE *real_stdout = 0;
@@ -38,27 +39,56 @@ static char stderr_buffer [4096];
 static char *stderr_tail = 0;
 static time_t stderr_last_read = 0;
 
+static void make_stderr_overlay_window P((saver_screen_info *));
+
 
 void
 #ifdef __STDC__
-reset_stderr (saver_info *si)
+reset_stderr (saver_screen_info *ssi)
 #else  /* !__STDC__ */
-reset_stderr (si)
-	saver_info *si;
+reset_stderr (ssi)
+	saver_screen_info *ssi;
 #endif /* !__STDC__ */
 {
-  int i;
-  for (i = 0; i < si->nscreens; i++)
-    {
-      saver_screen_info *ssi = &si->screens[i];
+  saver_info *si = ssi->global;
 
-      ssi->stderr_text_x = ssi->stderr_text_y = 0;
+#ifdef DEBUG
+  if (si->prefs.debug_p)
+    fprintf ((real_stderr ? real_stderr : stderr),
+	     "%s: resetting stderr\n", progname);
+#endif
 
-      if (ssi->stderr_gc)
-	XFreeGC (si->dpy, ssi->stderr_gc);
-      ssi->stderr_gc = 0;
-    }
+  ssi->stderr_text_x = 0;
+  ssi->stderr_text_y = 0;
+
+  if (ssi->stderr_gc)
+    XFreeGC (si->dpy, ssi->stderr_gc);
+  ssi->stderr_gc = 0;
+
+  if (ssi->stderr_overlay_window)
+    XDestroyWindow(si->dpy, ssi->stderr_overlay_window);
+  ssi->stderr_overlay_window = 0;
+
+  if (ssi->stderr_cmap)
+    XFreeColormap(si->dpy, ssi->stderr_cmap);
+  ssi->stderr_cmap = 0;
 }
+
+void
+#ifdef __STDC__
+clear_stderr (saver_screen_info *ssi)
+#else  /* !__STDC__ */
+clear_stderr (ssi)
+	saver_screen_info *ssi;
+#endif /* !__STDC__ */
+{
+  saver_info *si = ssi->global;
+  ssi->stderr_text_x = 0;
+  ssi->stderr_text_y = 0;
+  if (ssi->stderr_overlay_window)
+    XClearWindow (si->dpy, ssi->stderr_overlay_window);
+}
+
 
 static void
 #ifdef __STDC__
@@ -73,8 +103,9 @@ print_stderr_1 (ssi, string)
   saver_preferences *p = &si->prefs;
   Display *dpy = si->dpy;
   Screen *screen = ssi->screen;
-  Window window = ssi->screensaver_window;
-  Colormap cmap = ssi->cmap;
+  Window window = (ssi->stderr_overlay_window ?
+		   ssi->stderr_overlay_window :
+		   ssi->screensaver_window);
   int h_border = 20;
   int v_border = 20;
   char *head = string;
@@ -98,6 +129,18 @@ print_stderr_1 (ssi, string)
     {
       XGCValues gcv;
       Pixel fg, bg;
+      Colormap cmap = ssi->cmap;
+
+      if (!ssi->stderr_overlay_window &&
+	  get_boolean_resource("overlayStderr", "Boolean"))
+	{
+	  make_stderr_overlay_window (ssi);
+	  if (ssi->stderr_overlay_window)
+	    window = ssi->stderr_overlay_window;
+	  if (ssi->stderr_cmap)
+	    cmap = ssi->stderr_cmap;
+	}
+
       fg = get_pixel_resource ("textForeground", "Foreground", dpy, cmap);
       bg = get_pixel_resource ("textBackground", "Background", dpy, cmap);
       gcv.font = ssi->stderr_font->fid;
@@ -107,6 +150,10 @@ print_stderr_1 (ssi, string)
 				  (GCFont | GCForeground | GCBackground),
 				  &gcv);
     }
+
+
+  if (ssi->stderr_cmap)
+    XInstallColormap(si->dpy, ssi->stderr_cmap);
 
   for (tail = string; *tail; tail++)
     {
@@ -157,6 +204,51 @@ print_stderr_1 (ssi, string)
       XTextExtents (ssi->stderr_font, tail, tail - head,
 		    &direction, &ascent, &descent, &overall);
       ssi->stderr_text_x += overall.width;
+    }
+}
+
+static void
+#ifdef __STDC__
+make_stderr_overlay_window (saver_screen_info *ssi)
+#else  /* !__STDC__ */
+make_stderr_overlay_window (ssi)
+	saver_screen_info *ssi;
+#endif /* !__STDC__ */
+{
+  saver_info *si = ssi->global;
+  unsigned long transparent_pixel = 0;
+  Visual *visual = get_overlay_visual (ssi->screen, &transparent_pixel);
+  if (visual)
+    {
+      int depth = visual_depth (ssi->screen, visual);
+      XSetWindowAttributes attrs;
+      unsigned long attrmask;
+
+#ifdef DEBUG
+      if (si->prefs.debug_p)
+	fprintf(real_stderr,
+		"%s: using overlay visual 0x%0x for stderr text layer.\n",
+		progname, (int) XVisualIDFromVisual (visual));
+#endif /* DEBUG */
+
+      ssi->stderr_cmap = XCreateColormap(si->dpy,
+					 RootWindowOfScreen(ssi->screen),
+					 visual, AllocNone);
+
+      attrmask = (CWColormap | CWBackPixel | CWBackingPixel | CWBorderPixel |
+		  CWBackingStore | CWSaveUnder);
+      attrs.colormap = ssi->stderr_cmap;
+      attrs.background_pixel = transparent_pixel;
+      attrs.backing_pixel = transparent_pixel;
+      attrs.border_pixel = transparent_pixel;
+      attrs.backing_store = NotUseful;
+      attrs.save_under = False;
+
+      ssi->stderr_overlay_window =
+	XCreateWindow(si->dpy, ssi->screensaver_window, 0, 0,
+		      WidthOfScreen(ssi->screen), HeightOfScreen(ssi->screen),
+		      0, depth, InputOutput, visual, attrmask, &attrs);
+      XMapRaised(si->dpy, ssi->stderr_overlay_window);
     }
 }
 

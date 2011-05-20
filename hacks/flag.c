@@ -33,10 +33,11 @@ static const char sccsid[] = "@(#)flag.c	4.02 97/04/01 xlockmore";
 # define PROGCLASS					"Flag"
 # define HACK_INIT					init_flag
 # define HACK_DRAW					draw_flag
-# define DEF_DELAY					50000
-# define DEF_CYCLES					1000
-# define DEF_SIZE					-7
-# define DEF_NCOLORS				200
+# define flag_opts					xlockmore_opts
+# define DEFAULTS	"*delay:		50000   \n"			\
+					"*cycles:		1000    \n"			\
+					"*size:			-7      \n"			\
+					"*ncolors:		200     \n"
 # define BRIGHT_COLORS
 # define UNIFORM_COLORS
 # define DEF_FONT					"-*-helvetica-bold-r-*-240-*"
@@ -49,9 +50,10 @@ static const char sccsid[] = "@(#)flag.c	4.02 97/04/01 xlockmore";
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */
 # include "flag.h"
-  ModeSpecOpt flag_opts = {
-	0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
+
+ModeSpecOpt flag_opts = {
+  0, NULL, 0, NULL, NULL };
 
 #include <X11/Xutil.h>
 
@@ -111,7 +113,7 @@ affiche(ModeInfo * mi)
 	flagstruct *fp = &flags[MI_SCREEN(mi)];
 
 	for (x = 0; x < fp->image->width; x++)
-		for (y = fp->image->height; y > 0; y--) {
+		for (y = fp->image->height-1; y >= 0; y--) {
 			xp = (int) (fp->size * (float) x) +
 				fp->stab[(fp->sidx + x + y) % ANGLES];
 			yp = (int) (fp->size * (float) y) +

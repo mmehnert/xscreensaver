@@ -264,9 +264,9 @@ char *defaults [] = {
 XrmOptionDescRec options [] = {
   { "-count",		".count",	XrmoptionSepArg, 0 },
   { "-frequency",	".frequency",	XrmoptionSepArg, 0 },
-  { "-scatter",		".scatter",	XrmoptionSepArg, 0 }
+  { "-scatter",		".scatter",	XrmoptionSepArg, 0 },
+  { 0, 0, 0, 0 }
 };
-int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
 #ifdef __STDC__

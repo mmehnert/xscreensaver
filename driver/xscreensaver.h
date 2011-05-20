@@ -52,10 +52,7 @@ struct saver_preferences {
   Bool verbose_p;
   Bool lock_p;			/* whether to lock as well as save */
 
-#ifdef DEBUG
   Bool debug_p;
-#endif
-
   Bool fade_p;			/* whether to fade to black */
   Bool unfade_p;		/* whether to fade from black */
   int fade_seconds;		/* how long that should take */
@@ -244,7 +241,8 @@ struct saver_screen_info {
   int stderr_line_height;
   XFontStruct *stderr_font;
   GC stderr_gc;
-
+  Window stderr_overlay_window;    /* Used if the server has overlay planes */
+  Colormap stderr_cmap;
 };
 
 
@@ -314,7 +312,7 @@ extern void steal_focus_and_colormap P((Widget dialog));
 extern void start_notice_events_timer P((saver_info *, Window));
 extern void cycle_timer P((XtPointer si, XtIntervalId *id));
 extern void activate_lock_timer P((XtPointer si, XtIntervalId *id));
-extern void watchdog_timer P((XtPointer si, XtIntervalId *id));
+extern void reset_watchdog_timer P((saver_info *si, Bool on_p));
 extern void idle_timer P((XtPointer si, XtIntervalId *id));
 extern void sleep_until_idle P((saver_info *si, Bool until_idle_p));
 
@@ -356,7 +354,8 @@ extern const char *signal_name P((int signal));
 extern FILE *real_stderr;
 extern FILE *real_stdout;
 extern void initialize_stderr P((saver_info *si));
-extern void reset_stderr P((saver_info *si));
+extern void reset_stderr P((saver_screen_info *ssi));
+extern void clear_stderr P((saver_screen_info *ssi));
 
 /* =======================================================================
    misc

@@ -93,6 +93,11 @@ get_boolean_resource (res_name, res_class)
   *tmp = 0;
   free (os);
 
+  while (*buf &&
+	 (buf[strlen(buf)-1] == ' ' ||
+	  buf[strlen(buf)-1] == '\t'))
+    buf[strlen(buf)-1] = 0;
+
   if (!strcmp (buf, "on") || !strcmp (buf, "true") || !strcmp (buf, "yes"))
     return 1;
   if (!strcmp (buf,"off") || !strcmp (buf, "false") || !strcmp (buf,"no"))

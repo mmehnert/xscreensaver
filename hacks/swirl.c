@@ -33,19 +33,20 @@ static const char sccsid[] = "@(#)swirl.c	4.00 97/01/01 xlockmore";
 # define PROGCLASS					"Swirl"
 # define HACK_INIT					init_swirl
 # define HACK_DRAW					draw_swirl
-# define DEF_BATCHCOUNT				5
-# define DEF_DELAY					10000
-# define DEF_NCOLORS				200
+# define swirl_opts					xlockmore_opts
+# define DEFAULTS	"*count:		5       \n"			\
+					"*delay:		10000   \n"			\
+					"*ncolors:		200     \n"
 # define SMOOTH_COLORS
 # define WRITABLE_COLORS
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 # include <X11/Xutil.h>
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */
-  ModeSpecOpt swirl_opts = {
-	0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
 
+ModeSpecOpt swirl_opts = {
+  0, NULL, 0, NULL, NULL };
 
 #include <time.h>
 

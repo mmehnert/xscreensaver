@@ -29,10 +29,10 @@ static const char sccsid[] = "@(#)grav.c	4.00 97/01/01 xlockmore";
 # define PROGCLASS					"Grav"
 # define HACK_INIT					init_grav
 # define HACK_DRAW					draw_grav
-# define DEF_BATCHCOUNT				12
-# define DEF_DELAY					10000
-# define DEF_DECAY					"False"
-# define DEF_TRAIL					"False"
+# define grav_opts					xlockmore_opts
+# define DEFAULTS	"*count:		12    \n"			\
+					"*delay:		10000 \n"			\
+					"*ncolors:		64   \n"
 # define BRIGHT_COLORS
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
@@ -83,7 +83,6 @@ static const char sccsid[] = "@(#)grav.c	4.00 97/01/01 xlockmore";
 #define DEF_DECAY "False"	/* Damping for decaying orbits */
 #define DEF_TRAIL "False"	/* For trails (works good in mono only) */
 
-#ifndef STANDALONE
 static Bool decay;
 static Bool trail;
 
@@ -106,7 +105,6 @@ static OptionStruct desc[] =
 };
 
 ModeSpecOpt grav_opts = { 4, opts, 2, vars, desc };
-#endif /* !STANDALONE */
 
 typedef struct {
 	double        P[DIMENSIONS], V[DIMENSIONS], A[DIMENSIONS];

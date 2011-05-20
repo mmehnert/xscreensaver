@@ -1071,11 +1071,11 @@ demo_mode (si)
 	    {
 	      start_notice_events_timer (si, event.xcreatewindow.window);
 #ifdef DEBUG_TIMERS
-	      if (verbose_p)
+	      if (p->verbose_p)
 		printf ("%s: starting notice_events_timer for 0x%X (%lu)\n",
 			progname,
 			(unsigned int) event.xcreatewindow.window,
-			notice_events_timeout);
+			p->notice_events_timeout);
 #endif /* DEBUG_TIMERS */
 	    }
 	  break;
@@ -1105,7 +1105,10 @@ demo_mode (si)
     }
   destroy_screenhack_dialogs (si);
   initialize_screensaver_window (si);
+
+  si->demo_mode_p = True;  /* kludge to inhibit unfade... */
   unblank_screen (si);
+  si->demo_mode_p = False;
 }
 
 static void

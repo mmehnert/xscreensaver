@@ -23,16 +23,19 @@ static const char sccsid[] = "@(#)laser.c	4.00 97/01/01 xlockmore";
 # define PROGCLASS					"Laser"
 # define HACK_INIT					init_laser
 # define HACK_DRAW					draw_laser
-# define DEF_BATCHCOUNT				10
-# define DEF_CYCLES					200
-# define DEF_DELAY					40000
+# define laser_opts					xlockmore_opts
+# define DEFAULTS	"*count:		10    \n"			\
+					"*cycles:		200   \n"			\
+					"*delay:		40000 \n"			\
+					"*ncolors:		64   \n"
 # define SMOOTH_COLORS
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */
-  ModeSpecOpt laser_opts = {
-	0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
+
+ModeSpecOpt laser_opts = {
+  0, NULL, 0, NULL, NULL };
 
 #define MINREDRAW 3		/* Number of redrawn on each frame */
 #define MAXREDRAW 8

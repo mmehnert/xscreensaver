@@ -9,29 +9,12 @@
  * implied warranty.
  */
 
-/* Sun's compiler really blows */
-#if defined(SVR4) && !defined(__svr4__)
-# define __svr4__ 1
-#endif
-#if defined(sun) && !defined(__sun)
-# define __sun 1
-#endif
-
-#if defined(__sun) && defined(__svr4__)
-  /* Solaris 2.4 and less use gettimeofday(tp) but Solaris 2.5 and greater
-     use gettimeofday(tp,tzp) unless you define _SVID_GETTOD.  Make up your
-     fucking minds, assholes. */
-# undef  _SVID_GETTOD
-# define _SVID_GETTOD
-#endif
-
-#include <sys/time.h> /* for gettimeofday() */
-
 #ifdef __STDC__
 # include <stdlib.h>
 #endif
 
 #include <stdio.h>
+#include <sys/time.h> /* for gettimeofday() */
 
 #include <X11/Xlib.h>
 #include <X11/Xos.h>
@@ -145,7 +128,7 @@ fade_screens (dpy, cmaps, seconds, ticks, out_p)
   int total_ncolors;
   XColor *orig_colors, *current_colors, *screen_colors, *orig_screen_colors;
   struct timeval then, now;
-# if defined(__svr4__) && !defined(__sun)
+#ifdef GETTIMEOFDAY_TWO_ARGS
   struct timezone tzp;
 #endif
 
@@ -185,7 +168,7 @@ fade_screens (dpy, cmaps, seconds, ticks, out_p)
 			     AllocAll);
     }
 
-# if defined(__svr4__) && !defined(__sun)
+#ifdef GETTIMEOFDAY_TWO_ARGS
   gettimeofday(&then, &tzp);
 #else
   gettimeofday(&then);
@@ -262,7 +245,7 @@ fade_screens (dpy, cmaps, seconds, ticks, out_p)
 	  goto DONE;
 	}
 
-# if defined(__svr4__) && !defined(__sun)
+#ifdef GETTIMEOFDAY_TWO_ARGS
       gettimeofday(&now, &tzp);
 #else
       gettimeofday(&now);
@@ -275,8 +258,6 @@ fade_screens (dpy, cmaps, seconds, ticks, out_p)
 		     now.tv_usec - then.tv_usec);
 	then.tv_sec = now.tv_sec;
 	then.tv_usec = now.tv_usec;
-	if (usecs_per_step > diff)
-	  printf("usleep(%ld)\n",usecs_per_step - diff);
 	if (usecs_per_step > diff)
 	  usleep (usecs_per_step - diff);
       }

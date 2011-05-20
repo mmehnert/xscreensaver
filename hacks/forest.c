@@ -29,17 +29,20 @@ static const char sccsid[] = "@(#)forest.c	4.03 97/05/10 xlockmore";
 # define PROGCLASS					"Forest"
 # define HACK_INIT					init_forest
 # define HACK_DRAW					draw_forest
-# define DEF_DELAY					400000
-# define DEF_BATCHCOUNT				100
-# define DEF_CYCLES					200
-# define DEF_NCOLORS				100
+# define forest_opts				xlockmore_opts
+# define DEFAULTS	"*count:		100     \n"			\
+					"*cycles:		200     \n"			\
+					"*delay:		400000  \n"			\
+					"*ncolors:		100     \n"
 # define UNIFORM_COLORS
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */
-  ModeSpecOpt forest_opts = {
-	0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
+
+ModeSpecOpt forest_opts = {
+  0, NULL, 0, NULL, NULL };
+
 
 #define MINTREES   1
 

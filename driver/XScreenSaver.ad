@@ -18,6 +18,7 @@
 *captureStdout: 	True
 *textForeground:	Yellow
 *textBackground:	Black
+*overlayStderr:		True
 *font:			*-medium-r-*-140-*-m-*
 
 ! Turning on "installColormap" interacts erratically with twm and tvtwm,
@@ -115,6 +116,23 @@
 			-segments 250 -size 100				\n
 
 
+! The sources for the following programs are included with XScreenSaver, but
+! they require OpenGL; so, since most people don't have the GL headers and
+! libraries, they're not included in the programs list by default.
+! 
+! Note that these will work best on a visual *half* as deep as the depth of
+! the screen, since that way they can do double-buffering -- on an SGI, you
+! should specify the 12-bit TrueColor visual (probably 0x29) instead of 
+! letting XScreenSaver pick the visual itself (specifying "TrueColor" would
+! select the 24-bit TrueColor visual, and double-buffering wouldn't be used,
+! resulting in flicker.)
+!
+!		gears -root					  	\n\
+!		superquadrics -root				  	\n\
+!		escher -root					  	\n\
+!		pipes -root					  	\n\
+!		sproingies -root				  	\n\
+!
 ! Some other programs that you might want to track down (these work as
 ! XScreenSaver helpers, but are not distributed with it):
 !
@@ -127,7 +145,7 @@
 !		kaleid -root						\n\
 !	color:	xfishtank -c black -d -r 2				\n\
 !
-! xtacy is nice, but it only works on the default visual.  We can satisfy
+! xtacy is ok, but it only works on the default visual.  We can satisfy
 ! that constraint like so:
 !
 !     default:	xtacy -root -delay 100 -funky -number 3			\n\
@@ -148,8 +166,7 @@
 ! mode, it always assumes that the default colormap is being used, rather than
 ! examining the window it is drawing on to see what colormap it has.  (It
 ! also assumes the default visual, but we've taken care of that above.)
-
-
+!
 ! Some SGI GL programs work with XScreenSaver; most don't.
 !
 ! Bongo works fine:
@@ -163,9 +180,9 @@
 !
 !	/usr/demos/bin/ep
 !
-! None of the other GL demos I've tried worked, because none of them seem to
-! have command-line options that will make them take up the whole screen; so
-! all you get is a miniscule 100x100 image, which is worthless.  This is a
+! None of the other SGI GL demos I've tried worked, because none of them seem
+! to have command-line options that will make them take up the whole screen;
+! so all you get is a miniscule 100x100 image, which is worthless.  This is a
 ! shame, since many of those demos would make fine screensavers.
 !
 ! If anyone who understands how "haven" works would like to send me the code

@@ -217,10 +217,14 @@ cycle_timer (closure, id)
 #ifdef DEBUG_TIMERS
   if (p->verbose_p)
     printf ("%s: starting cycle_timer (%ld, %ld)\n",
-	    progname, how_long, cycle_id);
+	    progname, how_long, si->cycle_id);
 #endif
 }
 
+
+#ifdef __hpux
+extern Bool hp_locked_p;	/* from windows.c */
+#endif
 
 void
 #ifdef __STDC__
@@ -237,6 +241,14 @@ activate_lock_timer (closure, id)
   if (p->verbose_p)
     printf ("%s: timed out; activating lock\n", progname);
   si->locked_p = True;
+
+#ifdef __hpux
+  if (!hp_locked_p)
+    {
+      XHPDisableReset (dpy);	/* turn off C-Sh-Reset */
+      hp_locked_p = True;
+    }
+#endif
 }
 
 
@@ -255,8 +267,8 @@ reset_timers (si) saver_info *si;
 
 #ifdef DEBUG_TIMERS
   if (p->verbose_p)
-    printf ("%s: restarting idle_timer (%ld, %ld)\n",
-	    progname, timeout, timer_id);
+    printf ("%s:   killing idle_timer    (%ld, %ld)\n",
+	    progname, p->timeout, si->timer_id);
 #endif
   XtRemoveTimeOut (si->timer_id);
   si->timer_id = XtAppAddTimeOut (si->app, p->timeout, idle_timer,
@@ -265,7 +277,7 @@ reset_timers (si) saver_info *si;
 
 #ifdef DEBUG_TIMERS
   if (p->verbose_p)
-    printf ("%s: starting idle_timer (%ld, %ld)\n",
+    printf ("%s:   restarting idle_timer (%ld, %ld)\n",
 	    progname, p->timeout, si->timer_id);
 #endif
 
@@ -288,6 +300,7 @@ check_pointer_timer (closure, id)
   int i;
   saver_info *si = (saver_info *) closure;
   saver_preferences *p = &si->prefs;
+  Bool active_p = False;
 
   if (p->use_xidle_extension ||
       p->use_mit_saver_extension ||
@@ -314,8 +327,10 @@ check_pointer_timer (closure, id)
 	  mask   == ssi->poll_mouse_last_mask)
 	continue;
 
+      active_p = True;
+
 #ifdef DEBUG_TIMERS
-      if (verbose_p && this_timer)
+      if (p->verbose_p)
 	if (root_x == ssi->poll_mouse_last_root_x &&
 	    root_y == ssi->poll_mouse_last_root_y &&
 	    child  == ssi->poll_mouse_last_child)
@@ -333,7 +348,8 @@ check_pointer_timer (closure, id)
       ssi->poll_mouse_last_mask   = mask;
     }
 
-  reset_timers (si);
+  if (active_p)
+    reset_timers (si);
 }
 
 
@@ -357,7 +373,7 @@ sleep_until_idle (si, until_idle_p)
 	  si->timer_id = XtAppAddTimeOut (si->app, p->timeout, idle_timer,
 					  (XtPointer) si);
 #ifdef DEBUG_TIMERS
-	  if (verbose_p)
+	  if (p->verbose_p)
 	    printf ("%s: starting idle_timer (%ld, %ld)\n",
 		    progname, p->timeout, si->timer_id);
 #endif
@@ -442,7 +458,7 @@ sleep_until_idle (si, until_idle_p)
 	  {
 	    start_notice_events_timer (si, event.xcreatewindow.window);
 #ifdef DEBUG_TIMERS
-	    if (verbose_p)
+	    if (p->verbose_p)
 	      printf ("%s: starting notice_events_timer for 0x%X (%lu)\n",
 		      progname,
 		      (unsigned int) event.xcreatewindow.window,
@@ -458,7 +474,7 @@ sleep_until_idle (si, until_idle_p)
       case MotionNotify:
 
 #ifdef DEBUG_TIMERS
-	if (verbose_p)
+	if (p->verbose_p)
 	  {
 	    if (event.xany.type == MotionNotify)
 	      printf ("%s: MotionNotify at %s\n", progname, timestring ());
@@ -485,7 +501,7 @@ sleep_until_idle (si, until_idle_p)
 	    if (sevent->state == ScreenSaverOn)
 	      {
 # ifdef DEBUG_TIMERS
-		if (verbose_p)
+		if (p->verbose_p)
 		  printf ("%s: ScreenSaverOn event received at %s\n",
 			  progname, timestring ());
 # endif /* DEBUG_TIMERS */
@@ -511,7 +527,7 @@ sleep_until_idle (si, until_idle_p)
 	    else if (sevent->state == ScreenSaverOff)
 	      {
 # ifdef DEBUG_TIMERS
-		if (verbose_p)
+		if (p->verbose_p)
 		  printf ("%s: ScreenSaverOff event received at %s\n",
 			  progname, timestring ());
 # endif /* DEBUG_TIMERS */
@@ -519,7 +535,7 @@ sleep_until_idle (si, until_idle_p)
 		  goto DONE;
 	      }
 # ifdef DEBUG_TIMERS
-	    else if (verbose_p)
+	    else if (p->verbose_p)
 	      printf ("%s: unknown MIT-SCREEN-SAVER event received at %s\n",
 		      progname, timestring ());
 # endif /* DEBUG_TIMERS */
@@ -533,7 +549,7 @@ sleep_until_idle (si, until_idle_p)
 	if (event.type == (si->sgi_saver_ext_event_number + ScreenSaverStart))
 	  {
 # ifdef DEBUG_TIMERS
-	    if (verbose_p)
+	    if (p->verbose_p)
 	      printf ("%s: ScreenSaverStart event received at %s\n",
 		      progname, timestring ());
 # endif /* DEBUG_TIMERS */
@@ -545,7 +561,7 @@ sleep_until_idle (si, until_idle_p)
 				ScreenSaverEnd))
 	  {
 # ifdef DEBUG_TIMERS
-	    if (verbose_p)
+	    if (p->verbose_p)
 	      printf ("%s: ScreenSaverEnd event received at %s\n",
 		      progname, timestring ());
 # endif /* DEBUG_TIMERS */
@@ -609,7 +625,7 @@ sleep_until_idle (si, until_idle_p)
    don't want the error message to burn in.)
  */
 
-void
+static void
 #ifdef __STDC__
 watchdog_timer (XtPointer closure, XtIntervalId *id)
 #else  /* !__STDC__ */
@@ -619,8 +635,6 @@ watchdog_timer (closure, id)
 #endif /* !__STDC__ */
 {
   saver_info *si = (saver_info *) closure;
-  saver_preferences *p = &si->prefs;
-
   if (!si->demo_mode_p)
     {
       disable_builtin_screensaver (si, False);
@@ -628,23 +642,42 @@ watchdog_timer (closure, id)
 	{
 	  Bool running_p = screenhack_running_p(si);
 #ifdef DEBUG_TIMERS
-	  if (p->verbose_p)
+	  if (si->prefs.verbose_p)
 	    printf ("%s: watchdog timer raising %sscreen.\n",
 		    progname, (running_p ? "" : "and clearing "));
 #endif
 	  raise_window (si, True, True, running_p);
 	}
     }
+}
 
-  if (p->watchdog_timeout)
+
+void
+#ifdef __STDC__
+reset_watchdog_timer (saver_info *si, Bool on_p)
+#else  /* !__STDC__ */
+reset_watchdog_timer (si, on_p)
+	saver_info *si;
+	Bool on_p;
+#endif /* !__STDC__ */
+{
+  saver_preferences *p = &si->prefs;
+
+  if (si->watchdog_id)
+    {
+      XtRemoveTimeOut (si->watchdog_id);
+      si->watchdog_id = 0;
+    }
+
+  if (on_p && p->watchdog_timeout)
     {
       si->watchdog_id = XtAppAddTimeOut (si->app, p->watchdog_timeout,
 					 watchdog_timer, (XtPointer) si);
 
 #ifdef DEBUG_TIMERS
-      if (verbose_p)
+      if (p->verbose_p)
 	printf ("%s: restarting watchdog_timer (%ld, %ld)\n",
-		progname, watchdog_timeout, watchdog_id);
+		progname, p->watchdog_timeout, si->watchdog_id);
 #endif
     }
 }

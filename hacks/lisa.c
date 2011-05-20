@@ -37,18 +37,20 @@ static const char sccsid[] = "@(#)lisa.c	4.03 97/05/10 xlockmore";
 # define PROGCLASS					"Lisa"
 # define HACK_INIT					init_lisa
 # define HACK_DRAW					draw_lisa
-# define DEF_DELAY					25000
-# define DEF_BATCHCOUNT				1
-# define DEF_CYCLES					256
-# define DEF_SIZE					-1
-# define DEF_NCOLORS				200
+# define lisa_opts					xlockmore_opts
+# define DEFAULTS	"*count:		1       \n"			\
+					"*cycles:		256     \n"			\
+					"*delay:		25000   \n"			\
+					"*size:			-1      \n"			\
+					"*ncolors:		200     \n"
 # define UNIFORM_COLORS
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */
-  ModeSpecOpt lisa_opts = {
-	0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
+
+ModeSpecOpt lisa_opts = { 
+  0, NULL, 0, NULL, NULL };
 
 #define  DRAWLINES    1
 #define  TWOLOOPS     1

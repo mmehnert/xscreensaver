@@ -157,9 +157,9 @@ char *defaults [] = {
 };
 
 XrmOptionDescRec options [] = {
-  { "-delay",		".delay",	XrmoptionSepArg, 0 }
+  { "-delay",		".delay",	XrmoptionSepArg, 0 },
+  { 0, 0, 0, 0 }
 };
-int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
 #ifdef __STDC__

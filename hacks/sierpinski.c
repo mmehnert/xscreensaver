@@ -29,16 +29,18 @@ static const char sccsid[] = "@(#)tri.c	4.00 97/01/01 xlockmore";
 # define PROGCLASS					"Sierpinski"
 # define HACK_INIT					init_tri
 # define HACK_DRAW					draw_tri
-# define DEF_BATCHCOUNT				2000
-# define DEF_CYCLES					100
-# define DEF_DELAY					400000
+# define tri_opts					xlockmore_opts
+# define DEFAULTS	"*count:		2000    \n"			\
+					"*cycles:		100     \n"			\
+					"*delay:		400000  \n"			\
+					"*ncolors:		64   \n"
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */
-  ModeSpecOpt tri_opts = {
-	0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
 
+ModeSpecOpt tri_opts = {
+  0, NULL, 0, NULL, NULL };
 
 typedef struct {
 	int         width, height;

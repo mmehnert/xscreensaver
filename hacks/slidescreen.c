@@ -262,9 +262,8 @@ XrmOptionDescRec options [] = {
   { "-increment",	".pixelIncrement",	XrmoptionSepArg, 0 },
   { "-delay",		".delay",		XrmoptionSepArg, 0 },
   { "-delay2",		".delay2",		XrmoptionSepArg, 0 },
+  { 0, 0, 0, 0 }
 };
-
-int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
 #ifdef __STDC__

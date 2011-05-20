@@ -66,6 +66,14 @@
 # define DBOX_INC $(MOTIFINCLUDES)
 #endif
 
+#ifdef USE_KERBEROS
+# define PASSWD_SRC = $(KERBEROS_SRC)
+# define PASSWD_OBJ = $(KERBEROS_OBJ)
+#else
+# define PASSWD_SRC = $(PW_SRC)
+# define PASSWD_OBJ = $(PW_OBJ)
+#endif
+
          UTILS = ../utils
       INCLUDES = -I$(UTILS) DBOX_INC
        DEFINES = SETUID_DEF XIDLE_DEF MIT_SAVER_DEF SGI_SAVER_DEF \
@@ -74,27 +82,34 @@
 		 $(XLIB) $(DEC_ENHANCED_LIB)
       COMMLIBS = $(XLIB)
      UTIL_SRCS = $(UTILS)/resources.c $(UTILS)/fade.c $(UTILS)/visual.c \
-		 $(UTILS)/usleep.c $(UTILS)/yarandom.c $(UTILS)/xroger.c
+		 $(UTILS)/usleep.c $(UTILS)/yarandom.c $(UTILS)/xroger.c \
+		 $(UTILS)/overlay.c
      UTIL_OBJS = $(UTILS)/resources.o $(UTILS)/fade.o $(UTILS)/visual.o \
-		 $(UTILS)/usleep.o $(UTILS)/yarandom.o $(UTILS)/xroger.o
+		 $(UTILS)/usleep.o $(UTILS)/yarandom.o $(UTILS)/xroger.o \
+		 $(UTILS)/overlay.o
     MOTIF_SRCS = dialogs-Xm.c
     MOTIF_OBJS = dialogs-Xm.o
    ATHENA_SRCS = dialogs-Xaw.c
    ATHENA_OBJS = dialogs-Xaw.o
+        PW_SRC = passwd.c
+        PW_OBJ = passwd.o
+  KERBEROS_SRC = kpasswd.c
+  KERBEROS_OBJ = kpasswd.c
      SAVERSRCS = xscreensaver.c timers.c windows.c xset.c subprocs.c \
-		 stderr.c demo.c lock.c passwd.c
+		 stderr.c demo.c lock.c
      SAVEROBJS = xscreensaver.o timers.o windows.o xset.o subprocs.o \
-		 stderr.o demo.o lock.o passwd.o
-         SRCS1 = $(SAVERSRCS) DBOX_SRC $(UTIL_SRCS)
-         OBJS1 = $(SAVEROBJS) DBOX_OBJ $(UTIL_OBJS)
+		 stderr.o demo.o lock.o
+         SRCS1 = $(SAVERSRCS) DBOX_SRC PASSWD_SRC $(UTIL_SRCS)
+         OBJS1 = $(SAVEROBJS) DBOX_OBJ PASSWD_OBJ $(UTIL_OBJS)
       COMMSRCS = xscreensaver-command.c
       COMMOBJS = xscreensaver-command.o
          SRCS2 = $(COMMSRCS)
          OBJS2 = $(COMMOBJS)
            MEN = xscreensaver.man xscreensaver-command.man
       TARFILES = README Imakefile $(SAVERSRCS) $(MOTIF_SRCS) $(ATHENA_SRCS) \
-                 $(COMMSRCS) xscreensaver.h XScreenSaver.ad dialogs.xd \
-                 $(MEN) .gdbinit
+		$(PW_SRC) $(KERBEROS_SRC) $(COMMSRCS) xscreensaver.h \
+		XScreenSaver.ad dialogs.xd $(MEN) .gdbinit
+            SH = /bin/sh
           NULL =
 
 #if defined(HPArchitecture) && !defined(NO_LOCKING)
@@ -111,6 +126,10 @@ EXTRA_LIBRARIES = -lintl -lprot -lx -lcrypt_i
 
 #if defined(HAVE_DEC_ENHANCED)
 EXTRA_LIBRARIES = -lsecurity -lm
+#endif
+
+#if defined(USE_KERBEROS)
+EXTRA_LIBRARIES = -lkrb -ldes -lnsl -lsocket
 #endif
 
 all:: xscreensaver xscreensaver-command
@@ -146,7 +165,7 @@ demo.o: $(UTILS)/version.h
 lock.o: $(UTILS)/version.h
 
 XScreenSaver.ad.h: XScreenSaver.ad
-	$(UTILS)/ad2c XScreenSaver.ad > XScreenSaver.ad.h
+	$(SH) $(UTILS)/ad2c $< > $@
 
 clean::
 	$(RM) XScreenSaver.ad.h
@@ -169,5 +188,16 @@ program.pure: deplist							@@\
 	  -o $@ $(LDOPTIONS) linklist $(EXTRA_LOAD_FLAGS)
 
 PurifyProgramTarget(xscreensaver,$(OBJS1),$(OBJS1) DBOX_LIB $(SAVERLIBS))
-
 #endif /* Purify */
+
+$(UTILS)/fade.o:	$(UTILS)/fade.c
+$(UTILS)/overlay.o:	$(UTILS)/overlay.c
+$(UTILS)/resources.o:	$(UTILS)/resources.c
+$(UTILS)/usleep.o:	$(UTILS)/usleep.c
+$(UTILS)/visual.o:	$(UTILS)/visual.c
+$(UTILS)/xroger.o:	$(UTILS)/xroger.c
+$(UTILS)/yarandom.o:	$(UTILS)/yarandom.c
+
+$(UTIL_OBJS):
+	cd $(UTILS) ; $(MAKE)  $(@F) CC="$(CC)" CCOPTIONS="$(CCOPTIONS)"   \
+		CDEBUGFLAGS="$(CDEBUGFLAGS)"

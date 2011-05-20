@@ -40,18 +40,38 @@ static const char sccsid[] = "@(#)julia.c	4.03 97/04/10 xlockmore";
 # define PROGCLASS					"Julia"
 # define HACK_INIT					init_julia
 # define HACK_DRAW					draw_julia
-# define DEF_BATCHCOUNT				1000
-# define DEF_CYCLES					20
-# define DEF_DELAY					10000
-# define DEF_NCOLORS				200
-# define DEF_MOUSE					"False"
+# define julia_opts					xlockmore_opts
+# define DEFAULTS	"*count:		1000  \n"			\
+					"*cycles:		20    \n"			\
+					"*delay:		10000 \n"			\
+					"*ncolors:		200   \n"
 # define UNIFORM_COLORS
 # include "xlockmore.h"				/* in xscreensaver distribution */
 #else  /* !STANDALONE */
 # include "xlock.h"					/* in xlockmore distribution */
-  ModeSpecOpt julia_opts = {
-	0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
+
+
+static Bool track_p;
+
+#define DEF_MOUSE "False"
+
+static XrmOptionDescRec opts[] =
+{
+	{"-mouse", ".julia.mouse", XrmoptionNoArg, (caddr_t) "on"},
+	{"+mouse", ".julia.mouse", XrmoptionNoArg, (caddr_t) "off"},
+};
+static argtype vars[] =
+{
+	{(caddr_t *) & track_p, "mouse", "Mouse", DEF_MOUSE, t_Bool},
+};
+static OptionStruct desc[] =
+{
+	{"-/+mouse", "turn on/off mouse tracking"},
+};
+
+ModeSpecOpt julia_opts = { 2, opts, 1, vars, desc };
+
 
 #define numpoints ((0x2<<jp->depth)-1)
 
@@ -73,8 +93,6 @@ typedef struct {
 	Cursor      cursor;
 	GC          stippledGC;
 	XPoint    **pointBuffer;	/* pointer for XDrawPoints */
-
-    Bool        track_p;
 
 } juliastruct;
 
@@ -119,7 +137,6 @@ apply(juliastruct * jp, register double xr, register double xi, int d)
 static void
 incr(ModeInfo * mi, juliastruct * jp)
 {
-    Bool track_p = jp->track_p;
 	int cx, cy;
 
 	if (track_p)
@@ -131,7 +148,7 @@ incr(ModeInfo * mi, juliastruct * jp)
 					  &r, &c, &rx, &ry, &cx, &cy, &m);
 		if (cx <= 0 || cy <= 0 ||
 			cx >= MI_WIN_WIDTH(mi) || cy >= MI_WIN_HEIGHT(mi))
-		  track_p = False;
+		  goto NOTRACK;
 	  }
 
 	if (track_p)
@@ -141,6 +158,7 @@ incr(ModeInfo * mi, juliastruct * jp)
 	  }
 	else
 	  {
+	  NOTRACK:
 		jp->cr = 1.5 * (sin(M_PI * (jp->inc / 300.0)) *
 						sin(jp->inc * M_PI / 200.0));
 		jp->ci = 1.5 * (cos(M_PI * (jp->inc / 300.0)) *
@@ -167,11 +185,6 @@ init_julia(ModeInfo * mi)
 	}
 	jp = &julias[MI_SCREEN(mi)];
 
-	jp->track_p = False;
-#ifdef STANDALONE
-	jp->track_p = get_boolean_resource ("mouse", "Boolean");
-#endif /* !STANDALONE */
-
 	jp->centerx = MI_WIN_WIDTH(mi) / 2;
 	jp->centery = MI_WIN_HEIGHT(mi) / 2;
 
@@ -180,7 +193,7 @@ init_julia(ModeInfo * mi)
 		jp->depth = 10;
 
 
-	if (jp->track_p && !jp->cursor)
+	if (track_p && !jp->cursor)
 	  {
 		Pixmap bit;
 		XColor black;
@@ -221,7 +234,9 @@ init_julia(ModeInfo * mi)
 			XFreeGC(display, bg_gc);
 	}
 
-	if (jp->circsize > 0)
+	if (MI_WIN_IS_INROOT(mi))
+	  ;
+	else if (jp->circsize > 0)
 	  XDefineCursor (display, window, jp->cursor);
 	else
 	  XUndefineCursor (display, window);

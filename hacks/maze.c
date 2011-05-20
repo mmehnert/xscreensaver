@@ -659,10 +659,9 @@ XrmOptionDescRec options[] = {
   { "-pre-delay",	".preDelay",	XrmoptionSepArg, 0 },
   { "-post-delay",	".postDelay",	XrmoptionSepArg, 0 },
   { "-live-color",	".liveColor",	XrmoptionSepArg, 0 },
-  { "-dead-color",	".deadColor",	XrmoptionSepArg, 0 }
+  { "-dead-color",	".deadColor",	XrmoptionSepArg, 0 },
+  { 0, 0, 0, 0 }
 };
-
-int options_size = (sizeof(options)/sizeof(options[0]));
 
 #ifdef XROGER
 extern void skull P((Display *, Window, GC, GC, int, int, int, int));

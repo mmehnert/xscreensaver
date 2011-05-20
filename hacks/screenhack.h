@@ -97,7 +97,6 @@ extern char *progname;
 extern char *progclass;
 extern XrmDatabase db;
 extern XrmOptionDescRec options [];
-extern int options_size;
 extern char *defaults [];
 
 extern void screenhack P((Display*,Window));

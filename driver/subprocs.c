@@ -536,6 +536,7 @@ describe_dead_child (si, kid, wait_status)
 	int wait_status;
 #endif /* !__STDC__ */
 {
+  int i;
   saver_preferences *p = &si->prefs;
   struct screenhack_job *job = find_job (kid);
   const char *name = job ? job->name : "<unknown>";
@@ -594,8 +595,18 @@ describe_dead_child (si, kid, wait_status)
       fprintf (stderr, "%s: child pid %lu (%s) died in a mysterious way!",
 	       progname, (unsigned long) kid, name);
       if (job)
-	job->status = job_stopped;
+	job->status = job_dead;
     }
+
+  /* Clear out the pid so that screenhack_running_p() knows it's dead.
+   */
+  if (!job || job->status == job_dead)
+    for (i = 0; i < si->nscreens; i++)
+      {
+	saver_screen_info *ssi = &si->screens[i];
+	if (kid == ssi->pid)
+	  ssi->pid = 0;
+      }
 }
 
 

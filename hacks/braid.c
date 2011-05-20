@@ -30,16 +30,20 @@ static const char sccsid[] = "@(#)braid.c	4.00 97/01/01 xlockmore";
 # define PROGCLASS					"Braid"
 # define HACK_INIT					init_braid
 # define HACK_DRAW					draw_braid
-# define DEF_BATCHCOUNT				15
-# define DEF_CYCLES					100
-# define DEF_DELAY					1000
+# define braid_opts					xlockmore_opts
+# define DEFAULTS	"*count:		15    \n"			\
+					"*cycles:		100   \n"			\
+					"*delay:		1000  \n"			\
+					"*ncolors:		64    \n"
 # define UNIFORM_COLORS
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */
-  ModeSpecOpt braid_opts = {
-	0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
+
+ModeSpecOpt braid_opts = {
+  0, NULL, 0, NULL, NULL };
+
 
 #if defined( COLORROUND ) && defined( COLORCOMP )
 #undef COLORROUND

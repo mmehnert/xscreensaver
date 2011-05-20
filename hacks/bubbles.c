@@ -105,9 +105,9 @@ XrmOptionDescRec options [] = {
   { "-file",            ".file",        XrmoptionSepArg, 0 },
   { "-directory",       ".directory",   XrmoptionSepArg, 0 },
 #endif /* BUBBLES_IO */
-  { "-delay",           ".delay",       XrmoptionSepArg, 0 }
+  { "-delay",           ".delay",       XrmoptionSepArg, 0 },
+  { 0, 0, 0, 0 }
 };
-int options_size = (sizeof (options) / sizeof (options[0]));
 
 /* 
  * Private variables 

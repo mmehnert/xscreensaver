@@ -116,9 +116,9 @@ XrmOptionDescRec options [] = {
   { "-bluemin",         ".bluemin",         XrmoptionSepArg, 0 },
   { "-bluerange",       ".bluerange",       XrmoptionSepArg, 0 },
   { "-greenmin",        ".greenmin",        XrmoptionSepArg, 0 },
-  { "-greenrange",      ".greenrange",      XrmoptionSepArg, 0 }
+  { "-greenrange",      ".greenrange",      XrmoptionSepArg, 0 },
+  { 0, 0, 0, 0 }
 };
-int options_size = (sizeof (options) / sizeof (options[0]));
 
 /* END global variables */
 

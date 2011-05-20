@@ -16,26 +16,7 @@
 
 #include <stdio.h>
 #include <math.h>
-
-/* Sun's compiler really blows */
-#if defined(SVR4) && !defined(__svr4__)
-# define __svr4__ 1
-#endif
-#if defined(sun) && !defined(__sun)
-# define __sun 1
-#endif
-
-
-#if defined(__sun) && defined(__svr4__)
-  /* Solaris 2.4 and less use gettimeofday(tp) but Solaris 2.5 and greater
-     use gettimeofday(tp,tzp) unless you define _SVID_GETTOD.  Make up your
-     fucking minds, assholes. */
-# undef  _SVID_GETTOD
-# define _SVID_GETTOD
-#endif
-
 #include <sys/time.h> /* for gettimeofday() */
-
 
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
@@ -459,7 +440,7 @@ draw_map (dpy, window)
 		  struct timeval now;
 		  static struct timeval then = { 0, };
 		  unsigned long diff;
-# if defined(__svr4__) && !defined(__sun)
+#ifdef GETTIMEOFDAY_TWO_ARGS
 		  struct timezone tzp;
 		  gettimeofday(&now, &tzp);
 #else
@@ -511,9 +492,9 @@ XrmOptionDescRec options [] = {
   { "-mode",		".mode",	XrmoptionSepArg, 0 },
   { "-iterations",	".iterations",	XrmoptionSepArg, 0 },
   { "-cycle",		".cycle",	XrmoptionNoArg, "True"  },
-  { "-no-cycle",	".cycle",	XrmoptionNoArg, "False" }
+  { "-no-cycle",	".cycle",	XrmoptionNoArg, "False" },
+  { 0, 0, 0, 0 }
 };
-int options_size = (sizeof (options) / sizeof (options[0]));
 
 
 void

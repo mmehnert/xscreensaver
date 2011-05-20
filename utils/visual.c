@@ -51,7 +51,6 @@ static Visual *pick_best_visual P ((Screen *, Bool, Bool));
 static Visual *pick_mono_visual P ((Screen *));
 static Visual *pick_best_visual_of_class P((Screen *, int));
 static Visual *id_to_visual P((Screen *, int));
-static int screen_number P((Screen *));
 static Visual *id_to_visual P((Screen *screen, int id));
 
 
@@ -418,7 +417,7 @@ describe_visual (f, screen, visual)
   XFree ((char *) vi_out);
 }
 
-static int
+int
 #ifdef __STDC__
 screen_number (Screen *screen)
 #else /* !__STDC__ */

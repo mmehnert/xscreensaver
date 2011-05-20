@@ -28,16 +28,18 @@ static const char sccsid[] = "@(#)slip.c	4.00 97/01/01 xlockmore";
 # define PROGCLASS					"Slip"
 # define HACK_INIT					init_slip
 # define HACK_DRAW					draw_slip
-# define DEF_BATCHCOUNT				35
-# define DEF_CYCLES					50
-# define DEF_DELAY					50000
-# define DEF_NCOLORS				200
+# define slip_opts					xlockmore_opts
+# define DEFAULTS	"*count:		35    \n"			\
+					"*cycles:		50    \n"			\
+					"*delay:		50000 \n"			\
+					"*ncolors:		200   \n"
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */
-  ModeSpecOpt slip_opts = {
-	0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
+
+ModeSpecOpt slip_opts = {
+  0, NULL, 0, NULL, NULL };
 
 typedef struct {
 	int         width, height;
@@ -97,7 +99,8 @@ prepare_screen(ModeInfo * mi, slipstruct * s)
 #ifdef STANDALONE			  /* jwz -- sometimes hack the desktop image! */
 	if (halfrandom(5) == 0)
 	  {
-		grab_screen_image(MI_SCREEN(mi), MI_WINDOW(mi));
+		grab_screen_image(XScreenOfDisplay (MI_DISPLAY(mi), MI_SCREEN(mi)),
+						  MI_WINDOW(mi));
 		return;
 	  }
 #endif

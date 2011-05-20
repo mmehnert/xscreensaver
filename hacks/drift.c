@@ -32,11 +32,10 @@ static const char sccsid[] = "@(#)drift.c	4.02 97/04/01 xlockmore";
 # define PROGCLASS					"Drift"
 # define HACK_INIT					init_drift
 # define HACK_DRAW					draw_drift
-# define DEF_BATCHCOUNT				30
-# define DEF_DELAY					10000
-# define DEF_GROW					"False"
-# define DEF_LISS					"False"
-# define DEF_NCOLORS				200
+# define drift_opts					xlockmore_opts
+# define DEFAULTS	"*count:		30    \n"			\
+					"*delay:		10000 \n"			\
+					"*ncolors:		200   \n"
 # define SMOOTH_COLORS
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
@@ -57,7 +56,6 @@ static const char sccsid[] = "@(#)drift.c	4.02 97/04/01 xlockmore";
 				   use lissojous figures.  Only makes sense if
 				   grow is false. */
 
-#ifndef STANDALONE
 static Bool grow;
 static Bool liss;
 
@@ -80,7 +78,6 @@ static OptionStruct desc[] =
 };
 
 ModeSpecOpt drift_opts = { 4, opts, 2, vars, desc };
-#endif /* !STANDALONE */
 
 
 typedef struct {

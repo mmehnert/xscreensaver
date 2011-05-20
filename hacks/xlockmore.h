@@ -31,13 +31,18 @@ ERROR!  Sorry, xlockmore.h requires ANSI C (gcc, for example.)
 #include <math.h>
 #include "xlockmoreI.h"
 
+#ifdef USE_GL
+# include <GL/glx.h>
+  extern GLXContext init_GL P((ModeInfo *));
+#endif
+
 /* Accessor macros for the ModeInfo structure
  */
 
 #define MI_DISPLAY(MI)		((MI)->dpy)
 #define MI_WINDOW(MI)		((MI)->window)
 #define MI_NUM_SCREENS(MI)	(1)
-#define MI_SCREEN(MI)		(0)
+#define MI_SCREEN(MI)		(DefaultScreen(MI_DISPLAY(MI)))
 #define MI_WIN_WHITE_PIXEL(MI)	((MI)->white)
 #define MI_WIN_BLACK_PIXEL(MI)	((MI)->black)
 #define MI_NPIXELS(MI)		((MI)->npixels)
@@ -52,34 +57,20 @@ ERROR!  Sorry, xlockmore.h requires ANSI C (gcc, for example.)
 #define MI_WIN_IS_FULLRANDOM(MI)((MI)->fullrandom)
 #define MI_WIN_IS_VERBOSE(MI)   (False)
 #define MI_WIN_IS_INSTALL(MI)   (True)
-
-#ifdef DEF_3D
-# define MI_WIN_IS_USE3D(MI)    ((MI)->threed)
-# define MI_LEFT_COLOR(MI)	((MI)->threed_left_color)
-# define MI_RIGHT_COLOR(MI)	((MI)->threed_right_color)
-# define MI_BOTH_COLOR(MI)	((MI)->threed_both_color)
-# define MI_NONE_COLOR(MI)	((MI)->threed_none_color)
-# define MI_DELTA3D(MI)		((MI)->threed_delta)
-#endif
-
-#ifdef DEF_CYCLES
-# define MI_CYCLES(MI)		((MI)->cycles)
-#endif
-#ifdef DEF_BATCHCOUNT
-# define MI_BATCHCOUNT(MI)	((MI)->batchcount)
-#endif
-#ifdef DEF_SIZE
-# define MI_SIZE(MI)		((MI)->size)
-#endif
-
-
-/* Compatibility with the xlockmore RNG API
-   (note that the xlockmore hacks never expect negative numbers.)
- */
-#define LRAND()			((long) (random() & 0x7fffffff))
-#define NRAND(n)		((int) (LRAND() % (n)))
-#define MAXRAND			(2147483648.0) /* unsigned 1<<31 as a float */
-#define SRAND(n)		/* already seeded by screenhack.c */
+#define MI_WIN_IS_MONO(MI)	(mono_p)
+#define MI_WIN_IS_INROOT(MI)	((MI)->root_p)
+#define MI_WIN_IS_INWINDOW(MI)	(!(MI)->root_p)
+#define MI_WIN_IS_ICONIC(MI)	(False)
+#define MI_WIN_IS_WIREFRAME(MI)	((MI)->wireframe_p)
+#define MI_WIN_IS_USE3D(MI)	((MI)->threed)
+#define MI_LEFT_COLOR(MI)	((MI)->threed_left_color)
+#define MI_RIGHT_COLOR(MI)	((MI)->threed_right_color)
+#define MI_BOTH_COLOR(MI)	((MI)->threed_both_color)
+#define MI_NONE_COLOR(MI)	((MI)->threed_none_color)
+#define MI_DELTA3D(MI)		((MI)->threed_delta)
+#define MI_CYCLES(MI)		((MI)->cycles)
+#define MI_BATCHCOUNT(MI)	((MI)->batchcount)
+#define MI_SIZE(MI)		((MI)->size)
 
 /* Some other utility macros.
  */
@@ -94,197 +85,13 @@ ERROR!  Sorry, xlockmore.h requires ANSI C (gcc, for example.)
 #define MIN(a,b)((a)<(b)?(a):(b))
 #define ABS(a)((a)<0 ? -(a) : (a))
 
+/* Maximum possible number of colors (*not* default number of colors.) */
+#define NUMCOLORS 256
 
-/* Setting defaults for the parameters that all xlockmore hacks use.
+/* The globals that screenhack.c expects (initialized by xlockmore.c).
  */
-
-#ifndef NUMCOLORS
-# ifdef DEF_NCOLORS
-#  define NUMCOLORS DEF_NCOLORS
-# else
-#  define NUMCOLORS 64
-# endif
-#endif
-
-#ifndef DEF_NCOLORS
-# define DEF_NCOLORS NUMCOLORS
-#endif
-
-#ifndef DEF_DELAY
-# define DEF_DELAY 50000
-#endif
-
-#ifndef DEF_CYCLES
-# define DEF_CYCLES 1
-#endif
-
-#ifndef DEF_BATCHCOUNT
-# define DEF_BATCHCOUNT 1
-#endif
-
-#ifndef DEF_SIZE
-# define DEF_SIZE 1
-#endif
-
-
-/* Declare storage for the parameters that only some xlockmore hacks use...
- */
-#ifdef DEF_DECAY
-extern Bool decay;
-#endif
-#ifdef DEF_TRAIL
-extern Bool trail;
-#endif
-#ifdef DEF_GROW
-extern Bool grow;
-#endif
-#ifdef DEF_LISS
-extern Bool liss;
-#endif
-#ifdef DEF_AMMANN
-extern Bool ammann;
-#endif
-#ifdef DEF_JONG
-extern Bool jong;
-#endif
-#ifdef DEF_SINE
-extern Bool sine;
-#endif
-
-
-/* Generate the default resources.
- */
-
-#define cpp_stringify_noop_helper(x)#x
-#define cpp_stringify(x) cpp_stringify_noop_helper(x)
-
-char *defaults[] = {
-  PROGCLASS ".background:	black",
-  PROGCLASS ".foreground:	white",
-  "*ncolors:	" cpp_stringify(DEF_NCOLORS),
-  "*delay:	" cpp_stringify(DEF_DELAY),
-#ifdef DEF_CYCLES
-  "*cycles:	" cpp_stringify(DEF_CYCLES),
-#endif
-#ifdef DEF_BATCHCOUNT
-  "*count:	" cpp_stringify(DEF_BATCHCOUNT),
-#endif
-#ifdef DEF_SIZE
-  "*size:	" cpp_stringify(DEF_SIZE),
-#endif
-#ifdef DEF_DECAY
-  "*decay:	" DEF_DECAY,
-#endif
-#ifdef DEF_TRAIL
-  "*trail:	" DEF_TRAIL,
-#endif
-#ifdef DEF_GROW
-  "*grow:	" DEF_GROW,
-#endif
-#ifdef DEF_LISS
-  "*liss:	" DEF_LISS,
-#endif
-#ifdef DEF_AMMANN
-  "*ammann:	" DEF_AMMANN,
-#endif
-#ifdef DEF_JONG
-  "*jong:	" DEF_JONG,
-#endif
-#ifdef DEF_SINE
-  "*sine:	" DEF_SINE,
-#endif
-#ifdef DEF_3D
-  "*use3d:	False",
-  "*delta3d:	1.5",
-  "*left3d:	Blue",
-  "*right3d:	Red",
-  "*both3d:	Magenta",
-  "*none3d:	Black",
-#endif
-#ifdef DEF_TEXT
-  "*text:	" DEF_TEXT,
-#endif
-#ifdef DEF_FONT
-  "*font:	" DEF_FONT,
-#endif
-#ifdef DEF_BITMAP
-  "*bitmap:	" DEF_BITMAP,
-#endif
-#ifdef DEF_MOUSE
-  "*mouse:	" DEF_MOUSE,
-#endif
-  0
-};
-
-
-/* Generate the command-line arguments.
- */
-
-XrmOptionDescRec options[] = {
-  {"-ncolors",	".ncolors",		XrmoptionSepArg, 0},
-  {"-delay",	".delay",		XrmoptionSepArg, 0},
-#ifdef DEF_CYCLES
-  {"-cycles",	".cycles",		XrmoptionSepArg, 0},
-#endif
-#ifdef DEF_BATCHCOUNT
-  {"-count",	".count",		XrmoptionSepArg, 0},
-#endif
-#ifdef DEF_SIZE							/* galaxy */
-  {"-size",	".size",		XrmoptionSepArg, 0},
-#endif
-#ifdef DEF_DECAY						/* grav */
-  {"-decay",	".decay",		XrmoptionNoArg, "True"},
-  {"-no-decay",	".decay",		XrmoptionNoArg, "False"},
-#endif
-#ifdef DEF_TRAIL					/* grav, galaxy */
-  {"-trail",	".trail",		XrmoptionNoArg, "True"},
-  {"-no-trail",	".trail",		XrmoptionNoArg, "False"},
-#endif
-#ifdef DEF_GROW							/* drift */
-  {"-grow",	".grow",		XrmoptionNoArg, "True"},
-  {"-no-grow",	".grow",		XrmoptionNoArg, "False"},
-#endif
-#ifdef DEF_LISS							/* drift */
-  {"-liss",	".liss",		XrmoptionNoArg, "True"},
-  {"-no-liss",	".liss",		XrmoptionNoArg, "False"},
-#endif
-#ifdef DEF_AMMANN						/* penrose */
-  {"-ammann",	".ammann",		XrmoptionNoArg, "True"},
-  {"-no-ammann",".ammann",		XrmoptionNoArg, "False"},
-#endif
-#ifdef DEF_JONG							/* hopalong */
-  {"-jong",	".jong",		XrmoptionNoArg, "True"},
-  {"-no-jong",	".jong",		XrmoptionNoArg, "False"},
-#endif
-#ifdef DEF_SINE							/* hopalong */
-  {"-sine",	".sine",		XrmoptionNoArg, "True"},
-  {"-no-sine",	".sine",		XrmoptionNoArg, "False"},
-#endif
-#ifdef DEF_3D
-  {"-3d",	".use3d",		XrmoptionNoArg, "True"},
-  {"-no-3d",	".use3d",		XrmoptionNoArg, "False"},
-  {"-delta3d",	".delta3d",		XrmoptionSepArg, 0 },
-  {"-left3d",	".left3d",		XrmoptionSepArg, 0 },
-  {"-right3d",	".right3d",		XrmoptionSepArg, 0 },
-  {"-both3d",	".both3d",		XrmoptionSepArg, 0 },
-  {"-none3d",	".none3d",		XrmoptionSepArg, 0 },
-#endif
-#ifdef DEF_TEXT
-  {"-text",	".text",		XrmoptionSepArg, 0 },
-#endif
-#ifdef DEF_FONT
-  {"-font",	".font",		XrmoptionSepArg, 0 },
-#endif
-#ifdef DEF_BITMAP
-  {"-bitmap",	".bitmap",		XrmoptionSepArg, 0 },
-#endif
-#ifdef DEF_MOUSE
-  {"-mouse",	".mouse",		XrmoptionNoArg, "True" },
-  {"-nomouse",	".mouse",		XrmoptionNoArg, "False" },
-#endif
-};
-int options_size = (sizeof (options) / sizeof (options[0]));
-
+char *defaults[100];
+XrmOptionDescRec options[100];
 
 /* Prototypes for the actual drawing routines...
  */
@@ -336,3 +143,6 @@ void screenhack (Display *dpy, Window window)
 			HACK_DRAW,
 			HACK_FREE);
 }
+
+
+const char *app_defaults = DEFAULTS ;

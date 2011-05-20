@@ -28,13 +28,16 @@ static const char sccsid[] = "@(#)fract.c	4.02 97/04/01 xlockmore";
 # define PROGCLASS					"Fract"
 # define HACK_INIT					init_fract
 # define HACK_DRAW					draw_fract
-# define DEF_DELAY					200000
+# define fract_opts					xlockmore_opts
+# define DEFAULTS		"*delay:	200000 \n"	\
+						"*ncolors:	64     \n"
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */
-  ModeSpecOpt fract_opts = {
-    0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
+
+ModeSpecOpt fract_opts = {
+  0, NULL, 0, NULL, NULL };
 
 typedef struct {
 	int         a;

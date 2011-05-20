@@ -91,9 +91,8 @@ XrmOptionDescRec options [] = {
   { "-points", ".points", XrmoptionSepArg, 0 },
   { "-steps",  ".steps",  XrmoptionSepArg, 0 },
   { "-delay",  ".delay",  XrmoptionSepArg, 0 },
+  { 0, 0, 0, 0 }
 };
-int options_size = (sizeof (options) / sizeof (options[0]));
-
 
 
 /**************************************************************************

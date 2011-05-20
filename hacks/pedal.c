@@ -235,14 +235,9 @@ init_pedal (dpy, window) Display *dpy; Window window;
   cmap = xgwa.colormap;
 
   gcv.function = GXcopy;
-  gcv.subwindow_mode = IncludeInferiors;
   gcv.foreground = get_pixel_resource ("foreground", "Foreground", dpy, cmap);
   gcv.background = get_pixel_resource ("background", "Background", dpy, cmap);
-  gc = XCreateGC (
-	dpy,
-	window,
-	GCForeground | GCBackground |GCFunction | GCSubwindowMode ,
-	&gcv);
+  gc = XCreateGC (dpy, window, GCForeground | GCBackground |GCFunction, &gcv);
 
   if (fade_p)
   {
@@ -399,9 +394,8 @@ XrmOptionDescRec options [] = {
   { "-maxlines",	".maxlines",		XrmoptionSepArg, 0 },
   { "-foreground",      ".foreground",          XrmoptionSepArg, 0 },
   { "-background",      ".background",          XrmoptionSepArg, 0 },
+  { 0, 0, 0, 0 }
 };
-
-int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
 #ifdef __STDC__

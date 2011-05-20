@@ -61,9 +61,10 @@ If one of these are hit penrose will reinitialize.
 # define PROGCLASS					"Penrose"
 # define HACK_INIT					init_penrose
 # define HACK_DRAW					draw_penrose
-# define DEF_DELAY					10000
-# define DEF_SIZE					40
-# define DEF_AMMANN					"False"
+# define penrose_opts				xlockmore_opts
+# define DEFAULTS	"*delay:		10000 \n"			\
+					"*size:			40    \n"			\
+					"*ncolors:		64   \n"
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */
@@ -91,7 +92,6 @@ If one of these are hit penrose will reinitialize.
 #define ALLOC_NODE( type) ((type *)malloc( sizeof( type)))
 #define DEF_AMMANN  "False"
 
-#ifndef STANDALONE
 static Bool ammann;
 
 static XrmOptionDescRec opts[] =
@@ -109,7 +109,6 @@ static OptionStruct desc[] =
 };
 
 ModeSpecOpt penrose_opts = { 2, opts, 1, vars, desc };
-#endif /* !STANDALONE */
 
 
 /*-

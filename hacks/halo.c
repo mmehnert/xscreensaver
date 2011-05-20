@@ -390,9 +390,9 @@ XrmOptionDescRec options [] = {
   { "-count",		".count",	XrmoptionSepArg, 0 },
   { "-delay",		".delay",	XrmoptionSepArg, 0 },
   { "-animate",		".animate",	XrmoptionNoArg, "True" },
-  { "-mode",		".colorMode",	XrmoptionSepArg, 0 }
+  { "-mode",		".colorMode",	XrmoptionSepArg, 0 },
+  { 0, 0, 0, 0 }
 };
-int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
 #ifdef __STDC__

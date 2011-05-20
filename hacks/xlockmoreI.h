@@ -17,10 +17,19 @@
 
 #include "screenhack.h"
 
+/* Compatibility with the xlockmore RNG API
+   (note that the xlockmore hacks never expect negative numbers.)
+ */
+#define LRAND()			((long) (random() & 0x7fffffff))
+#define NRAND(n)		((int) (LRAND() % (n)))
+#define MAXRAND			(2147483648.0) /* unsigned 1<<31 as a float */
+#define SRAND(n)		/* already seeded by screenhack.c */
+
 
 typedef struct ModeInfo {
   Display *dpy;
   Window window;
+  Bool root_p;
   int npixels;
   unsigned long *pixels;
   XColor *colors;
@@ -40,7 +49,31 @@ typedef struct ModeInfo {
   long threed_both_color;
   long threed_none_color;
   long threed_delta;
+  Bool wireframe_p;
 } ModeInfo;
+
+typedef enum {  t_String, t_Float, t_Int, t_Bool } xlockmore_type;
+
+typedef struct {
+  void *var;
+  char *name;
+  char *classname;
+  char *def;
+  xlockmore_type type;
+} argtype;
+
+typedef struct {
+  char *opt;
+  char *desc;
+} OptionStruct;
+
+typedef struct {
+  int numopts;
+  XrmOptionDescRec *opts;
+  int numvarsdesc;
+  argtype *vars;
+  OptionStruct *desc;
+} ModeSpecOpt;
 
 extern void xlockmore_screenhack P((Display *dpy, Window window,
 				    Bool want_writable_colors,
@@ -50,5 +83,9 @@ extern void xlockmore_screenhack P((Display *dpy, Window window,
 				    void (*hack_init) (ModeInfo *),
 				    void (*hack_draw) (ModeInfo *),
 				    void (*hack_free) (ModeInfo *)));
+
+#ifdef USE_GL
+extern Visual *get_gl_visual P((Screen *screen, char *name, char *class));
+#endif
 
 #endif /* __XLOCKMORE_INTERNAL_H__ */

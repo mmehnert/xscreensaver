@@ -131,9 +131,9 @@ XrmOptionDescRec options [] = {
   { "-iterations",	".iterations",	XrmoptionSepArg, 0 },
   { "-offset",		".offset",	XrmoptionSepArg, 0 },
   { "-xsymmetry",	".xsymmetry",	XrmoptionNoArg, "true" },
-  { "-ysymmetry",	".ysymmetry",	XrmoptionNoArg, "true" }
+  { "-ysymmetry",	".ysymmetry",	XrmoptionNoArg, "true" },
+  { 0, 0, 0, 0 }
 };
-int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
 #ifdef __STDC__

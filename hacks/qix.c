@@ -642,8 +642,8 @@ XrmOptionDescRec options [] = {
   { "-no-gravity",	".gravity",	XrmoptionNoArg, "false" },
   { "-additive",	".additive",	XrmoptionNoArg, "true" },
   { "-subtractive",	".additive",	XrmoptionNoArg, "false" },
+  { 0, 0, 0, 0 }
 };
-int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
 #ifdef __STDC__

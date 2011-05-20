@@ -55,6 +55,28 @@ all::
 echo_tarfiles:
 	@echo $(TARFILES)
 
+
+     UTIL_OBJS = $(UTILS)/colors.o $(UTILS)/grabscreen.o $(UTILS)/hsv.o \
+		 $(UTILS)/resources.o $(UTILS)/spline.o $(UTILS)/usleep.o \
+		 $(UTILS)/visual.o $(UTILS)/xroger.o $(UTILS)/yarandom.o
+
+$(UTILS)/colors.o:	$(UTILS)/colors.c
+$(UTILS)/grabscreen.o:	$(UTILS)/grabscreen.c
+$(UTILS)/hsv.o:		$(UTILS)/hsv.c
+$(UTILS)/resources.o:	$(UTILS)/resources.c
+$(UTILS)/spline.o:	$(UTILS)/spline.c
+$(UTILS)/usleep.o:	$(UTILS)/usleep.c
+$(UTILS)/visual.o:	$(UTILS)/visual.c
+$(UTILS)/xroger.o:	$(UTILS)/xroger.c
+$(UTILS)/yarandom.o:	$(UTILS)/yarandom.c
+
+$(UTIL_OBJS):
+	cd $(UTILS) ; $(MAKE)  $(@F) CC="$(CC)" CCOPTIONS="$(CCOPTIONS)"   \
+		CDEBUGFLAGS="$(CDEBUGFLAGS)"
+
+screenhack-xlock.o: screenhack.c
+	$(CC) $(CFLAGS) -DXLOCKMORE -c $< -o $@
+
 #define	ScreenhackTarget_1(p,ps,deps,libs)				 @@\
 all:: p									 @@\
 p: deps screenhack.h ps.o $(DEPLIBS)					 @@\
@@ -78,11 +100,13 @@ clean::									 @@\
 
 #define ScreenhackTarget_xlockmore(p,deps)\
 p.o: xlockmore.h .knr_msg						   @@\
-	ScreenhackTarget_1(p,p, xlockmore.o $(HACK_OBJS) $(COLOR_OBJS) deps, \
+	ScreenhackTarget_1(p,p, xlockmore.o $(XLOCK_OBJS) $(COLOR_OBJS) deps, \
 			  $(LOCAL_LIBRARIES))
 
-    HACK_OBJS = screenhack.o $(UTILS)/resources.o $(UTILS)/visual.o \
+  HACK_OBJS_1 = $(UTILS)/resources.o $(UTILS)/visual.o \
 		$(UTILS)/usleep.o $(UTILS)/yarandom.o
+    HACK_OBJS = screenhack.o $(HACK_OBJS_1)
+   XLOCK_OBJS = screenhack-xlock.o $(HACK_OBJS_1)
    COLOR_OBJS = $(UTILS)/hsv.o $(UTILS)/colors.o
     GRAB_OBJS = $(UTILS)/grabscreen.o $(COLOR_OBJS)
 

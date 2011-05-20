@@ -633,9 +633,9 @@ XrmOptionDescRec options [] = {
   { "-filename",	".filename",		XrmoptionSepArg, 0 },
   { "-font",		".font",		XrmoptionSepArg, 0 },
   { "-text-foreground",	".textForeground",	XrmoptionSepArg, 0 },
-  { "-text-background",	".textBackground",	XrmoptionSepArg, 0 }
+  { "-text-background",	".textBackground",	XrmoptionSepArg, 0 },
+  { 0, 0, 0, 0 }
 };
-int options_size = (sizeof (options) / sizeof (options[0]));
 
 
 static void

@@ -345,7 +345,6 @@ char *defaults [] = {
 };
 
 XrmOptionDescRec options [] = { { 0, } };
-int options_size = 0;
 
 void
 #ifdef __STDC__

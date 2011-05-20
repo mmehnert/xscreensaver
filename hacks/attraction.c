@@ -692,9 +692,9 @@ XrmOptionDescRec options [] = {
   { "-viscosity",	".viscosity",	XrmoptionSepArg, 0 },
   { "-glow",		".glow",	XrmoptionNoArg, "true" },
   { "-noglow",		".glow",	XrmoptionNoArg, "false" },
-  { "-orbit",		".orbit",	XrmoptionNoArg, "true" }
+  { "-orbit",		".orbit",	XrmoptionNoArg, "true" },
+  { 0, 0, 0, 0 }
 };
-int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
 #ifdef __STDC__

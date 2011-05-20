@@ -144,8 +144,8 @@ XrmOptionDescRec options[] = {
   {"-ncolors",	".ncolors",	XrmoptionSepArg, 0},
   {"-delay",	".delay",	XrmoptionSepArg, 0},
   {"-cycles",   ".cycles",      XrmoptionSepArg, 0},
+  { 0, 0, 0, 0 }
 };
-int options_size = (sizeof (options) / sizeof (options[0]));
 
 #if defined(__STDC__) || defined(__ANSI_CPP__)
 # define XLOCK_INIT(Z) init##Z

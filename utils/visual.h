@@ -17,7 +17,9 @@ extern Visual *get_visual_resource P((Screen *, char *, char *, Bool));
 extern int visual_depth P((Screen *, Visual *));
 extern int visual_class P((Screen *, Visual *));
 extern int visual_cells P((Screen *, Visual *));
+extern int screen_number P((Screen *));
 extern Visual *find_similar_visual P((Screen *, Visual *old));
 extern void describe_visual P((FILE *f, Screen *, Visual *));
+extern Visual *get_overlay_visual P((Screen *, unsigned long *pixel_return));
 
 #endif /* __VISUAL_H__ */

@@ -40,11 +40,12 @@ static const char sccsid[] = "@(#)galaxy.c	4.02 97/04/01 xlockmore";
 # define PROGCLASS					"Galaxy"
 # define HACK_INIT					init_galaxy
 # define HACK_DRAW					draw_galaxy
-# define DEF_BATCHCOUNT				5
-# define DEF_CYCLES					250
-# define DEF_DELAY					100
-# define DEF_SIZE					3
-# define DEF_TRAIL					"False"
+# define galaxy_opts				xlockmore_opts
+# define DEFAULTS	"*count:		5    \n"			\
+					"*cycles:		250  \n"			\
+					"*delay:		100  \n"			\
+					"*size:			3    \n"			\
+					"*ncolors:		64   \n"
 # define UNIFORM_COLORS
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
@@ -80,10 +81,6 @@ static const char sccsid[] = "@(#)galaxy.c	4.02 97/04/01 xlockmore";
 #define drawStar(x,y,size) if(size<=1) XDrawPoint(display,window,gc,x,y);\
   else XFillArc(display,window,gc,x,y,size,size,0,23040)
 
-#ifdef STANDALONE
-# define tracks trail
-
-#else /* !STANDALONE */
 
 static Bool tracks;
 
@@ -106,7 +103,6 @@ static OptionStruct desc[] =
 };
 
 ModeSpecOpt galaxy_opts = { 2, opts, 1, vars, desc };
-#endif /* !STANDALONE */
 
 
 typedef struct {

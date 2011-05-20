@@ -21,15 +21,154 @@
 #include "screenhack.h"
 #include "xlockmoreI.h"
 
-/* Storage for the parameters that only *some* xlockmore hacks use...
- */
-Bool decay  = False;	/* grav */
-Bool trail  = False;	/* grav */
-Bool grow   = False;	/* drift */
-Bool liss   = False;	/* drift */
-Bool ammann = False;	/* penrose */
-Bool jong   = False;	/* hopalong */
-Bool sine   = False;	/* hopalong */
+#define countof(x) (sizeof((x))/sizeof(*(x)))
+
+extern ModeSpecOpt xlockmore_opts[];
+extern const char *app_defaults;
+
+void
+pre_merge_options P((void))
+{
+  int i, j;
+  char *s;
+
+  /* Translate the xlockmore `opts[]' argument to a form that
+     screenhack.c expects.
+   */
+  for (i = 0; i < xlockmore_opts->numopts; i++)
+    {
+      XrmOptionDescRec *old = &xlockmore_opts->opts[i];
+      XrmOptionDescRec *new = &options[i];
+
+      if (old->option[0] == '-')
+	new->option = old->option;
+      else
+	{
+	  /* Convert "+foo" to "-no-foo". */
+	  new->option = (char *) malloc (strlen(old->option) + 5);
+	  strcpy (new->option, "-no-");
+	  strcat (new->option, old->option + 1);
+	}
+
+      new->specifier = strrchr (old->specifier, '.');
+      if (!new->specifier) abort();
+
+      new->argKind = old->argKind;
+      new->value = old->value;
+    }
+
+  /* Add extra args, if they're mentioned in the defaults... */
+  {
+    char *args[] = { "-count", "-cycles", "-delay", "-ncolors",
+		     "-size", "-wireframe" };
+    for (j = 0; j < countof(args); j++)
+      if (strstr(app_defaults, args[j]+1))
+	{
+	  XrmOptionDescRec *new = &options[i++];
+	  new->option = args[j];
+	  new->specifier = strdup(args[j]);
+	  new->specifier[0] = '.';
+	  if (!strcmp(new->option, "-wireframe"))
+	    {
+	      new->argKind = XrmoptionNoArg;
+	      new->value = "True";
+	      new = &options[i++];
+	      new->option = "-no-wireframe";
+	      new->specifier = options[i-1].specifier;
+	      new->argKind = XrmoptionNoArg;
+	      new->value = "False";
+	    }
+	  else
+	    {
+	      new->argKind = XrmoptionSepArg;
+	      new->value = 0;
+	    }
+	}
+  }
+
+
+  /* Construct the kind of `defaults' that screenhack.c expects from
+     the xlockmore `vars[]' argument.
+   */
+  i = 0;
+
+  /* Put on the PROGCLASS.background/foreground resources. */
+  s = (char *) malloc(50);
+  strcpy (s, progclass);
+  strcat (s, ".background: black");
+  defaults [i++] = s;
+
+  s = (char *) malloc(50);
+  strcpy (s, progclass);
+  strcat (s, ".foreground: white");
+  defaults [i++] = s;
+
+  /* Copy the lines out of the `app_defaults' var and into this array. */
+  s = strdup (app_defaults);
+  while (s && *s)
+    {
+      defaults [i++] = s;
+      s = strchr(s, '\n');
+      if (s)
+	*s++ = 0;
+    }
+
+  /* Copy the defaults out of the `xlockmore_opts->' variable. */
+  for (j = 0; j < xlockmore_opts->numvarsdesc; j++)
+    {
+      const char *def = xlockmore_opts->vars[j].def;
+      if (!def) def = "False";
+      if (def == ((char*) 1)) def = "True";
+      s = (char *) malloc (strlen (xlockmore_opts->vars[j].name) +
+			   strlen (def) + 10);
+      strcpy (s, "*");
+      strcat (s, xlockmore_opts->vars[j].name);
+      strcat (s, ": ");
+      strcat (s, def);
+      defaults [i++] = s;
+    }
+
+  defaults [i] = 0;
+}
+
+
+static void
+xlockmore_read_resources P((void))
+{
+  int i;
+  for (i = 0; i < xlockmore_opts->numvarsdesc; i++)
+    {
+      void  *var   = xlockmore_opts->vars[i].var;
+      Bool  *var_b = (Bool *)  var;
+      char **var_c = (char **) var;
+      int   *var_i = (int *) var;
+      float *var_f = (float *) var;
+
+      switch (xlockmore_opts->vars[i].type)
+	{
+	case t_String:
+	  *var_c = get_string_resource (xlockmore_opts->vars[i].name,
+					xlockmore_opts->vars[i].classname);
+	  break;
+	case t_Float:
+	  *var_f = get_float_resource (xlockmore_opts->vars[i].name,
+				       xlockmore_opts->vars[i].classname);
+	  break;
+	case t_Int:
+	  *var_i = get_integer_resource (xlockmore_opts->vars[i].name,
+					 xlockmore_opts->vars[i].classname);
+	  break;
+	case t_Bool:
+	  *var_b = get_boolean_resource (xlockmore_opts->vars[i].name,
+					 xlockmore_opts->vars[i].classname);
+	  break;
+	default:
+	  abort ();
+	}
+    }
+}
+
+
 
 void 
 #ifdef __STDC__
@@ -98,6 +237,11 @@ xlockmore_screenhack (dpy, window,
   else
     {
       mi.npixels = get_integer_resource ("ncolors", "Integer");
+      if (mi.npixels <= 0)
+	mi.npixels = 64;
+      else if (mi.npixels > 256)
+	mi.npixels = 256;
+
       mi.colors = (XColor *) calloc (mi.npixels, sizeof (*mi.colors));
 
       mi.writable_p = want_writable_colors;
@@ -140,6 +284,7 @@ xlockmore_screenhack (dpy, window,
   mi.batchcount = get_integer_resource ("count", "Int");
   mi.size	= get_integer_resource ("size", "Int");
 
+#if 0
   decay = get_boolean_resource ("decay", "Boolean");
   if (decay) mi.fullrandom = False;
 
@@ -160,6 +305,7 @@ xlockmore_screenhack (dpy, window,
 
   sine = get_boolean_resource ("sine", "Boolean");
   if (sine) mi.fullrandom = False;
+#endif
 
   mi.threed = get_boolean_resource ("use3d", "Boolean");
   mi.threed_delta = get_float_resource ("delta3d", "Boolean");
@@ -172,10 +318,16 @@ xlockmore_screenhack (dpy, window,
   mi.threed_none_color = get_pixel_resource ("none3d", "Color", dpy,
 					     mi.xgwa.colormap);
 
+  mi.wireframe_p = get_boolean_resource ("wireframe", "Boolean");
+  mi.root_p = (window == RootWindowOfScreen (mi.xgwa.screen));
+
+
   if (mi.pause < 0)
     mi.pause = 0;
   else if (mi.pause > 100000000)
     mi.pause = 100000000;
+
+  xlockmore_read_resources ();
 
   XClearWindow (dpy, window);
 

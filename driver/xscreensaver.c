@@ -465,7 +465,6 @@ get_resources (si) saver_info *si;
   if (p->watchdog_timeout < 30000) p->watchdog_timeout = 30000;	  /* 30 secs */
   if (p->watchdog_timeout > 3600000) p->watchdog_timeout = 3600000; /*  1 hr */
 
-
 #ifdef NO_LOCKING
   si->locking_disabled_p = True;
   si->nolock_reason = "not compiled with locking support";
@@ -734,7 +733,7 @@ initialize (si, argc, argv)
 	{
 	  fprintf (stderr,
 	 "%s: display %s does not support the MIT-SCREEN-SAVER extension.\n",
-		   progname, DisplayString (dpy));
+		   progname, DisplayString (si->dpy));
 	  p->use_mit_saver_extension = False;
 	}
       else if (p->use_xidle_extension)
@@ -756,11 +755,11 @@ initialize (si, argc, argv)
     {
 #ifdef HAVE_XIDLE_EXTENSION
       int first_event, first_error;
-      if (! XidleQueryExtension (dpy, &first_event, &first_error))
+      if (! XidleQueryExtension (si->dpy, &first_event, &first_error))
 	{
 	  fprintf (stderr,
 		   "%s: display %s does not support the XIdle extension.\n",
-		   progname, DisplayString (dpy));
+		   progname, DisplayString (si->dpy));
 	  p->use_xidle_extension = False;
 	}
 #else  /* !HAVE_XIDLE_EXTENSION */
@@ -837,7 +836,6 @@ main_loop (si) saver_info *si;
 #endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
-  watchdog_timer ((XtPointer) si, 0);
   while (1)
     {
       if (! si->demo_mode_p)

@@ -30,15 +30,17 @@ static const char sccsid[] = "@(#)ifs.c	   4.02 97/04/01 xlockmore";
 # define PROGCLASS					"IFS"
 # define HACK_INIT					init_ifs
 # define HACK_DRAW					draw_ifs
-# define DEF_DELAY					20000
-# define DEF_NCOLORS				100
+# define ifs_opts					xlockmore_opts
+# define DEFAULTS	"*delay:		20000 \n"			\
+					"*ncolors:		100   \n"
 # define SMOOTH_COLORS
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
 # include "xlock.h"					/* from the xlockmore distribution */
-  ModeSpecOpt ifs_opts = {
-	0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
+
+ModeSpecOpt ifs_opts = {
+  0, NULL, 0, NULL, NULL };
 
 /*****************************************************/
 /*****************************************************/
