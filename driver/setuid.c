@@ -83,6 +83,10 @@ describe_uids (saver_info *si, FILE *out)
 void
 hack_uid (saver_info *si)
 {
+  uid_t uid = 0;
+  struct passwd *p = 0;
+  struct group *g = 0;
+
   si->orig_uid = strdup (uid_gid_string (geteuid(), getegid()));
 
   setgid (getgid ());
@@ -90,10 +94,9 @@ hack_uid (saver_info *si)
 
   /* If we're being run as root (as from xdm) then switch the user id
      to something safe. */
-  if (getuid () == 0)
+  uid = getuid ();
+  if (uid == (uid_t) 0)
     {
-      struct passwd *p = 0;
-      struct group *g = 0;
       int uid_errno = 0;
       int gid_errno = 0;
 
@@ -182,28 +185,41 @@ hack_uid (saver_info *si)
 	  saver_exit (si, -1, 0);
 	}
     }
-# ifndef NO_LOCKING
- else	/* disable locking if already being run as "someone else" */
-   {
-     struct passwd *p = getpwuid (getuid ());
-     if (!p ||
-	 !strcmp (p->pw_name, "root") ||
-	 !strcmp (p->pw_name, "nobody") ||
-	 !strcmp (p->pw_name, "noaccess") ||
-	 !strcmp (p->pw_name, "operator") ||
-	 !strcmp (p->pw_name, "daemon") ||
-	 !strcmp (p->pw_name, "bin") ||
-	 !strcmp (p->pw_name, "adm") ||
-	 !strcmp (p->pw_name, "sys") ||
-	 !strcmp (p->pw_name, "games"))
-       {
-	 static char buf [1024];
-	 sprintf (buf, "running as %s", p->pw_name);
-	 si->nolock_reason = buf;
-	 si->locking_disabled_p = True;
-       }
-   }
-# endif /* !NO_LOCKING */
+
+  /* Note when we're being run as a user known to not be a normal,
+     non-priveleged user.  In that case, disable locking and the writing
+     of the .xscreensaver file.
+   */
+  uid = getuid ();	/* get it again */
+  p = getpwuid (uid);	/* get it again */
+
+  if (!p ||
+      uid == (uid_t)  0 ||
+      uid == (uid_t) -1 ||
+      uid == (uid_t) -2 ||
+      p->pw_uid == (uid_t)  0 ||
+      p->pw_uid == (uid_t) -1 ||
+      p->pw_uid == (uid_t) -2 ||
+      !p->pw_name ||
+      !*p->pw_name ||
+      !strcmp (p->pw_name, "root") ||
+      !strcmp (p->pw_name, "nobody") ||
+      !strcmp (p->pw_name, "noaccess") ||
+      !strcmp (p->pw_name, "operator") ||
+      !strcmp (p->pw_name, "daemon") ||
+      !strcmp (p->pw_name, "bin") ||
+      !strcmp (p->pw_name, "adm") ||
+      !strcmp (p->pw_name, "sys") ||
+      !strcmp (p->pw_name, "games"))
+    {
+      static char buf [1024];
+      sprintf (buf, "running as %s",
+	       (p && p->pw_name && *p->pw_name
+		? p->pw_name : "<unknown>"));
+      si->nolock_reason = buf;
+      si->locking_disabled_p = True;
+      si->dangerous_uid_p = True;
+    }
 }
 
 #else  /* !NO_SETUID */

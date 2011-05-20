@@ -73,6 +73,18 @@ http://www.jwz.org/xscreensaver/.
 
                               ============
 
+Changes since 2.32:   * Made `xscreensaver-command' print error messages:
+			the xscreensaver daemon now responds to ClientMessage
+			events by writing a response message on a window
+			property, instead of just writing to its stderr.
+		      * Made the ~/.xscreensaver file be automatically reloaded
+			when the file date changes.
+		      * The password dialog and splash screen no longer depend
+			on Motif or Athena.  This should clear up a number of
+			focus problems, and is the first step on the path
+			toward moving all of the Motif/Athena/whatever code
+			out of the xscreensaver daemon, and into external
+			processes.
 Changes since 2.31:   * Added reading and writing of a ~/.xscreensaver file,
 			so that the Preferences panel can save its settings.
 		      * New version of `rubik'.

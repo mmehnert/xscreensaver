@@ -14,6 +14,8 @@
    itself.
  */
 
+#define WHICH 0
+
 #ifdef HAVE_CONFIG_H
 # include "config.h"
 #endif
@@ -41,6 +43,7 @@ void reset_stderr(saver_screen_info *ssi) {}
 void clear_stderr(saver_screen_info *ssi) {}
 void reset_watchdog_timer(saver_info *si, Bool on_p) {}
 void monitor_power_on (saver_info *si) {}
+void grab_keyboard_and_mouse (saver_info *si, Window w, Cursor c) {}
 void ungrab_keyboard_and_mouse (saver_info *si) {}
 Bool select_visual (saver_screen_info *ssi, const char *v) { return False; }
 void raise_window (saver_info *si, Bool i, Bool b, Bool d) {}
@@ -54,8 +57,12 @@ void blank_screen (saver_info *si) {}
 void unblank_screen (saver_info *si) {}
 Bool handle_clientmessage (saver_info *si, XEvent *e, Bool u) { return False; }
 int BadWindow_ehandler (Display *dpy, XErrorEvent *error) { exit(1); }
+int write_init_file (saver_info *si) { return 0;}
+Bool window_exists_p (Display *dpy, Window window) {return True;}
 
 const char *blurb(void) { return progname; }
+Atom XA_SCREENSAVER, XA_DEMO, XA_PREFS;
+
 
 void
 idle_timer (XtPointer closure, XtIntervalId *id)
@@ -207,6 +214,11 @@ get_screenhacks (saver_info *si)
 }
 
 
+static char *fallback[] = {
+#include "XScreenSaver_ad.h"
+ 0
+};
+
 int
 main (int argc, char **argv)
 {
@@ -246,7 +258,8 @@ main (int argc, char **argv)
   progclass = "XScreenSaver";
 
   toplevel_shell = XtAppInitialize (&si->app, progclass, 0, 0,
-				    &argc, argv, 0, 0, 0);
+				    &argc, argv, fallback,
+				    0, 0);
 
   si->dpy = XtDisplay (toplevel_shell);
   si->db = XtDatabase (si->dpy);
@@ -265,14 +278,13 @@ main (int argc, char **argv)
   p->verbose_p = True;
   p->lock_p = True;
   p->passwd_timeout = 1000 * get_seconds_resource ("passwdTimeout", "Time");
+  p->splash_duration = 1000 * get_seconds_resource ("splashDuration", "Time");
 
   get_screenhacks(si);
 
-  hack_uid_warn (si);
-
   while (1)
     {
-#if 0
+#if WHICH == 0
       if (unlock_p (si))
 	fprintf (stderr, "%s: password correct\n", progname);
       else
@@ -280,6 +292,22 @@ main (int argc, char **argv)
 
       XSync(si->dpy, False);
       sleep (3);
+#elif WHICH == 1
+      {
+	XEvent event;
+	make_splash_dialog (si);
+	XtAppAddTimeOut (si->app, p->splash_duration + 1000,
+			 idle_timer, (XtPointer) si);
+	while (si->splash_dialog)
+	  {
+	    XtAppNextEvent (si->app, &event);
+	    if (event.xany.window == si->splash_dialog)
+	      handle_splash_event (si, &event);
+	    XtDispatchEvent (&event);
+	  }
+	XSync (si->dpy, False);
+	sleep (1);
+      }
 #else
       si->demo_mode_p = True;
       make_screenhack_dialog (si);

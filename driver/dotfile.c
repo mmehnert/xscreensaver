@@ -20,6 +20,13 @@
 #include <X11/Xlib.h>
 #include <X11/Xresource.h>
 
+#ifndef VMS
+# include <pwd.h>
+#else /* VMS */
+# include "vms-pwd.h"
+#endif /* VMS */
+
+
 /* This file doesn't need the Xt headers, so stub these types out... */
 #undef XtPointer
 #define XtAppContext void*
@@ -52,17 +59,39 @@ static const char *
 init_file_name (void)
 {
   static char *file = 0;
+
   if (!file)
     {
-      const char *name = ".xscreensaver";
-      char *h = getenv("HOME");
-      if (!h) h = "";
-      file = (char *) malloc(strlen(h) + strlen(name) + 2);
-      strcpy(file, h);
-      strcat(file, "/");
-      strcat(file, name);
+      struct passwd *p = getpwuid (getuid ());
+
+      if (!p || !p->pw_name || !*p->pw_name)
+	{
+	  fprintf (stderr, "%s: couldn't get user info of uid %d\n",
+		   blurb(), getuid ());
+	  file = "";
+	}
+      else if (!p->pw_dir || !*p->pw_dir)
+	{
+	  fprintf (stderr, "%s: couldn't get home directory of %s\n",
+		   blurb(), (p->pw_name ? p->pw_name : "???"));
+	  file = "";
+	}
+      else
+	{
+	  const char *home = p->pw_dir;
+	  const char *name = ".xscreensaver";
+	  file = (char *) malloc(strlen(home) + strlen(name) + 2);
+	  strcpy(file, home);
+	  if (!*home || home[strlen(home)-1] != '/')
+	    strcat(file, "/");
+	  strcat(file, name);
+	}
     }
-  return file;
+
+  if (file && *file)
+    return file;
+  else
+    return 0;
 }
 
 
@@ -74,11 +103,20 @@ init_file_tmp_name (void)
     {
       const char *name = init_file_name();
       const char *suffix = ".tmp";
-      file = (char *) malloc(strlen(name) + strlen(suffix) + 2);
-      strcpy(file, name);
-      strcat(file, suffix);
+      if (!name || !*name)
+	file = "";
+      else
+	{
+	  file = (char *) malloc(strlen(name) + strlen(suffix) + 2);
+	  strcpy(file, name);
+	  strcat(file, suffix);
+	}
     }
-  return file;
+
+  if (file && *file)
+    return file;
+  else
+    return 0;
 }
 
 
@@ -165,9 +203,10 @@ handle_entry (saver_info *si, const char *key, const char *value,
   return 1;
 }
 
-void
+int
 read_init_file (saver_info *si)
 {
+  time_t write_date = 0;
   const char *name = init_file_name();
   int line = 0;
   struct stat st;
@@ -175,8 +214,13 @@ read_init_file (saver_info *si)
   int buf_size = 1024;
   char *buf;
 
+  if (!name) return 0;
+
   if (stat(name, &st) != 0)
-    return;
+    {
+      si->init_file_date = 0;
+      return 0;
+    }
 
   in = fopen(name, "r");
   if (!in)
@@ -185,7 +229,20 @@ read_init_file (saver_info *si)
       sprintf(buf, "%s: error reading %s", blurb(), name);
       perror(buf);
       free(buf);
-      return;
+      return -1;
+    }
+
+  if (fstat (fileno(in), &st) == 0)
+    {
+      write_date = st.st_mtime;
+    }
+  else
+    {
+      char *buf = (char *) malloc(1024 + strlen(name));
+      sprintf(buf, "%s: couldn't re-stat %s", blurb(), name);
+      perror(buf);
+      free(buf);
+      return -1;
     }
 
   buf = (char *) malloc(buf_size);
@@ -256,6 +313,35 @@ read_init_file (saver_info *si)
       handle_entry (si, key, value, name, line);
     }
   free(buf);
+
+  si->init_file_date = write_date;
+  return 0;
+}
+
+
+int
+maybe_reload_init_file (saver_info *si)
+{
+  saver_preferences *p = &si->prefs;
+  const char *name = init_file_name();
+  struct stat st;
+  int status = 0;
+
+  if (!name) return 0;
+
+  if (stat(name, &st) != 0)
+    return 0;
+
+  if (si->init_file_date == st.st_mtime)
+    return 0;
+
+  if (p->verbose_p)
+    fprintf (stderr, "%s: file %s has changed, reloading.\n", blurb(), name);
+
+  status = read_init_file (si);
+  if (status == 0)
+    get_resources (si);
+  return status;
 }
 
 
@@ -364,7 +450,7 @@ write_entry (FILE *out, const char *key, const char *value)
   free(v);
 }
 
-void
+int
 write_init_file (saver_info *si)
 {
   const char *name = init_file_name();
@@ -383,6 +469,18 @@ write_init_file (saver_info *si)
   char *stderr_font;
   FILE *out;
 
+  if (!name) return 0;
+
+  if (si->dangerous_uid_p)
+    {
+      if (p->verbose_p)
+	{
+	  fprintf (stderr, "%s: not writing \"%s\":\n", blurb(), name);
+	  describe_uids (si, stderr);
+	}
+      return 0;
+    }
+
   if (p->verbose_p)
     fprintf (stderr, "%s: writing \"%s\".\n", blurb(), name);
 
@@ -394,7 +492,7 @@ write_init_file (saver_info *si)
       sprintf(buf, "%s: error writing %s", blurb(), name);
       perror(buf);
       free(buf);
-      return;
+      return -1;
     }
 
   /* Give the new .xscreensaver file the same permissions as the old one;
@@ -413,7 +511,7 @@ write_init_file (saver_info *si)
 		   tmp_name, (unsigned int) mode);
 	  perror(buf);
 	  free(buf);
-	  return;
+	  return -1;
 	}
     }
 
@@ -441,7 +539,9 @@ write_init_file (saver_info *si)
   }
 
   {
-    char *whoami = getenv("USER");
+    struct passwd *p = getpwuid (getuid ());
+    char *whoami = (p && p->pw_name && *p->pw_name
+		    ? p->pw_name : "<unknown>");
     fprintf (out, 
 	     "# %s Preferences File\n"
 	     "# Written by %s %s for %s on %s.\n"
@@ -552,6 +652,22 @@ write_init_file (saver_info *si)
 
   if (fclose(out) == 0)
     {
+      time_t write_date = 0;
+
+      if (stat(tmp_name, &st) == 0)
+	{
+	  write_date = st.st_mtime;
+	}
+      else
+	{
+	  char *buf = (char *) malloc(1024 + strlen(tmp_name) + strlen(name));
+	  sprintf(buf, "%s: couldn't stat %s", blurb(), tmp_name);
+	  perror(buf);
+	  unlink (tmp_name);
+	  free(buf);
+	  return -1;
+	}
+
       if (rename (tmp_name, name) != 0)
 	{
 	  char *buf = (char *) malloc(1024 + strlen(tmp_name) + strlen(name));
@@ -559,6 +675,11 @@ write_init_file (saver_info *si)
 	  perror(buf);
 	  unlink (tmp_name);
 	  free(buf);
+	  return -1;
+	}
+      else
+	{
+	  si->init_file_date = write_date;
 	}
     }
   else
@@ -568,5 +689,8 @@ write_init_file (saver_info *si)
       perror(buf);
       free(buf);
       unlink (tmp_name);
+      return -1;
     }
+
+  return 0;
 }

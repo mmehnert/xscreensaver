@@ -321,10 +321,11 @@ xscreensaver-command: $(CMD_OBJS)
 
 
 TEST_PASSWD_OBJS = test-passwd.o $(LOCK_OBJS_1) $(PWENT_OBJS) $(DIALOG_OBJS) \
-	 subprocs.o setuid.o demo.o \
+	 subprocs.o setuid.o demo.o splash.o \
 	$(UTIL_OBJS)
+test-passwd.o: XScreenSaver_ad.h
 
-test-passwd: $(TEST_PASSWD_OBJS)
+test-passwd: $(TEST_PASSWD_OBJS) XScreenSaver_ad.h
 	$(CC) $(LDFLAGS) -o $@ $(TEST_PASSWD_OBJS) $(SAVER_LIBS)
 
 ##############################################################################
@@ -359,7 +360,7 @@ xscreensaver.o: $(UTILS_SRC)/visual.h
 xscreensaver.o: XScreenSaver_ad.h
 splash.o: ../config.h
 splash.o: $(srcdir)/xscreensaver.h
-splash.o: $(UTILS_SRC)/visual.h
+splash.o: $(UTILS_SRC)/resources.h
 xset.o: ../config.h
 xset.o: $(srcdir)/xscreensaver.h
 dotfile.o: ../config.h

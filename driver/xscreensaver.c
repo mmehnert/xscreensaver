@@ -158,6 +158,7 @@ char *progclass = 0;
 XrmDatabase db = 0;
 
 
+static Atom XA_SCREENSAVER_RESPONSE;
 static Atom XA_ACTIVATE, XA_DEACTIVATE, XA_CYCLE, XA_NEXT, XA_PREV;
 static Atom XA_EXIT, XA_RESTART, XA_LOCK, XA_SELECT;
 Atom XA_DEMO, XA_PREFS;
@@ -187,8 +188,9 @@ static XrmOptionDescRec options [] = {
   { "-idelay",		   ".initialDelay",	XrmoptionSepArg, 0 },
   { "-nice",		   ".nice",		XrmoptionSepArg, 0 },
 
-  /* Actually this one is built in to Xt, but just to be sure... */
-  { "-synchronous",	   ".synchronous",	XrmoptionNoArg, "on" }
+  /* Actually these are built in to Xt, but just to be sure... */
+  { "-synchronous",	   ".synchronous",	XrmoptionNoArg, "on" },
+  { "-xrm",		   NULL,		XrmoptionResArg, NULL }
 };
 
 static char *defaults[] = {
@@ -242,7 +244,7 @@ For updates, check http://www.jwz.org/xscreensaver/\n\
 
 
 static char *
-reformat_hack(const char *hack)
+reformat_hack (const char *hack)
 {
   int i;
   const char *in = hack;
@@ -269,8 +271,40 @@ reformat_hack(const char *hack)
   for (i = strlen(h2); i < indent; i++)	/* indent */
     *out++ = ' ';
 
-  while (*in) *out++ = *in++;		/* copy rest of line */
+  /* copy the rest of the line. */
+  while (*in)
+    {
+      /* shrink all whitespace to one space, for the benefit of the "demo"
+	 mode display.  We only do this when we can easily tell that the
+	 whitespace is not significant (no shell metachars).
+       */
+      switch (*in)
+	{
+	case '\'': case '"': case '`': case '\\':
+	  {
+	    /* Metachars are scary.  Copy the rest of the line unchanged. */
+	    while (*in)
+	      *out++ = *in++;
+	  }
+	  break;
+	case ' ': case '\t':
+	  {
+	    while (*in == ' ' || *in == '\t')
+	      in++;
+	    *out++ = ' ';
+	  }
+	  break;
+	default:
+	  *out++ = *in++;
+	  break;
+	}
+    }
   *out = 0;
+
+  /* strip trailing whitespace. */
+  out = out-1;
+  while (out > h2 && (*out == ' ' || *out == '\t' || *out == '\n'))
+    *out-- = 0;
 
   return h2;
 }
@@ -281,7 +315,8 @@ get_screenhacks (saver_info *si)
 {
   saver_preferences *p = &si->prefs;
   int i = 0;
-  int hacks_size = 60;
+  int start = 0;
+  int end = 0;
   int size;
   char *d;
 
@@ -301,77 +336,62 @@ get_screenhacks (saver_info *si)
 
   d = get_string_resource ("programs", "Programs");
 
-  size = d ? strlen (d) : 0;
-  p->screenhacks = (char **) malloc (sizeof (char *) * hacks_size);
-  p->screenhacks_count = 0;
-
-  while (i < size)
+  if (p->screenhacks)
     {
-      int end, start = i;
-      if (d[i] == ' ' || d[i] == '\t' || d[i] == '\n' || d[i] == 0)
-	{
-	  i++;
-	  continue;
-	}
-      if (hacks_size <= p->screenhacks_count)
-	p->screenhacks = (char **) realloc (p->screenhacks,
-					    (hacks_size = hacks_size * 2) *
-					    sizeof (char *));
-      p->screenhacks [p->screenhacks_count++] = d + i;
-      while (d[i] != 0 && d[i] != '\n')
-	i++;
-      end = i;
-      while (i > start && (d[i-1] == ' ' || d[i-1] == '\t'))
-	i--;
-      d[i] = 0;
-      i = end + 1;
+      for (i = 0; i < p->screenhacks_count; i++)
+	if (p->screenhacks[i])
+	  free (p->screenhacks[i]);
+      free(p->screenhacks);
+      p->screenhacks = 0;
     }
 
-  /* shrink all whitespace to one space, for the benefit of the "demo"
-     mode display.  We only do this when we can easily tell that the
-     whitespace is not significant (no shell metachars).
+  if (!d || !*d)
+    {
+      p->screenhacks_count = 0;
+      p->screenhacks = 0;
+      return;
+    }
+
+  size = strlen (d);
+
+
+  /* Count up the number of newlines (which will be equal to or larger than
+     the number of hacks.)
    */
-  for (i = 0; i < p->screenhacks_count; i++)
+  i = 0;
+  for (i = 0; d[i]; i++)
+    if (d[i] == '\n')
+      i++;
+  i++;
+
+  p->screenhacks = (char **) calloc (sizeof (char *), i+1);
+
+  /* Iterate over the lines in `d' (the string with newlines)
+     and make new strings to stuff into the `screenhacks' array.
+   */
+  p->screenhacks_count = 0;
+  while (start < size)
     {
-      char *s = p->screenhacks [i];
-      char *s2;
-      int L = strlen (s);
-      int j, k;
-      for (j = 0; j < L; j++)
-	{
-	  switch (s[j])
-	    {
-	    case '\'': case '"': case '`': case '\\':
-	      goto DONE;
-	    case '\t':
-	      s[j] = ' ';
-	    case ' ':
-	      k = 0;
-	      for (s2 = s+j+1; *s2 == ' ' || *s2 == '\t'; s2++)
-		k++;
-	      if (k > 0)
-		{
-		  for (s2 = s+j+1; s2[k]; s2++)
-		    *s2 = s2[k];
-		  *s2 = 0;
-		}
-	      break;
-	    }
-	}
-    DONE:
-      p->screenhacks[i] = reformat_hack(s);  /* mallocs */
+      /* skip forward over whitespace. */
+      while (d[start] == ' ' || d[start] == '\t' || d[start] == '\n')
+	start++;
+
+      /* skip forward to newline or end of string. */
+      end = start;
+      while (d[end] != 0 && d[end] != '\n')
+	end++;
+
+      /* null terminate. */
+      d[end] = 0;
+
+      p->screenhacks[p->screenhacks_count++] = reformat_hack (d + start);
+      if (p->screenhacks_count >= i)
+	abort();
+
+      start = end+1;
     }
 
-  if (p->screenhacks_count)
-    {
-      /* Shrink down the screenhacks array to be only as big as it needs to.
-	 This doesn't really matter at all. */
-      p->screenhacks = (char **)
-	realloc (p->screenhacks, ((p->screenhacks_count + 1) *
-				  sizeof(char *)));
-      p->screenhacks [p->screenhacks_count] = 0;
-    }
-  else
+  if (p->screenhacks_count == 0)
     {
       free (p->screenhacks);
       p->screenhacks = 0;
@@ -382,13 +402,16 @@ get_screenhacks (saver_info *si)
 static Bool blurb_timestamp_p = False;   /* kludge */
 
 
-static void
+void
 get_resources (saver_info *si)
 {
   char *s;
   saver_preferences *p = &si->prefs;
 
-  read_init_file (si);
+  if (si->init_file_date == 0)
+    /* The date will be 0 the first time this is called; and when this is
+       called subsequent times, the file will have already been reloaded. */
+    read_init_file (si);
 
   p->xsync_p	    = get_boolean_resource ("synchronous", "Synchronous");
   if (p->xsync_p)
@@ -523,7 +546,7 @@ main (int argc, char **argv)
   global_si_kludge = &si;	/* I hate C so much... */
   initialize (&si, argc, argv);
   if (!si.demo_mode_p)
-    pop_splash_dialog (&si);
+    make_splash_dialog (&si);
   main_loop (&si);		/* doesn't return */
   return 0;
 }
@@ -684,6 +707,8 @@ initialize_connection (saver_info *si, int argc, char **argv)
   XA_SCREENSAVER_VERSION = XInternAtom (si->dpy, "_SCREENSAVER_VERSION",False);
   XA_SCREENSAVER_ID = XInternAtom (si->dpy, "_SCREENSAVER_ID", False);
   XA_SCREENSAVER_TIME = XInternAtom (si->dpy, "_SCREENSAVER_TIME", False);
+  XA_SCREENSAVER_RESPONSE = XInternAtom (si->dpy, "_SCREENSAVER_RESPONSE",
+					 False);
   XA_XSETROOT_ID = XInternAtom (si->dpy, "_XSETROOT_ID", False);
   XA_ACTIVATE = XInternAtom (si->dpy, "ACTIVATE", False);
   XA_DEACTIVATE = XInternAtom (si->dpy, "DEACTIVATE", False);
@@ -959,6 +984,8 @@ main_loop (saver_info *si)
       if (! si->demo_mode_p)
 	sleep_until_idle (si, True);
 
+      maybe_reload_init_file (si);
+
 #ifndef NO_DEMO_MODE
       if (si->demo_mode_p)
 	demo_mode (si);
@@ -968,6 +995,7 @@ main_loop (saver_info *si)
 	  if (p->verbose_p)
 	    fprintf (stderr, "%s: user is idle; waking up at %s.\n", blurb(),
 		     timestring());
+	  maybe_reload_init_file (si);
 	  blank_screen (si);
 	  spawn_screenhack (si, True);
 	  if (p->cycle)
@@ -987,6 +1015,7 @@ main_loop (saver_info *si)
 	PASSWD_INVALID:
 
 	  sleep_until_idle (si, False); /* until not idle */
+	  maybe_reload_init_file (si);
 
 #ifndef NO_LOCKING
 	  if (si->locked_p)
@@ -1046,11 +1075,39 @@ main_loop (saver_info *si)
 
 
 
+static void
+clientmessage_response (saver_info *si, Window w, Bool error,
+			const char *stderr_msg,
+			const char *protocol_msg)
+{
+  char *proto;
+  int L;
+  saver_preferences *p = &si->prefs;
+  if (error || p->verbose_p)
+    fprintf (stderr, "%s: %s\n", blurb(), stderr_msg);
+
+  L = strlen(protocol_msg);
+  proto = (char *) malloc (L + 2);
+  proto[0] = (error ? '-' : '+');
+  strcpy (proto+1, protocol_msg);
+  L++;
+
+  XChangeProperty (si->dpy, w, XA_SCREENSAVER_RESPONSE, XA_STRING, 8,
+		   PropModeReplace, proto, L);
+  XSync (si->dpy, False);
+  free (proto);
+}
+
 Bool
 handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
 {
   saver_preferences *p = &si->prefs;
   Atom type = 0;
+  Window window = event->xclient.window;
+
+  /* Preferences might affect our handling of client messages. */
+  maybe_reload_init_file (si);
+
   if (event->xclient.message_type != XA_SCREENSAVER)
     {
       char *str;
@@ -1072,9 +1129,9 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
     {
       if (until_idle_p)
 	{
-	  if (p->verbose_p)
-	    fprintf (stderr,
-		     "%s: ACTIVATE ClientMessage received.\n", blurb());
+	  clientmessage_response(si, window, False,
+				 "ACTIVATE ClientMessage received.",
+				 "activating.");
 	  if (p->use_mit_saver_extension || p->use_sgi_saver_extension)
 	    {
 	      XForceScreenSaver (si->dpy, ScreenSaverActive);
@@ -1085,17 +1142,17 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
 	      return True;
 	    }
 	}
-      fprintf (stderr,
-	       "%s: ClientMessage ACTIVATE received while already active.\n",
-	       blurb());
+      clientmessage_response(si, window, True,
+		       "ClientMessage ACTIVATE received while already active.",
+			     "already active.");
     }
   else if (type == XA_DEACTIVATE)
     {
       if (! until_idle_p)
 	{
-	  if (p->verbose_p)
-	    fprintf (stderr, "%s: DEACTIVATE ClientMessage received.\n",
-		     blurb());
+	  clientmessage_response(si, window, False,
+				 "DEACTIVATE ClientMessage received.",
+				 "deactivating.");
 	  if (p->use_mit_saver_extension || p->use_sgi_saver_extension)
 	    {
 	      XForceScreenSaver (si->dpy, ScreenSaverReset);
@@ -1106,30 +1163,34 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
 	      return True;
 	    }
 	}
-      fprintf (stderr,
-	       "%s: ClientMessage DEACTIVATE received while inactive.\n",
-	       blurb());
+      clientmessage_response(si, window, True,
+			   "ClientMessage DEACTIVATE received while inactive.",
+			     "not active.");
     }
   else if (type == XA_CYCLE)
     {
       if (! until_idle_p)
 	{
-	  if (p->verbose_p)
-	    fprintf (stderr, "%s: CYCLE ClientMessage received.\n", blurb());
+	  clientmessage_response(si, window, False,
+				 "CYCLE ClientMessage received.",
+				 "cycling.");
 	  if (si->cycle_id)
 	    XtRemoveTimeOut (si->cycle_id);
 	  si->cycle_id = 0;
 	  cycle_timer ((XtPointer) si, 0);
 	  return False;
 	}
-      fprintf (stderr, "%s: ClientMessage CYCLE received while inactive.\n",
-	       blurb());
+      clientmessage_response(si, window, True,
+			     "ClientMessage CYCLE received while inactive.",
+			     "not active.");
     }
   else if (type == XA_NEXT || type == XA_PREV)
     {
-      if (p->verbose_p)
-	fprintf (stderr, "%s: %s ClientMessage received.\n", blurb(),
-		(type == XA_NEXT ? "NEXT" : "PREV"));
+      clientmessage_response(si, window, False,
+			     (type == XA_NEXT
+			      ? "NEXT ClientMessage received."
+			      : "PREV ClientMessage received."),
+			     "cycling.");
       si->selection_mode = (type == XA_NEXT ? -1 : -2);
 
       if (! until_idle_p)
@@ -1144,11 +1205,12 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
     }
   else if (type == XA_SELECT)
     {
+      char buf [255];
       long which = event->xclient.data.l[1];
 
-      if (p->verbose_p)
-	fprintf (stderr, "%s: SELECT %ld ClientMessage received.\n", blurb(),
-		 which);
+      sprintf (buf, "SELECT %ld ClientMessage received.", which);
+      clientmessage_response (si, window, False, buf, "activating.");
+
       if (which < 1) which = 1;
       si->selection_mode = which;
 
@@ -1167,8 +1229,9 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
       /* Ignore EXIT message if the screen is locked. */
       if (until_idle_p || !si->locked_p)
 	{
-	  if (p->verbose_p)
-	    fprintf (stderr, "%s: EXIT ClientMessage received.\n", blurb());
+	  clientmessage_response (si, window, False,
+				  "EXIT ClientMessage received.",
+				  "exiting.");
 	  if (! until_idle_p)
 	    {
 	      unblank_screen (si);
@@ -1178,8 +1241,9 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
 	  saver_exit (si, 0, 0);
 	}
       else
-	fprintf (stderr, "%s: EXIT ClientMessage received while locked.\n",
-		 blurb());
+	clientmessage_response (si, window, True,
+				"EXIT ClientMessage received while locked.",
+				"screen is locked.");
     }
   else if (type == XA_RESTART)
     {
@@ -1188,8 +1252,9 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
        */
       if (until_idle_p || !si->locked_p)
 	{
-	  if (p->verbose_p)
-	    fprintf (stderr, "%s: RESTART ClientMessage received.\n", blurb());
+	  clientmessage_response (si, window, False,
+				  "RESTART ClientMessage received.",
+				  "restarting.");
 	  if (! until_idle_p)
 	    {
 	      unblank_screen (si);
@@ -1206,63 +1271,74 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
 			   make this command be the same as EXIT. */
 	}
       else
-	fprintf(stderr, "%s: RESTART ClientMessage received while locked.\n",
-		blurb());
+	clientmessage_response (si, window, True,
+				"RESTART ClientMessage received while locked.",
+				"screen is locked.");
     }
   else if (type == XA_DEMO)
     {
 #ifdef NO_DEMO_MODE
-      fprintf (stderr, "%s: not compiled with support for DEMO mode\n",
-	       blurb());
+      clientmessage_response (si, window, True,
+			      "not compiled with support for DEMO mode.",
+			      "demo mode not enabled.");
 #else /* !NO_DEMO_MODE */
       if (until_idle_p)
 	{
-	  if (p->verbose_p)
-	    fprintf (stderr, "%s: DEMO ClientMessage received.\n", blurb());
+	  clientmessage_response (si, window, False,
+				  "DEMO ClientMessage received.",
+				  "Demo mode.");
 	  si->demo_mode_p = True;
 	  return True;
 	}
-      fprintf (stderr,
-	       "%s: DEMO ClientMessage received while active.\n", blurb());
+      clientmessage_response (si, window, True,
+			      "DEMO ClientMessage received while active.",
+			      "already active.");
 #endif /* !NO_DEMO_MODE */
     }
   else if (type == XA_PREFS)
     {
 #ifdef NO_DEMO_MODE
-      fprintf (stderr, "%s: not compiled with support for DEMO mode\n",
-	       blurb());
+      clientmessage_response (si, window, True,
+			      "not compiled with support for DEMO mode.",
+			      "preferences mode not enabled.");
 #else /* !NO_DEMO_MODE */
       if (until_idle_p)
 	{
-	  if (p->verbose_p)
-	    fprintf (stderr, "%s: PREFS ClientMessage received.\n", blurb());
+	  clientmessage_response (si, window, False,
+				  "PREFS ClientMessage received.",
+				  "preferences mode.");
 	  si->demo_mode_p = (Bool) 2;  /* kludge, so sue me. */
 	  return True;
 	}
-      fprintf (stderr,
-	       "%s: PREFS ClientMessage received while active.\n", blurb());
+      clientmessage_response (si, window, True,
+			      "PREFS ClientMessage received while active.",
+			      "already active.");
 #endif /* !NO_DEMO_MODE */
     }
   else if (type == XA_LOCK)
     {
 #ifdef NO_LOCKING
-      fprintf (stderr, "%s: not compiled with support for LOCK mode\n",
-	       blurb());
+      clientmessage_response (si, window, True,
+			      "not compiled with support for locking.",
+			      "locking not enabled.");
 #else /* !NO_LOCKING */
       if (si->locking_disabled_p)
-	fprintf (stderr,
-	       "%s: LOCK ClientMessage received, but locking is disabled.\n",
-		 blurb());
+      clientmessage_response (si, window, True,
+		      "LOCK ClientMessage received, but locking is disabled.",
+			      "locking not enabled.");
       else if (si->locked_p)
-	fprintf (stderr,
-	       "%s: LOCK ClientMessage received while already locked.\n",
-		 blurb());
+	clientmessage_response (si, window, True,
+			   "LOCK ClientMessage received while already locked.",
+				"already locked.");
       else
 	{
+	  char buf [255];
+	  char *response = (until_idle_p
+			    ? "activating and locking."
+			    : "locking.");
 	  si->locked_p = True;
-	  if (p->verbose_p) 
-	    fprintf (stderr, "%s: LOCK ClientMessage received;%s locking.\n",
-		    blurb(), until_idle_p ? " activating and" : "");
+	  sprintf (buf, "LOCK ClientMessage received; %s\n", blurb(),response);
+	  clientmessage_response (si, window, False, buf, response);
 
 	  if (si->lock_id)	/* we're doing it now, so lose the timeout */
 	    {
@@ -1287,17 +1363,26 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
     }
   else
     {
+      char buf [1024];
       char *str;
       str = (type ? XGetAtomName(si->dpy, type) : 0);
+
       if (str)
-	fprintf (stderr,
-		 "%s: unrecognised screensaver ClientMessage %s received\n",
-		 blurb(), str);
+	{
+	  if (strlen (str) > 80)
+	    strcpy (str+70, "...");
+	  sprintf (buf, "unrecognised screensaver ClientMessage %s received.",
+		   str);
+	  free (str);
+	}
       else
-	fprintf (stderr,
-		"%s: unrecognised screensaver ClientMessage 0x%x received\n",
-		 blurb(), (unsigned int) event->xclient.data.l[0]);
-      if (str) XFree (str);
+	{
+	  sprintf (buf,
+		   "unrecognised screensaver ClientMessage 0x%x received.",
+		   (unsigned int) event->xclient.data.l[0]);
+	}
+
+      clientmessage_response (si, window, True, buf, buf);
     }
   return False;
 }

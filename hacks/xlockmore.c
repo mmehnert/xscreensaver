@@ -139,9 +139,19 @@ pre_merge_options (void)
   /* Copy the defaults out of the `xlockmore_opts->' variable. */
   for (j = 0; j < xlockmore_opts->numvarsdesc; j++)
     {
+      char buf[100];
       const char *def = xlockmore_opts->vars[j].def;
-      if (!def) def = "False";
-      if (def == ((char*) 1)) def = "True";
+      if (xlockmore_opts->vars[j].type == t_Int)
+	{
+	  sprintf (buf, "%d", (int) def);
+	  def = buf;
+	}
+      else if (xlockmore_opts->vars[j].type == t_Bool)
+	{
+	  if (def == 0) def = "False";
+	  else if (def == ((char*) 1)) def = "True";
+	}
+
       s = (char *) malloc (strlen (xlockmore_opts->vars[j].name) +
 			   strlen (def) + 10);
       strcpy (s, "*");

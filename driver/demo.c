@@ -71,8 +71,6 @@ extern Widget lock_time_text, passwd_time_text;
 extern Widget verbose_toggle, cmap_toggle, fade_toggle, unfade_toggle,
   lock_toggle;
 
-extern Widget splash_dialog;
-
 
 #ifdef HAVE_MOTIF
 
@@ -592,8 +590,7 @@ pop_up_dialog_box (Widget dialog, Widget form, int where)
   XtManageChild (form);
 #endif /* HAVE_MOTIF */
 
-  if (dialog != splash_dialog)
-    steal_focus_and_colormap (dialog);
+  steal_focus_and_colormap (dialog);
 }
 
 

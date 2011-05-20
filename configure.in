@@ -39,7 +39,7 @@ AC_TRY_RUN([ main(int ac, char **av) { return 0; } ],
    AC_MSG_ERROR(Couldn't build even a trivial ANSI C program: check CC.))
 
 case "$host" in
-  *-irix*)
+  *-irix5* |*-irix6.[0-3]* )
     if test -n "$GCC"; then
       AC_MSG_RESULT(Turning on gcc compiler warnings.)
       CC="$CC -Wall -Wstrict-prototypes -Wnested-externs -Wno-format"
@@ -1057,6 +1057,7 @@ fi
 # check for the GL header
 #
 have_gl=no
+ac_have_mesa_gl=no
 with_gl_req=unspecified
 AC_ARG_WITH(gl,
 [  --with-gl               Build those demos which depend on OpenGL,
@@ -1763,7 +1764,7 @@ fi
 
 if test $have_motif = yes -a $have_lesstif = yes ; then
 
-  preferred_lesstif=0.87
+  preferred_lesstif=0.86
 
   if test $lesstif_version = unknown; then
     warnL "Unable to determine the LessTif version number!"
@@ -1776,14 +1777,6 @@ if test $have_motif = yes -a $have_lesstif = yes ; then
     warn2 "use with XScreenSaver; it is strongly recommended"
     warn2 "that you upgrade to at least version $preferred_lesstif!"
     warn2 "See <http://www.lesstif.org/>."
-
-  elif test \! $lesstif_version -gt 86; then
-    warnL "LessTif version $lesstif_version_string is being used."
-    warn2 "LessTif versions 0.86 and earlier have a bug that"
-    warn2 "can cause a security problem with xscreensaver."
-    warn2 "If you want to use xscreensaver as a screen locker,"
-    warn2 "it is strongly recommended that you upgrade to at"
-    warn2 "least version $preferred_lesstif.  See <http://www.lesstif.org/>."
   fi
 fi
 

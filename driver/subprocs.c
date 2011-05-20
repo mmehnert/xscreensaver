@@ -999,7 +999,6 @@ hack_subproc_environment (saver_screen_info *ssi)
   for (screen_number = 0; screen_number < si->nscreens; screen_number++)
     if (ssi == &si->screens[screen_number])
       break;
-  if (screen_number >= si->nscreens) abort();
 
   strcpy (ndpy, "DISPLAY=");
   s = ndpy + strlen(ndpy);

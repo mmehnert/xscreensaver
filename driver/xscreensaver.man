@@ -11,7 +11,7 @@
 .if n .sp 1
 .if t .sp .5
 ..
-.TH XScreenSaver 1 "04-Oct-98 (2.32)" "X Version 11"
+.TH XScreenSaver 1 "05-Oct-98 (2.33)" "X Version 11"
 .SH NAME
 xscreensaver - graphics hack and screen locker, launched when the user is idle
 .SH SYNOPSIS
@@ -137,8 +137,15 @@ whereas, in the \fI.Xdefaults\fP file, you would write
 .EX
 xscreensaver.timeout: 5
 .EE
-If you change a setting and xscreensaver is already running, you will need
-to tell the running xscreensaver process to re-initialize itself, like so:
+If you change a setting in the \fI.xscreensaver\fP file while xscreensaver
+is already running, it will notice this, and reload the file.  (The file will
+be reloaded the next time the screen saver needs to take some action, such as
+blanking or unblanking the screen, or picking a new graphics mode.)
+
+If you change a setting in your X resource database, or if you want
+xscreensaver to notice your changes immediately instead of the next time
+it wakes up, then you will need to tell the running xscreensaver process
+to re-initialize itself, like so:
 .EX
 xscreensaver-command -restart
 .EE
