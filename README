@@ -142,6 +142,7 @@ http://people.netscape.com/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 2.09:	Fixed color bugs in rd-bomb; sped up coral.
 Changes since 2.07:	New hacks "rd-bomb" and "coral".
 			New version of "maze" with some new algorithms.
 			New colorized version of "rocks".

@@ -46,7 +46,7 @@ ac_help="$ac_help
                           if possible (this is the default).
   --without-xidle-ext     Do not compile in support for this extension."
 ac_help="$ac_help
-  --with-xshm-ext        Include support for the XSHM (Shared Memory) server
+  --with-xshm-ext         Include support for the XSHM (Shared Memory) server
                           extension, if possible (this is the default).
   --without-xshm-ext      Do not compile in support for this extension."
 ac_help="$ac_help
@@ -4976,7 +4976,7 @@ fi
   #
   if test $need_setuid = no ; then
     case "$host" in
-      *-hpux* | *-aix* | *-netbsd* )
+      *-hpux* | *-aix* | *-netbsd* | *-freebsd* | *-openbsd* )
         need_setuid=yes
       ;;
     esac

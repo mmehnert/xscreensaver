@@ -22,10 +22,13 @@ static int colorsloth;
 
 static XPoint *walkers;
 static int nwalkers;
-static int width;
+static int width, widthb;
 static int height;
-static unsigned char *board;
-#define dot(x, y) (board[(y*width)+x])
+
+static unsigned int *board;
+#define getdot(x,y) (board[(y*widthb)+(x>>5)] &  (1<<(x & 31)))
+#define setdot(x,y) (board[(y*widthb)+(x>>5)] |= (1<<(x & 31)))
+
 
 static void
 init_coral(Display *dpy, Window window)
@@ -38,13 +41,13 @@ init_coral(Display *dpy, Window window)
     int density;
     int i;
 
-    srand(time(0));
     XClearWindow(dpy, window);
     XGetWindowAttributes(dpy, window, &xgwa);
     width = xgwa.width;
+    widthb = ((xgwa.width + 31) >> 5);
     height = xgwa.height;
-    board = (unsigned char *)calloc(width*xgwa.height, sizeof(unsigned char));
-    if( (unsigned char *)0 == board ) exit(1);
+    board = (unsigned int *)calloc(widthb * xgwa.height, sizeof(unsigned int));
+    if(!board) exit(1);
     cmap = xgwa.colormap;
     if( ncolors ) {
         free_colors(dpy, cmap, colors, ncolors);
@@ -54,7 +57,7 @@ init_coral(Display *dpy, Window window)
     draw_gc = XCreateGC(dpy, window, GCForeground, &gcv);
     ncolors = NCOLORSMAX;
     make_uniform_colormap(dpy, xgwa.visual, cmap, colors, &ncolors, True, &writeable, False);
-    colorindex = rand()%ncolors;
+    colorindex = random()%ncolors;
     
     density = get_integer_resource("density", "Integer");
     if( density < 1 ) density = 1;
@@ -73,26 +76,56 @@ init_coral(Display *dpy, Window window)
     for( i = 0; i < seeds; i++ ) {
         int x, y;
         do {
-            x = rand() % width;
-            y = rand() % height;
-        } while( dot(x, y) );
+            x = random() % width;
+            y = random() % height;
+        } while( getdot(x, y) );
 
-        dot((x-1), (y-1)) = dot(x, (y-1)) = dot((x+1), (y-1)) =
-        dot((x-1),  y   ) = dot(x,  y   ) = dot((x+1),  y   ) =
-        dot((x-1), (y+1)) = dot(x, (y+1)) = dot((x+1), (y+1)) = 1;
+        setdot((x-1), (y-1)); setdot(x, (y-1)); setdot((x+1), (y-1));
+	setdot((x-1),  y   ); setdot(x,  y   ); setdot((x+1),  y   );
+	setdot((x-1), (y+1)); setdot(x, (y+1)); setdot((x+1), (y+1));
         XDrawPoint(dpy, window, draw_gc, x, y);
     }
 
     for( i = 0; i < nwalkers; i++ ) {
-        walkers[i].x = (rand() % (width-2)) + 1;
-        walkers[i].y = (rand() % (height-2)) + 1;
+        walkers[i].x = (random() % (width-2)) + 1;
+        walkers[i].y = (random() % (height-2)) + 1;
     }
 }
+
+
+/* returns 2 bits of randomness (conserving calls to random()).
+   This speeds things up a little, but not a lot (5-10% or so.)
+ */
+static int 
+rand_2(void)
+{
+  static int i = 0;
+  static int r = 0;
+  if (i != 0) {
+    i--;
+  } else {
+    i = 15;
+    r = random();
+  }
+
+  {
+    register int j = (r & 3);
+    r = r >> 2;
+    return j;
+  }
+}
+
 
 static void
 coral(Display *dpy, Window window)
 {
     int delay2 = get_integer_resource ("delay2", "Integer");
+
+    int max_points = 200;
+    int npoints = 0;
+    XPoint *pointbuf = (XPoint *) calloc(sizeof(XPoint), max_points+2);
+    if (!pointbuf) exit(-1);
+
     while( 1 ) {
         int i;
 
@@ -100,16 +133,35 @@ coral(Display *dpy, Window window)
             int x = walkers[i].x;
             int y = walkers[i].y;
 
-            if( dot(x, y) ) {
-                XDrawPoint(dpy, window, draw_gc, x, y);
+            if( getdot(x, y) ) {
+
+	        Bool flush = False;
+	        Bool color = False;
+
+	        /* XDrawPoint(dpy, window, draw_gc, x, y); */
+	        pointbuf[npoints].x = x;
+	        pointbuf[npoints].y = y;
+		npoints++;
+
                 /* Mark the surrounding area as "sticky" */
-                dot((x-1), (y-1)) = dot(x, (y-1)) = dot((x+1), (y-1)) =
-                    dot((x-1),  y   ) =                 dot((x+1),  y   ) =
-                    dot((x-1), (y+1)) = dot(x, (y+1)) = dot((x+1), (y+1)) = 1;
+                setdot((x-1), (y-1)); setdot(x, (y-1)); setdot((x+1), (y-1));
+		setdot((x-1),  y   );                   setdot((x+1),  y   );
+                setdot((x-1), (y+1)); setdot(x, (y+1)); setdot((x+1), (y+1));
                 nwalkers--;
                 walkers[i].x = walkers[nwalkers].x;
                 walkers[i].y = walkers[nwalkers].y;
                 if( 0 == (nwalkers%colorsloth) ) {
+		  color = True;
+                }
+		  
+		if (flush || color || 0 == nwalkers || npoints >= max_points) {
+		  XDrawPoints(dpy, window, draw_gc, pointbuf, npoints,
+			      CoordModeOrigin);
+		  npoints = 0;
+		  XSync(dpy, True);
+		}
+
+		if (color) {
                     colorindex++;
                     if( colorindex == ncolors )
                         colorindex = 0;
@@ -118,12 +170,13 @@ coral(Display *dpy, Window window)
 
                 if( 0 == nwalkers ) {
                     XSync(dpy, True);
+		    free(pointbuf);
                     return;
                 }
             } else {
                 /* move it a notch */
                 do {
-                    switch( rand() % 4 ) {
+                    switch(rand_2()) {
                     case 0:
                         if( 1 == x ) continue;
                         walkers[i].x--;
@@ -136,18 +189,26 @@ coral(Display *dpy, Window window)
                         if( 1 == y ) continue;
                         walkers[i].y--;
                         break;
-                    case 3:
+                    default: /* case 3: */
                         if( height-2 == y ) continue;
                         walkers[i].y++;
                         break;
+		    /* default:
+		      abort(); */
                     }
                 } while(0);
             }
         }
 
-        XSync(dpy, True);
-	if (delay2 > 0)
+	if (delay2 > 0) {
+	  if (npoints > 0) {
+	    XDrawPoints(dpy, window, draw_gc, pointbuf, npoints,
+			CoordModeOrigin);
+	    npoints = 0;
+	    XSync(dpy, True);
+	  }
 	  usleep(delay2);
+	}
     }
 }
 

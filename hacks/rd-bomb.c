@@ -22,12 +22,6 @@
 
 #include "screenhack.h"
 
-#define JWZ_CMAPS
-
-#ifndef JWZ_CMAPS
-#include "cmap.h"
-#endif /* !JWZ_CMAPS */
-
 /* why doesn't this work??? */
 #ifdef HAVE_XSHM_EXTENSION
 #include <sys/ipc.h>
@@ -57,7 +51,7 @@ char *defaults [] = {
   "*speed:	0.0",
   "*size:	0.66",
   "*delay:	1000",
-  "*colors:	255",
+  "*colors:	-1",
   0
 };
 
@@ -73,6 +67,7 @@ XrmOptionDescRec options [] = {
   { "-speed",		".speed",	XrmoptionSepArg, 0 },
   { "-size",		".size",	XrmoptionSepArg, 0 },
   { "-delay",		".delay",	XrmoptionSepArg, 0 },
+  { "-ncolors",		".colors",	XrmoptionSepArg, 0 },
   { 0, 0, 0, 0 }
 };
 
@@ -103,7 +98,7 @@ screenhack (Display *dpy, Window win)
   int w2;
   int frame = 0, epoch_time;
   char *p;
-  int depth;
+  int vdepth, pdepth;
   ushort *r1, *r2, *r1b, *r2b;
   int npix;
   int reaction = 0;
@@ -118,10 +113,8 @@ screenhack (Display *dpy, Window win)
   int use_shm = 0;
   XShmSegmentInfo shm_info;
 #endif
-#ifdef JWZ_CMAPS
   int ncolors = 0;
   XColor *colors = 0;
-#endif
 
   int delay = get_float_resource ("delay", "Integer");
 
@@ -155,14 +148,34 @@ screenhack (Display *dpy, Window win)
   w2 = width + 2;
   gcv.function = GXcopy;
   gc = XCreateGC(dpy, win, GCFunction, &gcv);
-  depth = visual_depth(DefaultScreenOfDisplay(dpy), xgwa.visual);
+  vdepth = visual_depth(DefaultScreenOfDisplay(dpy), xgwa.visual);
 
-#ifdef JWZ_CMAPS
-  ncolors = (1 << depth);
+  /* This code only deals with pixmap depths of 1, 8, 16, and 32.
+     Therefore, we assume that those depths will be supported by the
+     coresponding visual depths (that depth-24 displays accept depth-32
+     pixmaps, and that depth-12 displays accept depth-16 pixmaps.) */
+  pdepth = (vdepth == 1 ? 1 :
+	    vdepth <= 8 ? 8 :
+	    vdepth <= 16 ? 16 :
+	    32);
+
+  cmap = xgwa.colormap;
+  ncolors = get_integer_resource ("colors", "Integer");
+
+  if (ncolors <= 0) {
+    if (vdepth > 8)
+      ncolors = 2047;
+    else
+      ncolors = 255;
+  }
+
+  if (mono_p || ncolors < 2) ncolors = 2;
+  if (ncolors <= 2) mono_p = True;
   colors = (XColor *) malloc(sizeof(*colors) * (ncolors+1));
-#endif
 
-  mapped = (PseudoColor == xgwa.visual->class);
+  mapped = (vdepth <= 8 &&
+	    has_writable_cells(xgwa.screen, xgwa.visual));
+
   if (!mapped)
     m = (int *) malloc(sizeof(int) * (1<<16));
 #if dither_when_mapped
@@ -176,8 +189,7 @@ screenhack (Display *dpy, Window win)
     }
   }
 #endif
-  p = malloc(npix * ((8 == depth) ? 1 :
-		     (16 == depth) ? 2 : 4));
+  p = malloc(npix * (pdepth == 1 ? 1 : (pdepth / 8)));
   r1 = (ushort *) malloc(sizeof(ushort) * npix);
   r2 = (ushort *) malloc(sizeof(ushort) * npix);
   r1b = (ushort *) malloc(sizeof(ushort) * npix);
@@ -191,7 +203,7 @@ screenhack (Display *dpy, Window win)
   if (use_shm) {
     printf("p=%X\n", p);
     free(p);
-    image = XShmCreateImage(dpy, xgwa.visual, depth,
+    image = XShmCreateImage(dpy, xgwa.visual, vdepth,
 			    ZPixmap, 0, &shm_info, width, height);
     shm_info.shmid = shmget(IPC_PRIVATE,
 			    image->bytes_per_line * image->height,
@@ -205,22 +217,13 @@ screenhack (Display *dpy, Window win)
     XSync(dpy, False);
   } else
 #endif
-  image = XCreateImage(dpy, xgwa.visual, depth,
+  image = XCreateImage(dpy, xgwa.visual, vdepth,
 		       ZPixmap, 0, p,
 		       width, height, 8, 0);
-  if (mapped) {
-    cmap = XCreateColormap(dpy, win, xgwa.visual, AllocAll);
-    XSetWindowColormap(dpy, win, cmap);
-    (void) XSetWMColormapWindows(dpy, win, &win, 1);
-    XInstallColormap(dpy, cmap);
-  }
 
   while (1) {
     int i, j;
     ushort *t;
-#ifndef JWZ_CMAPS
-    int palette;
-#endif
 #if test_pattern_hyper
     if (frame&0x100)
       sleep(1);
@@ -252,40 +255,38 @@ screenhack (Display *dpy, Window win)
 	r1[i] = 65500;
 	r2[i] = 11;
       }
-#ifndef JWZ_CMAPS
-      palette = get_integer_resource ("palette", "Integer");
-      palette = ((palette < 0) ? R : palette) % ncmaps;
-      if (mapped)
-	store_cmap(dpy, cmap, palette);
-      else
-	get_cmap(palette, xgwa.visual, m, 256);
-#else /* JWZ_CMAPS */
-      {
-	int oc = ncolors;
-	memset(colors, 0, oc*sizeof(*colors));
-# if 1
-	make_smooth_colormap (dpy, xgwa.visual, cmap, colors, &ncolors,
-			      False, 0, True);
-# else
-	make_color_loop (dpy, cmap,
-			 random()%120, frand(1.0), frand(1.0),
-			 60+(random()%120), frand(1.0), frand(1.0),
-			 120+(random()%120), frand(1.0), frand(1.0),
-			 colors, &ncolors, False, False);
-# endif
-	/* don't leave any holes in the set of colors due to roundoff */
-	for (i = ncolors; i < oc; i++)
-	  colors[i] = colors[ncolors-1];
 
-	for (i = 0; i < oc; i++)
-	  {
-	    colors[i].pixel = i;
-	    colors[i].flags = DoRed|DoGreen|DoBlue;
-	  }
-	/* Assumes cmap is AllocAll */
-	XStoreColors(dpy, cmap, colors, oc);
+      memset(colors, 0, ncolors*sizeof(*colors));
+      make_smooth_colormap (dpy, xgwa.visual, cmap, colors, &ncolors,
+			    True, 0, True);
+      if (ncolors <= 2) {
+	mono_p = True;
+	ncolors = 2;
+	colors[0].flags = DoRed|DoGreen|DoBlue;
+	colors[0].red = colors[0].green = colors[0].blue = 0;
+	XAllocColor(dpy, cmap, &colors[0]);
+	colors[1].flags = DoRed|DoGreen|DoBlue;
+	colors[1].red = colors[1].green = colors[1].blue = 0xFFFF;
+	XAllocColor(dpy, cmap, &colors[1]);
       }
-#endif /* !JWZ_CMAPS */
+
+      /* Scale it up so that there are exactly 255 colors -- that keeps the
+	 animation speed consistent, even when there aren't many allocatable
+	 colors, and prevents the -mono mode from looking like static. */
+      if (ncolors != 255) {
+	int i, n = 255;
+	double scale = (double) ncolors / (double) (n+1);
+	XColor *c2 = (XColor *) malloc(sizeof(*c2) * (n+1));
+	for (i = 0; i < n; i++)
+	  c2[i] = colors[(int) (i * scale)];
+	free(colors);
+	colors = c2;
+	ncolors = n;
+      }
+
+
+      XSetWindowBackground(dpy, win, colors[255 % ncolors].pixel);
+      XClearWindow(dpy, win);
 
       s = w2 * height/2 + width/2;
       radius = get_integer_resource ("radius", "Integer");
@@ -376,17 +377,21 @@ screenhack (Display *dpy, Window win)
 	o1[j] = r1;
 	o2[j] = r2;
 #endif
-	if (mapped) {
+
+	if (mapped)
 #if dither_when_mapped
-	    q[j] = mc[r1];
+	  q[j] = colors[mc[r1]  % ncolors].pixel;
 #else
-	    q[j] = r1>>8;
+	  q[j] = colors[(r1>>8) % ncolors].pixel;
 #endif
-	}
-	else if (depth == 16)
-	  qq[j] = m[r1];
+	else if (pdepth == 8)
+	  q[j] = colors[(r1>>8) % ncolors].pixel;
+	else if (pdepth == 16)
+	  qq[j] = colors[(r1>>8) % ncolors].pixel;
+	else if (pdepth == 32)
+	  qqq[j] = colors[(r1>>8) % ncolors].pixel;
 	else
-	  qqq[j] = m[r1];
+	  abort();
       }
     }
     t = r1; r1 = r1b; r1b = t;

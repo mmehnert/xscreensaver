@@ -108,7 +108,7 @@ MEN		= attraction.man blitspin.man bouboule.man braid.man \
 		  noseguy.man pedal.man penrose.man pyro.man qix.man \
 		  rocks.man rorschach.man sierpinski.man slidescreen.man \
 		  slip.man sphere.man spiral.man strange.man swirl.man \
-		  xroger.man goop.man starfish.man munch.man
+		  xroger.man goop.man starfish.man munch.man rd-bomb.man
 STAR		= *
 EXTRAS		= README Makefile.in xlock.h default.xbm bob.xbm .gdbinit \
 		  noses/nose-$(STAR).xbm noses/nose-$(STAR).xpm \
