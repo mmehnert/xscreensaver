@@ -316,11 +316,11 @@ extern void create_resources_dialog (Widget, Visual *, Colormap);
 extern void pop_up_dialog_box (Widget dialog, Widget form, int where);
 extern void format_into_label (Widget label, const char *arg);
 extern void steal_focus_and_colormap (Widget dialog);
-extern void roger (Widget button, XtPointer client_data, XtPointer call_data);
 #endif
 
 extern void create_splash_dialog (Widget, Visual *, Colormap);
 extern void pop_splash_dialog (saver_info *si);
+extern void roger (Widget button, XtPointer client_data, XtPointer call_data);
 
 
 /* =======================================================================

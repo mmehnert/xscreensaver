@@ -265,7 +265,7 @@ static void make_round_lense(int radius, int loop)
 
 					if (magnify) {
 						r = sin(d*M_PI_2);
-						if (blackhole) /* blackhole effect */
+						if (blackhole && r != 0) /* blackhole effect */
 							r = 1/r;
 						from[i][j][0] = radius + (from[i][j][0]-radius)*r;
 						from[i][j][1] = radius + (from[i][j][1]-radius)*r;

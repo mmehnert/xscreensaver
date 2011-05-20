@@ -189,6 +189,6 @@ www::
     set -x ;								    \
   fi ;									    \
   cvs add -kb $$NAME ;							    \
-  cat $$TMP \> index.html ;						    \
+  cat $$TMP > index.html ;						    \
   rm -f $$TMP ;								    \
   cvs commit -m "$$VERS"

@@ -32,6 +32,46 @@
 #include <string.h>
 #include <ctype.h>
 
+extern void skull (Display *, Window, GC, GC, int, int, int, int);
+
+void
+roger (Widget button, XtPointer client_data, XtPointer call_data)
+{
+  Display *dpy = XtDisplay (button);
+  Screen *screen = XtScreen (button);
+  Window window = XtWindow (button);
+  Arg av [10];
+  int ac = 0;
+  XGCValues gcv;
+  Colormap cmap;
+  GC draw_gc, erase_gc;
+  unsigned int fg, bg;
+  int x, y, size;
+  XWindowAttributes xgwa;
+  XGetWindowAttributes (dpy, window, &xgwa);
+  cmap = xgwa.colormap;
+  if (xgwa.width > xgwa.height) size = xgwa.height;
+  else size = xgwa.width;
+  if (size > 40) size -= 30;
+  x = (xgwa.width - size) / 2;
+  y = (xgwa.height - size) / 2;
+  XtSetArg (av [ac], XtNforeground, &fg); ac++;
+  XtSetArg (av [ac], XtNbackground, &bg); ac++;
+  XtGetValues (button, av, ac);
+  /* if it's black on white, swap it cause it looks better (hack hack) */
+  if (fg == BlackPixelOfScreen (screen) && bg == WhitePixelOfScreen (screen))
+    fg = WhitePixelOfScreen (screen), bg = BlackPixelOfScreen (screen);
+  gcv.foreground = bg;
+  erase_gc = XCreateGC (dpy, window, GCForeground, &gcv);
+  gcv.foreground = fg;
+  draw_gc = XCreateGC (dpy, window, GCForeground, &gcv);
+  XFillRectangle (dpy, window, erase_gc, 0, 0, xgwa.width, xgwa.height);
+  skull (dpy, window, draw_gc, erase_gc, x, y, size, size);
+  XFreeGC (dpy, draw_gc);
+  XFreeGC (dpy, erase_gc);
+}
+
+
 extern Widget splash_dialog;
 extern Widget splash_form;
 extern Widget splash_roger_label;

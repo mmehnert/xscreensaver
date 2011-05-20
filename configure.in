@@ -392,6 +392,11 @@ AC_DEFUN(HANDLE_X_PATH_ARG, [
      exit 1
      ;;
    esac
+
+   # why is this necessary?
+   # if we don't do this, then "./configure --with-motif=/usr/local/lesstif"
+   # behaves as if "--with-zippy=/usr/local/lesstif" was also present!
+   withval=
   ])
 
 

@@ -183,6 +183,7 @@ static XrmOptionDescRec options [] = {
   { "-no-sgi-extension",   ".sgiSaverExtension",XrmoptionNoArg, "off" },
   { "-splash",		   ".splash",		XrmoptionNoArg, "on" },
   { "-no-splash",	   ".splash",		XrmoptionNoArg, "off" },
+  { "-nosplash",	   ".splash",		XrmoptionNoArg, "off" },
   { "-idelay",		   ".initialDelay",	XrmoptionSepArg, 0 },
   { "-nice",		   ".nice",		XrmoptionSepArg, 0 },
 
@@ -416,7 +417,7 @@ get_resources (saver_info *si)
   p->load_url_command = get_string_resource("loadURL", "LoadURL");
 
   if ((s = get_string_resource ("splash", "Boolean")))
-    if (!get_string_resource("splash", "Boolean"))
+    if (!get_boolean_resource("splash", "Boolean"))
       p->splash_duration = 0;
   if (s) free (s);
 
@@ -528,7 +529,8 @@ main (int argc, char **argv)
   memset(&si, 0, sizeof(si));
   global_si_kludge = &si;	/* I hate C so much... */
   initialize (&si, argc, argv);
-  pop_splash_dialog (&si);
+  if (!si.demo_mode_p)
+    pop_splash_dialog (&si);
   main_loop (&si);		/* doesn't return */
   return 0;
 }

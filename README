@@ -191,6 +191,9 @@ http://www.jwz.org/xscreensaver/.
 	-- Jamie Zawinski <jwz@jwz.org>
 
 
+Changes since 2.29:   * Changed the order in which -lSM and -lICE are linked
+			to be after Motif instead of before (Lesstif on Irix
+			needs this.)
 Changes since 2.28:   * Work around a bash bug in configure.
 		      * Tweaked HPUX paths again.  FTSOHPUX.
 		      * Made configure recommend against LessTif 0.86, due
