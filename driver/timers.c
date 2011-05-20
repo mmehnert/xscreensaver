@@ -1,6 +1,6 @@
 /* timers.c --- detecting when the user is idle, and other timer-related tasks.
  * xscreensaver, Copyright (c) 1991-1997, 1998
- *  Jamie Zawinski <jwz@netscape.com>
+ *  Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that

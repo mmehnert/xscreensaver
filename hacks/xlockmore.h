@@ -1,5 +1,5 @@
 /* xlockmore.h --- xscreensaver compatibility layer for xlockmore modules.
- * xscreensaver, Copyright (c) 1997, 1998 Jamie Zawinski <jwz@netscape.com>
+ * xscreensaver, Copyright (c) 1997, 1998 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -11,7 +11,7 @@
  *
  * The definitions in this file make it possible to compile an xlockmore
  * module into a standalone program, and thus use it with xscreensaver.
- * By Jamie Zawinski <jwz@netscape.com> on 10-May-97; based on the ideas
+ * By Jamie Zawinski <jwz@jwz.org> on 10-May-97; based on the ideas
  * in the older xlock.h by Charles Hannum <mycroft@ai.mit.edu>.  (I had
  * to redo it, since xlockmore has diverged so far from xlock...)
  */

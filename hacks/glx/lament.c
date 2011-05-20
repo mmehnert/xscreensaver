@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1998 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1998 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -13,9 +13,6 @@
 
    TODO:
 
-     *  I think OpenGL supports "bump maps", but I don't yet know how to use
-        them.  I want the gold leaf to seem to be raised up from the surface.
-
      *  The "gold" color isn't quite right; it looks more like "yellow" than
         "gold" to me.
 
@@ -29,10 +26,23 @@
         making the edges overlap slightly (instead of leaving gaps) or fixing
         the images so that the edges may be symmetrical.
 
-     *  It doesn't seem to be casting shadows, which means that forward-facing
-        interior walls are drawn bright, not dark.  If it was casting shadows
-        properly, it wouldn't matter so much that the edges don't quite line
-        up, because the lines would be black, and thus not visible.
+     *  I want the gold leaf to seem to be raised up from the surface, but I
+        think this isn't possible with OpenGL.  Supposedly, OpenGL only 
+        supports Gouraud shading (interpolating edge normals from face normals,
+        and shading smoothly) but bump-maps only work with Phong shading
+        (computing a normal for each rendered pixel.)
+
+     *  As far as I can tell, OpenGL doesn't do shadows.  As a result, the
+        forward-facing interior walls are drawn bright, not dark.  If it was
+        casting shadows properly, it wouldn't matter so much that the edges
+        don't quite line up, because the lines would be black, and thus not
+        visible.  But the edges don't match up, and so the bright interior
+        faces show through, and that sucks.
+
+	But apparently there are tricky ways around this:
+	http://reality.sgi.com/opengl/tips/rts/
+	I think these techniques require GLUT, however, which isn't 
+	(currently) required by any other xscreensaver hacks.
 
      *  There should be strange lighting effects playing across the surface:
         electric sparks, or little glittery blobs of light.  
@@ -55,7 +65,8 @@
      *  Perhaps there should be a table top, on which it casts a shadow?
         And then multiple light sources (for multiple shadows)?
 
-     *  Needs music.
+     *  Needs music.  ("Hellraiser Themes" by Coil: TORSO CD161; also
+        duplicated on the "Unnatural History 2" compilation, WORLN M04699.)
 
      *  I'm not totally happy with the spinning motion; I like the
         acceleration and deceleration, but it often feels like it's going too
@@ -80,7 +91,6 @@
 
 #undef countof
 #define countof(x) (sizeof((x))/sizeof((*x)))
-
 
 #define DEF_TEXTURE "True"
 
@@ -366,7 +376,9 @@ face3(GLint texture, GLfloat *color, Bool wire,
       GLfloat s2, GLfloat t2, GLfloat x2, GLfloat y2, GLfloat z2,
       GLfloat s3, GLfloat t3, GLfloat x3, GLfloat y3, GLfloat z3)
 {
+#ifdef HAVE_GLBINDTEXTURE
   glBindTexture(GL_TEXTURE_2D, texture);
+#endif /* HAVE_GLBINDTEXTURE */
   glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color);
   do_normal(x1, y1, z1,  x2, y2, z2,  x3, y3, z3);
   glBegin(wire ? GL_LINE_LOOP : GL_TRIANGLES);
@@ -383,7 +395,9 @@ face4(GLint texture, GLfloat *color, Bool wire,
       GLfloat s3, GLfloat t3, GLfloat x3, GLfloat y3, GLfloat z3,
       GLfloat s4, GLfloat t4, GLfloat x4, GLfloat y4, GLfloat z4)
 {
+#ifdef HAVE_GLBINDTEXTURE
   glBindTexture(GL_TEXTURE_2D, texture);
+#endif /* HAVE_GLBINDTEXTURE */
   glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color);
   do_normal(x1, y1, z1,  x2, y2, z2,  x3, y3, z3);
   glBegin(wire ? GL_LINE_LOOP : GL_QUADS);
@@ -402,7 +416,9 @@ face5(GLint texture, GLfloat *color, Bool wire,
       GLfloat s4, GLfloat t4, GLfloat x4, GLfloat y4, GLfloat z4,
       GLfloat s5, GLfloat t5, GLfloat x5, GLfloat y5, GLfloat z5)
 {
+#ifdef HAVE_GLBINDTEXTURE
   glBindTexture(GL_TEXTURE_2D, texture);
+#endif /* HAVE_GLBINDTEXTURE */
   glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, color);
   do_normal(x1, y1, z1,  x2, y2, z2,  x3, y3, z3);
   glBegin(wire ? GL_LINE_LOOP : GL_POLYGON);
@@ -617,7 +633,9 @@ star(ModeInfo *mi, Bool top, Bool wire)
 
   /* Central core top cap.
    */
+#ifdef HAVE_GLBINDTEXTURE
   glBindTexture(GL_TEXTURE_2D, lc->texids[top ? FACE_U : FACE_D]);
+#endif /* HAVE_GLBINDTEXTURE */
   glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, exterior_color);
 
   i = 1;
@@ -637,7 +655,9 @@ star(ModeInfo *mi, Bool top, Bool wire)
 
   /* Central core bottom cap.
    */
+#ifdef HAVE_GLBINDTEXTURE
   glBindTexture(GL_TEXTURE_2D, 0);
+#endif /* HAVE_GLBINDTEXTURE */
   glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, interior_color);
 
   i = countof(points) - 3;
@@ -1082,7 +1102,9 @@ taser(ModeInfo *mi, Bool wire)
   for (i = 0; i < countof(body_face_points)/5; i++)
     {
       int j;
+#ifdef HAVE_GLBINDTEXTURE
       glBindTexture(GL_TEXTURE_2D, lc->texids[FACE_E]);
+#endif /* HAVE_GLBINDTEXTURE */
       glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, exterior_color);
 
       do_normal(0, body_face_points[(i*5)+0][0], body_face_points[(i*5)+0][1],
@@ -1205,7 +1227,9 @@ taser(ModeInfo *mi, Bool wire)
     {
       int j;
 
+#ifdef HAVE_GLBINDTEXTURE
       glBindTexture(GL_TEXTURE_2D, lc->texids[FACE_E]);
+#endif /* HAVE_GLBINDTEXTURE */
       glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, exterior_color);
 
       do_normal(
@@ -1341,7 +1365,9 @@ taser(ModeInfo *mi, Bool wire)
   for (i = 0; i < countof(slider_face_points)/5; i++)
     {
       int j;
+#ifdef HAVE_GLBINDTEXTURE
       glBindTexture(GL_TEXTURE_2D, lc->texids[FACE_E]);
+#endif /* HAVE_GLBINDTEXTURE */
       glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, exterior_color);
 
       do_normal(
@@ -1368,7 +1394,9 @@ taser(ModeInfo *mi, Bool wire)
   for (i = countof(slider_face_points)/5 - 1; i >= 0; i--)
     {
       int j;
+#ifdef HAVE_GLBINDTEXTURE
       glBindTexture(GL_TEXTURE_2D, 0);
+#endif /* HAVE_GLBINDTEXTURE */
       glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, interior_color);
 
       do_normal(
@@ -1635,22 +1663,47 @@ animate(ModeInfo *mi)
   switch (lc->type)
     {
     case LAMENT_BOX:
-      switch (random() % 18)
-	{
-	case 0: case 1:	lc->type = LAMENT_STAR_OUT;  break;
-	case 2:		lc->type = LAMENT_TETRA_UNE; break;
-	case 3:		lc->type = LAMENT_TETRA_USW; break;
-	case 4:		lc->type = LAMENT_TETRA_DWN; break;
-	case 5:		lc->type = LAMENT_TETRA_DSE; break;
-	case 6: case 7:	lc->type = LAMENT_LID_OPEN;  break;
-	case 8: case 9:	lc->type = LAMENT_TASER_OUT; break;
-	default:	lc->type = LAMENT_BOX;
-			lc->anim_pause = pause3;
-			break;
-	}
-      lc->anim_r = 0.0;
-      lc->anim_y = 0.0;
-      lc->anim_z = 0.0;
+      {
+	/* Rather than just picking states randomly, pick an ordering randomly,
+	   do it, and then re-randomize.  That way one can be assured of seeing
+	   all states in a short time period, though not always in the same
+	   order (it's frustrating to see it pick the same state 5x in a row.)
+	 */
+	static lament_type states[] = {
+	  LAMENT_STAR_OUT, LAMENT_STAR_OUT,
+	  LAMENT_TETRA_UNE, LAMENT_TETRA_USW,
+	  LAMENT_TETRA_DWN, LAMENT_TETRA_DSE,
+	  LAMENT_LID_OPEN, LAMENT_LID_OPEN, LAMENT_LID_OPEN,
+	  LAMENT_TASER_OUT, LAMENT_TASER_OUT,
+	  LAMENT_BOX, LAMENT_BOX, LAMENT_BOX, LAMENT_BOX, LAMENT_BOX,
+	  LAMENT_BOX, LAMENT_BOX, LAMENT_BOX, LAMENT_BOX, LAMENT_BOX,
+	};
+	static int state = countof(states);
+
+	if (state < countof(states))
+	  {
+	    lc->type = states[state++];
+	  }
+	else
+	  {
+	    int i;
+	    state = 0;
+	    for (i = 0; i < countof(states); i++)
+	      {
+		int a = random() % countof(states);
+		lament_type swap = states[a];
+		states[a] = states[i];
+		states[i] = swap;
+	      }
+	  }
+
+	if (lc->type == LAMENT_BOX)
+	  lc->anim_pause = pause3;
+
+	lc->anim_r = 0.0;
+	lc->anim_y = 0.0;
+	lc->anim_z = 0.0;
+      }
       break;
 
       /* -------------------------------------------------------------- */
@@ -1963,7 +2016,6 @@ gl_init(ModeInfo *mi)
 {
   lament_configuration *lc = &lcs[MI_SCREEN(mi)];
   Bool wire = MI_IS_WIREFRAME(mi);
-  int i;
 
   if (wire)
     do_texture = False;
@@ -2004,6 +2056,8 @@ gl_init(ModeInfo *mi)
 
   if (do_texture)
     {
+#ifdef HAVE_GLBINDTEXTURE
+      int i;
       for (i = 0; i < 6; i++)
 	glGenTextures(1, &lc->texids[i]);
 
@@ -2030,6 +2084,14 @@ gl_init(ModeInfo *mi)
 	  glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
 	  glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
 	}
+
+#else  /* !HAVE_GLBINDTEXTURE */
+      fprintf(stderr,
+	      "%s: this version of GL doesn't support multiple texture maps.\n"
+	      "\tGet OpenGL 1.1.\n",
+	      progname);
+      exit (1);
+#endif /* !HAVE_GLBINDTEXTURE */
     }
 
   lc->box = glGenLists(16);
@@ -2095,6 +2157,7 @@ init_lament(ModeInfo *mi)
   lc->ddz = 0.00001;
 
   lc->type = LAMENT_BOX;
+  lc->anim_pause = 300 + (random() % 100);
 
   if ((lc->glx_context = init_GL(mi)) != NULL)
     {

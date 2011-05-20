@@ -185,11 +185,15 @@ know of (or write) any other interesting programs that can be used as
 screensavers, please let me know!
 
 The latest version of xscreensaver is always available on the web at
-http://people.netscape.com/jwz/xscreensaver/.
+http://www.jwz.org/xscreensaver/.
 
-	-- Jamie Zawinski <jwz@netscape.com>
+	-- Jamie Zawinski <jwz@jwz.org>
 
 
+Changes since 2.26:   * Improved version of `distort'.
+		      * Made `lament' compile against OpenGL 1.0 (though it
+			still requires 1.1 to work properly.)
+		      * Updated my email address and home page.
 Changes since 2.24:   * Improved motion in `rd-bomb'.
 		      * Added XSHM (shared memory extension) support to the
 			`distort', `interference', `moire', `rd-bomb', and

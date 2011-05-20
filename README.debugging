@@ -20,7 +20,7 @@ STEP ZERO:
 STEP ZERO, PART TWO:
 
     Do you have the most recent version?  Go make sure.
-    http://people.netscape.com/jwz/xscreensaver/
+    http://www.jwz.org/xscreensaver/
 
 BUILDING:
 
@@ -140,6 +140,6 @@ RUNNING:
            read the commentary at the top of xscreensaver.c.
 
 -----------------------------------------------------------------------------
-                                 http://people.netscape.com/jwz/xscreensaver/
-                                            Jamie Zawinski <jwz@netscape.com>
+                                             http://www.jwz.org/xscreensaver/
+                                                 Jamie Zawinski <jwz@jwz.org>
 -----------------------------------------------------------------------------

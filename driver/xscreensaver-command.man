@@ -11,7 +11,7 @@
 .if n .sp 1
 .if t .sp .5
 ..
-.TH XScreenSaver 1 "25-Jul-98 (2.26)" "X Version 11"
+.TH XScreenSaver 1 "04-Aug-98 (2.27)" "X Version 11"
 .SH NAME
 xscreensaver-command - control a running xscreensaver process
 .SH SYNOPSIS
@@ -138,7 +138,7 @@ the \fIxscreensaver\fP process, not the \fIxscreensaver-command\fP process.
 The latest version of
 .BR xscreensaver (1)
 and \fIxscreensaver\-command\fP can always be found at 
-http://people.netscape.com/jwz/xscreensaver/
+http://www.jwz.org/xscreensaver/
 .SH "SEE ALSO"
 .BR X (1),
 .BR xscreensaver (1)
@@ -156,6 +156,6 @@ documentation.  No representations are made about the suitability of this
 software for any purpose.  It is provided "as is" without express or implied
 warranty.
 .SH AUTHOR
-Jamie Zawinski <jwz@netscape.com>, 13-aug-92.
+Jamie Zawinski <jwz@jwz.org>, 13-aug-92.
 
 Please let me know if you find any bugs or make any improvements.

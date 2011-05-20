@@ -1,5 +1,5 @@
 /* xscreensaver, Copyright (c) 1992, 1995, 1997, 1998
- *  Jamie Zawinski <jwz@netscape.com>
+ *  Jamie Zawinski <jwz@jwz.org>
  *
  *  reaction/diffusion textures
  *  Copyright (c) 1997 Scott Draves spot@transmeta.com

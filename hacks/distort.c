@@ -1,6 +1,6 @@
 /* -*- mode: C; tab-width: 4 -*-
  * xscreensaver, Copyright (c) 1992, 1993, 1994, 1996, 1997, 1998
- * Jamie Zawinski <jwz@netscape.com>
+ * Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -12,15 +12,14 @@
  */
 
 /* distort
- * by Jonas Munsin (jmunsin@iki.fi)
+ * by Jonas Munsin (jmunsin@iki.fi) and Jamie Zawinski <jwz@jwz.org>
  * it's a bit of a resource hog at the moment
  * TODO:
- *	-optimize for speed
  *	-mutiple spheres/lenses (with bounces/layering)
- *	-different distortion matrices
+ *	-different distortion matrices (and realtime changing matrices)
  *	-randomize movement a bit
+ *	-speedup :)
  * program idea borrowed from a screensaver on a non-*NIX OS,
- * code based on decayscreen by Jamie Zawinski
  */
 
 #include <math.h>
@@ -33,7 +32,7 @@ static Bool use_shm;
 static XShmSegmentInfo shm_info;
 #endif /* HAVE_XSHM_EXTENSION */
 
-static int delay, radius, speed, size_x, size_y;
+static int delay, radius, speed;
 static XWindowAttributes xgwa;
 static GC gc;
 
@@ -59,7 +58,7 @@ static void init_distort (Display *dpy, Window window)
 		delay = 0;
 	if (radius <= 0)
 		radius = 60;
-	if (speed == 0) 
+	if (speed <= 0) 
 		speed = 2;
 
 	XGetWindowAttributes (dpy, window, &xgwa);
@@ -71,9 +70,6 @@ static void init_distort (Display *dpy, Window window)
 		gcflags |= GCSubwindowMode;
 	gc = XCreateGC (dpy, window, gcflags, &gcv);
 
-	size_x = xgwa.width;
-	size_y = xgwa.height;
-    
 	grab_screen_image (xgwa.screen, window);
 
 	buffer_map = 0;
@@ -103,36 +99,36 @@ static void init_distort (Display *dpy, Window window)
 		  calloc(buffer_map->height, buffer_map->bytes_per_line);
 	  }
 
-	from = (int ***)malloc ((2*radius+1) * sizeof(int **));
-	for(i = 0; i <= 2*radius; i++) {
-		from[i] = (int **)malloc((2*radius+1) * sizeof(int *));
-		for (j = 0; j <= 2*radius; j++)
+	from = (int ***)malloc ((2*radius+speed+2) * sizeof(int **));
+	for(i = 0; i < 2*radius+speed+2; i++) {
+		from[i] = (int **)malloc((2*radius+speed+2) * sizeof(int *));
+		for (j = 0; j < 2*radius+speed+2; j++)
 			from[i][j] = (int *)malloc(2*sizeof(int));
 	}
 
 	/* initialize a "see-trough" matrix */
-	for (i = 0; i <= 2*radius; i++) {
-		for (j = 0 ; j <= 2*radius ; j++) {
-			from[i][j][0]=i-radius/2;
-			from[i][j][1]=j-radius/2;
+	for (i = 0; i < 2*radius+speed+2; i++) {
+		for (j = 0 ; j < 2*radius+speed+2 ; j++) {
+			from[i][j][0]=i;
+			from[i][j][1]=j;
 		}
 	}
 
 	/* initialize the distort matrix */
-	for (i = 0; i <= 2*radius; i++) {
-		for(j = 0; j <= 2*radius; j++) {
+	for (i = 0; i < 2*radius; i++) {
+		for(j = 0; j < 2*radius; j++) {
 			double r;
 			r = sqrt ((i-radius)*(i-radius)+(j-radius)*(j-radius));
-			if (r < radius) {
+			if (r < radius-1) {
 				r = sin(r*(M_PI_2)/radius);
 				if (i < radius)
-					from[i][j][0] = radius/2 + (i-radius)*r;
+					from[i][j][0] = radius + (i-radius)*r;
 				else
-					from[i][j][0] = radius/2 + (i-radius)*r;
+					from[i][j][0] = radius + (i-radius)*r;
 				if (j < radius)
-					from[i][j][1] = radius/2 + (j-radius)*r;
+					from[i][j][1] = radius + (j-radius)*r;
 				else
-					from[i][j][1] = radius/2 + (j-radius)*r;
+					from[i][j][1] = radius + (j-radius)*r;
 			}
 		}
 	}
@@ -147,17 +143,17 @@ move_lens (int *x, int *y, int *xmove, int *ymove) {
 	if (*ymove==0)
 		*ymove=speed;
 	if (*x==0)
-		*x = radius + (random() % (size_x-2*radius));
+		*x = (random() % (xgwa.width-2*radius));
 	if (*y==0)
-		*y = radius + (random() % (size_y-2*radius));
-	if (*x + 3*radius/2 >= size_x)
-		*xmove = -abs(*xmove);
-	if (*x - radius/2 <= 0) 
-		*xmove = abs(*xmove);
-	if (*y + 3*radius/2 >= size_y)
-		*ymove = -abs(*ymove);
-	if (*y - radius/2 <= 0)
-		*ymove = abs(*ymove);
+		*y = (random() % (xgwa.height-2*radius));
+	if (*x + 4*radius/2 >= xgwa.width)
+	  *xmove = -abs(*xmove);
+	if (*x <= speed) 
+	  *xmove = abs(*xmove);
+	if (*y + 4*radius/2 >= xgwa.height)
+	  *ymove = -abs(*ymove);
+	if (*y <= speed)
+	  *ymove = abs(*ymove);
 
 	*x = *x + *xmove;
 	*y = *y + *ymove;
@@ -170,46 +166,21 @@ static void distort (Display *dpy, Window window)
 
 	move_lens (&x, &y, &xmove, &ymove);
 
-	{
-	  int xoff = x-xmove-(radius/2);
-	  int yoff = y-ymove-(radius/2);
-	  for(j = 0; j < buffer_map->height; j++)
-		for(i = 0; i < buffer_map->width; i++)
-		  if (i+xoff >= 0 &&
-			  j+yoff >= 0 &&
-			  i+xoff <= xgwa.width &&
-			  j+yoff <= xgwa.height)
-			XPutPixel(buffer_map, i, j, XGetPixel(orig_map, i+xoff, j+yoff));
+	for(i = 0 ; i < 2*radius+speed+2; i++) {
+	  for(j = 0 ; j < 2*radius+speed+2 ; j++) {
+		if (x+from[i][j][0] >= 0 &&
+			x+from[i][j][0] < xgwa.width &&
+			y+from[i][j][1] >= 0 &&
+			y+from[i][j][1] < xgwa.height)
+		  XPutPixel(buffer_map, i, j,
+					XGetPixel(orig_map,
+							  x+from[i][j][0],
+							  y+from[i][j][1]));
+	  }
 	}
 
-	/* it's possible to lower the number of loop iterations by a factor
-	 * of 4, but since it's the XCopyArea's which eat resources, and
-	 * I've only supplied one distortion routine (which is circular),
-	 * here's a check-if-inside circle variation of this for loop.
-	 * Using both optimizations turns the matrix rendering into one
-	 * ugly mess... I'm counting on gcc optimization ;)
-	 */
-
-	for(i = 0 ; i <= 2*radius ; i++) {
-		for(j = 0 ; j <= 2*radius ; j++) {
-			if (((radius-i)*(radius-i) + (j-radius)*(j-radius))
-				< radius*radius) {
-			  if (i+xmove >= 0 &&
-				  j+ymove >= 0 &&
-				  i+xmove < xgwa.width &&
-				  j+ymove < xgwa.height)
-				XPutPixel(buffer_map,
-						  i+xmove, j+ymove,
-						  XGetPixel(orig_map,
-									x+from[i][j][0],
-									y+from[i][j][1]));
-			}
-		}
-	}
-
-	XPutImage(dpy, window, gc, buffer_map, 0, 0, 
-			  x-radius/2 - xmove, y-radius/2 - ymove,
-			  2*radius + abs(xmove), 2*radius + abs(ymove));
+	XPutImage(dpy, window, gc, buffer_map, 0, 0, x, y,
+			  2*radius+speed+2, 2*radius+speed+2);
 }
 
 

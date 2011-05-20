@@ -11,7 +11,7 @@
 .if n .sp 1
 .if t .sp .5
 ..
-.TH XScreenSaver 1 "25-Jul-98 (2.26)" "X Version 11"
+.TH XScreenSaver 1 "04-Aug-98 (2.27)" "X Version 11"
 .SH NAME
 xscreensaver - graphics hack and screen locker, launched when the user is idle
 .SH SYNOPSIS
@@ -245,7 +245,7 @@ Whether to print diagnostics.  Default false.
 .B nice\fP (class \fBNice\fP)
 The sub-processes created by \fIxscreensaver\fP will be ``niced'' to this
 level, so that they are given lower priority than other processes on the
-system, and don't increase the load unnecessarily.  The default is 20.  
+system, and don't increase the load unnecessarily.  The default is 10.  
 
 (Higher numbers mean lower priority; see 
 .BR nice (1)
@@ -1035,7 +1035,7 @@ to get the name of a resource file that overrides the global resources
 stored in the RESOURCE_MANAGER property.
 .SH UPGRADES
 The latest version can always be found at 
-http://people.netscape.com/jwz/xscreensaver/
+http://www.jwz.org/xscreensaver/
 .SH SEE ALSO
 .BR X (1),
 .BR xscreensaver\-command (1),
@@ -1142,7 +1142,7 @@ documentation.  No representations are made about the suitability of this
 software for any purpose.  It is provided "as is" without express or implied
 warranty.
 .SH AUTHOR
-Jamie Zawinski <jwz@netscape.com>.  Written in late 1991; first posted
+Jamie Zawinski <jwz@jwz.org>.  Written in late 1991; first posted
 to comp.sources.x on 13-Aug-1992.
 
 Please let me know if you find any bugs or make any improvements.

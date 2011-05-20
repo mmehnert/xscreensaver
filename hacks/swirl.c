@@ -19,7 +19,7 @@ static const char sccsid[] = "@(#)swirl.c	4.00 97/01/01 xlockmore";
  * event will the author be liable for any lost revenue or profits or
  * other special, indirect and consequential damages.
  *
- * 13-May-97: jwz@netscape.com: turned into a standalone program.
+ * 13-May-97: jwz@jwz.org: turned into a standalone program.
  * 21-Apr-95: improved startup time for TrueColour displays
  *            (limited to 16bpp to save memory) S.Early <sde1000@cam.ac.uk>
  * 09-Jan-95: fixed colour maps (more colourful) and the image now spirals

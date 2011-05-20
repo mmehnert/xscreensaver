@@ -27,7 +27,7 @@ static const char sccsid[] = "@(#)flag.c	4.02 97/04/01 xlockmore";
  * 22-Jan-98: jwz: made the flag wigglier; added xpm support.
  *            (I tried to do this by re-porting from xlockmore, but the
  *            current xlockmore version is completely inscrutable.)
- * 13-May-97: jwz@netscape.com: turned into a standalone program.
+ * 13-May-97: jwz@jwz.org: turned into a standalone program.
  *			  Made it able to animate arbitrary (runtime) text or bitmaps.
  * 01-May-96: written.
  */

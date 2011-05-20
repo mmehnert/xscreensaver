@@ -850,11 +850,19 @@ if test $with_gl = yes; then
     have_mesa_gl=no
     AC_EGREP_X_HEADER(Mesa, GL/glx.h, [have_mesa_gl=yes])
     if test $have_mesa_gl = no ; then
+      gl_lib_1="GL"
       GL_LIBS="-lGL -lGLU"
     else
       AC_DEFINE(HAVE_MESA_GL)
+      gl_lib_1="MesaGL"
       GL_LIBS="-lMesaGL -lMesaGLU"
     fi
+
+    # Check for OpenGL 1.1 features.
+    #
+    AC_CHECK_X_LIB($gl_lib_1, glBindTexture, [AC_DEFINE(HAVE_GLBINDTEXTURE)],
+		   [], $GL_LIBS -lX11 -lXext -lm)
+
   fi
 
 elif test $with_gl != no; then

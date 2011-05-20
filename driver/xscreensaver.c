@@ -192,7 +192,7 @@ static void
 do_help (saver_info *si)
 {
   printf ("\
-xscreensaver %s, copyright (c) 1991-1998 by Jamie Zawinski <jwz@netscape.com>\n\
+xscreensaver %s, copyright (c) 1991-1998 by Jamie Zawinski <jwz@jwz.org>\n\
 The standard Xt command-line options are accepted; other options include:\n\
 \n\
     -timeout <minutes>         When the screensaver should activate.\n\
@@ -219,7 +219,7 @@ Use the `xscreensaver-command' program to manipulate a running xscreensaver.\n\
 The `*programs' resource controls which graphics demos will be launched by\n\
 the screensaver.  See `man xscreensaver' or the web page for more details.\n\
 \n\
-For updates, check http://people.netscape.com/jwz/xscreensaver/\n\n",
+For updates, check http://www.jwz.org/xscreensaver/\n\n",
 	  si->version);
 
 #ifdef NO_LOCKING
@@ -612,7 +612,7 @@ initialize_connection (saver_info *si, int argc, char **argv)
     The `xscreensaver' program is a daemon that runs in the background.\n\
     You control a running xscreensaver process by sending it messages\n\
     with `xscreensaver-command'.  See the man pages for details,\n\
-    or check the web page: http://people.netscape.com/jwz/xscreensaver/\n\n",
+    or check the web page: http://www.jwz.org/xscreensaver/\n\n",
 		   s);
 
 	  /* Since version 1.21 renamed the "-lock" option to "-lock-mode",
@@ -734,7 +734,7 @@ initialize (saver_info *si, int argc, char **argv)
 
   if (p->verbose_p)
     printf ("\
-%s %s, copyright (c) 1991-1998 by Jamie Zawinski <jwz@netscape.com>\n\
+%s %s, copyright (c) 1991-1998 by Jamie Zawinski <jwz@jwz.org>\n\
  pid = %d.\n", progname, si->version, (int) getpid ());
 
   
