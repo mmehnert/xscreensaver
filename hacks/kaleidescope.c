@@ -83,8 +83,8 @@ OBJECT *objects;
 
 char *progclass = "Kaleidescope";
 char *defaults [] = {
-  "Kaleidescope.background:	black",		/* to placate SGI */
-  "Kaleidescope.foreground:	white",
+  "*background:	     black",
+  "*foreground:	     white",
   "*color_mode:      nice",
   "*symmetry:	       11",
   "*ntrails:	      100",

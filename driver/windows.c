@@ -65,7 +65,7 @@
 extern int kill (pid_t, int);		/* signal() is in sys/signal.h... */
 
 Atom XA_VROOT, XA_XSETROOT_ID;
-Atom XA_SCREENSAVER_VERSION, XA_SCREENSAVER_ID;
+Atom XA_SCREENSAVER, XA_SCREENSAVER_VERSION, XA_SCREENSAVER_ID;
 Atom XA_SCREENSAVER_TIME;
 
 
@@ -203,9 +203,12 @@ ungrab_keyboard_and_mouse (saver_info *si)
 }
 
 
-void
+/* Prints an error message to stderr and returns True if there is another
+   xscreensaver running already.  Silently returns False otherwise. */
+Bool
 ensure_no_screensaver_running (Display *dpy, Screen *screen)
 {
+  Bool status = 0;
   int i;
   Window root = RootWindowOfScreen (screen);
   Window root2, parent, *kids;
@@ -242,13 +245,14 @@ ensure_no_screensaver_running (Display *dpy, Screen *screen)
 	  fprintf (stderr,
       "%s: already running on display %s (window 0x%x)\n from process %s.\n",
 		   progname, DisplayString (dpy), (int) kids [i], id);
-	  exit (1);
+	  status = True;
 	}
     }
 
   if (kids) XFree ((char *) kids);
   XSync (dpy, False);
   XSetErrorHandler (old_handler);
+  return status;
 }
 
 

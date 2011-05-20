@@ -522,7 +522,8 @@ screenhack (Display *dpy, Window window)
   int delay = get_integer_resource ("delay", "Integer");
   if (delay < 3) delay = 3;
 
-  XSelectInput(dpy, window, KeyPressMask|ButtonPressMask);
+  if (!get_boolean_resource ("root", "Boolean"))
+    XSelectInput(dpy, window, KeyPressMask|ButtonPressMask);
 
   while (1)
     {

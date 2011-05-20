@@ -50,8 +50,8 @@ char *progclass="Epicycle";
  * to get pleasing figures.
  */
 char *defaults [] = {
-  "Epicycle.background:	black",		/* to placate SGI */
-  "Epicycle.foreground:	white",
+  "*background:	black",
+  "*foreground:	white",
   "*colors:	100",
   "*color0:	red",
   "*delay:	1000",
@@ -750,7 +750,7 @@ screenhack(Display *disp, Window win)
   minCircles = get_integer_resource ("minCircles", "Integer");
   maxCircles = get_integer_resource ("maxCircles", "Integer");
 
-
+  xtime = 0; /* is this right? */
   while (0 == stop)
     {
       setup(); /* do this inside the loop to cope with any window resizing */

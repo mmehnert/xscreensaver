@@ -158,7 +158,6 @@ char *progclass = 0;
 XrmDatabase db = 0;
 
 
-static Atom XA_SCREENSAVER;
 static Atom XA_ACTIVATE, XA_DEACTIVATE, XA_CYCLE, XA_NEXT, XA_PREV;
 static Atom XA_EXIT, XA_RESTART, XA_DEMO, XA_LOCK;
 
@@ -166,10 +165,10 @@ static Atom XA_EXIT, XA_RESTART, XA_DEMO, XA_LOCK;
 static XrmOptionDescRec options [] = {
   { "-timeout",		   ".timeout",		XrmoptionSepArg, 0 },
   { "-cycle",		   ".cycle",		XrmoptionSepArg, 0 },
-  { "-idelay",		   ".initialDelay",	XrmoptionSepArg, 0 },
-  { "-nice",		   ".nice",		XrmoptionSepArg, 0 },
-  { "-visual",		   ".visualID",		XrmoptionSepArg, 0 },
+  { "-lock-mode",	   ".lock",		XrmoptionNoArg, "on" },
+  { "-no-lock-mode",	   ".lock",		XrmoptionNoArg, "off" },
   { "-lock-timeout",	   ".lockTimeout",	XrmoptionSepArg, 0 },
+  { "-visual",		   ".visualID",		XrmoptionSepArg, 0 },
   { "-install",		   ".installColormap",	XrmoptionNoArg, "on" },
   { "-no-install",	   ".installColormap",	XrmoptionNoArg, "off" },
   { "-verbose",		   ".verbose",		XrmoptionNoArg, "on" },
@@ -180,8 +179,8 @@ static XrmOptionDescRec options [] = {
   { "-no-mit-extension",   ".mitSaverExtension",XrmoptionNoArg, "off" },
   { "-sgi-extension",	   ".sgiSaverExtension",XrmoptionNoArg, "on" },
   { "-no-sgi-extension",   ".sgiSaverExtension",XrmoptionNoArg, "off" },
-  { "-lock",		   ".lock",		XrmoptionNoArg, "on" },
-  { "-no-lock",		   ".lock",		XrmoptionNoArg, "off" }
+  { "-idelay",		   ".initialDelay",	XrmoptionSepArg, 0 },
+  { "-nice",		   ".nice",		XrmoptionSepArg, 0 }
 };
 
 static char *defaults[] = {
@@ -198,22 +197,20 @@ The standard Xt command-line options are accepted; other options include:\n\
 \n\
     -timeout <minutes>         When the screensaver should activate.\n\
     -cycle <minutes>           How long to let each hack run.\n\
-    -idelay <seconds>          How long to sleep before startup.\n\
+    -lock-mode                 Require a password before deactivating.\n\
+    -no-lock-mode              Don't.\n\
+    -lock-timeout <minutes>    Grace period before locking; default 0.\n\
     -visual <id-or-class>      Which X visual to run on.\n\
-    -demo                      Enter interactive demo mode on startup.\n\
     -install                   Install a private colormap.\n\
     -no-install                Don't.\n\
     -verbose                   Be loud.\n\
     -silent                    Don't.\n\
-    -xidle-extension           Use the R5 XIdle server extension.\n\
-    -no-xidle-extension        Don't.\n\
     -mit-extension             Use the R6 MIT_SCREEN_SAVER server extension.\n\
     -no-mit-extension          Don't.\n\
     -sgi-extension             Use the SGI SCREEN-SAVER server extension.\n\
     -no-sgi-extension          Don't.\n\
-    -lock                      Require a password before deactivating.\n\
-    -no-lock                   Don't.\n\
-    -lock-timeout <minutes>    Grace period before locking; default 0.\n\
+    -xidle-extension           Use the R5 XIdle server extension.\n\
+    -no-xidle-extension        Don't.\n\
     -help                      This message.\n\
 \n\
 The `xscreensaver' program should be left running in the background.\n\
@@ -301,7 +298,7 @@ get_screenhacks (saver_info *si)
 
   d = get_string_resource ("programs", "Programs");
 
-  size = strlen (d);
+  size = d ? strlen (d) : 0;
   p->screenhacks = (char **) malloc (sizeof (char *) * hacks_size);
   p->screenhacks_count = 0;
 
@@ -555,7 +552,39 @@ initialize_connection (saver_info *si, int argc, char **argv)
 
   else if (argc > 1)
     {
-      fprintf (stderr, "%s: unknown option %s\n", progname, argv [1]);
+      const char *s = argv[1];
+      fprintf (stderr, "%s: unknown option \"%s\".  Try \"-help\".\n",
+	       progname, s);
+
+      if (s[0] == '-' && s[1] == '-') s++;
+      if (!strcmp (s, "-activate") ||
+	  !strcmp (s, "-deactivate") ||
+	  !strcmp (s, "-cycle") ||
+	  !strcmp (s, "-next") ||
+	  !strcmp (s, "-prev") ||
+	  !strcmp (s, "-exit") ||
+	  !strcmp (s, "-restart") ||
+	  !strcmp (s, "-demo") ||
+	  !strcmp (s, "-lock") ||
+	  !strcmp (s, "-version") ||
+	  !strcmp (s, "-time"))
+	{
+	  fprintf (stderr, "\n\
+    However, %s is an option to the `xscreensaver-command' program.\n\
+    The `xscreensaver' program is a daemon that runs in the background.\n\
+    You control a running xscreensaver process by sending it messages\n\
+    with `xscreensaver-command'.  See the man pages for details,\n\
+    or check the web page: http://people.netscape.com/jwz/xscreensaver/\n\n",
+		   s);
+
+	  /* Since version 1.21 renamed the "-lock" option to "-lock-mode",
+	     suggest that explicitly. */
+	  if (!strcmp (s, "-lock"))
+	    fprintf (stderr, "\
+    Or perhaps you meant either the \"-lock-mode\" or the\n\
+    \"-lock-timeout <minutes>\" options to xscreensaver?\n\n");
+	}
+
       exit (1);
     }
   get_resources (si);
@@ -650,9 +679,9 @@ initialize (saver_info *si, int argc, char **argv)
 
   progclass = "XScreenSaver";
 
-  /* remove -demo switch before saving argv */
+  /* remove -initial-demo-mode switch before saving argv */
   for (i = 1; i < argc; i++)
-    while (!strcmp ("-demo", argv [i]))
+    while (!strcmp ("-initial-demo-mode", argv [i]))
       {
 	int j;
 	initial_demo_mode_p = True;
@@ -672,7 +701,8 @@ initialize (saver_info *si, int argc, char **argv)
 
   
   for (i = 0; i < si->nscreens; i++)
-    ensure_no_screensaver_running (si->dpy, si->screens[i].screen);
+    if (ensure_no_screensaver_running (si->dpy, si->screens[i].screen))
+      exit (1);
 
   si->demo_mode_p = initial_demo_mode_p;
   srandom ((int) time ((time_t *) 0));

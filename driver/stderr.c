@@ -1,5 +1,5 @@
 /* stderr.c --- capturing stdout/stderr output onto the screensaver window.
- * xscreensaver, Copyright (c) 1991-1997 Jamie Zawinski <jwz@netscape.com>
+ * xscreensaver, Copyright (c) 1991-1998 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -126,8 +126,8 @@ print_stderr_1 (saver_screen_info *ssi, char *string)
 	    cmap = ssi->stderr_cmap;
 	}
 
-      fg = get_pixel_resource ("textForeground", "Foreground", dpy, cmap);
-      bg = get_pixel_resource ("textBackground", "Background", dpy, cmap);
+      fg = get_pixel_resource ("overlayTextForeground","Foreground",dpy,cmap);
+      bg = get_pixel_resource ("overlayTextBackground","Background",dpy,cmap);
       gcv.font = ssi->stderr_font->fid;
       gcv.foreground = fg;
       gcv.background = bg;

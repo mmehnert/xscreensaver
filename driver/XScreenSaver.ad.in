@@ -4,7 +4,8 @@
 !            a screen saver and locker for the X window system
 !                            by Jamie Zawinski
 !
-!                              version 2.20
+!                              version 2.21
+!                                15-Jun-98
 !
 ! See "man xscreensaver" for more info.  The latest version is always
 ! available at http://people.netscape.com/jwz/xscreensaver/
@@ -23,8 +24,8 @@
 
 *captureStderr: 	True
 *captureStdout: 	True
-*textForeground:	Yellow
-*textBackground:	Black
+*overlayTextForeground:	Yellow
+*overlayTextBackground:	Black
 *overlayStderr:		True
 *font:			*-medium-r-*-140-*-m-*
 
@@ -271,9 +272,10 @@
 *fontList:                       *-helvetica-medium-r-*-*-*-120-*-*-*-iso8859-1
 *demoDialog*label1.fontList:     *-helvetica-medium-r-*-*-*-140-*-*-*-iso8859-1
 *passwdDialog*fontList:          *-helvetica-medium-r-*-*-*-140-*-*-*-iso8859-1
-*XmList.fontList:                  *-courier-medium-r-*-*-*-120-*-*-*-iso8859-1
 *XmTextField.fontList:             *-courier-medium-r-*-*-*-120-*-*-*-iso8859-1
 *passwdDialog.passwdText.fontList: *-courier-medium-r-*-*-*-120-*-*-*-iso8859-1
+XScreenSaver*XmList.fontList:      *-courier-medium-r-*-*-*-120-*-*-*-iso8859-1
+! Need to fully-qualify the preceeding in the case of of *sgiMode.
 
 *XmDialogShell*foreground:		black
 *XmDialogShell*background:		gray90
@@ -281,8 +283,10 @@
 *XmDialogShell*XmTextField.background:	white
 *XmDialogShell*demoList.foreground:	black
 *XmDialogShell*demoList.background:	white
-*XmDialogShell*rogerLabel.foreground:	red3
-*XmDialogShell*rogerLabel.background:	white
+
+! Need to fully-qualify the following in the case of of *sgiMode.
+XScreenSaver*XmDialogShell*rogerLabel.foreground:	red3
+XScreenSaver*XmDialogShell*rogerLabel.background:	white
 
 *XmDialogShell.title:		XScreenSaver
 *allowShellResize:		True
@@ -299,7 +303,7 @@
 *demoList.automaticSelection:	True
 *next.labelString:		Run Next
 *prev.labelString:		Run Previous
-*edit.labelString:		Edit Parameters
+*edit.labelString:		Preferences
 *done.labelString:		Exit Demo Mode
 *restart.labelString:		Reinitialize
 
@@ -383,7 +387,7 @@ XScreenSaver*dragReceiverProtocolStyle:  DRAG_NONE
 
 *demo_dialog*next.label:			Run Next
 *demo_dialog*prev.label:			Run Previous
-*demo_dialog*edit.label:			Edit Parameters
+*demo_dialog*edit.label:			Preferences
 *demo_dialog*done.label:			Exit Demo Mode
 *demo_dialog*restart.label:			Reinitialize
 

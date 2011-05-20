@@ -48,7 +48,7 @@ SGI_VIDEO_LIBS  = @SGI_VIDEO_LIBS@
 UTILS_SRC	= $(srcdir)/../utils
 UTILS_BIN	= ../utils
 
-INCLUDES	= -I$(srcdir) -I$(srcdir)/.. -I$(UTILS_SRC) -I.. @INCLUDES@
+INCLUDES	= -I$(srcdir) -I$(UTILS_SRC) -I.. @INCLUDES@
 
 UTIL_SRCS	= $(UTILS_SRC)/alpha.c $(UTILS_SRC)/colors.c \
 		  $(UTILS_SRC)/grabscreen.c $(UTILS_SRC)/hsv.c \
