@@ -1,9 +1,10 @@
-.TH XScreenSaver 1 "13-aug-92" "X Version 11"
+.TH XScreenSaver 1 "10-May-97" "X Version 11"
 .SH NAME
 hopalong - draw real plane fractals
 .SH SYNOPSIS
 .B hopalong
-[\-display \fIhost:display.screen\fP] [\-foreground \fIcolor\fP] [\-background \fIcolor\fP] [\-window] [\-root] [\-mono] [\-install] [\-visual \fIvisual\fP] [\-count \fIinteger\fP] [\-ncolors \fIinteger\fP] [\-timeout \fIseconds\fP] [\-delay \fImicroseconds\fP]
+[\-display \fIhost:display.screen\fP] [\-foreground \fIcolor\fP] [\-background \fIcolor\fP] [\-window] [\-root] [\-mono] [\-install] [\-visual \fIvisual\fP] [\-ncolors \fIinteger\fP] [\-delay \fImicroseconds\fP] [\-cycles \fIinteger\fP] [\-count \fIinteger\fP] [\-jong] [\-no\-jong] [\-jong] [\-no\-sine]
+
 .SH DESCRIPTION
 The \fIhopalong\fP program generates real plane fractals as described in
 the September 1986 issue of Scientific American.
@@ -27,20 +28,28 @@ Install a private colormap for the window.
 Specify which visual to use.  Legal values are the name of a visual class,
 or the id number (decimal or hex) of a specific visual.
 .TP 8
+.B \-ncolors \fIinteger\fP
+How many colors should be used (if possible).  Default 200.
+The colors used cycle through the hue, making N stops around
+the color wheel.
+.TP 8
+.B \-cycles \fIinteger\fP
+How long to run each batch.  Default 2500 pixels.
+.TP 8
 .B \-count \fIinteger\fP
 How many pixels should be drawn before a color change.  Default 1000.
 .TP 8
-.B \-ncolors \fIinteger\fP
-How many colors should be used (if possible).  Default 100.
-The colors used cycle through the hue, making N stops around 
-the color wheel.
+.B \-jong \fIinteger\fP
 .TP 8
-.B \-timeout \fIseconds\fP
-How many seconds we should generate for before clearing the screen
-and starting over.  Default 20.
+.B \-no\-jong \fIinteger\fP
+Whether to use the Jong format (default is to choose randomly.)
+
 .TP 8
-.B \-delay \fImicroseconds\fP
-How long we should wait between drawing each pixel.  Default 0.
+.B \-sine \fIinteger\fP
+.TP 8
+.B \-no\-sine \fIinteger\fP
+Whether to use the Sine format (default is to choose randomly.)
+
 .SH ENVIRONMENT
 .PP
 .TP 8
@@ -55,7 +64,7 @@ stored in the RESOURCE_MANAGER property.
 .BR xscreensaver (1),
 .BR xlock (1)
 .SH COPYRIGHT
-Copyright \(co 1988-91 by Patrick J. Naughton
+Copyright \(co 1988-91 by Patrick J. Naughton.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
@@ -66,4 +75,4 @@ supporting documentation.
 Patrick J. Naughton <naughton@eng.sun.com>, 23-mar-88.
 
 Ability to run standalone or with \fIxscreensaver\fP added by 
-Jamie Zawinski <jwz@netscape.com>, 13-aug-92.
+Jamie Zawinski <jwz@netscape.com>, 13-aug-92, and again on 10-May-97.

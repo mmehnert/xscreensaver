@@ -17,25 +17,32 @@
 # define XPMLIB
 #endif
 
-          STAR = *
+           STAR = *
           UTILS = ../utils
        INCLUDES = -I$(UTILS)
-        DEFINES = R5ISMS XPMDEFS
-LOCAL_LIBRARIES = $(XMULIB) $(XTOOLLIB) XPMLIB $(EXTENSIONLIB) $(XLIB) -lm
+        DEFINES = R5ISMS XPMDEFS -DSTANDALONE
+LOCAL_LIBRARIES = $(XMULIB) $(XTOOLLIB)        $(EXTENSIONLIB) $(XLIB) -lm
+ LOCAL_LIBS_XPM = $(XMULIB) $(XTOOLLIB) XPMLIB $(EXTENSIONLIB) $(XLIB) -lm
           HACKS = attraction.c greynetic.c helix.c hopalong.c xroger-hack.c \
                   noseguy.c pyro.c qix.c rocks.c rorschach.c blitspin.c \
                   imsmap.c slidescreen.c decayscreen.c maze.c hypercube.c \
                   halo.c flame.c pedal.c lmorph.c deco.c moire.c \
-		  kaleidescope.c bubbles.c bubbles.h bubbles_default.c
+		  kaleidescope.c bubbles.c bubbles.h bubbles_default.c \
+		  lightning.c strange.c fract.c spiral.c laser.c grav.c \
+		  drift.c ifs.c julia.c penrose.c sierpinski.c hopalong.c \
+		  braid.c galaxy.c slip.c
             MEN = attraction.man greynetic.man helix.man hopalong.man \
                   noseguy.man pyro.man xroger.man qix.man rocks.man \
                   rorschach.man blitspin.man imsmap.man slidescreen.man \
                   decayscreen.man maze.man hypercube.man halo.man flame.man \
                   pedal.man lmorph.man deco.man moire.man kaleidescope.man \
-		  bubbles.man bubbles.README
+		  bubbles.man bubbles.README \
+		  lightning.man strange.man fract.man spiral.man laser.man \
+		  grav.man drift.man ifs.man julia.man penrose.man \
+		  sierpinski.man hopalong.man braid.man galaxy.man slip.man
        TARFILES = README Imakefile screenhack.c $(HACKS) screenhack.h \
-                  vroot.h xlock.h default.xbm $(MEN) .gdbinit \
-		  noses/nose.$(STAR) \
+		  xlockmore.h vroot.h xlock.h default.xbm $(MEN) .gdbinit \
+		  noses/nose-$(STAR).xbm noses/nose-$(STAR).xpm \
 		  bubbles-tools/bubbles$(STAR) \
 		  bubbles-tools/xpm$(STAR) \
 		  bubbles-sources/$(STAR).pov \
@@ -46,46 +53,89 @@ all::
 echo_tarfiles:
 	@echo $(TARFILES)
 
-#define	ScreenhackTarget(p,ps,deps)					 @@\
+#define	ScreenhackTarget_1(p,ps,deps,libs)				 @@\
 all:: p									 @@\
 p: deps screenhack.h ps.o $(DEPLIBS)					 @@\
 	RemoveTargetProgram($@)						 @@\
 	$(CCENVSETUP)							   \
-	$(CC) -o $@ $(LDOPTIONS) deps ps.o $(LOCAL_LIBRARIES) $(LDLIBS)  @@\
+	$(CC) -o $@ $(LDOPTIONS) deps ps.o libs $(LDLIBS)		 @@\
 									 @@\
 InstallProgram(p,$(BINDIR))						 @@\
 InstallManPage(p,$(MANDIR))						 @@\
 clean::									 @@\
 	$(RM) p
 
-HOBJS=screenhack.o $(UTILS)/resources.o $(UTILS)/visual.o \
-		   $(UTILS)/usleep.o $(UTILS)/yarandom.o
+#define	ScreenhackTarget(p,deps)\
+	ScreenhackTarget_1(p,p,$(HACK_OBJS) deps,$(LOCAL_LIBRARIES))
 
-ScreenhackTarget (qix, qix, $(HOBJS) $(UTILS)/hsv.o)
-ScreenhackTarget (helix, helix, $(HOBJS) $(UTILS)/hsv.o)
-ScreenhackTarget (pyro, pyro, $(HOBJS) $(UTILS)/hsv.o)
-ScreenhackTarget (attraction, attraction, $(HOBJS) $(UTILS)/hsv.o $(UTILS)/spline.o)
-ScreenhackTarget (rorschach, rorschach, $(HOBJS) $(UTILS)/hsv.o)
-ScreenhackTarget (hopalong, hopalong, $(HOBJS) $(UTILS)/hsv.o)
-ScreenhackTarget (xroger, xroger-hack, $(HOBJS) $(UTILS)/hsv.o $(UTILS)/xroger.o)
-ScreenhackTarget (rocks, rocks, $(HOBJS))
-ScreenhackTarget (noseguy, noseguy, $(HOBJS))
-ScreenhackTarget (blitspin, blitspin, $(HOBJS))
-ScreenhackTarget (greynetic, greynetic, $(HOBJS))
-ScreenhackTarget (slidescreen, slidescreen, $(HOBJS) $(UTILS)/grabscreen.o)
-ScreenhackTarget (decayscreen, decayscreen, $(HOBJS) $(UTILS)/grabscreen.o)
-ScreenhackTarget (imsmap, imsmap, $(HOBJS) $(UTILS)/hsv.o)
-ScreenhackTarget (maze, maze, $(HOBJS) $(UTILS)/xroger.o)
-ScreenhackTarget (hypercube, hypercube, $(HOBJS))
-ScreenhackTarget (halo, halo, $(HOBJS) $(UTILS)/hsv.o)
-ScreenhackTarget (flame, flame, $(HOBJS) $(UTILS)/hsv.o)
-ScreenhackTarget (pedal, pedal, $(HOBJS) $(UTILS)/hsv.o)
-ScreenhackTarget (lmorph, lmorph, $(HOBJS))
-ScreenhackTarget (deco, deco, $(HOBJS))
-ScreenhackTarget (moire, moire, $(HOBJS) $(UTILS)/hsv.o)
-ScreenhackTarget (kaleidescope, kaleidescope, $(HOBJS))
-ScreenhackTarget (bubbles, bubbles, bubbles_default.o $(HOBJS))
+#define	ScreenhackTarget_2(p,ps,deps)\
+	ScreenhackTarget_1(p,ps,$(HACK_OBJS) deps,$(LOCAL_LIBRARIES))
 
+#define	ScreenhackTarget_XPM(p,deps)\
+	ScreenhackTarget_1(p,p,$(HACK_OBJS) deps,$(LOCAL_LIBS_XPM))
+
+#define ScreenhackTarget_xlockmore(p,deps)\
+p.o:: xlockmore.h .knr_msg						@@\
+	ScreenhackTarget_1(p,p,$(HACK_OBJS) $(UTILS)/hsv.o deps,	  \
+		$(LOCAL_LIBRARIES))
+
+HACK_OBJS=screenhack.o $(UTILS)/resources.o $(UTILS)/visual.o \
+		       $(UTILS)/usleep.o $(UTILS)/yarandom.o
+NULL=
+
+ScreenhackTarget     (qix,		  $(UTILS)/hsv.o)
+ScreenhackTarget     (helix,		  $(UTILS)/hsv.o)
+ScreenhackTarget     (pyro,		  $(UTILS)/hsv.o)
+ScreenhackTarget     (attraction,	  $(UTILS)/hsv.o $(UTILS)/spline.o)
+ScreenhackTarget     (rorschach,	  $(UTILS)/hsv.o)
+ScreenhackTarget_2   (xroger,xroger-hack, $(UTILS)/hsv.o $(UTILS)/xroger.o)
+ScreenhackTarget     (rocks,		  $(NULL))
+ScreenhackTarget_XPM (noseguy,		  $(NULL))
+ScreenhackTarget_XPM (blitspin,		  $(NULL))
+ScreenhackTarget     (greynetic,	  $(NULL))
+ScreenhackTarget     (slidescreen,	  $(UTILS)/grabscreen.o)
+ScreenhackTarget     (decayscreen,	  $(UTILS)/grabscreen.o)
+ScreenhackTarget     (imsmap,		  $(UTILS)/hsv.o)
+ScreenhackTarget     (maze,		  $(UTILS)/xroger.o)
+ScreenhackTarget     (hypercube,	  $(NULL))
+ScreenhackTarget     (halo,		  $(UTILS)/hsv.o)
+ScreenhackTarget     (flame,		  $(UTILS)/hsv.o)
+ScreenhackTarget     (pedal,		  $(UTILS)/hsv.o)
+ScreenhackTarget     (lmorph,		  $(NULL))
+ScreenhackTarget     (deco,		  $(NULL))
+ScreenhackTarget     (moire,		  $(UTILS)/hsv.o)
+ScreenhackTarget     (kaleidescope,	  $(NULL))
+ScreenhackTarget_XPM (bubbles,		  bubbles_default.o)
+
+.knr_msg:
+	@echo ""							    ; \
+  echo "        ==========================================================" ; \
+  echo ""								    ; \
+  echo "        From this point on, an ANSI C compiler is required."	    ; \
+  echo "        If you get compilation errors, that's why."		    ; \
+  echo "        (Time for all you SunOS 4 users to upgrade to gcc...)"	    ; \
+  echo ""								    ; \
+  echo "        ==========================================================" ; \
+  echo "" ; \
+  touch $@
+clean::
+	$(RM) .knr_msg
+
+ScreenhackTarget_xlockmore (lightning,	  $(NULL))
+ScreenhackTarget_xlockmore (strange,	  $(NULL))
+ScreenhackTarget_xlockmore (fract,	  $(NULL))
+ScreenhackTarget_xlockmore (spiral,	  $(NULL))
+ScreenhackTarget_xlockmore (laser,	  $(NULL))
+ScreenhackTarget_xlockmore (grav,	  $(NULL))
+ScreenhackTarget_xlockmore (drift,	  $(NULL))
+ScreenhackTarget_xlockmore (ifs,	  $(NULL))
+ScreenhackTarget_xlockmore (julia,	  $(NULL))
+ScreenhackTarget_xlockmore (penrose,	  $(NULL))
+ScreenhackTarget_xlockmore (sierpinski,	  $(NULL))
+ScreenhackTarget_xlockmore (hopalong,	  $(NULL))
+ScreenhackTarget_xlockmore (braid,	  $(NULL))
+ScreenhackTarget_xlockmore (galaxy,	  $(NULL))
+ScreenhackTarget_xlockmore (slip,	  $(UTILS)/grabscreen.o)
 
 SRCS=$(HACKS)
 DependTarget()

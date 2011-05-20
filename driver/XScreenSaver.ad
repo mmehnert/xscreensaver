@@ -1,6 +1,6 @@
 ! app-defaults file for XScreenSaver by Jamie Zawinski.
-! See "man xscreensaver" for more info.  If you don't have that,
-! see http://www.netscape.com/people/jwz/ to get the latest version.
+! See "man xscreensaver" for more info.  The latest version is always
+! available at http://www.netscape.com/people/jwz/xscreensaver/
 
 *timeout:		10
 *cycle:			10
@@ -21,7 +21,9 @@
 *font:			*-medium-r-*-140-*-m-*
 
 ! Turning on "installColormap" interacts erratically with twm and tvtwm,
-! but seems to work fine with mwm and olwm.  Try it and see.
+! but seems to work fine with mwm and olwm.  Try it and see.  If your
+! screen turns some color other than black, the window manager is buggy,
+! and you need to set this resource to False (or get a WM that works.)
 !
 *installColormap:	True
 
@@ -50,18 +52,34 @@
 		hypercube -root						\n\
 		halo -root						\n\
 		maze -root						\n\
+		noseguy -root						\n\
 		flame -root						\n\
 		lmorph -root						\n\
 		deco -root						\n\
 		moire -root						\n\
-		kaleidescope -root					\n
+		kaleidescope -root					\n\
+		lightning -root						\n\
+		strange -root						\n\
+		fract -root						\n\
+		spiral -root						\n\
+		laser -root						\n\
+		grav -root						\n\
+		drift -root						\n\
+		ifs -root						\n\
+		julia -root						\n\
+		penrose -root						\n\
+		sierpinski -root					\n\
+		braid -root						\n\
+		bouboule -root						\n\
+		galaxy -root						\n\
+		slip -root						\n
+
 
 ! Programs on this list are run only for monochrome screens.
 ! (These are in addition to those listed in "*programs".)
 *monoPrograms:	qix -root -linear -count 5 -size 200 -spread 30		\
 			-segments 75 -solid -xor			\n\
-		rocks -root						\n\
-		noseguy -root						\n
+		rocks -root						\n
 
 ! Programs on this list are run only for color (really, non-mono) screens.
 ! (These are in addition to those listed in "*programs".)
@@ -72,7 +90,6 @@
 		attraction -root -mode filled-splines -segments 0	\n\
 		attraction -root -glow -points 10			\n\
 		rocks -root -fg darksalmon				\n\
-		noseguy -root -fg yellow -bg black			\n\
 		bubbles -root						\n
 
 
@@ -269,6 +286,7 @@
 *passwd_dialog*ok.label:			Done
 *passwd_dialog*cancel.label:			Cancel
 *passwd_dialog*passwd_form*label.label:		Enter password:
+*passwd_dialog*Dialog.label:			Enter password:
 *passwd_dialog*passwd_form*Text.width:		200
 *passwd_dialog*roger.width:			150
 *passwd_dialog*roger.height:			150

@@ -111,15 +111,13 @@ ungrab_keyboard_and_mouse P((void))
 
 
 void
-ensure_no_screensaver_running ()
+ensure_no_screensaver_running P((void))
 {
   int i;
   Window root = RootWindowOfScreen (screen);
   Window root2, parent, *kids;
   unsigned int nkids;
-  int (*old_handler) ();
-
-  old_handler = XSetErrorHandler (BadWindow_ehandler);
+  XErrorHandler old_handler = XSetErrorHandler (BadWindow_ehandler);
 
   if (! XQueryTree (dpy, root, &root2, &parent, &kids, &nkids))
     abort ();
@@ -163,44 +161,69 @@ ensure_no_screensaver_running ()
 
 
 void
-disable_builtin_screensaver ()
+#ifdef __STDC__
+disable_builtin_screensaver (Bool turn_off_p)
+#else  /* !__STDC__ */
+disable_builtin_screensaver (turn_off_p)
+  Bool turn_off_p;
+#endif /* !__STDC__ */
 {
-  int server_timeout, server_interval, prefer_blank, allow_exp;
-  /* Turn off the server builtin saver if it is now running. */
-  XForceScreenSaver (dpy, ScreenSaverReset);
-  XGetScreenSaver (dpy, &server_timeout, &server_interval,
-		   &prefer_blank, &allow_exp);
+  int current_server_timeout, current_server_interval;
+  int current_prefer_blank, current_allow_exp;
+  int desired_server_timeout, desired_server_interval;
+  int desired_prefer_blank, desired_allow_exp;
+
+  XGetScreenSaver (dpy, &current_server_timeout, &current_server_interval,
+		   &current_prefer_blank, &current_allow_exp);
+
+  desired_server_timeout = current_server_timeout;
+  desired_server_interval = current_server_interval;
+  desired_prefer_blank = current_prefer_blank;
+  desired_allow_exp = current_allow_exp;
 
 #if defined(HAVE_MIT_SAVER_EXTENSION) || defined(HAVE_SGI_SAVER_EXTENSION)
   if (use_mit_saver_extension || use_sgi_saver_extension)
     {
-      /* Override the values specified with "xset" with our own parameters. */
-      allow_exp = True;
-      server_interval = 0;
-      server_timeout = (timeout / 1000);
+      desired_server_interval = 0;
+      desired_server_timeout = (timeout / 1000);
 
       /* The SGI extension won't give us events unless blanking is on.
 	 I think (unsure right now) that the MIT extension is the opposite. */
-      prefer_blank = (use_sgi_saver_extension ? True : False);
-
-      if (verbose_p)
-	fprintf (stderr,
-		 "%s: configuring server for saver timeout of %d seconds.\n",
-		 progname, server_timeout);
-      XSetScreenSaver (dpy, server_timeout, server_interval,
-		       prefer_blank, allow_exp);
+      if (use_sgi_saver_extension)
+	desired_prefer_blank = True;
+      else
+	desired_prefer_blank = False;
     }
   else
 #endif /* HAVE_MIT_SAVER_EXTENSION || HAVE_SGI_SAVER_EXTENSION */
-  if (server_timeout != 0)
     {
-      server_timeout = 0;
-      XSetScreenSaver (dpy, server_timeout, server_interval,
-		       prefer_blank, allow_exp);
-      printf ("%s%sisabling server builtin screensaver.\n\
-	You can re-enable it with \"xset s on\".\n",
-	      (verbose_p ? "" : progname), (verbose_p ? "\n\tD" : ": d"));
+      desired_server_timeout = 0;
     }
+
+  if (desired_server_timeout != current_server_timeout ||
+      desired_server_interval != current_server_interval ||
+      desired_prefer_blank != current_prefer_blank ||
+      desired_allow_exp != current_allow_exp)
+    {
+      if (desired_server_timeout == 0)
+	printf ("%s%sisabling server builtin screensaver.\n\
+	You can re-enable it with \"xset s on\".\n",
+		(verbose_p ? "" : progname), (verbose_p ? "\n\tD" : ": d"));
+
+      if (verbose_p)
+	fprintf (stderr, "%s: (xset s %d %d %s %s)\n", progname,
+		 desired_server_timeout, desired_server_interval,
+		 (desired_prefer_blank ? "blank" : "noblank"),
+		 (desired_allow_exp ? "noexpose" : "expose"));
+
+      XSetScreenSaver (dpy, desired_server_timeout, desired_server_interval,
+		       desired_prefer_blank, desired_allow_exp);
+      XSync(dpy, False);
+    }
+
+  if (turn_off_p)
+    /* Turn off the server builtin saver if it is now running. */
+    XForceScreenSaver (dpy, ScreenSaverReset);
 }
 
 
@@ -386,8 +409,12 @@ restore_real_vroot ()
 static const char *sig_names [255] = { 0 };
 
 static void
+#ifdef __STDC__
+restore_real_vroot_handler (int sig)
+#else /* !__STDC__ */
 restore_real_vroot_handler (sig)
      int sig;
+#endif /* !__STDC__ */
 {
   signal (sig, SIG_DFL);
   if (restore_real_vroot_1 ())
@@ -468,11 +495,15 @@ handle_signals (on_p)
 /* Managing the actual screensaver window */
 
 Bool
+#ifdef __STDC__
+window_exists_p (Display *dpy, Window window)
+#else /* !__STDC__ */
 window_exists_p (dpy, window)
      Display *dpy;
      Window window;
+#endif /* !__STDC__ */
 {
-  int (*old_handler) ();
+  XErrorHandler old_handler;
   XWindowAttributes xgwa;
   xgwa.screen = 0;
   old_handler = XSetErrorHandler (BadWindow_ehandler);
@@ -582,6 +613,7 @@ initialize_screensaver_window P((void))
       XScreenSaverInfo *info;
       Window root = RootWindowOfScreen (screen);
 
+#if 0
       /* This call sets the server screensaver timeouts to what we think
 	 they should be (based on the resources and args xscreensaver was
 	 started with.)  It's important that we do this to sync back up
@@ -592,11 +624,11 @@ initialize_screensaver_window P((void))
 	 but a side effect of this would be that the server would map its
 	 saver window (which we then hide again right away) meaning that
 	 the bits currently on the screen get blown away.  Ugly. */
-#if 0
+
       /* #### Ok, that doesn't work - when we tell the server that the
 	 screensaver is "off" it sends us a Deactivate event, which is
 	 sensible... but causes the saver to never come on.  Hmm. */
-      disable_builtin_screensaver ();
+      disable_builtin_screensaver (True);
 #endif /* 0 */
 
 #if 0

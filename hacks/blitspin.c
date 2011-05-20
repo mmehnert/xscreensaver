@@ -98,7 +98,6 @@ read_bitmap (bitmap_name, widthP, heightP)
 {
 #ifdef HAVE_XPM
   XWindowAttributes xgwa;
-  Colormap cmap;
   XpmAttributes xpmattrs;
   int result;
   xpmattrs.valuemask = 0;
@@ -113,7 +112,7 @@ read_bitmap (bitmap_name, widthP, heightP)
 # ifdef XpmVisual
   xpmattrs.valuemask |= XpmVisual;
   xpmattrs.visual = xgwa.visual;
-#endif
+# endif
 # ifdef XpmDepth
   xpmattrs.valuemask |= XpmDepth;
   xpmattrs.depth = xgwa.depth;

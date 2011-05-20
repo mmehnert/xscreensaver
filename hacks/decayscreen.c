@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992, 1993, 1994, 1996 
+/* xscreensaver, Copyright (c) 1992, 1993, 1994, 1996, 1997 
  * Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -47,11 +47,9 @@ init_decay (dpy, window)
 {
   XGCValues gcv;
   XWindowAttributes xgwa;
-  int root_p;
   Pixmap pixmap;
 
   delay = get_integer_resource ("delay", "Integer");
-  root_p = get_boolean_resource ("root", "Boolean");
 
   if (delay < 0) delay = 0;
 
@@ -65,7 +63,7 @@ init_decay (dpy, window)
   sizey = xgwa.height;
 
   copy_default_colormap_contents (dpy, xgwa.colormap, xgwa.visual);
-  pixmap = grab_screen_image (dpy, window, root_p);
+  pixmap = grab_screen_image (dpy, window);
 }
 
 
@@ -129,8 +127,12 @@ decay1 (dpy, window)
 char *progclass = "DecayScreen";
 
 char *defaults [] = {
-  "DecayScreen.mappedWhenManaged:false",
-  "DecayScreen.dontClearWindow:	 true",
+  "DecayScreen.dontClearRoot:	True",
+
+#ifdef __sgi	/* really, HAVE_READ_DISPLAY_EXTENSION */
+  "*visualID:			Best",
+#endif
+
   "*delay:			10",
   0
 };

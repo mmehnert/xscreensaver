@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992, 1995, 1996
+/* xscreensaver, Copyright (c) 1992, 1995, 1996, 1997
  *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -12,6 +12,10 @@
 
 /* Algorithm from a Mac program by Chris Tate, written in 1988 or so. */
 
+/* 10-May-97: merged ellipse code by Dan Stromberg <strombrg@nis.acs.uci.edu>
+ *            as found in xlockmore 4.03a10.
+ * 1992:      jwz created.
+ */
 
 #include <math.h>
 #include "screenhack.h"
@@ -105,15 +109,64 @@ helix (dpy, window,
   for (i = 0; i < limit; i++)
     {
       int tmp;
-#define pmod(x,y) (tmp = (x % y), (tmp >= 0 ? tmp : tmp + y))
+#define pmod(x,y) (tmp=((x) % (y)), (tmp >= 0 ? tmp : (tmp + (y))))
+
       x1 = xmid + (((double) radius1) * sins [pmod ((angle * factor1), 360)]);
       y1 = ymid + (((double) radius2) * coss [pmod ((angle * factor2), 360)]);
       XDrawLine (dpy, window, draw_gc, x1, y1, x2, y2);
       x2 = xmid + (((double) radius2) * sins [pmod ((angle * factor3), 360)]);
       y2 = ymid + (((double) radius1) * coss [pmod ((angle * factor4), 360)]);
+
       XDrawLine (dpy, window, draw_gc, x1, y1, x2, y2);
       angle += d_angle;
       XFlush (dpy);
+    }
+}
+
+static void
+#ifdef __STDC__
+trig (Display *dpy, Window window,
+      int d_angle, int factor1, int factor2,
+      int offset, int d_angle_offset, int dir, int density)
+#else /* ! __STDC__ */
+trig (dpy, window,
+      d_angle, factor1, factor2,
+      offset, d_angle_offset, dir, density)
+     Display *dpy;
+     Window window;
+     int d_angle;
+     int factor1, factor2;
+     int offset, d_angle_offset, dir, density;
+#endif /* ! __STDC__ */
+{
+  XWindowAttributes xgwa;
+  int width, height;
+  int xmid, ymid;
+  int x1, y1, x2, y2;
+  int tmp, angle;
+  Colormap cmap;
+
+  XClearWindow (dpy, window);
+  XGetWindowAttributes (dpy, window, &xgwa);
+  cmap = xgwa.colormap;
+  width = xgwa.width;
+  height = xgwa.height;
+
+  xmid = width / 2;
+  ymid = height / 2;
+
+  while (d_angle >= -360 && d_angle <= 360)
+    {
+      angle = d_angle + d_angle_offset;
+      x1 = (sins [pmod(angle * factor1, 360)] * xmid) + xmid;
+      y1 = (coss [pmod(angle * factor1, 360)] * ymid) + ymid;
+      x2 = (sins [pmod(angle * factor2 + offset, 360)] * xmid) + xmid;
+      y2 = (coss [pmod(angle * factor2 + offset, 360)] * ymid) + ymid;
+      XDrawLine(dpy, window, draw_gc, x1, y1, x2, y2);
+      tmp = (int) 360 / (2 * density * factor1 * factor2);
+      if (tmp == 0)	/* Do not want it getting stuck... */
+	tmp = 1;	/* Would not need if floating point */
+      d_angle += dir * tmp;
     }
 }
 
@@ -121,19 +174,19 @@ helix (dpy, window,
 
 static void
 #ifdef __STDC__
-random_helix (Display *dpy, Window window)
+random_helix (Display *dpy, Window window, XColor *color, Bool *got_color)
 #else /* ! __STDC__ */
-random_helix (dpy, window)
+random_helix (dpy, window, color, got_color)
      Display *dpy;
      Window window;
+     XColor *color;
+     Bool *got_color;
 #endif /* ! __STDC__ */
 {
   Colormap cmap;
   int width, height;
   int radius, radius1, radius2, d_angle, factor1, factor2, factor3, factor4;
   double divisor;
-  XColor color;
-  int i, got_color = 0;
   XWindowAttributes xgwa;
   XGetWindowAttributes (dpy, window, &xgwa);
   width = xgwa.width;
@@ -181,14 +234,90 @@ random_helix (dpy, window)
   else
     {
       hsv_to_rgb (random () % 360, frand (1.0), frand (0.5) + 0.5,
-		  &color.red, &color.green, &color.blue);
-      if ((got_color = XAllocColor (dpy, cmap, &color)))
-	XSetForeground (dpy, draw_gc, color.pixel);
+		  &color->red, &color->green, &color->blue);
+      if ((*got_color = XAllocColor (dpy, cmap, color)))
+	XSetForeground (dpy, draw_gc, color->pixel);
       else
 	XSetForeground (dpy, draw_gc, default_fg_pixel);
     }
   helix (dpy, window, radius1, radius2, d_angle,
 	 factor1, factor2, factor3, factor4);
+}
+
+static void
+#ifdef __STDC__
+random_trig (Display *dpy, Window window, XColor *color, Bool *got_color)
+#else /* ! __STDC__ */
+random_trig (dpy, window, color, got_color)
+     Display *dpy;
+     Window window;
+     XColor *color;
+     Bool *got_color;
+#endif /* ! __STDC__ */
+{
+  Colormap cmap;
+  int width, height;
+  int radius, d_angle, factor1, factor2;
+  int offset, d_angle_offset, dir, density;
+
+  XWindowAttributes xgwa;
+  XGetWindowAttributes (dpy, window, &xgwa);
+  width = xgwa.width;
+  height = xgwa.height;
+  cmap = xgwa.colormap;
+
+  radius = min (width, height) / 2;
+
+  d_angle = 0;
+  factor1 = (random() % 8) + 1;
+  do {
+    factor2 = (random() % 8) + 1;
+  } while (factor1 == factor2);
+
+  dir = (random() & 1) ? 1 : -1;
+  d_angle_offset = random() % 360;
+  offset = ((random() % ((360 / 4) - 1)) + 1) / 4;
+  density = 1 << ((random() % 4) + 4);	/* Higher density, higher angles */
+
+  if (mono_p)
+    XSetForeground (dpy, draw_gc, default_fg_pixel);
+  else
+    {
+      hsv_to_rgb (random () % 360, frand (1.0), frand (0.5) + 0.5,
+		  &color->red, &color->green, &color->blue);
+      if ((*got_color = XAllocColor (dpy, cmap, color)))
+	XSetForeground (dpy, draw_gc, color->pixel);
+      else
+	XSetForeground (dpy, draw_gc, default_fg_pixel);
+    }
+  trig (dpy, window, d_angle, factor1, factor2,
+	offset, d_angle_offset, dir, density);
+}
+
+static void
+#ifdef __STDC__
+random_helix_or_trig (Display *dpy, Window window)
+#else /* ! __STDC__ */
+random_helix_or_trig (dpy, window)
+     Display *dpy;
+     Window window;
+#endif /* ! __STDC__ */
+{
+  int i;
+  Bool free_color = False;
+  XColor color;
+  int width, height;
+  XWindowAttributes xgwa;
+  Colormap cmap;
+  XGetWindowAttributes (dpy, window, &xgwa);
+  width = xgwa.width;
+  height = xgwa.height;
+  cmap = xgwa.colormap;
+
+  if (random() & 1)
+    random_helix(dpy, window, &color, &free_color);
+  else
+    random_trig(dpy, window, &color, &free_color);
 
   XSync (dpy, True);
   sleep (5);
@@ -202,7 +331,7 @@ random_helix (dpy, window)
 	usleep (10000);
     }
   XClearWindow (dpy, window);
-  if (got_color) XFreeColors (dpy, cmap, &color.pixel, 1, 0);
+  if (free_color) XFreeColors (dpy, cmap, &color.pixel, 1, 0);
   XSync (dpy, True);
   sleep (1);
 }
@@ -227,5 +356,5 @@ screenhack (dpy, window) Display *dpy; Window window;
 {
   init_helix (dpy, window);
   while (1)
-    random_helix (dpy, window);
+    random_helix_or_trig (dpy, window);
 }

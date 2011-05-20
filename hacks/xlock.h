@@ -4,9 +4,14 @@
 **
 **  for xlock 2.3 and xscreensaver 1.2, 28AUG92
 **
-**
 **  Modified for xlockmore 3.0 by Anthony Thyssen <anthony@cit.gu.edu.au>
 **  on August 1995.
+**
+**  Tweaked by jwz to work with both ANSI and K&R compilers, 10-May-97.
+**
+**    Note: this file no longer works as of (at least) xlockmore 4.03a10:
+**    see jwz's new xlockmore.h file for a similar hack that works with
+**    code written for that version.
 **
 **  To use, just copy the appropriate file from xlock, add a target
 **  for it in the Imakefile, and do the following:
@@ -60,10 +65,14 @@ static Display *dsp;
 static int screen = 0;
 
 static void
+#ifdef __STDC__
+My_XGetWindowAttributes (Display *dpy, Window win, XWindowAttributes *xgwa)
+#else /* !__STDC__ */
 My_XGetWindowAttributes (dpy, win, xgwa)
   Display *dpy;
   Window win;
   XWindowAttributes *xgwa;
+#endif /* !__STDC__ */
 {
   XGetWindowAttributes (dpy, win, xgwa);
 
@@ -138,23 +147,46 @@ XrmOptionDescRec options[] = {
 };
 int options_size = (sizeof (options) / sizeof (options[0]));
 
-#define PROGRAM(Y,Z,D,B,C,S) \
-char *progclass = Y;			\
+#if defined(__STDC__) || defined(__ANSI_CPP__)
+# define XLOCK_INIT(Z) init##Z
+# define XLOCK_DRAW(Z) draw##Z
+#else  /* K&R CPP */
+# define XLOCK_INIT(Z) init/**/Z
+# define XLOCK_DRAW(Z) draw/**/Z
+#endif /* K&R CPP */
+
+#ifdef __STDC__
+# define XLOCK_SCREENHACK_PROTOTYPE()	\
+  screenhack(Display *dpy, Window window)
+# define XLOCK_PROTOS(Z) /* */
+#else  /* K&R C */
+# define XLOCK_SCREENHACK_PROTOTYPE()	\
+  screenhack(dpy, window)		\
+	Display *dpy;			\
+	Window window;
+# define XLOCK_PROTOS(Z)		\
+  void init##Z(Window);			\
+  void draw##Z(Window);			\
+
+#endif /* K&R C */
+
+#define PROGRAM(Y,Z,D,B,C,S)		\
+  char *progclass = Y;			\
+  XLOCK_PROTOS(Z)			\
 					\
-void screenhack (dpy, window)		\
-  Display *dpy;				\
-  Window window;			\
-{					\
-  batchcount = B;			\
-  delay = D;				\
-  cycles = C;                           \
-  saturation = S;			\
-  dsp = dpy;				\
+  void XLOCK_SCREENHACK_PROTOTYPE()	\
+  {					\
+    batchcount = B;			\
+    delay = D;				\
+    cycles = C;				\
+    saturation = S;			\
+    dsp = dpy;				\
 					\
-  init##Z (window);			\
-  while (1) {				\
-    draw##Z (window);			\
-    XSync (dpy, True);			\
-    if (delay) usleep (delay);		\
-  }					\
-}
+    XLOCK_INIT(Z) (window);		\
+    while (1)				\
+      {					\
+	XLOCK_DRAW(Z) (window);		\
+	XSync (dpy, True);		\
+	if (delay) usleep (delay);	\
+      }					\
+  }

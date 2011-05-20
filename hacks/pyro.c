@@ -241,8 +241,8 @@ pyro (dpy, window, cmap)
 
       if (p->primary && p->fuse <= 0)
 	{
-	  int i = (random () % scatter) + (scatter/2);
-	  while (i--)
+	  int j = (random () % scatter) + (scatter/2);
+	  while (j--)
 	    shrapnel (p, dpy, cmap);
 	}
     }

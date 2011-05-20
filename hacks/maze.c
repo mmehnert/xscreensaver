@@ -664,6 +664,10 @@ XrmOptionDescRec options[] = {
 
 int options_size = (sizeof(options)/sizeof(options[0]));
 
+#ifdef XROGER
+extern void skull P((Display *, Window, GC, GC, int, int, int, int));
+#endif
+
 void
 #ifdef __STDC__
 screenhack(Display *display, Window window)
@@ -734,7 +738,6 @@ screenhack(display,window) Display *display; Window window;
     int w, h;
     XGCValues gcv;
     GC draw_gc, erase_gc;
-    extern void skull P((Display *, Window, GC, GC, int, int, int, int));
     /* round up to grid size */
     w = ((logo_width  / grid_width) + 1)  * grid_width;
     h = ((logo_height / grid_height) + 1) * grid_height;

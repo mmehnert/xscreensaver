@@ -237,6 +237,8 @@ select_cb (button, client_data, call_data)
   focus_fuckus (demo_dialog);
 }
 
+#ifndef NO_MOTIF
+
 static void
 #ifdef __STDC__
 ensure_selected_item_visible (Widget list)
@@ -244,7 +246,6 @@ ensure_selected_item_visible (Widget list)
 ensure_selected_item_visible (list) Widget list;
 #endif /* ! __STDC__ */
 {
-#ifndef NO_MOTIF
   int *pos_list = 0;
   int pos_count = 0;
   if (XmListGetSelectedPos (list, &pos_list, &pos_count) && pos_count > 0)
@@ -268,9 +269,8 @@ ensure_selected_item_visible (list) Widget list;
     }
   if (pos_list)
     XtFree ((char *) pos_list);
-
-#endif /* MOTIF */
 }
+#endif /* MOTIF */
 
 
 static void

@@ -547,9 +547,10 @@ make_passwd_dialog (parent) Widget parent;
 #endif /* ! __STDC__ */
 {
   char *username = 0;
-  Widget box, passwd_label2;
 
 #ifdef NO_MOTIF
+  Widget box, passwd_label2;
+
   passwd_dialog = 
     XtVaCreatePopupShell("passwd_dialog", transientShellWidgetClass, parent,
 			 XtNtitle, NULL,
@@ -741,7 +742,7 @@ passwd_idle_timer (junk1, junk2)
 }
 
 extern void pop_up_dialog_box P((Widget, Widget, int));
-extern int BadWindow_ehandler ();
+extern int BadWindow_ehandler P((Display *, XErrorEvent *));
 
 #ifdef NO_MOTIF
 /* mostly copied from demo.c */
@@ -955,8 +956,7 @@ pop_passwd_dialog (parent) Widget parent;
   XUnmapWindow (XtDisplay (passwd_dialog), XtWindow (passwd_dialog));
 #endif
   {
-    int (*old_handler) ();
-    old_handler = XSetErrorHandler (BadWindow_ehandler);
+    XErrorHandler old_handler = XSetErrorHandler (BadWindow_ehandler);
     /* I don't understand why this doesn't refocus on the old selected
        window when MWM is running in click-to-type mode.  The value of
        `focus' seems to be correct. */

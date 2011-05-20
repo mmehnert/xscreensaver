@@ -107,7 +107,6 @@ screenhack (dpy, window) Display *dpy; Window window;
 {
   GC fgc, bgc;
   XGCValues gcv;
-  Colormap cmap;
   XWindowAttributes xgwa;
   int delay = get_integer_resource ("delay", "Integer");
 

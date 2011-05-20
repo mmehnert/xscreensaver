@@ -1,6 +1,6 @@
 /* bubbles.c - frying pan / soft drink in a glass simulation */
 
-/*$Id: bubbles.c,v 1.4 1997/04/28 20:56:02 jwz Exp $*/
+/*$Id: bubbles.c,v 1.5 1997/05/14 06:17:30 jwz Exp $*/
 
 /*
  *  Copyright (C) 1995-1996 James Macnicol
@@ -241,8 +241,8 @@ turned off if DEBUG isn't set. */
 	(bb->radius < bubble_min_radius) || (bb->radius >
 					     bubble_max_radius)) {
       fprintf(stderr,
-	      "radius = %d, x = %d, y = %d, magic = %d, \
-cell index = %d\n", bb->radius, bb->x, bb->y, bb->magic, bb->cell_index);
+	      "radius = %d, x = %d, y = %d, magic = %d, cell index = %d\n",
+	      bb->radius, bb->x, bb->y, bb->magic, bb->cell_index);
       die_bad_bubble(bb);  
     }
 #ifdef HAVE_XPM
@@ -252,8 +252,8 @@ cell index = %d\n", bb->radius, bb->x, bb->y, bb->magic, bb->cell_index);
 	(bb->radius < step_pixmaps[0]->radius) || 
 	(bb->radius > step_pixmaps[num_bubble_pixmaps-1]->radius)) {
       fprintf(stderr,
-	      "radius = %d, x = %d, y = %d, magic = %d, \
-cell index = %d\n", bb->radius, bb->x, bb->y, bb->magic, bb->cell_index);
+	      "radius = %d, x = %d, y = %d, magic = %d, cell index = %d\n",
+	      bb->radius, bb->x, bb->y, bb->magic, bb->cell_index);
       die_bad_bubble(bb);  
     }
 #endif /* HAVE_XPM */
@@ -1804,7 +1804,6 @@ get_resources(dpy, window) Display *dpy; Window window;
 #endif /* HAVE_XPM */
 #endif /* BUBBLES_IO */
 
-  XGCValues gcv;
   XWindowAttributes xgwa;
   Colormap cmap;
   XGetWindowAttributes (dpy, window, &xgwa);
@@ -1816,8 +1815,8 @@ get_resources(dpy, window) Display *dpy; Window window;
   /* Forbid rendered bubbles on monochrome displays */
   if ((mono_p) && (! simple)) {
     if (! quiet)
-      fprintf(stderr, "Rendered bubbles not supported on monochrome \
-displays\n");
+      fprintf(stderr,
+	      "Rendered bubbles not supported on monochrome displays\n");
     simple = True;
   }
   delay = get_integer_resource("delay", "Integer");
@@ -1856,8 +1855,8 @@ displays\n");
 	exit(1);
       }
     } else {
-      fprintf(stderr, "No default bubble compiled in - use -file or \
--directory\n");
+      fprintf(stderr,
+	      "No default bubble compiled in - use -file or -directory\n");
       exit(1);
     }
 #else
@@ -1937,16 +1936,16 @@ init_bubbles (dpy, window) Display *dpy; Window window;
     mesh_length = (2 * bubble_max_radius) + 3;
   } else {
 #ifndef HAVE_XPM
-    fprintf(stderr, "Bug: simple mode code not set but HAVE_XPM not \
-defined\n");
+    fprintf(stderr,
+	    "Bug: simple mode code not set but HAVE_XPM not defined\n");
     exit(1);
 #else
     /* Make sure all #ifdef sort of things have been taken care of in
        get_resources(). */
     if (use_default_bubble) {
 #ifdef NO_DEFAULT_BUBBLE
-      fprintf(stderr, "Bug: use_default_bubble and NO_DEFAULT_BUBBLE both \
-defined\n");
+      fprintf(stderr,
+	      "Bug: use_default_bubble and NO_DEFAULT_BUBBLE both defined\n");
       exit(1);
 #else
       default_to_pixmaps();
@@ -1967,8 +1966,8 @@ defined\n");
 
       mesh_length = (2 * step_pixmaps[num_bubble_pixmaps-1]->radius) + 3;
 #else
-      fprintf(stderr, "Bug: use_default_bubble is not defined yet I/O is not \
-compiled in\n");
+      fprintf(stderr,
+	"Bug: use_default_bubble is not defined yet I/O is not compiled in\n");
       exit(1);
 #endif /* BUBBLES_IO */
     }

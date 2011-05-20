@@ -480,7 +480,7 @@ add_qline (dpy, window, cmap, qline, prev_qline, qix)
   qline->dead = prev_qline->dead;
 
 #define wiggle(point,delta,max)						\
-  if (random_p) delta += (random () % (1 << SCALE+1)) - (1 << SCALE);	\
+  if (random_p) delta += (random () % (1 << (SCALE+1))) - (1 << SCALE);	\
   if (delta > max_spread) delta = max_spread;				\
   else if (delta < -max_spread) delta = -max_spread;			\
   point += delta;							\
@@ -581,7 +581,6 @@ qix1 (dpy, window, qix)
 #endif /* ! __STDC__ */
 {
   int ofp = qix->fp - 1;
-  int i;
   static int gtick = 0;
   if (ofp < 0) ofp = qix->nlines - 1;
   if (gtick++ == 500)

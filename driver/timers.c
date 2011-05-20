@@ -166,8 +166,7 @@ notice_events_timer (closure, timer) XtPointer closure; XtIntervalId *timer;
 #endif /* ! __STDC__ */
 {
   Window window = (Window) closure;
-  int (*old_handler) ();
-  old_handler = XSetErrorHandler (BadWindow_ehandler);
+  XErrorHandler old_handler = XSetErrorHandler (BadWindow_ehandler);
   notice_events (window, True);
   XSync (dpy, False);
   XSetErrorHandler (old_handler);

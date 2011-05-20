@@ -83,8 +83,12 @@ Widget spacer;
 
 
 void
+#ifdef __STDC__
+create_passwd_dialog( Widget parent )
+#else /* !__STDC__ */
 create_passwd_dialog( parent )
 Widget parent;
+#endif /* !__STDC__ */
 {
   Widget shell;
   Widget  form1;
@@ -175,15 +179,15 @@ Widget parent;
   XtManageChild(dialog);
 
   {
-    Dimension w = 0, h = 0;
+    Dimension width = 0, height = 0;
     XtRealizeWidget(form1);
-    XtVaGetValues(roger, XmNwidth, &w, XmNheight, &h, 0);
-    if (w == h)
+    XtVaGetValues(roger, XmNwidth, &width, XmNheight, &height, 0);
+    if (width == height)
       ;
-    else if (w > h)
-      XtVaSetValues(roger, XmNwidth, w, XmNheight, w, 0);
+    else if (width > height)
+      XtVaSetValues(roger, XmNwidth, width, XmNheight, width, 0);
     else
-      XtVaSetValues(roger, XmNwidth, h, XmNheight, h, 0);
+      XtVaSetValues(roger, XmNwidth, height, XmNheight, height, 0);
   }
 
   passwd_dialog = shell;
@@ -199,8 +203,12 @@ Widget parent;
 
 
 void
+#ifdef __STDC__
+create_resources_dialog( Widget parent )
+#else /* !__STDC__ */
 create_resources_dialog( parent )
 Widget parent;
+#endif /* !__STDC__ */
 {
   Widget children[22];      /* Children to manage */
   Arg al[64];           /* Arg List */
@@ -575,8 +583,12 @@ Widget parent;
 
 
 void
+#ifdef __STDC__
+create_demo_dialog( Widget parent )
+#else /* !__STDC__ */
 create_demo_dialog( parent )
 Widget parent;
+#endif /* !__STDC__ */
 {
   Arg al[64];           /* Arg List */
   register int ac = 0;      /* Arg Count */

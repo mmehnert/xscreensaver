@@ -1,4 +1,4 @@
-/* ya_random -- Yet Another Random Number Generator.
+/* yarandom.c -- Yet Another Random Number Generator.
 
    The unportable mess that is rand(), random(), drand48() and friends led me
    to ask Phil Karlton <karlton@netscape.com> what the Right Thing to Do was.
@@ -10,6 +10,34 @@
    k=20 and m=2^32."
 
    So there you have it.
+
+   ---------------------------
+   Note: xlockmore 4.03a10 uses this very simple RNG:
+
+	if ((seed = seed % 44488 * 48271 - seed / 44488 * 3399) < 0)
+	  seed += 2147483647;
+	return seed-1;
+
+   of which it says
+
+	``Dr. Park's algorithm published in the Oct. '88 ACM  "Random Number
+	  Generators: Good Ones Are Hard To Find" His version available at
+	  ftp://cs.wm.edu/pub/rngs.tar Present form by many authors.''
+
+   Karlton says: ``the usual problem with that kind of RNG turns out to
+   be unexepected short cycles for some word lengths.''
+
+   Karlton's RNG is faster, since it does three adds and two stores, while the
+   xlockmore RNG does two multiplies, two divides, three adds, and one store.
+
+   Compiler optimizations make a big difference here:
+       gcc -O:     difference is 1.2x.
+       gcc -O2:    difference is 1.4x.
+       gcc -O3:    difference is 1.5x.
+       SGI cc -O:  difference is 2.4x.
+       SGI cc -O2: difference is 2.4x.
+       SGI cc -O3: difference is 5.1x.
+   Irix 6.2; Indy r5k; SGI cc version 6; gcc version 2.7.2.1.
  */
 
 #include <unistd.h>   /* for getpid() */
@@ -38,7 +66,12 @@ static unsigned int a[VectorSize] = {
 
 static int i1, i2;
 
-unsigned int ya_random()
+unsigned int
+#ifdef __STDC__
+ya_random (void)
+#else /* !__STDC__ */
+ya_random ()
+#endif /* !__STDC__ */
 {
   register int ret = a[i1] + a[i2];
   a[i1] = ret;
@@ -47,8 +80,13 @@ unsigned int ya_random()
   return ret;
 }
 
-void ya_rand_init(seed)
-   register unsigned int seed;
+void
+#ifdef __STDC__
+ya_rand_init(unsigned int seed)
+#else /* !__STDC__ */
+ya_rand_init(seed)
+   unsigned int seed;
+#endif /* !__STDC__ */
 {
   int i;
   if (seed == 0)

@@ -102,7 +102,7 @@ hurm (dpy, window) Display *dpy; Window window;
   sleep (5);
   for (i = 0; i < (ylim >> 1); i++)
     {
-      int y = (random () % ylim);
+      y = (random () % ylim);
       XDrawLine (dpy, window, erase_gc, 0, y, xlim, y);
       XFlush (dpy);
       if ((i % 50) == 0)

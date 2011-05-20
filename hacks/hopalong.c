@@ -1,51 +1,55 @@
-/* xscreensaver, Copyright (c) 1992, 1995, 1996
- *  Jamie Zawinski <jwz@netscape.com>
- *
- * Permission to use, copy, modify, distribute, and sell this software and its
- * documentation for any purpose is hereby granted without fee, provided that
- * the above copyright notice appear in all copies and that both that
- * copyright notice and this permission notice appear in supporting
- * documentation.  No representations are made about the suitability of this
- * software for any purpose.  It is provided "as is" without express or 
- * implied warranty.
+/* -*- Mode: C; tab-width: 4 -*-
+   Ported from xlockmore 4.03a10 to be a standalone program and thus usable
+   with xscreensaver by Jamie Zawinski <jwz@netscape.com> on 10-May-97.
+   (I threw away my 1992 port and started over.)
+
+   Original copyright notice from xlock.c:
+
+    * Copyright (c) 1988-91 by Patrick J. Naughton.
+    *
+    * Permission to use, copy, modify, and distribute this software and its
+    * documentation for any purpose and without fee is hereby granted,
+    * provided that the above copyright notice appear in all copies and that
+    * both that copyright notice and this permission notice appear in
+    * supporting documentation.
+    *
+    * This file is provided AS IS with no warranties of any kind.  The author
+    * shall have no liability with respect to the infringement of copyrights,
+    * trade secrets or any patents by this file or any part thereof.  In no
+    * event will the author be liable for any lost revenue or profits or
+    * other special, indirect and consequential damages.
  */
 
-/* This file was ported from xlock for use in xscreensaver (and standalone)
- * by jwz on 12-Aug-92.  Original copyright reads:
- *
- * hopalong.c - Real Plane Fractals for xlock, the X Window System lockscreen.
+#if !defined( lint ) && !defined( SABER )
+static const char sccsid[] = "@(#)hop.c	4.02 97/04/01 xlockmore";
+
+#endif
+
+/*-
+ * hop.c - Real Plane Fractals for xlock, the X Window System lockscreen.
  *
  * Copyright (c) 1991 by Patrick J. Naughton.
  *
- * Permission to use, copy, modify, and distribute this software and its
- * documentation for any purpose and without fee is hereby granted,
- * provided that the above copyright notice appear in all copies and that
- * both that copyright notice and this permission notice appear in
- * supporting documentation.
- *
- * This file is provided AS IS with no warranties of any kind.  The author
- * shall have no liability with respect to the infringement of copyrights,
- * trade secrets or any patents by this file or any part thereof.  In no
- * event will the author be liable for any lost revenue or profits or
- * other special, indirect and consequential damages.
- *
- * Comments and additions should be sent to the author:
- *
- *		       naughton@eng.sun.com
- *
- *		       Patrick J. Naughton
- *		       MS 21-14
- *		       Sun Laboritories, Inc.
- *		       2550 Garcia Ave
- *		       Mountain View, CA  94043
+ * See xlock.c for copying information.
  *
  * Revision History:
+ * Changes of David Bagley <bagleyd@bigfoot.com>
+ * 10-May-97: jwz@netscape.com: made xlockmore version run standalone.
+ * 27-Jul-95: added Peter de Jong's hop from Scientific American
+ *            July 87 p. 111.  Sometimes they are amazing but there are a
+ *            few duds (I did not see a pattern in the parameters).
+ * 29-Mar-95: changed name from hopalong to hop
+ * 09-Dec-94: added sine hop
+ *
+ * (12-Aug-92: jwz@lucid.com: made xlock version run standalone.)
+ *
+ * Changes of Patrick J. Naughton
  * 29-Oct-90: fix bad (int) cast.
  * 29-Jul-90: support for multiple screens.
  * 08-Jul-90: new timing and colors and new algorithm for fractals.
  * 15-Dec-89: Fix for proper skipping of {White,Black}Pixel() in colors.
  * 08-Oct-89: Fixed long standing typo bug in RandomInitHop();
- *	      Fixed bug in memory allocation in inithop();
+ *	      Fixed bug in memory allocation in init_hop();
  *	      Moved seconds() to an extern.
  *	      Got rid of the % mod since .mod is slow on a sparc.
  * 20-Sep-89: Lint.
@@ -53,191 +57,213 @@
  * 23-Mar-88: Coded HOPALONG routines from Scientific American Sept. 86 p. 14.
  */
 
-#include <math.h>
-#include "screenhack.h"
+#ifndef STANDALONE
+# include "xlock.h"
+#else  /* STANDALONE */
 
-static GC gc;
-static int batchcount = 1000;
+# define PROGCLASS		"Hopalong"
+# define HACK_INIT		init_hop
+# define HACK_DRAW		draw_hop
+# define HACK_FREE		release_hop
+# define DEF_DELAY		10000
+# define DEF_BATCHCOUNT	1000
+# define DEF_CYCLES		2500
+# define DEF_NCOLORS	200
+# define DEF_JONG		"False"
+# define DEF_SINE		"False"
+# define SPREAD_COLORS
+# include "xlockmore.h"
 
-static unsigned int *pixels = 0, fg_pixel, bg_pixel;
-static int npixels;
-static unsigned int delay;
-static int timeout;
+#endif /* STANDALONE */
+
+#ifndef STANDALONE
+static Bool jong;
+static Bool sine;
+
+static XrmOptionDescRec opts[] =
+{
+	{"-jong", ".hop.jong", XrmoptionNoArg, (caddr_t) "on"},
+	{"+jong", ".hop.jong", XrmoptionNoArg, (caddr_t) "off"},
+	{"-sine", ".hop.sine", XrmoptionNoArg, (caddr_t) "on"},
+	{"+sine", ".hop.sine", XrmoptionNoArg, (caddr_t) "off"}
+};
+static argtype vars[] =
+{
+	{(caddr_t *) & jong, "jong", "Jong", DEF_JONG, t_Bool},
+	{(caddr_t *) & sine, "sine", "Sine", DEF_SINE, t_Bool}
+};
+static OptionStruct desc[] =
+{
+	{"-/+jong", "turn on/off jong format"},
+	{"-/+sine", "turn on/off sine format"}
+};
+
+ModeSpecOpt hop_opts =
+{4, opts, 2, vars, desc};
+#endif /* !STANDALONE */
+
+
+#define SQRT 0
+#define JONG 1
+#define SINE 2
+#ifdef OFFENDING
+#define OPS 2			/* Sine might be too close to a Swastika for some... */
+#else
+#define OPS 3
+#endif
 
 typedef struct {
-    int         centerx;
-    int         centery;	/* center of the screen */
-    double      a;
-    double      b;
-    double      c;
-    double      i;
-    double      j;		/* hopalong parameters */
-    int         inc;
-    int         pix;
-    long        startTime;
-}           hopstruct;
+	int         centerx;
+	int         centery;	/* center of the screen */
+	double      a;
+	double      b;
+	double      c;
+	double      d;
+	double      i;
+	double      j;		/* hopalong parameters */
+	int         inc;
+	int         pix;
+	int         op;
+	int         count;
+	int         bufsize;
+} hopstruct;
 
-static hopstruct hop;
+static hopstruct *hops = NULL;
 static XPoint *pointBuffer = 0;	/* pointer for XDrawPoints */
 
-static void
-#ifdef __STDC__
-inithop (Display *dsp, Window win)
-#else /* ! __STDC__ */
-inithop (dsp, win) Display *dsp; Window win;
-#endif /* ! __STDC__ */
+void
+init_hop(ModeInfo * mi)
 {
-    double      range;
-    XWindowAttributes xgwa;
-    hopstruct  *hp = &hop;
-    XGCValues gcv;
-    Colormap cmap;
-    XGetWindowAttributes (dsp, win, &xgwa);
-    cmap = xgwa.colormap;
+	Display    *display = MI_DISPLAY(mi);
+	GC          gc = MI_GC(mi);
+	hopstruct  *hp;
+	double      range;
 
-    if (! pixels)
-      {
-	XColor color;
-	int i = get_integer_resource ("ncolors", "Integer");
-	int shift;
-	if (i <= 2) i = 2, mono_p = True;
-	shift = 360 / i;
-	pixels = (unsigned int *) calloc (i, sizeof (unsigned int));
-	fg_pixel = get_pixel_resource ("foreground", "Foreground", dsp, cmap);
-	bg_pixel = get_pixel_resource ("background", "Background", dsp, cmap);
-	if (! mono_p)
-	  {
-	    hsv_to_rgb (random () % 360, 1.0, 1.0, 
-			&color.red, &color.green, &color.blue);
-	    for (npixels = 0; npixels < i; npixels++)
-	      {
-		if (! XAllocColor (dsp, cmap, &color))
-		  break;
-		pixels[npixels] = color.pixel;
-		cycle_hue (&color, shift);
-	      }
-	  }
-	timeout = get_integer_resource ("timeout", "Seconds");
-	if (timeout <= 0) timeout = 30;
-	delay = get_integer_resource ("delay", "Usecs");
+	if (hops == NULL) {
+		if ((hops = (hopstruct *) calloc(MI_NUM_SCREENS(mi),
+						 sizeof (hopstruct))) == NULL)
+			return;
+	}
+	hp = &hops[MI_SCREEN(mi)];
 
-	gcv.foreground = fg_pixel;
-	gc = XCreateGC (dsp, win, GCForeground, &gcv);
-      }
+	hp->centerx = MI_WIN_WIDTH(mi) / 2;
+	hp->centery = MI_WIN_HEIGHT(mi) / 2;
+	/* Make the other operations less common since they are less interesting */
+	if (MI_WIN_IS_FULLRANDOM(mi)) {
+	  hp->op = NRAND(OPS+2); /* jwz: make the others a bit more likely. */
+	  if (hp->op >= OPS)
+		hp->op = SQRT;
+	} else {
+		hp->op = SQRT;
+		if (jong)
+			hp->op = JONG;
+		else if (sine)
+			hp->op = SINE;
+	}
+	switch (hp->op) {
+		case SQRT:
+			range = sqrt((double) hp->centerx * hp->centerx +
+				     (double) hp->centery * hp->centery) / (10.0 + NRAND(10));
 
-    XClearWindow (dsp, win);
+			hp->a = (LRAND() / MAXRAND) * range - range / 2.0;
+			hp->b = (LRAND() / MAXRAND) * range - range / 2.0;
+			hp->c = (LRAND() / MAXRAND) * range - range / 2.0;
+			if (LRAND() & 1)
+				hp->c = 0.0;
+			break;
+		case JONG:
+			hp->a = (LRAND() / MAXRAND) * 2.0 * M_PI - M_PI;
+			hp->b = (LRAND() / MAXRAND) * 2.0 * M_PI - M_PI;
+			hp->c = (LRAND() / MAXRAND) * 2.0 * M_PI - M_PI;
+			hp->d = (LRAND() / MAXRAND) * 2.0 * M_PI - M_PI;
+			break;
+		case SINE:
+			hp->a = M_PI + ((LRAND() / MAXRAND) * 2.0 - 1.0) * 0.7;
+			break;
+	}
+	if (MI_NPIXELS(mi) > 2)
+		hp->pix = NRAND(MI_NPIXELS(mi));
+	hp->i = hp->j = 0.0;
+	hp->inc = (int) ((LRAND() / MAXRAND) * 200) - 100;
+	hp->bufsize = MI_BATCHCOUNT(mi);
 
-    hp->centerx = xgwa.width / 2;
-    hp->centery = xgwa.height / 2;
-    range = sqrt((double) hp->centerx * hp->centerx +
-		 (double) hp->centery * hp->centery) /
-	(10.0 + random() % 10);
+	if (!pointBuffer)
+		pointBuffer = (XPoint *) malloc(hp->bufsize * sizeof (XPoint));
 
-    hp->pix = 0;
-#define frand0() (((double) random()) / ((unsigned int) (~0)))
-    hp->inc = (int) (frand0() * 200) - 100;
-    hp->a = frand0() * range - range / 2.0;
-    hp->b = frand0() * range - range / 2.0;
-    hp->c = frand0() * range - range / 2.0;
-    if (!(random() % 2))
-	hp->c = 0.0;
+	XClearWindow(display, MI_WINDOW(mi));
 
-    hp->i = hp->j = 0.0;
-
-    if (!pointBuffer)
-	pointBuffer = (XPoint *) malloc(batchcount * sizeof(XPoint));
-
-    XSetForeground(dsp, gc, bg_pixel);
-    XFillRectangle(dsp, win, gc, 0, 0,
-		   hp->centerx * 2, hp->centery * 2);
-    XSetForeground(dsp, gc, fg_pixel);
-    hp->startTime = time ((time_t *) 0);
+	XSetForeground(display, gc, MI_WIN_WHITE_PIXEL(mi));
+	hp->count = 0;
 }
 
-
-static void
-#ifdef __STDC__
-drawhop(Display *dsp, Window win)
-#else /* ! __STDC__ */
-drawhop(dsp, win) Display *dsp; Window win;
-#endif /* ! __STDC__ */
-{
-    double      oldj;
-    int         k = batchcount;
-    XPoint     *xp = pointBuffer;
-    hopstruct  *hp = &hop;
-
-    hp->inc++;
-    if (! mono_p) {
-	XSetForeground(dsp, gc, pixels[hp->pix]);
-	if (++hp->pix >= npixels)
-	    hp->pix = 0;
-    }
-    while (k--) {
-	oldj = hp->j;
-	hp->j = hp->a - hp->i;
-	hp->i = oldj + (hp->i < 0
-			? sqrt(fabs(hp->b * (hp->i + hp->inc) - hp->c))
-			: -sqrt(fabs(hp->b * (hp->i + hp->inc) - hp->c)));
-	xp->x = hp->centerx + (int) (hp->i + hp->j);
-	xp->y = hp->centery - (int) (hp->i - hp->j);
-	xp++;
-    }
-    XDrawPoints(dsp, win, gc,
-		pointBuffer, batchcount, CoordModeOrigin);
-    XSync (dsp, True);
-    if ((time ((time_t *) 0) - hp->startTime) > timeout)
-      {
-	int i;
-	XSetForeground(dsp, gc, bg_pixel);
-	for (i = 0; i < hp->centery; i++)
-	  {
-	    int y = (random () % (hp->centery << 1));
-	    XDrawLine (dsp, win, gc, 0, y, hp->centerx << 1, y);
-	    XFlush (dsp);
-	    if ((i % 50) == 0)
-	      usleep (10000);
-	  }
-	XClearWindow (dsp, win);
-	XFlush (dsp);
-	sleep (1);
-	inithop(dsp,win);
-      }
-}
-
-
-char *progclass = "Hopalong";
-
-char *defaults [] = {
-  "Hopalong.background:	black",		/* to placate SGI */
-  "Hopalong.foreground:	white",
-  "*count:	1000",
-  "*ncolors:	100",
-  "*timeout:	20",
-  "*delay:	0",
-  0
-};
-
-XrmOptionDescRec options [] = {
-  { "-count",		".count",	XrmoptionSepArg, 0 },
-  { "-ncolors",		".ncolors",	XrmoptionSepArg, 0 },
-  { "-timeout",		".timeout",	XrmoptionSepArg, 0 },
-  { "-delay",		".delay",	XrmoptionSepArg, 0 },
-};
-int options_size = (sizeof (options) / sizeof (options[0]));
 
 void
-#ifdef __STDC__
-screenhack (Display *dpy, Window window)
-#else /* ! __STDC__ */
-screenhack (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
+draw_hop(ModeInfo * mi)
 {
-  inithop (dpy, window);
-  while (1)
-    {
-      drawhop (dpy, window);
-      XSync (dpy, True);
-      if (delay) usleep (delay);
-    }
+	hopstruct  *hp = &hops[MI_SCREEN(mi)];
+	double      oldj, oldi;
+	XPoint     *xp = pointBuffer;
+	int         k = hp->bufsize;
+
+	hp->inc++;
+	if (MI_NPIXELS(mi) > 2) {
+		XSetForeground(MI_DISPLAY(mi), MI_GC(mi), MI_PIXEL(mi, hp->pix));
+		if (++hp->pix >= MI_NPIXELS(mi))
+			hp->pix = 0;
+	}
+	while (k--) {
+		oldj = hp->j;
+		switch (hp->op) {
+			case SQRT:
+				oldi = hp->i + hp->inc;
+				hp->j = hp->a - hp->i;
+				hp->i = oldj + ((hp->i < 0)
+					   ? sqrt(fabs(hp->b * oldi - hp->c))
+					: -sqrt(fabs(hp->b * oldi - hp->c)));
+				xp->x = hp->centerx + (int) (hp->i + hp->j);
+				xp->y = hp->centery - (int) (hp->i - hp->j);
+				break;
+			case JONG:
+				if (hp->centerx > 0)
+					oldi = hp->i + 4 * hp->inc / hp->centerx;
+				else
+					oldi = hp->i;
+				hp->j = sin(hp->c * hp->i) - cos(hp->d * hp->j);
+				hp->i = sin(hp->a * oldj) - cos(hp->b * oldi);
+				xp->x = hp->centerx + (int) (hp->centerx * (hp->i + hp->j) / 4.0);
+				xp->y = hp->centery - (int) (hp->centery * (hp->i - hp->j) / 4.0);
+				break;
+			case SINE:
+				oldi = hp->i + hp->inc;
+				hp->j = hp->a - hp->i;
+				hp->i = oldj - sin(oldi);
+				xp->x = hp->centerx + (int) (hp->i + hp->j);
+				xp->y = hp->centery - (int) (hp->i - hp->j);
+				break;
+		}
+		xp++;
+	}
+	XDrawPoints(MI_DISPLAY(mi), MI_WINDOW(mi), MI_GC(mi),
+		    pointBuffer, hp->bufsize, CoordModeOrigin);
+	if (++hp->count > MI_CYCLES(mi))
+		init_hop(mi);
+}
+
+void
+release_hop(ModeInfo * mi)
+{
+	if (hops != NULL) {
+		(void) free((void *) hops);
+		hops = NULL;
+	}
+	if (pointBuffer) {
+		(void) free((void *) pointBuffer);
+		pointBuffer = NULL;
+	}
+}
+
+void
+refresh_hop(ModeInfo * mi)
+{
+	XClearWindow(MI_DISPLAY(mi), MI_WINDOW(mi));
 }

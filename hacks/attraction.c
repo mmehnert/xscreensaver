@@ -314,8 +314,6 @@ compute_force (i, dx_ret, dy_ret)
   *dy_ret = 0;
   for (j = 0; j < npoints; j++)
     {
-      float x_dist, y_dist, dist, dist2;
-
       if (i == j) continue;
       x_dist = balls [j].x - balls [i].x;
       y_dist = balls [j].y - balls [i].y;
@@ -581,7 +579,6 @@ run_balls (dpy, window)
       break;
     case tail_mode:
       {
-	int i;
 	for (i = 0; i < npoints; i++)
 	  {
 	    int index = point_stack_fp + i;
@@ -609,7 +606,6 @@ run_balls (dpy, window)
     case spline_mode:
     case spline_filled_mode:
       {
-	int i;
 	static spline *s = 0;
 	if (! s) s = make_spline (npoints);
 	if (segments > 0)

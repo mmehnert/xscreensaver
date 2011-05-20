@@ -7,11 +7,19 @@
 
 #include "../config.h"
 
-#ifdef NO_SELECT
-    DEFINES = -DPREFER_COLORFUL_VISUALS R5ISMS -DNO_SELECT
+#ifdef HAVE_READ_DISPLAY_EXTENSION
+# define READIMAGE_DEF -DHAVE_READ_DISPLAY_EXTENSION
 #else
-    DEFINES = -DPREFER_COLORFUL_VISUALS R5ISMS
+# define READIMAGE_DEF
 #endif
+
+#ifdef NO_SELECT
+# define NOSELECT_DEF -DNO_SELECT
+#else
+# define NOSELECT_DEF
+#endif
+
+    DEFINES = R5ISMS NOSELECT_DEF READIMAGE_DEF
        SRCS = fade.c hsv.c resources.c spline.c usleep.c xroger.c \
               grabscreen.c visual.c yarandom.c
        OBJS = fade.o hsv.o resources.o spline.o usleep.o xroger.o \

@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992, 1993, 1994, 1996 
+/* xscreensaver, Copyright (c) 1992, 1993, 1994, 1996, 1997 
  * Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -20,6 +20,7 @@ static int xoff, yoff;
 static int grid_w, grid_h;
 static int delay, delay2;
 static GC gc;
+int max_width, max_height;
 
 static void
 #ifdef __STDC__
@@ -34,7 +35,6 @@ init_slide (dpy, window)
   XGCValues gcv;
   XWindowAttributes xgwa;
   int border;
-  int root_p;
   unsigned long fg;
   Pixmap pixmap;
   Drawable d;
@@ -44,6 +44,8 @@ init_slide (dpy, window)
   XGetWindowAttributes (dpy, window, &xgwa);
   cmap = xgwa.colormap;
   visual = xgwa.visual;
+  max_width = xgwa.width;
+  max_height = xgwa.height;
 
   copy_default_colormap_contents (dpy, cmap, visual);
 
@@ -55,7 +57,6 @@ init_slide (dpy, window)
   fg = get_pixel_resource ("background", "Background", dpy,
 			   /* Pixels always come out of default map. */
 			   XDefaultColormapOfScreen (xgwa.screen));
-  root_p = get_boolean_resource ("root", "Boolean");
 
   if (delay < 0) delay = 0;
   if (delay2 < 0) delay2 = 0;
@@ -68,7 +69,7 @@ init_slide (dpy, window)
   gc = XCreateGC (dpy, window, GCForeground |GCFunction | GCSubwindowMode,
 		  &gcv);
 
-  pixmap = grab_screen_image (dpy, window, root_p);
+  pixmap = grab_screen_image (dpy, window);
 
   XGetWindowAttributes (dpy, window, &xgwa);
   bitmap_w = xgwa.width;
@@ -85,7 +86,6 @@ init_slide (dpy, window)
 
   if (border)
     {
-      int i;
       for (i = 0; i <= bitmap_w; i += grid_size)
 	XFillRectangle (dpy, d, gc, xoff+i-border/2, yoff, border, bitmap_h);
       for (i = 0; i <= bitmap_h; i += grid_size)
@@ -190,10 +190,22 @@ slide1 (dpy, window)
  inc = pix_inc;
  for (i = 0; i < grid_size; i += inc)
    {
+     int fx, fy, tox, toy;
      if (inc + i > grid_size)
        inc = grid_size - i;
-     XCopyArea (dpy, window, window, gc, x, y, grid_size * w, grid_size * h,
-		x - dx * inc, y - dy * inc);
+     tox = x - dx * inc;
+     toy = y - dy * inc;
+
+     fx = (x < 0 ? 0 : x > max_width  ? max_width  : x);
+     fy = (y < 0 ? 0 : y > max_height ? max_height : y);
+     tox = (tox < 0 ? 0 : tox > max_width  ? max_width  : tox);
+     toy = (toy < 0 ? 0 : toy > max_height ? max_height : toy);
+
+     XCopyArea (dpy, window, window, gc,
+		fx, fy,
+		grid_size * w, grid_size * h,
+		tox, toy);
+
      x -= dx * inc;
      y -= dy * inc;
      switch (dir)
@@ -226,9 +238,13 @@ slide1 (dpy, window)
 char *progclass = "SlidePuzzle";
 
 char *defaults [] = {
-  "SlidePuzzle.mappedWhenManaged:false",
-  "SlidePuzzle.dontClearWindow:	 true",
-  "*background:			black",
+  "SlidePuzzle.dontClearRoot:	True",
+
+#ifdef __sgi	/* really, HAVE_READ_DISPLAY_EXTENSION */
+  "*visualID:			Best",
+#endif
+
+  "*background:			Black",
   "*gridSize:			70",
   "*pixelIncrement:		10",
   "*internalBorderWidth:	1",

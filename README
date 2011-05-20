@@ -78,6 +78,7 @@ Other reasonable things to use as screensavers, if you have them, are
   xsplinefun			- bouncing splines
   xfishtank -c black -d -r 1	- fish (use version 2.0 or later)
   xtacy -root			- various eye candy
+  /usr/demos/bin/bongo -wbongo	- an SGI GL demo
 
 You can get all of these from the contrib directory on ftp.x.org.  If you
 know of (or write) any other interesting programs that can be used as
@@ -89,6 +90,11 @@ http://www.netscape.com/people/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 1.29:	Made `slidescreen' and `decayscreen' work better on
+			SGIs when windows of different visuals are present, by
+			using the XReadDisplay() extension to get a true 24-bit
+			image out of the frame buffer.
+			Made `noseguy' be in color, if compiled with XPM.
 Changes since 1.27:	Added `deco', `moire', and `kaleidescope' hacks.
 			Merged in support for non-Motif locking and demo mode.
 			Made `blitspin' and `bubbles' work in TrueColor.

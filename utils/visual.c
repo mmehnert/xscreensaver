@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1993, 1994, 1995, 1996
+/* xscreensaver, Copyright (c) 1993, 1994, 1995, 1996, 1997
  *  by Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -41,7 +41,7 @@
 extern char *progname;
 extern char *get_string_resource P((char *, char *));
 
-static Visual *pick_best_visual P ((Screen *));
+static Visual *pick_best_visual P ((Screen *, Bool));
 static Visual *pick_best_visual_of_class P((Screen *, int));
 static Visual *id_to_visual P((Screen *, int));
 static int screen_number P((Screen *));
@@ -54,9 +54,15 @@ int get_visual_depth P((Display *dpy, Visual *visual));
 #define SPECIFIC_VISUAL	-3
 
 Visual *
-get_visual_resource (dpy, name, class)
+#ifdef __STDC__
+get_visual_resource (Display *dpy, char *name, char *class,
+		     Bool prefer_writable_cells)
+#else /* !__STDC__ */
+get_visual_resource (dpy, name, class, prefer_writable_cells)
      Display *dpy;
      char *name, *class;
+     Bool prefer_writable_cells;
+#endif /* !__STDC__ */
 {
   Screen *screen = DefaultScreenOfDisplay (dpy);
   char c, *v = get_string_resource (name, class);
@@ -89,7 +95,7 @@ get_visual_resource (dpy, name, class)
   if (vclass == DEFAULT_VISUAL)
     return DefaultVisualOfScreen (screen);
   else if (vclass == BEST_VISUAL)
-    return pick_best_visual (screen);
+    return pick_best_visual (screen, prefer_writable_cells);
   else if (vclass == SPECIFIC_VISUAL)
     {
       Visual *visual = id_to_visual (screen, id);
@@ -108,33 +114,32 @@ get_visual_resource (dpy, name, class)
 }
 
 static Visual *
-pick_best_visual (screen)
+#ifdef __STDC__
+pick_best_visual (Screen *screen, Bool prefer_writable_cells)
+#else /* !__STDC__ */
+pick_best_visual (screen, prefer_writable_cells)
 	Screen *screen;
+	Bool prefer_writable_cells;
+#endif /* !__STDC__ */
 {
   Visual *visual;
 
-#ifdef PREFER_COLORFUL_VISUALS
-  /* For XScreenSaver, the "best" visual is the one on which we can allocate
-     the largest range and number of colors.
+  if (!prefer_writable_cells)
+    {
+      /* If we don't prefer writable cells, then the "best" visual is the one
+	 on which we can allocate the largest range and number of colors.
 
-     Therefore, a TrueColor visual which is at least 16 bits deep is best.
-     (The assumption here being that a TrueColor of less than 16 bits is
-     really just a PseudoColor visual with a pre-allocated color cube.)
+	 Therefore, a TrueColor visual which is at least 16 bits deep is best.
+	 (The assumption here being that a TrueColor of less than 16 bits is
+	 really just a PseudoColor visual with a pre-allocated color cube.)
 
-     The next best thing is a PseudoColor visual of any type.  After that
-     come the non-colormappable visuals, and non-color visuals.
-   */
-  if ((visual = pick_best_visual_of_class (screen, TrueColor)) &&
-      get_visual_depth (DisplayOfScreen(screen), visual) >= 16)
-    return visual;
-
-#else  /* !PREFER_COLORFUL_VISUALS */
-
-  /* For XDaliClock, the "best" visual is any visual with writable color
-     cells (preferring color over grayscale.)  If we can't get writable
-     cells, then the choice doesn't much matter.
-   */
-#endif /* !PREFER_COLORFUL_VISUALS */
+	 The next best thing is a PseudoColor visual of any type.  After that
+	 come the non-colormappable visuals, and non-color visuals.
+       */
+      if ((visual = pick_best_visual_of_class (screen, TrueColor)) &&
+	  get_visual_depth (DisplayOfScreen(screen), visual) >= 16)
+	return visual;
+    }
 
   if ((visual = pick_best_visual_of_class (screen, PseudoColor)))
     return visual;
@@ -150,9 +155,13 @@ pick_best_visual (screen)
 }
 
 static Visual *
+#ifdef __STDC__
+pick_best_visual_of_class (Screen *screen, int visual_class)
+#else /* !__STDC__ */
 pick_best_visual_of_class (screen, visual_class)
      Screen *screen;
      int visual_class;
+#endif /* !__STDC__ */
 {
   /* The best visual of a class is the one which on which we can allocate
      the largest range and number of colors, which means the one with the
@@ -190,9 +199,13 @@ pick_best_visual_of_class (screen, visual_class)
 }
 
 static Visual *
+#ifdef __STDC__
+id_to_visual (Screen *screen, int id)
+#else /* !__STDC__ */
 id_to_visual (screen, id)
      Screen *screen;
      int id;
+#endif /* !__STDC__ */
 {
   Display *dpy = DisplayOfScreen (screen);
   XVisualInfo vi_in, *vi_out;
@@ -211,9 +224,13 @@ id_to_visual (screen, id)
 }
 
 int
+#ifdef __STDC__
+get_visual_depth (Display *dpy, Visual *visual)
+#else /* !__STDC__ */
 get_visual_depth (dpy, visual)
      Display *dpy;
      Visual *visual;
+#endif /* !__STDC__ */
 {
   XVisualInfo vi_in, *vi_out;
   int out_count, d;
@@ -229,9 +246,13 @@ get_visual_depth (dpy, visual)
 
 
 int
+#ifdef __STDC__
+get_visual_class (Display *dpy, Visual *visual)
+#else /* !__STDC__ */
 get_visual_class (dpy, visual)
      Display *dpy;
      Visual *visual;
+#endif /* !__STDC__ */
 {
   XVisualInfo vi_in, *vi_out;
   int out_count, c;
@@ -246,10 +267,14 @@ get_visual_class (dpy, visual)
 }
 
 void
+#ifdef __STDC__
+describe_visual (FILE *f, Display *dpy, Visual *visual)
+#else /* !__STDC__ */
 describe_visual (f, dpy, visual)
      FILE *f;
      Display *dpy;
      Visual *visual;
+#endif /* !__STDC__ */
 {
   Screen *screen = DefaultScreenOfDisplay (dpy);
   XVisualInfo vi_in, *vi_out;
@@ -273,8 +298,12 @@ describe_visual (f, dpy, visual)
 }
 
 static int
+#ifdef __STDC__
+screen_number (Screen *screen)
+#else /* !__STDC__ */
 screen_number (screen)
 	Screen *screen;
+#endif /* !__STDC__ */
 {
   Display *dpy = DisplayOfScreen (screen);
   int i;
@@ -285,9 +314,13 @@ screen_number (screen)
 }
 
 int
+#ifdef __STDC__
+visual_cells (Display *dpy, Visual *visual)
+#else /* !__STDC__ */
 visual_cells (dpy, visual)
 	Display *dpy;
 	Visual *visual;
+#endif /* !__STDC__ */
 {
   XVisualInfo vi_in, *vi_out;
   int out_count, c;

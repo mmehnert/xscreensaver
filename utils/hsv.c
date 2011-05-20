@@ -77,9 +77,9 @@ rgb_to_hsv (r,g,b, h,s,v)
   else
     {
       S = cmm / cmax;
-      if      (imax == 1) H =       (G - B) / cmm;
-      else if (imax == 2) H = 2.0 + (B - R) / cmm;
-      else if (imax == 3) H = 4.0 + (R - G) / cmm;
+      if       (imax == 1)    H =       (G - B) / cmm;
+      else  if (imax == 2)    H = 2.0 + (B - R) / cmm;
+      else /*if (imax == 3)*/ H = 4.0 + (R - G) / cmm;
       if (H < 0) H += 6.0;
     }
   *h = (H * 60.0);
@@ -89,12 +89,18 @@ rgb_to_hsv (r,g,b, h,s,v)
 
 
 void
+#ifdef __STDC__
+make_color_ramp (int h1, double s1, double v1,   /* 0-360, 0-1.0, 0-1.0 */
+		 int h2, double s2, double v2,   /* 0-360, 0-1.0, 0-1.0 */
+		 XColor *pixels, int npixels)
+#else /* !__STDC__ */
 make_color_ramp (h1, s1, v1, h2, s2, v2,
 		 pixels, npixels)
      int h1, h2;			/* 0 - 360   */
      double s1, s2, v1, v2;		/* 0.0 - 1.0 */
      XColor *pixels;
      int npixels;
+#endif /* !__STDC__ */
 {
   int dh = (h2 - h1) / npixels;
   double ds = (s2 - s1) / npixels;
@@ -107,9 +113,13 @@ make_color_ramp (h1, s1, v1, h2, s2, v2,
 
 
 void
+#ifdef __STDC__
+cycle_hue (XColor *color, int degrees)
+#else /* !__STDC__ */
 cycle_hue (color, degrees)
      XColor *color;
      int degrees;
+#endif /* !__STDC__ */
 {
   int h;
   double s, v;

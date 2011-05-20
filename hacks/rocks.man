@@ -3,7 +3,7 @@
 rocks - animation of flying through an asteroid field
 .SH SYNOPSIS
 .B rocks
-[\-display \fIhost:display.screen\fP] [\-foreground \fIcolor\fP] [\-background \fIcolor\fP] [\-window] [\-root] [\-install] [\-visual \fIvisual\fP] [\-count \fIinteger\fP] [\-delay \fIusecs\fP] [\-speed \fIinteger\fP] [\-norotate]
+[\-display \fIhost:display.screen\fP] [\-foreground \fIcolor\fP] [\-background \fIcolor\fP] [\-window] [\-root] [\-install] [\-visual \fIvisual\fP] [\-count \fIinteger\fP] [\-delay \fIusecs\fP] [\-speed \fIinteger\fP] [\-norotate] [\-nomove] [\-3d]
 .SH DESCRIPTION
 The \fIrocks\fP program draws an animation of an asteroid field moving past
 the observer (or vice versa).  Sometimes the observer picks up spin on Z axis.
@@ -38,7 +38,14 @@ Number of microseconds to delay between each frame.  Default 50000, meaning
 about 1/20th second.  Compare and contrast with \fI\-speed\fP, above.
 .TP 8
 .B \-norotate
-Don't rotate the observer; just fly straight through the field.
+Don't rotate the observer; just fly through the field on the level.
+.TP 8
+.B \-nomove
+Don't turn the observer; just fly straight ahead through the field.
+.TP 8
+.B \-3d
+Do red/blue 3d separations: if you look at the screen with 3d glasses,
+the rocks will be \fIjumping\fP right \fIout\fP at you.  Oooooh, scaaary!
 .SH ENVIRONMENT
 .PP
 .TP 8
@@ -69,3 +76,5 @@ express or implied warranty.
 Based on Lisp Machine code copyright 1988 John Nguyen <johnn@hx.lcs.mit.edu>.
 
 Ported to C and X by Jamie Zawinski <jwz@netscape.com>, 13-aug-92.
+
+Steering code by Jeremie Petit; 3D code by theiling@coli.uni-sb.de.

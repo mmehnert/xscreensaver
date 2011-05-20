@@ -49,19 +49,22 @@ static void third_point (double x0, double y0, double x1, double y1,
 static void calc_section (spline* s, double cminus1x, double cminus1y,
 			  double cx, double cy, double cplus1x, double cplus1y,
 			  double cplus2x, double cplus2y);
-
-#endif
+#endif /* __STDC__ */
 
 static void
-no_more_memory ()
+no_more_memory P((void))
 {
   fprintf (stderr, "No more memory\n");
   exit (1);
 }
 
 spline*
+#ifdef __STDC__
+make_spline (u_int size)
+#else /* !__STDC__ */
 make_spline (size)
      u_int size;
+#endif /* !__STDC__ */
 {
   spline* s = (spline*)calloc (1, sizeof (spline));
   if (!s)
@@ -81,8 +84,12 @@ make_spline (size)
 }
 
 static void
+#ifdef __STDC__
+grow_spline_points (spline *s)
+#else /* !__STDC__ */
 grow_spline_points (s)
      spline* s;
+#endif /* !__STDC__ */
 {
   s->allocated_points *= 2;
   s->points =
@@ -93,24 +100,42 @@ grow_spline_points (s)
 }
 
 static void 
+#ifdef __STDC__
+mid_point (double x0, double y0,
+	   double x1, double y1,
+	   double *mx, double *my)
+#else /* !__STDC__ */
 mid_point (x0, y0, x1, y1, mx, my)
      double x0, y0, x1, y1, *mx, *my;
+#endif /* !__STDC__ */
 {
   *mx = (x0 + x1) / 2.0;
   *my = (y0 + y1) / 2.0;
 }
 
 static void 
+#ifdef __STDC__
+third_point (double x0, double y0,
+	     double x1, double y1,
+	     double *tx, double *ty)
+#else /* !__STDC__ */
 third_point (x0, y0, x1, y1, tx, ty)
      double x0, y0, x1, y1, *tx, *ty;
+#endif /* !__STDC__ */
 {
   *tx = (2 * x0 + x1) / 3.0;
   *ty = (2 * y0 + y1) / 3.0;
 }
 
 static int
+#ifdef __STDC__
+can_approx_with_line (double x0, double y0,
+		      double x2, double y2,
+		      double x3, double y3)
+#else /* !__STDC__ */
 can_approx_with_line (x0, y0, x2, y2, x3, y3)
      double x0, y0, x2, y2, x3, y3;
+#endif /* !__STDC__ */
 {
   double triangle_area, side_squared, dx, dy;
   
@@ -124,9 +149,15 @@ can_approx_with_line (x0, y0, x2, y2, x3, y3)
 }
 
 static void
+#ifdef __STDC__
+add_line (spline *s,
+	  double x0, double y0,
+	  double x1, double y1)
+#else /* !__STDC__ */
 add_line (s, x0, y0, x1, y1)
      spline* s;
      double x0, y0, x1, y1;
+#endif /* !__STDC__ */
 {
   if (s->n_points >= s->allocated_points)
     grow_spline_points (s);
@@ -143,9 +174,17 @@ add_line (s, x0, y0, x1, y1)
 }
 
 static void 
+#ifdef __STDC__
+add_bezier_arc (spline *s,
+		double x0, double y0,
+		double x1, double y1,
+		double x2, double y2,
+		double x3, double y3)
+#else /* !__STDC__ */
 add_bezier_arc (s, x0, y0, x1, y1, x2, y2, x3, y3)
      spline* s;
      double x0, y0, x1, y1, x2, y2, x3, y3;
+#endif /* !__STDC__ */
 {
   double midx01, midx12, midx23, midlsegx, midrsegx, cx,
   midy01, midy12, midy23, midlsegy, midrsegy, cy;
@@ -171,10 +210,18 @@ add_bezier_arc (s, x0, y0, x1, y1, x2, y2, x3, y3)
 }
 
 static void
-calc_section (s, cminus1x, cminus1y, cx, cy, cplus1x, cplus1y,
-	      cplus2x, cplus2y)
+#ifdef __STDC__
+calc_section (spline *s,
+	      double cminus1x, double cminus1y,
+	      double cx, double cy,
+	      double cplus1x, double cplus1y,
+	      double cplus2x, double cplus2y)
+#else /* !__STDC__ */
+calc_section (s, cminus1x, cminus1y, cx, cy,
+	      cplus1x, cplus1y, cplus2x, cplus2y)
      spline* s;
      double cminus1x, cminus1y, cx, cy, cplus1x, cplus1y, cplus2x, cplus2y;
+#endif /* !__STDC__ */
 {
   double p0x, p1x, p2x, p3x, tempx,
   p0y, p1y, p2y, p3y, tempy;
@@ -189,8 +236,12 @@ calc_section (s, cminus1x, cminus1y, cx, cy, cplus1x, cplus1y,
 }
 
 void
+#ifdef __STDC__
+compute_spline (spline *s)
+#else /* !__STDC__ */
 compute_spline (s)
      spline* s;
+#endif /* !__STDC__ */
 {
   int i;
   s->n_points = 0;
@@ -222,8 +273,12 @@ compute_spline (s)
 }
 
 void 
+#ifdef __STDC__
+compute_closed_spline (spline *s)
+#else /* !__STDC__ */
 compute_closed_spline (s)
      spline *s;
+#endif /* !__STDC__ */
 {
   int i;
   s->n_points = 0;
@@ -255,8 +310,12 @@ compute_closed_spline (s)
 }
 
 void
+#ifdef __STDC__
+just_fill_spline (spline *s)
+#else /* !__STDC__ */
 just_fill_spline (s)
      spline *s;
+#endif /* !__STDC__ */
 {
   int i;
 
@@ -274,8 +333,12 @@ just_fill_spline (s)
 }
 
 void
+#ifdef __STDC__
+append_spline_points (spline *s1, spline *s2)
+#else /* !__STDC__ */
 append_spline_points (s1, s2)
      spline *s1, *s2;
+#endif /* !__STDC__ */
 {
   int i;
   while (s1->allocated_points < s1->n_points + s2->n_points)
@@ -289,9 +352,13 @@ append_spline_points (s1, s2)
 }
 
 void
+#ifdef __STDC__
+spline_bounding_box (spline *s, XRectangle *rectangle_out)
+#else /* !__STDC__ */
 spline_bounding_box (s, rectangle_out)
      spline* s;
      XRectangle* rectangle_out;
+#endif /* !__STDC__ */
 {
   int min_x;
   int max_x;

@@ -264,7 +264,6 @@ draw_ksegment (obj)
   OBJECT *obj;
 #endif /* !__STDC__ */
 {
-  XColor new_color, old_color;
   register short x1, y1, x2, y2;
   int dx, dy;
   int i;
@@ -323,7 +322,6 @@ propogate_ksegment(obj)
   short int x1,y1,x2,y2;
   short int midx,midy,nmidx,nmidy;
   float lsin, lcos, gsin, gcos;
-  int i;
 
   lsin = sin((2*M_PI/10000)*g.local_rotation);
   lcos = cos((2*M_PI/10000)*g.local_rotation);

@@ -26,8 +26,12 @@
      Maybe you have napms() instead?  Let me know.
    */
 void
+#ifdef __STDC__
+screenhack_usleep (unsigned long usecs)
+#else /* !__STDC__ */
 screenhack_usleep (usecs)
      unsigned long usecs;
+#endif /* !__STDC__ */
 {
   usleep (usecs);
 }
@@ -35,8 +39,12 @@ screenhack_usleep (usecs)
 #else /* ! NO_SELECT */
 
 void
+#ifdef __STDC__
+screenhack_usleep (unsigned long usecs)
+#else /* !__STDC__ */
 screenhack_usleep (usecs)
      unsigned long usecs;
+#endif /* !__STDC__ */
 {
   struct timeval tv;
   tv.tv_sec  = usecs / 1000000L;

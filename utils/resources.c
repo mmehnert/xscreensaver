@@ -39,8 +39,12 @@ static unsigned int get_time_resource (char *res_name, char *res_class,
 #endif
 
 char *
+#ifdef __STDC__
+get_string_resource (char *res_name, char *res_class)
+#else /* !__STDC__ */
 get_string_resource (res_name, res_class)
      char *res_name, *res_class;
+#endif /* !__STDC__ */
 {
   XrmValue value;
   char	*type;
@@ -62,8 +66,12 @@ get_string_resource (res_name, res_class)
 }
 
 Bool 
+#ifdef __STDC__
+get_boolean_resource (char *res_name, char *res_class)
+#else /* !__STDC__ */
 get_boolean_resource (res_name, res_class)
      char *res_name, *res_class;
+#endif /* !__STDC__ */
 {
   char *tmp, buf [100];
   char *s = get_string_resource (res_name, res_class);
@@ -84,8 +92,12 @@ get_boolean_resource (res_name, res_class)
 }
 
 int 
+#ifdef __STDC__
+get_integer_resource (char *res_name, char *res_class)
+#else /* !__STDC__ */
 get_integer_resource (res_name, res_class)
      char *res_name, *res_class;
+#endif /* !__STDC__ */
 {
   int val;
   char c, *s = get_string_resource (res_name, res_class);
@@ -102,8 +114,12 @@ get_integer_resource (res_name, res_class)
 }
 
 double
+#ifdef __STDC__
+get_float_resource (char *res_name, char *res_class)
+#else /* !__STDC__ */
 get_float_resource (res_name, res_class)
      char *res_name, *res_class;
+#endif /* !__STDC__ */
 {
   double val;
   char c, *s = get_string_resource (res_name, res_class);
@@ -121,10 +137,15 @@ get_float_resource (res_name, res_class)
 
 
 unsigned int
+#ifdef __STDC__
+get_pixel_resource (char *res_name, char *res_class,
+		    Display *dpy, Colormap cmap)
+#else /* !__STDC__ */
 get_pixel_resource (res_name, res_class, dpy, cmap)
      char *res_name, *res_class;
      Display *dpy;
      Colormap cmap;
+#endif /* !__STDC__ */
 {
   XColor color;
   char *s = get_string_resource (res_name, res_class);
@@ -151,9 +172,13 @@ get_pixel_resource (res_name, res_class, dpy, cmap)
 
 
 int
+#ifdef __STDC__
+parse_time (char *string, Bool seconds_default_p, Bool silent_p)
+#else /* !__STDC__ */
 parse_time (string, seconds_default_p, silent_p)
      char *string;
      Bool seconds_default_p, silent_p;
+#endif /* !__STDC__ */
 {
   unsigned int h, m, s;
   char c;
@@ -194,9 +219,13 @@ parse_time (string, seconds_default_p, silent_p)
 }
 
 static unsigned int 
+#ifdef __STDC__
+get_time_resource (char *res_name, char *res_class, Bool sec_p)
+#else /* !__STDC__ */
 get_time_resource (res_name, res_class, sec_p)
      char *res_name, *res_class;
      Bool sec_p;
+#endif /* !__STDC__ */
 {
   int val;
   char *s = get_string_resource (res_name, res_class);
@@ -207,15 +236,23 @@ get_time_resource (res_name, res_class, sec_p)
 }
 
 unsigned int 
+#ifdef __STDC__
+get_seconds_resource (char *res_name, char *res_class)
+#else /* !__STDC__ */
 get_seconds_resource (res_name, res_class)
      char *res_name, *res_class;
+#endif /* !__STDC__ */
 {
   return get_time_resource (res_name, res_class, True);
 }
 
 unsigned int 
+#ifdef __STDC__
+get_minutes_resource (char *res_name, char *res_class)
+#else /* !__STDC__ */
 get_minutes_resource (res_name, res_class)
      char *res_name, *res_class;
+#endif /* !__STDC__ */
 {
   return get_time_resource (res_name, res_class, False);
 }

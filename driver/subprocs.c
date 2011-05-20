@@ -303,8 +303,12 @@ current_hack_name ()
 
 #ifdef SIGCHLD
 static void
+#ifdef __STDC__
+sigchld_handler (int sig)
+#else /* !__STDC__ */
 sigchld_handler (sig)
      int sig;
+#endif /* !__STDC__ */
 {
   if (killing)
     return;
@@ -316,7 +320,7 @@ sigchld_handler (sig)
 
 
 void
-init_sigchld ()
+init_sigchld P((void))
 {
 #ifdef SIGCHLD
   if (((int) signal (SIGCHLD, sigchld_handler)) == -1)
@@ -429,8 +433,12 @@ kill_screenhack ()
 
 
 void
+#ifdef __STDC__
+suspend_screenhack (Bool suspend_p)
+#else /* !__STDC__ */
 suspend_screenhack (suspend_p)
      Bool suspend_p;
+#endif /* !__STDC__ */
 {
   
   suspending = suspend_p;
@@ -456,9 +464,13 @@ suspend_screenhack (suspend_p)
 static char **saved_argv;
 
 void
+#ifdef __STDC__
+save_argv (int argc, char **argv)
+#else /* !__STDC__ */
 save_argv (argc, argv)
      int argc;
      char **argv;
+#endif /* !__STDC__ */
 {
   saved_argv = (char **) malloc ((argc + 2) * sizeof (char *));
   saved_argv [argc] = 0;
@@ -495,7 +507,7 @@ restart_process ()
 }
 
 void
-demo_mode_restart_process ()
+demo_mode_restart_process P((void))
 {
   int i;
   for (i = 0; saved_argv [i]; i++);
@@ -506,7 +518,7 @@ demo_mode_restart_process ()
 }
 
 void
-hack_environment ()
+hack_environment P((void))
 {
   /* Store $DISPLAY into the environment, so that the $DISPLAY variable that
      the spawned processes inherit is the same as the value of -display passed
@@ -540,7 +552,7 @@ static int hack_uid_errno;
 static char hack_uid_buf [255], *hack_uid_error;
 
 void
-hack_uid ()
+hack_uid P((void))
 {
   /* If we've been run as setuid or setgid to someone else (most likely root)
      turn off the extra permissions so that random user-specified programs
@@ -621,7 +633,7 @@ hack_uid ()
 }
 
 void
-hack_uid_warn ()
+hack_uid_warn P((void))
 {
   if (! hack_uid_error)
     ;

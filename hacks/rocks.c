@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992, 1995, 1996
+/* xscreensaver, Copyright (c) 1992, 1995, 1996, 1997
  *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -18,11 +18,20 @@
 #include <math.h>
 #include "screenhack.h"
 
-#define MIN_DEPTH 2		/* rocks disappar when they get this close */
+#define MIN_ROCKS 1
+#define MIN_DEPTH 2		/* rocks disappear when they get this close */
 #define MAX_DEPTH 60		/* this is where rocks appear */
-#define MAX_WIDTH 100		/* how big (in pixels) rocks are at depth 1 */
+#define MIN_SIZE 3		/* how small where pixmaps are not used */
+#define MAX_SIZE 200		/* how big (in pixels) rocks are at depth 1 */
 #define DEPTH_SCALE 100		/* how many ticks there are between depths */
 #define SIN_RESOLUTION 1000
+
+#define MAX_DEP 0.3		/* how far the displacement can be (percent) */
+#define DIRECTION_CHANGE_RATE 60
+#define MAX_DEP_SPEED 5		/* Maximum speed for movement */
+#define MOVE_STYLE 0		/* Only 0 and 1. Distinguishes the fact that
+				   these are the rocks that are moving (1) 
+				   or the rocks source (0). */
 
 /* there's not much point in the above being user-customizable, but those
    numbers might want to be tweaked for displays with an order of magnitude
@@ -36,10 +45,20 @@ static double depths [(MAX_DEPTH + 1) * DEPTH_SCALE];
 static Display *dpy;
 static Window window;
 static int width, height, midx, midy;
+static int dep_x, dep_y;
+static float max_dep;
 static GC draw_gc, erase_gc;
-static Bool rotate_p ;
-
+static Bool rotate_p;
+static Bool move_p;
 static int speed;
+static Bool threed;
+static GC threed_left_gc, threed_right_gc;
+static double threed_delta;
+
+#define GETZDIFF(z) \
+        (threed_delta * 40.0 * \
+	 (1.0 - ((MAX_DEPTH * DEPTH_SCALE / 2) / \
+		 ((z) + 20.0 * DEPTH_SCALE))))
 
 struct rock {
   int real_size;
@@ -47,11 +66,12 @@ struct rock {
   int theta;
   int depth;
   int size, x, y;
+  int diff;
 };
 
 static struct rock *rocks;
 static int nrocks;
-static Pixmap pixmaps [MAX_WIDTH];
+static Pixmap pixmaps [MAX_SIZE];
 static int delay;
 
 static void rock_compute P((struct rock *));
@@ -64,7 +84,7 @@ rock_reset (struct rock *rock)
 rock_reset (rock) struct rock *rock;
 #endif /* ! __STDC__ */
 {
-  rock->real_size = MAX_WIDTH;
+  rock->real_size = MAX_SIZE;
   rock->r = (SIN_RESOLUTION * 0.7) + (random () % (30 * SIN_RESOLUTION));
   rock->theta = random () % SIN_RESOLUTION;
   rock->depth = MAX_DEPTH * DEPTH_SCALE;
@@ -109,9 +129,23 @@ rock_compute (rock) struct rock *rock;
 #endif /* ! __STDC__ */
 {
   double factor = depths [rock->depth];
-  rock->size = (int) ((rock->real_size * factor) + 0.5);
+  double rsize = rock->real_size * factor;
+
+  rock->size = (int) (rsize + 0.5);
+  rock->diff = (int) GETZDIFF(rock->depth);
   rock->x = midx + (coss [rock->theta] * rock->r * factor);
   rock->y = midy + (sins [rock->theta] * rock->r * factor);
+
+  if (move_p)
+    {
+      double move_factor = (((double) MOVE_STYLE) -
+			    (((double) rock->depth) /
+			     (((double) (MAX_DEPTH + 1)) *
+			      ((double) DEPTH_SCALE))));
+      /* move_factor is 0 when the rock is close, 1 when far */
+      rock->x += (((double) dep_x) * move_factor);
+      rock->y += (((double) dep_y) * move_factor);
+    }
 }
 
 static void
@@ -119,7 +153,10 @@ rock_draw (rock, draw_p)
      struct rock *rock;
      Bool draw_p;
 {
-  GC gc = draw_p ? draw_gc : erase_gc;
+  GC gc = (draw_p 
+	   ? (threed ? erase_gc : draw_gc)
+	   : erase_gc);
+
   if (rock->x <= 0 || rock->y <= 0 || rock->x >= width || rock->y >= height)
     {
       /* this means that if a rock were to go off the screen at 12:00, but
@@ -127,22 +164,69 @@ rock_draw (rock, draw_p)
 	 rotates around so that the rock would have been visible again.
 	 Oh well.
        */
-      rock->depth = 0;
+      if (!move_p)
+	rock->depth = 0;
       return;
     }
   if (rock->size <= 1)
-    XDrawPoint (dpy, window, gc, rock->x, rock->y);
-  else if (rock->size <= 3 || !draw_p)
-    XFillRectangle (dpy, window, gc,
-		    rock->x - rock->size/2, rock->y - rock->size/2,
-		    rock->size, rock->size);
-  else if (rock->size < MAX_WIDTH)
-    XCopyPlane (dpy, pixmaps [rock->size], window, gc,
-		0, 0, rock->size, rock->size,
-		rock->x - rock->size/2, rock->y - rock->size/2,
-		1);
-  else
-    abort ();
+    {
+      if (threed)
+	{
+	  if (draw_p) gc = threed_left_gc;
+	  XDrawPoint (dpy, window, gc, rock->x - rock->diff, rock->y);
+	  if (draw_p) gc = threed_right_gc;
+	  XDrawPoint (dpy, window, gc, rock->x + rock->diff, rock->y);
+	}
+      else
+	{
+	  XDrawPoint (dpy, window, gc, rock->x, rock->y);
+	}
+    }
+  else if (rock->size <= MIN_SIZE || !draw_p)
+    {
+      if (threed)
+	{
+	  if (draw_p) gc = threed_left_gc;
+	  XFillRectangle(dpy, window, gc,
+			 rock->x - rock->size / 2 - rock->diff,
+			 rock->y - rock->size / 2,
+			 rock->size, rock->size);
+	  if (draw_p) gc = threed_right_gc;
+	  XFillRectangle(dpy, window, gc,
+			 rock->x - rock->size / 2 + rock->diff,
+			 rock->y - rock->size / 2,
+			 rock->size, rock->size);
+	}
+      else
+	{
+	  XFillRectangle (dpy, window, gc,
+			  rock->x - rock->size/2, rock->y - rock->size/2,
+			  rock->size, rock->size);
+	}
+    }
+  else if (rock->size < MAX_SIZE)
+    {
+      if (threed)
+	{
+	  gc = threed_left_gc;
+	  XCopyPlane(dpy, pixmaps[rock->size], window, gc,
+		     0, 0, rock->size, rock->size,
+		     rock->x - rock->size / 2 - rock->diff,
+		     rock->y - rock->size / 2, 1L);
+	  gc = threed_right_gc;
+	  XCopyPlane(dpy, pixmaps[rock->size], window, gc,
+		     0, 0, rock->size, rock->size,
+		     rock->x - rock->size / 2 + rock->diff,
+		     rock->y - rock->size / 2, 1L);
+	}
+      else
+	{
+	  XCopyPlane (dpy, pixmaps [rock->size], window, gc,
+		      0, 0, rock->size, rock->size,
+		      rock->x - rock->size/2, rock->y - rock->size/2,
+		      1L);
+	}
+    }
 }
 
 
@@ -157,7 +241,7 @@ init_pixmaps (dpy, window) Display *dpy; Window window;
   XGCValues gcv;
   GC fg_gc = 0, bg_gc = 0;
   pixmaps [0] = pixmaps [1] = 0;
-  for (i = MIN_DEPTH; i < MAX_WIDTH; i++)
+  for (i = MIN_DEPTH; i < MAX_SIZE; i++)
     {
       int w = (1+(i/32))<<5; /* server might be faster if word-aligned */
       int h = i;
@@ -191,6 +275,123 @@ init_pixmaps (dpy, window) Display *dpy; Window window;
 }
 
 
+static int
+#ifdef __STDC__
+compute_move(int axe)				/* 0 for x, 1 for y */
+#else
+compute_move(axe) int axe;
+#endif
+{
+  static int current_dep[2] = {0, 0};
+  static int speed[2] = {0, 0};
+  static short direction[2] = {0, 0};
+  static int limit[2] = {0, 0};
+  int change = 0;
+
+  limit[0] = midx;
+  limit[1] = midy;
+
+  current_dep[axe] += speed[axe];	/* We adjust the displacement */
+
+  if (current_dep[axe] > (int) (limit[axe] * max_dep))
+    {
+      if (current_dep[axe] > limit[axe])
+	current_dep[axe] = limit[axe];
+      direction[axe] = -1;
+    }			/* This is when we reach the upper screen limit */
+  if (current_dep[axe] < (int) (-limit[axe] * max_dep))
+    {
+      if (current_dep[axe] < -limit[axe])
+	current_dep[axe] = -limit[axe];
+      direction[axe] = 1;
+    }			/* This is when we reach the lower screen limit */
+  if (direction[axe] == 1)	/* We adjust the speed */
+    speed[axe] += 1;
+  else if (direction[axe] == -1)
+    speed[axe] -= 1;
+
+  if (speed[axe] > MAX_DEP_SPEED)
+    speed[axe] = MAX_DEP_SPEED;
+  else if (speed[axe] < -MAX_DEP_SPEED)
+    speed[axe] = -MAX_DEP_SPEED;
+
+  if (move_p && !(random() % DIRECTION_CHANGE_RATE))
+    {
+      /* We change direction */
+      change = random() & 1;
+      if (change != 1)
+	{
+	  if (direction[axe] == 0)
+	    direction[axe] = change - 1;	/* 0 becomes either 1 or -1 */
+	  else
+	    direction[axe] = 0;			/* -1 or 1 become 0 */
+	}
+    }
+  return (current_dep[axe]);
+}
+
+static void
+#ifdef __STDC__
+tick_rocks (int d)
+#else /* ! __STDC__ */
+tick_rocks (d) int d;
+#endif /* ! __STDC__ */
+{
+  int i;
+
+  if (move_p)
+    {
+      dep_x = compute_move(0);
+      dep_y = compute_move(1);
+    }
+
+  for (i = 0; i < nrocks; i++)
+    rock_tick (&rocks [i], d);
+}
+
+
+static void
+rocks_once P((void))
+{
+  static int current_delta = 0;	/* observer Z rotation */
+  static int window_tick = 50;
+	static int  new_delta = 0;
+	static int  dchange_tick = 0;
+
+  if (window_tick++ == 50)
+    {
+      XWindowAttributes xgwa;
+      XGetWindowAttributes (dpy, window, &xgwa);
+      window_tick = 0;
+      width = xgwa.width;
+      height = xgwa.height;
+      midx = width/2;
+      midy = height/2;
+    }
+
+  if (current_delta != new_delta)
+    {
+      if (dchange_tick++ == 5)
+	{
+	  dchange_tick = 0;
+	  if (current_delta < new_delta)
+	    current_delta++;
+	  else
+	    current_delta--;
+	}
+    }
+  else
+    {
+      if (! (random() % 50))
+	{
+	  new_delta = ((random() % 11) - 5);
+	  if (! (random() % 10))
+	    new_delta *= 5;
+	}
+    }
+  tick_rocks (current_delta);
+}
+
 static void
 #ifdef __STDC__
 init_rocks (Display *d, Window w)
@@ -213,6 +414,7 @@ init_rocks (d, w) Display *d; Window w;
   if (speed < 1) speed = 1;
   if (speed > 100) speed = 100;
   rotate_p = get_boolean_resource ("rotate", "Boolean");
+  move_p = get_boolean_resource ("move", "Boolean");
   fg = get_pixel_resource ("foreground", "Foreground", dpy, cmap);
   bg = get_pixel_resource ("background", "Background", dpy, cmap);
   gcv.foreground = fg;
@@ -221,6 +423,8 @@ init_rocks (d, w) Display *d; Window w;
   gcv.foreground = bg;
   gcv.background = fg;
   erase_gc = XCreateGC (dpy, window, GCForeground|GCBackground, &gcv);
+
+  max_dep = (move_p ? MAX_DEP : 0);
 
   for (i = 0; i < SIN_RESOLUTION; i++)
     {
@@ -232,6 +436,21 @@ init_rocks (d, w) Display *d; Window w;
     depths [i] = atan (((double) 0.5) / (((double) i) / DEPTH_SCALE));
   depths [0] = M_PI/2; /* avoid division by 0 */
 
+  threed = get_boolean_resource("use3d", "Boolean");
+  if (threed)
+    {
+      gcv.background = bg;
+      gcv.foreground = get_pixel_resource ("left3d", "Foreground", dpy, cmap);
+      threed_left_gc = XCreateGC (dpy, window, GCForeground|GCBackground,&gcv);
+      gcv.foreground = get_pixel_resource ("right3d", "Foreground", dpy, cmap);
+      threed_right_gc = XCreateGC (dpy, window,GCForeground|GCBackground,&gcv);
+      threed_delta = get_float_resource("delta3d", "Integer");
+    }
+
+  /* don't want any exposure events from XCopyPlane */
+  XSetGraphicsExposures (dpy, draw_gc, False);
+  XSetGraphicsExposures (dpy, erase_gc, False);
+
   nrocks = get_integer_resource ("count", "Count");
   if (nrocks < 1) nrocks = 1;
   rocks = (struct rock *) calloc (nrocks, sizeof (struct rock));
@@ -240,73 +459,37 @@ init_rocks (d, w) Display *d; Window w;
 }
 
 
-static void
-#ifdef __STDC__
-tick_rocks (int d)
-#else /* ! __STDC__ */
-tick_rocks (d) int d;
-#endif /* ! __STDC__ */
-{
-  int i;
-  for (i = 0; i < nrocks; i++)
-    rock_tick (&rocks [i], d);
-}
-
-static void
-rocks_once P((void))
-{
-  static int current_delta = 0;	/* observer Z rotation */
-  static int window_tick = 50;
-
-  if (window_tick++ == 50)
-    {
-      XWindowAttributes xgwa;
-      XGetWindowAttributes (dpy, window, &xgwa);
-      window_tick = 0;
-      width = xgwa.width;
-      height = xgwa.height;
-      midx = width/2;
-      midy = height/2;
-    }
-
-  if ((random () % 50) == 0)
-    {
-      int d = current_delta;
-      int new_delta = ((random () % 11) - 5);
-      if ((random () % 10) == 0)
-	new_delta *= 5;
-
-      while (d == current_delta)
-	{
-	  int i;
-	  for (i = 0; i < 3; i++)
-	    tick_rocks (d);
-	  if (current_delta < new_delta) d++;
-	  else d--;
-	}
-      current_delta = new_delta;
-    }
-  tick_rocks (current_delta);
-}
-
 
 char *progclass = "Rocks";
 
 char *defaults [] = {
-  "Rocks.background:	black",		/* to placate SGI */
-  "Rocks.foreground:	white",
+  "Rocks.background:	Black",		/* to placate SGI */
+  "Rocks.foreground:	#E9967A",
   "*count:	100",
   "*delay:	50000",
   "*speed:	100",
   "*rotate:     true",
+  "*move:       true",
+  "*use3d:      False",
+  "*left3d:	Blue",
+  "*right3d:	Red",
+  "*delta3d:	1.5",
   0
 };
 
 XrmOptionDescRec options [] = {
   { "-count",		".count",	XrmoptionSepArg, 0 },
+  { "-rotate",          ".rotate",      XrmoptionNoArg,  "true" },
   { "-norotate",        ".rotate",      XrmoptionNoArg,  "false" },
+  { "-move",            ".move",        XrmoptionNoArg,  "true" },
+  { "-nomove",          ".move",        XrmoptionNoArg,  "false" },
   { "-delay",		".delay",	XrmoptionSepArg, 0 },
-  { "-speed",		".speed",	XrmoptionSepArg, 0 }
+  { "-speed",		".speed",	XrmoptionSepArg, 0 },
+  {"-3d",		".use3d",	XrmoptionNoArg, "True"},
+  {"-no-3d",		".use3d",	XrmoptionNoArg, "False"},
+  {"-left3d",		".left3d",	XrmoptionSepArg, 0 },
+  {"-right3d",		".right3d",	XrmoptionSepArg, 0 },
+  {"-delta3d",		".delta3d",	XrmoptionSepArg, 0 }
 };
 int options_size = (sizeof (options) / sizeof (options[0]));
 

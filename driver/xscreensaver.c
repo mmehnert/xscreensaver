@@ -151,7 +151,7 @@ extern int get_integer_resource P((char *, char *));
 extern unsigned int get_minutes_resource P((char *, char *));
 extern unsigned int get_seconds_resource P((char *, char *));
 
-extern Visual *get_visual_resource P((Display *, char *, char *));
+extern Visual *get_visual_resource P((Display *, char *, char *, Bool));
 extern int get_visual_depth P((Display *, Visual *));
 
 extern void notice_events_timer P((XtPointer closure, XtIntervalId *timer));
@@ -161,7 +161,7 @@ extern void sleep_until_idle P((Bool until_idle_p));
 
 extern void ensure_no_screensaver_running P((void));
 extern void initialize_screensaver_window P((void));
-extern void disable_builtin_screensaver P((void));
+extern void disable_builtin_screensaver P((Bool turn_off_p));
 
 extern void hack_environment P((void));
 extern void grab_keyboard_and_mouse P((void));
@@ -416,7 +416,7 @@ static void
 get_resources P((void))
 {
   /* Note: we can't use the resource ".visual" because Xt is SO FUCKED. */
-  visual	  = get_visual_resource (dpy, "visualID", "VisualID");
+  visual	  = get_visual_resource (dpy, "visualID", "VisualID", False);
   timeout         = 1000 * get_minutes_resource ("timeout", "Time");
   cycle           = 1000 * get_minutes_resource ("cycle",   "Time");
   lock_timeout	  = 1000 * get_minutes_resource ("lockTimeout", "Time");
@@ -814,7 +814,7 @@ initialize (argc, argv) int argc; char **argv;
 
   init_sigchld ();
 
-  disable_builtin_screensaver ();
+  disable_builtin_screensaver (True);
 
 #ifdef HAVE_MIT_SAVER_EXTENSION
   if (use_mit_saver_extension)
@@ -996,6 +996,19 @@ handle_clientmessage (event, until_idle_p) XEvent *event; Bool until_idle_p;
 	       progname, (verbose_p ? "## " : ""), event->xclient.format);
       return False;
     }
+
+
+  /* Now is as good a time as any.
+     Make sure the `xset' parameters are still what we require them to be...
+     If somehow the parameters got changed (either because the user gave an
+     ill-conceived xset command, or because some other program was run which
+     messed with them (xlock, say) this sets them back.  If we don't set them
+     back, then there's a chance that the saver will never come on at all,
+     because the server extension may no longer be feeding us events.
+   */
+  disable_builtin_screensaver (False);
+
+
   type = event->xclient.data.l[0];
   if (type == XA_ACTIVATE)
     {

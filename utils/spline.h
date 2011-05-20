@@ -55,5 +55,4 @@ void just_fill_spline P((spline* s));
 void append_spline_points P((spline* s1, spline* s2));
 void spline_bounding_box P((spline* s, XRectangle* rectangle_out));
 
-#undef P
 #endif /* _SPLINE_H_ */

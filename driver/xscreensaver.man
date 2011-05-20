@@ -409,28 +409,53 @@ automatically return to demo mode after restarting.
 .BR xnlock (1),
 .BR xautolock (1),
 .BR xdm (1),
-.BR qix (1),
-.BR pyro (1),
-.BR helix (1),
-.BR rorschach (1),
-.BR hopalong (1),
 .BR attraction (1),
 .BR greynetic (1),
-.BR rocks (1),
+.BR helix (1),
+.BR hopalong (1),
 .BR noseguy (1),
+.BR pyro (1),
+.BR xroger (1),
+.BR qix (1),
+.BR rocks (1),
+.BR rorschach (1),
 .BR blitspin (1),
 .BR imsmap (1),
 .BR slidescreen (1),
 .BR decayscreen (1),
-.BR hypercube (1),
-.BR flame (1),
-.BR bubbles (1),
 .BR maze (1),
-.BR ico (1),
+.BR hypercube (1),
+.BR halo (1),
+.BR flame (1),
+.BR pedal (1),
+.BR lmorph (1),
+.BR deco (1),
+.BR moire (1),
+.BR kaleidescope (1),
+.BR bubbles (1),
+.BR lightning (1),
+.BR strange (1),
+.BR fract (1),
+.BR spiral (1),
+.BR laser (1),
+.BR grav (1),
+.BR drift (1),
+.BR ifs (1),
+.BR julia (1),
+.BR penrose (1),
+.BR sierpinski (1),
+.BR hopalong (1),
+.BR braid (1),
+.BR bouboule (1),
+.BR galaxy (1),
 .BR xdaliclock (1),
 .BR xbouncebits (1),
+.BR ico (1),
 .BR xswarm (1),
 .BR xwave (1),
+.BR xv (1),
+.BR xtacy (1),
+.BR bongo (1),
 .BR xfishtank (1)
 .SH BUGS
 If you think you have changed the \fBprograms\fP resource but the
@@ -460,7 +485,8 @@ screensavers by inserting strategic calls to
 .BR sleep (3)
 or
 .BR usleep (3)
-\.
+\(or making liberal use of any \fI\-delay\fP options which the programs 
+may have.)
 
 Also, it will cause your X server to be pretty much permanently swapped in.
 (but the same is true of any program that draws periodically, like xclock or
@@ -544,8 +570,8 @@ property of the (mis-) design of this server extension.
 There need to be a lot more graphics hacks.  In particular, there should be
 a simulation of a Lavalite (tm).
 .SH UPGRADES
-The latest version can always be found at http://www.netscape.com/people/jwz/.
-There is also usually an up-to-date copy at ftp://ftp.x.org/.
+The latest version can always be found at 
+http://www.netscape.com/people/jwz/xscreensaver/
 .SH COPYRIGHT
 Copyright \(co 1992, 1993, 1994, 1995, 1996, 1997 by Jamie Zawinski.
 Permission to use, copy, modify, distribute, and sell this software and its

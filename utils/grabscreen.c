@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1992, 1993, 1994 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992, 1993, 1994, 1997
+ *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -19,21 +20,80 @@
 #ifdef __STDC__
 # include <stdlib.h>
 # include <unistd.h>
+# include <string.h>
 #endif
 
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
 
+#undef usleep
+# define usleep screenhack_usleep
+
+#ifdef __STDC__
+extern void screenhack_usleep (unsigned long usecs);
+#endif
+
+#ifdef HAVE_READ_DISPLAY_EXTENSION
+# include <X11/extensions/readdisplay.h>
+# ifdef __STDC__
+  static Bool read_display (Display *, Window, Pixmap, Bool);
+# else /* !__STDC__ */
+  static Bool read_display ();
+# endif /* !__STDC__ */
+#endif /* HAVE_READ_DISPLAY_EXTENSION */
+
+
 static Bool
+#ifdef __STDC__
+MapNotify_event_p (Display *dpy, XEvent *event, XPointer window)
+#else /* !__STDC__ */
 MapNotify_event_p (dpy, event, window)
      Display *dpy;
      XEvent *event;
      XPointer window;
+#endif /* !__STDC__ */
 {
   return (event->xany.type == MapNotify &&
 	  event->xvisibility.window == (Window) window);
 }
+
+static void
+#ifdef __STDC__
+raise_window(Display *dpy, Window window, Bool dont_wait)
+#else  /* !__STDC__ */
+raise_window(dpy, window, dont_wait)
+  Display *dpy;
+  Window window;
+  Bool dont_wait;
+#endif /* !__STDC__ */
+{
+  if (! dont_wait)
+    {
+      XWindowAttributes xgwa;
+      XSizeHints hints;
+      long supplied = 0;
+      memset(&hints, 0, sizeof(hints));
+      XGetWMNormalHints(dpy, window, &hints, &supplied);
+      XGetWindowAttributes (dpy, window, &xgwa);
+      hints.x = xgwa.x;
+      hints.y = xgwa.y;
+      hints.width = xgwa.width;
+      hints.height = xgwa.height;
+      hints.flags |= (PPosition|USPosition|PSize|USSize);
+      XSetWMNormalHints(dpy, window, &hints);
+    }
+
+  XMapRaised(dpy, window);
+
+  if (! dont_wait)
+    {
+      XEvent event;
+      XIfEvent (dpy, &event, MapNotify_event_p, (XPointer) window);
+      XSync (dpy, True);
+    }
+}
+
 
 
 #ifdef __STDC__
@@ -61,24 +121,45 @@ screensaver_window_p (dpy, window)
 }
 
 Pixmap
-grab_screen_image (dpy, window, root_p)
+#ifdef __STDC__
+grab_screen_image (Display *dpy, Window window)
+#else /* !__STDC__ */
+grab_screen_image (dpy, window)
      Display *dpy;
      Window window;
-     int root_p;
+#endif /* !__STDC__ */
 {
+  /* note: this assumes vroot.h didn't encapsulate the XRootWindowOfScreen
+     function, only the RootWindowOfScreen macro... */
+  Window real_root = XRootWindowOfScreen (DefaultScreenOfDisplay (dpy));
+  Bool root_p = (window == real_root);
+  Bool saver_p = screensaver_window_p (dpy, window);
+  Bool grab_mouse_p = False;
+  int unmap_time = 0;
   Pixmap pixmap = 0;
-  XWindowAttributes xgwa;
 
-  XGetWindowAttributes (dpy, window, &xgwa);
+  if (saver_p)
+    /* I think this is redundant, but just to be safe... */
+    root_p = False;
 
-  if (screensaver_window_p (dpy, window))
+  if (saver_p)
+    /* The only time grabbing the mouse is important is if this program
+       is being run while the screen is locked. */
+    grab_mouse_p = True;
+
+  if (!root_p)
     {
-      /* note: this assumes vroot.h didn't encapsulate the XRootWindowOfScreen
-	 function, only the RootWindowOfScreen macro... */
-      Window real_root = XRootWindowOfScreen (DefaultScreenOfDisplay (dpy));
+      if (saver_p)
+	unmap_time = 5000000;  /* 5 seconds */
+      else
+	unmap_time =  660000;  /* 2/3rd second */
+    }
 
-      XSetWindowBackgroundPixmap (dpy, window, None);
+  if (!root_p)
+    XSetWindowBackgroundPixmap (dpy, window, None);
 
+  if (grab_mouse_p)
+    {
       /* prevent random viewer of the screen saver (locker) from messing
 	 with windows.   We don't check whether it succeeded, because what
 	 are our options, really... */
@@ -86,39 +167,50 @@ grab_screen_image (dpy, window, root_p)
 		    GrabModeAsync, GrabModeAsync, None, None, CurrentTime);
       XGrabKeyboard (dpy, real_root, True, GrabModeSync, GrabModeAsync,
 		     CurrentTime);
+    }
 
+  if (unmap_time > 0)
+    {
       XUnmapWindow (dpy, window);
       XSync (dpy, True);
-      sleep (5);     /* wait for everyone to swap in and handle exposes... */
-      XMapRaised (dpy, window);
-
-      XUngrabPointer (dpy, CurrentTime);
-      XUngrabKeyboard (dpy, CurrentTime);
-
-      XSync (dpy, True);
+      usleep(unmap_time); /* wait for everyone to swap in and handle exposes */
     }
-  else if (root_p)
+
+  if (!root_p)
     {
-      XGCValues gcv;
-      GC gc;
-      gcv.function = GXcopy;
-      gcv.subwindow_mode = IncludeInferiors;
-      gc = XCreateGC (dpy, window, GCFunction | GCSubwindowMode, &gcv);
+#ifdef HAVE_READ_DISPLAY_EXTENSION
+      if (! read_display(dpy, window, 0, saver_p))
+#endif /* HAVE_READ_DISPLAY_EXTENSION */
+	raise_window(dpy, window, saver_p);
+    }
+  else  /* root_p */
+    {
+      XWindowAttributes xgwa;
+      XGetWindowAttributes(dpy, window, &xgwa);
       pixmap = XCreatePixmap(dpy, window, xgwa.width, xgwa.height, xgwa.depth);
-      XCopyArea (dpy, RootWindowOfScreen (xgwa.screen), pixmap, gc,
-		 xgwa.x, xgwa.y, xgwa.width, xgwa.height, 0, 0);
-      XFreeGC (dpy, gc);
+#ifdef HAVE_READ_DISPLAY_EXTENSION
+      if (! read_display(dpy, window, pixmap, True))
+#endif
+	{
+	  XGCValues gcv;
+	  GC gc;
+	  gcv.function = GXcopy;
+	  gcv.subwindow_mode = IncludeInferiors;
+	  gc = XCreateGC (dpy, window, GCFunction | GCSubwindowMode, &gcv);
+	  XCopyArea (dpy, RootWindowOfScreen (xgwa.screen), pixmap, gc,
+		     xgwa.x, xgwa.y, xgwa.width, xgwa.height, 0, 0);
+	  XFreeGC (dpy, gc);
+	}
       XSetWindowBackgroundPixmap (dpy, window, pixmap);
     }
-  else
+
+  if (grab_mouse_p)
     {
-      XEvent event;
-      XSetWindowBackgroundPixmap (dpy, window, None);
-      XMapWindow (dpy, window);
-      XFlush (dpy);
-      XIfEvent (dpy, &event, MapNotify_event_p, (XPointer) window);
-      XSync (dpy, True);
+      XUngrabPointer (dpy, CurrentTime);
+      XUngrabKeyboard (dpy, CurrentTime);
     }
+
+  XSync (dpy, True);
   return pixmap;
 }
 
@@ -129,10 +221,16 @@ grab_screen_image (dpy, window, root_p)
    into the screensaver's colormap.
  */
 void
+#ifdef __STDC__
+copy_default_colormap_contents (Display *dpy,
+				Colormap to_cmap,
+				Visual *to_visual)
+#else /* !__STDC__ */
 copy_default_colormap_contents (dpy, to_cmap, to_visual)
      Display *dpy;
      Colormap to_cmap;
      Visual *to_visual;
+#endif /* !__STDC__ */
 {
   Screen *screen = DefaultScreenOfDisplay (dpy);
   Visual *from_visual = DefaultVisualOfScreen (screen);
@@ -198,3 +296,98 @@ copy_default_colormap_contents (dpy, to_cmap, to_visual)
   free (new_colors);
   free (pixels);
 }
+
+
+
+/* The SGI ReadDisplay extension.
+   This extension lets you get back a 24-bit image of the screen, taking into
+   account the colors with which all windows are *currently* displayed, even
+   if those windows have different visuals.  Without this extension, presence
+   of windows with different visuals or colormaps will result in technicolor
+   when one tries to grab the screen image.
+ */
+
+#ifdef HAVE_READ_DISPLAY_EXTENSION
+
+static Bool
+#ifdef __STDC__
+read_display (Display *dpy, Window window, Pixmap into_pixmap, Bool dont_wait)
+#else /* !__STDC__ */
+read_display (dpy, window, into_pixmap, dont_wait)
+  Display *dpy;
+  Window window;
+  Pixmap into_pixmap;
+  Bool dont_wait;
+#endif /* !__STDC__ */
+{
+  XWindowAttributes xgwa;
+  int rd_event_base = 0;
+  int rd_error_base = 0;
+  unsigned long hints = 0;
+  XImage *image = 0;
+  XGCValues gcv;
+  GC gc;
+
+  /* Check to see if the window is >= 24 bits deep; if not, we can't make use
+     of the pixmap returned by XReadDisplay anyway.
+   */
+  XGetWindowAttributes (dpy, window, &xgwa);
+  if (xgwa.depth < 24)
+    return False;
+
+  /* Check to see if the server supports the extension, and bug out if not.
+   */
+  if (! XReadDisplayQueryExtension (dpy, &rd_event_base, &rd_error_base))
+    return False;
+
+  /* Finally, try and read the screen.
+   */
+  hints = (XRD_TRANSPARENT | XRD_READ_POINTER);
+  image = XReadDisplay (dpy, window, xgwa.x, xgwa.y, xgwa.width, xgwa.height,
+			hints, &hints);
+  if (!image)
+    return False;
+  if (!image->data)
+    {
+      XDestroyImage(image);
+      return False;
+    }
+
+  /* Uh, this can't be right, can it?  But it's necessary.  X sucks. */
+  if (image->depth == 32)
+    image->depth = xgwa.depth;
+
+  gcv.function = GXcopy;
+  gc = XCreateGC (dpy, window, GCFunction, &gcv);
+
+  if (into_pixmap)
+    {
+      gcv.function = GXcopy;
+      gc = XCreateGC (dpy, into_pixmap, GCFunction, &gcv);
+      XPutImage (dpy, into_pixmap, gc, image, 0, 0, 0, 0,
+		 xgwa.width, xgwa.height);
+    }
+  else
+    {
+      gcv.function = GXcopy;
+      gc = XCreateGC (dpy, window, GCFunction, &gcv);
+
+      /* Ok, now we'll be needing that window on the screen... */
+      raise_window(dpy, window, dont_wait);
+
+      /* Plop down the bits... */
+      XPutImage (dpy, window, gc, image, 0, 0, 0, 0, xgwa.width, xgwa.height);
+    }
+
+  XFreeGC (dpy, gc);
+
+  if (image->data)
+    {
+      free(image->data);
+      image->data = 0;
+    }
+  XDestroyImage(image);
+  return True;
+}
+
+#endif /* HAVE_READ_DISPLAY_EXTENSION */

@@ -1,5 +1,4 @@
-/* xscreensaver, Copyright (c) 1992-1995, 1996
- *  Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992-1997 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -101,7 +100,7 @@ extern unsigned int get_pixel_resource P((char*,char*,Display*,Colormap));
 extern unsigned int get_minutes_resource P((char*,char*));
 extern unsigned int get_seconds_resource P((char*,char*));
 
-extern Visual *get_visual_resource P((Display *, char *, char *));
+extern Visual *get_visual_resource P((Display *, char *, char *, Bool));
 extern int get_visual_depth P((Display *, Visual *));
 
 extern void hsv_to_rgb P((int,double,double,unsigned short*,
@@ -114,7 +113,7 @@ extern void make_color_ramp P((int h1, double s1, double v1,
 			       int h2, double s2, double v2,
 			       XColor *pixels, int npixels));
 
-extern Pixmap grab_screen_image P((Display *dpy, Window window, int root_p));
+extern Pixmap grab_screen_image P((Display *dpy, Window window));
 extern void copy_default_colormap_contents P((Display *dpy, Colormap to_cmap,
 					      Visual *to_visual));
 

@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1992, 1996 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992, 1996, 1997
+ *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -21,8 +22,6 @@ extern FILE *popen (const char *, const char *);
 extern int pclose (FILE *);
 #endif
 
-#define Pixel unsigned long
-
 #define font_height(font)	  	(font->ascent + font->descent)
 #define FONT_NAME			"-*-times-*-*-*-*-18-*-*-*-*-*-*-*"
 
@@ -41,7 +40,7 @@ static void talk_1 P((void));
 static int think P((void));
 static unsigned long interval;
 static unsigned long look P((void)); 
-static Pixmap left0, left1, right0, right1;
+static Pixmap left1, left2, right1, right2;
 static Pixmap left_front, right_front, front, down;
 
 static char *program, *orig_program, *filename, *text;
@@ -58,37 +57,92 @@ static int state;	/* indicates states: walking or getting passwd */
 
 static void (*next_fn) P((void));
 
-#include "noses/nose.0.left"
-#include "noses/nose.1.left"
-#include "noses/nose.0.right"
-#include "noses/nose.1.right"
-#include "noses/nose.left.front"
-#include "noses/nose.right.front"
-#include "noses/nose.front"
-#include "noses/nose.down"
+#ifdef HAVE_XPM
+# include <X11/xpm.h>
+
+# include "noses/nose-f1.xpm"
+# include "noses/nose-f2.xpm"
+# include "noses/nose-f3.xpm"
+# include "noses/nose-f4.xpm"
+# include "noses/nose-l1.xpm"
+# include "noses/nose-l2.xpm"
+# include "noses/nose-r1.xpm"
+# include "noses/nose-r2.xpm"
+#else
+# include "noses/nose-f1.xbm"
+# include "noses/nose-f2.xbm"
+# include "noses/nose-f3.xbm"
+# include "noses/nose-f4.xbm"
+# include "noses/nose-l1.xbm"
+# include "noses/nose-l2.xbm"
+# include "noses/nose-r1.xbm"
+# include "noses/nose-r2.xbm"
+#endif
 
 static void
 init_images P((void))
 {
   static Pixmap *images[] = {
-    &left0, &left1, &right0, &right1,
+    &left1, &left2, &right1, &right2,
     &left_front, &right_front, &front, &down
   };
-  static unsigned char *bits[] = {
-    nose_0_left_bits, nose_1_left_bits, nose_0_right_bits,
-    nose_1_right_bits, nose_left_front_bits, nose_right_front_bits,
-    nose_front_bits, nose_down_bits
-  };
   int i;
+#ifdef HAVE_XPM
+  static char **bits[] = {
+    nose_l1_xpm, nose_l2_xpm, nose_r1_xpm, nose_r2_xpm,
+    nose_f2_xpm, nose_f3_xpm, nose_f1_xpm, nose_f4_xpm
+  };
+  for (i = 0; i < sizeof (images) / sizeof(*images); i++)
+    {
+      XWindowAttributes xgwa;
+      XpmAttributes xpmattrs;
+      Pixmap pixmap = 0;
+      int result;
+      xpmattrs.valuemask = 0;
 
-  for (i = 0; i < sizeof (images) / sizeof (images[0]); i++)
+      XGetWindowAttributes (dpy, window, &xgwa);
+
+# ifdef XpmCloseness
+      xpmattrs.valuemask |= XpmCloseness;
+      xpmattrs.closeness = 40000;
+# endif
+# ifdef XpmVisual
+      xpmattrs.valuemask |= XpmVisual;
+      xpmattrs.visual = xgwa.visual;
+# endif
+# ifdef XpmDepth
+      xpmattrs.valuemask |= XpmDepth;
+      xpmattrs.depth = xgwa.depth;
+# endif
+# ifdef XpmColormap
+      xpmattrs.valuemask |= XpmColormap;
+      xpmattrs.colormap = xgwa.colormap;
+# endif
+
+      result = XpmCreatePixmapFromData(dpy, window, bits[i],
+				       &pixmap, 0 /* mask */, &xpmattrs);
+      if (!pixmap || (result != XpmSuccess && result != XpmColorError))
+	{
+	  fprintf (stderr, "%s: Can't load nose images\n", progname);
+	  exit (1);
+	}
+      *images[i] = pixmap;
+    }
+#else
+  static unsigned char *bits[] = {
+    nose_l1_bits, nose_l2_bits, nose_r1_bits, nose_r2_bits,
+    nose_f2_bits, nose_f3_bits, nose_f1_bits, nose_f4_bits
+  };
+
+  for (i = 0; i < sizeof (images) / sizeof(*images); i++)
     if (!(*images[i] =
 	  XCreatePixmapFromBitmapData(dpy, window,
 				      (char *) bits[i], 64, 64, 1, 0, 1)))
       {
-	fprintf (stderr, "%s: Can't load nose images", progname);
+	fprintf (stderr, "%s: Can't load nose images\n", progname);
 	exit (1);
       }
+#endif
 }
 
 #define LEFT 	001
@@ -174,6 +228,14 @@ move P((void))
     next_fn = move;
 }
 
+#ifdef HAVE_XPM
+# define COPY(dpy,frame,window,gc,x,y,w,h,x2,y2) \
+  XCopyArea (dpy,frame,window,gc,x,y,w,h,x2,y2)
+#else
+# define COPY(dpy,frame,window,gc,x,y,w,h,x2,y2) \
+  XCopyPlane(dpy,frame,window,gc,x,y,w,h,x2,y2,1L)
+#endif
+
 static void
 #ifdef __STDC__
 walk(int dir)
@@ -192,12 +254,12 @@ walk(dir) int dir;
 	if (dir & LEFT)
 	{
 	    incr = X_INCR;
-	    frame = (up < 0) ? left0 : left1;
+	    frame = (up < 0) ? left1 : left2;
 	}
 	else
 	{
 	    incr = -X_INCR;
-	    frame = (up < 0) ? right0 : right1;
+	    frame = (up < 0) ? right1 : right2;
 	}
 	if ((lastdir == FRONT || lastdir == DOWN) && dir & UP)
 	{
@@ -206,7 +268,7 @@ walk(dir) int dir;
 	     * workaround silly bug that leaves screen dust when guy is
 	     * facing forward or down and moves up-left/right.
 	     */
-	    XCopyPlane(dpy, frame, window, fg_gc, 0, 0, 64, 64, x, y, 1L);
+	    COPY(dpy, frame, window, fg_gc, 0, 0, 64, 64, x, y);
 	    XFlush(dpy);
 	}
 	/* note that maybe neither UP nor DOWN is set! */
@@ -217,11 +279,9 @@ walk(dir) int dir;
     }
     /* Explicit up/down movement only (no left/right) */
     else if (dir == UP)
-	XCopyPlane(dpy, front, window, fg_gc,
-		   0, 0, 64, 64, x, y -= Y_INCR, 1L);
+	COPY(dpy, front, window, fg_gc, 0, 0, 64, 64, x, y -= Y_INCR);
     else if (dir == DOWN)
-	XCopyPlane(dpy, down, window, fg_gc,
-		   0, 0, 64, 64, x, y += Y_INCR, 1L);
+	COPY(dpy, down, window, fg_gc, 0, 0, 64, 64, x, y += Y_INCR);
     else if (dir == FRONT && frame != front)
     {
 	if (up > 0)
@@ -232,20 +292,18 @@ walk(dir) int dir;
 	    frame = right_front;
 	else
 	    frame = front;
-	XCopyPlane(dpy, frame, window, fg_gc, 0, 0, 64, 64, x, y, 1L);
+	COPY(dpy, frame, window, fg_gc, 0, 0, 64, 64, x, y);
     }
     if (dir & LEFT)
 	while (--incr >= 0)
 	{
-	    XCopyPlane(dpy, frame, window, fg_gc,
-		       0, 0, 64, 64, --x, y + up, 1L);
+	    COPY(dpy, frame, window, fg_gc, 0, 0, 64, 64, --x, y + up);
 	    XFlush(dpy);
 	}
     else if (dir & RIGHT)
 	while (++incr <= 0)
 	{
-	    XCopyPlane(dpy, frame, window, fg_gc,
-		       0, 0, 64, 64, ++x, y + up, 1L);
+	    COPY(dpy, frame, window, fg_gc, 0, 0, 64, 64, ++x, y + up);
 	    XFlush(dpy);
 	}
     lastdir = dir;
@@ -399,22 +457,22 @@ look P((void))
 {
     if (random() % 3)
     {
-	XCopyPlane(dpy, (random() & 1) ? down : front, window, fg_gc,
-		   0, 0, 64, 64, x, y, 1L);
+	COPY(dpy, (random() & 1) ? down : front, window, fg_gc,
+	     0, 0, 64, 64, x, y);
 	return 1000L;
     }
     if (!(random() % 5))
 	return 0;
     if (random() % 3)
     {
-	XCopyPlane(dpy, (random() & 1) ? left_front : right_front,
-		   window, fg_gc, 0, 0, 64, 64, x, y, 1L);
+	COPY(dpy, (random() & 1) ? left_front : right_front,
+	     window, fg_gc, 0, 0, 64, 64, x, y);
 	return 1000L;
     }
     if (!(random() % 5))
 	return 0;
-    XCopyPlane(dpy, (random() & 1) ? left0 : right0, window, fg_gc,
-	       0, 0, 64, 64, x, y, 1L);
+    COPY(dpy, (random() & 1) ? left1 : right1, window, fg_gc,
+	 0, 0, 64, 64, x, y);
     return 1000L;
 }
 
@@ -561,7 +619,7 @@ char *progclass = "Noseguy";
 
 char *defaults [] = {
   "Noseguy.background:	black",		/* to placate SGI */
-  "Noseguy.foreground:	white",
+  "Noseguy.foreground:	gray80",
   "*mode:		program",
   "*program:		fortune -s",
   "noseguy.font:	-*-new century schoolbook-*-r-*-*-*-180-*-*-*-*-*-*",
@@ -587,7 +645,7 @@ noseguy_init (Display *d, Window w)
 noseguy_init (d, w) Display *d; Window w;
 #endif /* ! __STDC__ */
 {
-  Pixel fg, bg, text_fg, text_bg;
+  unsigned long fg, bg, text_fg, text_bg;
   XWindowAttributes xgwa;
   Colormap cmap;
   char *fontname = get_string_resource ("font", "Font");

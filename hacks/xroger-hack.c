@@ -59,7 +59,6 @@ screenhack (dpy, window)
     {
       int w, h, ww, hh, x, y;
       time_t start_time;
-      XWindowAttributes xgwa;
       XGetWindowAttributes (dpy, window, &xgwa);
       w = xgwa.width;
       h = xgwa.height;
@@ -81,14 +80,14 @@ screenhack (dpy, window)
       else
 	while (start_time + delay > time ((time_t *) 0))
 	  {
-	    int h;
-	    double s, v;
+	    int H;
+	    double S, V;
 	    color2 = color;
-	    rgb_to_hsv (color2.red, color2.green, color2.blue, &h, &s, &v);
-	    v += delta;
-	    if (v >= 1.0) v = 1.0, delta = -delta;
-	    if (v <= 0.7) v = 0.7, delta = -delta;
-	    hsv_to_rgb (h, s, v, &color2.red, &color2.green, &color2.blue);
+	    rgb_to_hsv (color2.red, color2.green, color2.blue, &H, &S, &V);
+	    V += delta;
+	    if (V >= 1.0) V = 1.0, delta = -delta;
+	    if (V <= 0.7) V = 0.7, delta = -delta;
+	    hsv_to_rgb (H, S, V, &color2.red, &color2.green, &color2.blue);
 	    color3 = color2;
 	    if (XAllocColor (dpy, cmap, &color3))
 	      {

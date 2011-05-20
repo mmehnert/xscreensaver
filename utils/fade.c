@@ -33,9 +33,13 @@ static XColor current_colors [MAX_COLORS];
 static int ncolors;
 
 Colormap
+#ifdef __STDC__
+copy_colormap (Display *dpy, Colormap cmap, Colormap into_cmap)
+#else /* !__STDC__ */
 copy_colormap (dpy, cmap, into_cmap)
      Display *dpy;
      Colormap cmap, into_cmap;
+#endif /* !__STDC__ */
 {
   int i;
   Screen *screen = DefaultScreenOfDisplay (dpy);
@@ -65,9 +69,13 @@ copy_colormap (dpy, cmap, into_cmap)
 }
 
 void
+#ifdef __STDC__
+blacken_colormap (Display *dpy, Colormap cmap)
+#else /* !__STDC__ */
 blacken_colormap (dpy, cmap)
      Display *dpy;
      Colormap cmap;
+#endif /* !__STDC__ */
 {
   int i;
   for (i = 0; i < ncolors; i++)
@@ -88,12 +96,20 @@ blacken_colormap (dpy, cmap)
  */
 
 void
+#ifdef __STDC__
+fade_colormap (Display *dpy,
+	       Colormap cmap, Colormap cmap2,
+	       int seconds, int ticks,
+	       Bool out_p, Bool install_p)
+
+#else /* !__STDC__ */
 fade_colormap (dpy, cmap, cmap2, seconds, ticks, out_p, install_p)
      Display *dpy;
      Colormap cmap, cmap2;
      int seconds, ticks;
      Bool out_p;
      Bool install_p;
+#endif /* !__STDC__ */
 {
   int i;
   int steps = seconds * ticks;

@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1992, 1995 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992, 1995, 1997
+ *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -56,12 +57,13 @@ static XrmOptionDescRec default_options [] = {
   { "-window",	".root",		XrmoptionNoArg, "False" },
   { "-mono",	".mono",		XrmoptionNoArg, "True" },
   { "-install",	".installColormap",	XrmoptionNoArg, "True" },
+  { "-noinstall",".installColormap",	XrmoptionNoArg, "False" },
   { "-visual",	".visualID",		XrmoptionSepArg, 0 }
 };
 
 static char *default_defaults[] = {
   "*root:		false",
-  "*geometry:		500x500", /* this should be .geometry, but nooooo... */
+  "*geometry:		600x480", /* this should be .geometry, but nooooo... */
   "*mono:		false",
   "*installColormap:	false",
   "*visualID:		default",
@@ -99,9 +101,13 @@ merge_options P((void))
  */
 
 static int
+#ifdef __STDC__
+screenhack_ehandler (Display *dpy, XErrorEvent *error)
+#else /* !__STDC__ */
 screenhack_ehandler (dpy, error)
      Display *dpy;
      XErrorEvent *error;
+#endif /* !__STDC__ */
 {
   fprintf (stderr, "\nX error in %s:\n", progname);
   if (XmuPrintDefaultErrorMessage (dpy, error, stderr))
@@ -112,10 +118,14 @@ screenhack_ehandler (dpy, error)
 }
 
 static Bool
+#ifdef __STDC__
+MapNotify_event_p (Display *dpy, XEvent *event, XPointer window)
+#else /* !__STDC__ */
 MapNotify_event_p (dpy, event, window)
      Display *dpy;
      XEvent *event;
      XPointer window;
+#endif /* !__STDC__ */
 {
   return (event->xany.type == MapNotify &&
 	  event->xvisibility.window == (Window) window);
@@ -123,9 +133,13 @@ MapNotify_event_p (dpy, event, window)
 
 
 void
+#ifdef __STDC__
+main (int argc, char **argv)
+#else /* !__STDC__ */
 main (argc, argv)
      int argc;
      char **argv;
+#endif /* !__STDC__ */
 {
   XtAppContext app;
   Widget toplevel;
@@ -135,6 +149,7 @@ main (argc, argv)
   Colormap cmap;
   Bool root_p;
   XEvent event;
+  Boolean dont_clear /*, dont_map */;
 
   merge_options ();
   toplevel = XtAppInitialize (&app, progclass, merged_options,
@@ -170,6 +185,8 @@ main (argc, argv)
       exit (1);
     }
 
+  dont_clear = get_boolean_resource ("dontClearRoot", "Boolean");
+/*dont_map = get_boolean_resource ("dontMapWindow", "Boolean"); */
   mono_p = get_boolean_resource ("mono", "Boolean");
   if (CellsOfScreen (DefaultScreenOfDisplay (dpy)) <= 2)
     mono_p = True;
@@ -186,7 +203,7 @@ main (argc, argv)
     }
   else
     {
-      visual = get_visual_resource (dpy, "visualID", "VisualID");
+      visual = get_visual_resource (dpy, "visualID", "VisualID", False);
 
       XtVaSetValues (toplevel, XtNmappedWhenManaged, False, 0);
       XtRealizeWidget (toplevel);
@@ -225,11 +242,21 @@ main (argc, argv)
 	  cmap = DefaultColormap (dpy, DefaultScreen (dpy));
 	}
 
-      XtPopup (toplevel, XtGrabNone);
+/*      if (dont_map)
+	{
+	  XtVaSetValues (toplevel, XtNmappedWhenManaged, False, 0);
+	  XtRealizeWidget (toplevel);
+	}
+      else
+*/
+	{
+	  XtPopup (toplevel, XtGrabNone);
+	}
+
       window = XtWindow (toplevel);
     }
 
-  if (!get_boolean_resource ("dontClearWindow", "Boolean")) /* kludge-o-rama */
+  if (!dont_clear)
     {
       XSetWindowBackground (dpy, window,
 			    get_pixel_resource ("background", "Background",

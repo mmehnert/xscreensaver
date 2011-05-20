@@ -134,6 +134,15 @@
 /* #define HAVE_DEC_ENHANCED */
 
 
+/* Define this if you have the XReadDisplay extension (I think this is an
+   SGI-only thing; it's in <X11/extensions/readdisplay.h>.)  A couple of
+   the screenhacks will take advantage of this if it's available.
+ */
+#ifdef SGIArchitecture
+# define HAVE_READ_DISPLAY_EXTENSION
+#endif
+
+
 /*  You may need to edit these to correspond to where Motif is installed,
  *  if your site has Motif installed in a nonstandard place.
  */

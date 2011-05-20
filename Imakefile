@@ -8,7 +8,7 @@
 #include "config.h"
 
   SUB_MAKEFILES = utils/Makefile driver/Makefile hacks/Makefile
-       TARFILES = README Imakefile config.h screenblank.txt
+       TARFILES = README Imakefile config.h screenblank.txt cde.txt
             TAR = tar
        COMPRESS = compress
    COMPRESS_EXT = Z
