@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992-1996 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992-1997 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -23,9 +23,9 @@
 # define P(x)()
 #endif
 
-extern int get_visual_class P((Display *, Visual *));
-extern void screenhack_usleep P((unsigned long));
-#define usleep screenhack_usleep
+#include "visual.h"
+#include "usleep.h"
+
 
 #define MAX_COLORS 4096
 static XColor orig_colors [MAX_COLORS];
@@ -45,7 +45,7 @@ copy_colormap (dpy, cmap, into_cmap)
   Screen *screen = DefaultScreenOfDisplay (dpy);
   Visual *visual = DefaultVisualOfScreen (screen);
   Window window = RootWindowOfScreen (screen);
-  int vclass = get_visual_class (dpy, visual);
+  int vclass = visual_class (dpy, visual);
 
   ncolors = CellsOfScreen (screen);
 

@@ -1,5 +1,5 @@
 /*
- * Imakefile file for xscreensaver, Copyright (c) 1991-1994 Jamie Zawinski.
+ * Imakefile file for xscreensaver, Copyright (c) 1991-1997 Jamie Zawinski.
  *
  * You should not need to edit this file; edit config.h instead.
  *
@@ -7,31 +7,34 @@
 
 #include "config.h"
 
-  SUB_MAKEFILES = utils/Makefile driver/Makefile hacks/Makefile
-       TARFILES = README Imakefile config.h screenblank.txt cde.txt
-            TAR = tar
-       COMPRESS = compress
-   COMPRESS_EXT = Z
-/**/#      COMPRESS = gzip --verbose --best
-/**/#  COMPRESS_EXT = gz
+     SUB_MAKEFILES = utils/Makefile driver/Makefile hacks/Makefile
+          TARFILES = README Imakefile config.h screenblank.txt cde.txt
+               TAR = gtar
+          COMPRESS = gzip --verbose --best
+      COMPRESS_EXT = gz
+/**/#     COMPRESS = compress
+/**/# COMPRESS_EXT = Z
 
 all::
-	@echo "" ; \
-  echo "" ; \
-  echo "                               ALERT!" ; \
-  echo "" ; \
+	@echo ""							    ; \
+  echo ""								    ; \
+  echo "                               ALERT!"				    ; \
+  echo ""								    ; \
   echo "        ==========================================================" ; \
-  echo "" ; \
-  echo "        Did you read and edit config.h?  config.h is your friend." ; \
+  echo ""								    ; \
+  echo "        Did you read and edit config.h?  config.h is your friend."  ; \
   echo "        If you didn't, and you get compilation errors, that's why." ; \
-  echo "" ; \
+  echo ""								    ; \
   echo "        ==========================================================" ; \
   echo ""
 
 all:: $(SUB_MAKEFILES)
-	cd utils  ; $(MAKE) $@ CC="$(CC)" CCOPTIONS="$(CCOPTIONS)" CDEBUGFLAGS="$(CDEBUGFLAGS)"
-	cd driver ; $(MAKE) $@ CC="$(CC)" CCOPTIONS="$(CCOPTIONS)" CDEBUGFLAGS="$(CDEBUGFLAGS)"
-	cd hacks  ; $(MAKE) $@ CC="$(CC)" CCOPTIONS="$(CCOPTIONS)" CDEBUGFLAGS="$(CDEBUGFLAGS)"
+	cd utils  ; $(MAKE) $@ CC="$(CC)" CCOPTIONS="$(CCOPTIONS)" \
+		CDEBUGFLAGS="$(CDEBUGFLAGS)"
+	cd driver ; $(MAKE) $@ CC="$(CC)" CCOPTIONS="$(CCOPTIONS)" \
+		CDEBUGFLAGS="$(CDEBUGFLAGS)"
+	cd hacks  ; $(MAKE) $@ CC="$(CC)" CCOPTIONS="$(CCOPTIONS)" \
+		CDEBUGFLAGS="$(CDEBUGFLAGS)"
 
 clean depend install install.man:: $(SUB_MAKEFILES)
 	cd utils  ; $(MAKE) $@ BINDIR=$(BINDIR) XAPPLOADDIR=$(XAPPLOADDIR)

@@ -68,17 +68,23 @@
 
          UTILS = ../utils
       INCLUDES = -I$(UTILS) MOTIF_INC
-       DEFINES = SETUID_DEF XIDLE_DEF MIT_SAVER_DEF SGI_SAVER_DEF MOTIF_DEF LOCKING_DEF SHADOW_DEF R5ISMS
-     SAVERLIBS = $(XMULIB) $(XTOOLLIB) $(XSSLIB) $(EXTENSIONLIB) $(XLIB) $(DEC_ENHANCED_LIB)
+       DEFINES = SETUID_DEF XIDLE_DEF MIT_SAVER_DEF SGI_SAVER_DEF \
+		 MOTIF_DEF LOCKING_DEF SHADOW_DEF R5ISMS
+     SAVERLIBS = $(XMULIB) $(XTOOLLIB) $(XSSLIB) $(EXTENSIONLIB) \
+		 $(XLIB) $(DEC_ENHANCED_LIB)
       COMMLIBS = $(XLIB)
-     UTIL_SRCS = $(UTILS)/resources.c $(UTILS)/fade.c $(UTILS)/visual.c $(UTILS)/usleep.c $(UTILS)/yarandom.c
-     UTIL_OBJS = $(UTILS)/resources.o $(UTILS)/fade.o $(UTILS)/visual.o $(UTILS)/usleep.o $(UTILS)/yarandom.o
+     UTIL_SRCS = $(UTILS)/resources.c $(UTILS)/fade.c $(UTILS)/visual.c \
+		 $(UTILS)/usleep.c $(UTILS)/yarandom.c
+     UTIL_OBJS = $(UTILS)/resources.o $(UTILS)/fade.o $(UTILS)/visual.o \
+		 $(UTILS)/usleep.o $(UTILS)/yarandom.o
      DBOX_SRCS = dialogs.c
      DBOX_OBJS = dialogs.o
      LOCK_SRCS = lock.c
      LOCK_OBJS = lock.o
-     SAVERSRCS = xscreensaver.c timers.c subprocs.c windows.c stderr.c demo.c
-     SAVEROBJS = xscreensaver.o timers.o subprocs.o windows.o stderr.o demo.o
+     SAVERSRCS = xscreensaver.c timers.c windows.c xset.c subprocs.c \
+		 stderr.c demo.c
+     SAVEROBJS = xscreensaver.o timers.o windows.o xset.o subprocs.o \
+		 stderr.o demo.o
          SRCS1 = $(SAVERSRCS) MOTIF_SRC $(LOCK_SRCS) $(UTIL_SRCS)
          OBJS1 = $(SAVEROBJS) MOTIF_OBJ $(LOCK_OBJS) $(UTIL_OBJS)
       COMMSRCS = xscreensaver-command.c
@@ -89,6 +95,7 @@
       TARFILES = README Imakefile $(SAVERSRCS) $(DBOX_SRCS) $(LOCK_SRCS) \
                  $(COMMSRCS) xscreensaver.h XScreenSaver.ad dialogs.xd \
                  $(MEN) .gdbinit
+          NULL =
 
 #if defined(HPArchitecture) && !defined(NO_LOCKING)
 EXTRA_LIBRARIES = -lXhp11	/* for XHPDisableReset() */
@@ -121,14 +128,14 @@ depend:: XScreenSaver.ad.h
 #define InstallProgram(p,d) InstallProgramWithFlags(p,d,$(INSTUIDFLAGS))
 #endif
 
-ComplexProgramTarget_1(xscreensaver,MOTIF_LIB $(SAVERLIBS), $(HP_NULL_STR))
+ComplexProgramTarget_1(xscreensaver,MOTIF_LIB $(SAVERLIBS), $(NULL))
 
 #ifdef INSTALL_SETUID
 #undef  InstallProgram
-#define InstallProgram(p,d) InstallProgramWithFlags(p,d,$(HP_NULL_STR))
+#define InstallProgram(p,d) InstallProgramWithFlags(p,d,$(NULL))
 #endif
 
-ComplexProgramTarget_2(xscreensaver-command,$(COMMLIBS),$(HP_NULL_STR))
+ComplexProgramTarget_2(xscreensaver-command,$(COMMLIBS),$(NULL))
 
 InstallAppDefaults(XScreenSaver)
 

@@ -1,13 +1,14 @@
-.TH XScreenSaver 1 "13-aug-92" "X Version 11"
+.TH XScreenSaver 1 "15-May-97" "X Version 11"
 .SH NAME
-flame - draw weird cosmic fractals
+bouboule - draws spinning 3D blobs
 .SH SYNOPSIS
-.B flame
-[\-display \fIhost:display.screen\fP] [\-foreground \fIcolor\fP] [\-background \fIcolor\fP] [\-window] [\-root] [\-mono] [\-install] [\-visual \fIvisual\fP] [\-colors \fIinteger\fP] [\-iterations \fIinteger\fP] [\-points \fIinteger\fP] [\-delay \fImicroseconds\fP] [\-delay2 \fImicroseconds\fP]
+.B bouboule
+[\-display \fIhost:display.screen\fP] [\-foreground \fIcolor\fP] [\-background \fIcolor\fP] [\-window] [\-root] [\-mono] [\-install] [\-visual \fIvisual\fP] [\-ncolors \fIinteger\fP] [\-delay \fImicroseconds\fP] [\-cycles \fIinteger\fP] [\-count \fIinteger\fP] [\-3d]
+
 .SH DESCRIPTION
-The \fIflame\fP program generates colorful fractal displays.
+The \fIbouboule\fP program draws spinning 3D blobs.
 .SH OPTIONS
-.I flame
+.I bouboule
 accepts the following options:
 .TP 8
 .B \-window
@@ -26,22 +27,20 @@ Install a private colormap for the window.
 Specify which visual to use.  Legal values are the name of a visual class,
 or the id number (decimal or hex) of a specific visual.
 .TP 8
-.B \-colors \fIinteger\fP
+.B \-ncolors \fIinteger\fP
 How many colors should be used (if possible).  Default 64.
+The colors used cycle through the hue, making N stops around
+the color wheel.
 .TP 8
-.B \-iterations \fIinteger\fP
-How many fractals to generate.  Default 25.
+.B \-cycles \fIinteger\fP
+
 .TP 8
-.B \-points \fIinteger\fP
-How many pixels to draw for each fractal.  Default 10000.
+.B \-count \fIinteger\fP
+
 .TP 8
-.B \-delay \fImicroseconds\fP
-How long we should wait between drawing each fractal.  Default 50000,
-or about 1/20th second.
-.TP 8
-.B \-delay2 \fImicroseconds\fP
-How long we should wait before clearing the screen when each run ends.
-Default 2000000, or two seconds.
+.B \-3d
+Do red/blue 3d separations (for 3d glasses.)
+
 .SH ENVIRONMENT
 .PP
 .TP 8
@@ -56,15 +55,22 @@ stored in the RESOURCE_MANAGER property.
 .BR xscreensaver (1),
 .BR xlock (1)
 .SH COPYRIGHT
-Copyright \(co 1991 by Patrick J. Naughton
+Copyright \(co 1996 by Jeremie Petit.
 
 Permission to use, copy, modify, and distribute this software and its
 documentation for any purpose and without fee is hereby granted,
 provided that the above copyright notice appear in all copies and that
 both that copyright notice and this permission notice appear in
 supporting documentation. 
+
 .SH AUTHOR
-Scott Graves <spot@cs.cmu.edu>, 06-Jun-91.n
+Jeremie Petit <jpetit@essi.fr>, 1996.
+
+3D support by Henrik Theiling <theiling@coli-uni-sb.de>, 04-Sep-96.
+
+VMS support by Jouk Jansen <joukj@alpha.chem.uva.nl>, 01-Feb-96.
+
+TrueColor support by David Bagley <bagleyd@bigfoot.com>, 01-Feb-96.
 
 Ability to run standalone or with \fIxscreensaver\fP added by 
-Jamie Zawinski <jwz@netscape.com>, 18-Oct-93.
+Jamie Zawinski <jwz@netscape.com>, 15-May-97.

@@ -1,31 +1,11 @@
 /* -*- Mode: C; tab-width: 4 -*-
-   Ported from xlockmore 4.03a10 to be a standalone program and thus usable
-   with xscreensaver by Jamie Zawinski <jwz@netscape.com> on 10-May-97.
-
-   Original copyright notice from xlock.c:
-
-    * Copyright (c) 1988-91 by Patrick J. Naughton.
-    *
-    * Permission to use, copy, modify, and distribute this software and its
-    * documentation for any purpose and without fee is hereby granted,
-    * provided that the above copyright notice appear in all copies and that
-    * both that copyright notice and this permission notice appear in
-    * supporting documentation.
-    *
-    * This file is provided AS IS with no warranties of any kind.  The author
-    * shall have no liability with respect to the infringement of copyrights,
-    * trade secrets or any patents by this file or any part thereof.  In no
-    * event will the author be liable for any lost revenue or profits or
-    * other special, indirect and consequential damages.
+ * fract --- another geometric pattern generator.
  */
-
 #if !defined( lint ) && !defined( SABER )
 static const char sccsid[] = "@(#)fract.c	4.02 97/04/01 xlockmore";
-
 #endif
 
-/*-
- * xlockmore mode written by Tracy Camp
+/* xlockmore mode written by Tracy Camp
  * campt@hurrah.com 1997
  * released to the public domain
  *
@@ -35,35 +15,25 @@ static const char sccsid[] = "@(#)fract.c	4.02 97/04/01 xlockmore";
  * to fame is a pseudo-fractal looking vine like pattern that creates
  * nifty whorls and loops.
  *
- * See xlock.c for copying information.
- *
  * Revision History:
- *
  * 10-May-97: jwz@netscape.com: turned into a standalone program.
- * 21-MAR-97:  David Hansen <dhansen@metapath.com>
+ * 21-Mar-97:  David Hansen <dhansen@metapath.com>
  *             Updated mode to draw complete patterns on every
  *             iteration instead of growing the vine.  Also made
  *             adjustments to randomization and changed variable
  *             names to make logic easier to follow.
- * 
  */
 
-#ifndef STANDALONE
-# include "xlock.h"
-#else  /* STANDALONE */
-
-# define PROGCLASS	"Fract"
-# define HACK_INIT	init_fract
-# define HACK_DRAW	draw_fract
-# define DEF_DELAY	200000
-# include "xlockmore.h"
-
-#endif /* STANDALONE */
-
-
-#ifndef STANDALONE
-ModeSpecOpt fract_opts =
-{0, NULL, 0, NULL, NULL};
+#ifdef STANDALONE
+# define PROGCLASS					"Fract"
+# define HACK_INIT					init_fract
+# define HACK_DRAW					draw_fract
+# define DEF_DELAY					200000
+# include "xlockmore.h"				/* from the xscreensaver distribution */
+#else  /* !STANDALONE */
+# include "xlock.h"					/* from the xlockmore distribution */
+  ModeSpecOpt fract_opts = {
+    0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
 
 typedef struct {

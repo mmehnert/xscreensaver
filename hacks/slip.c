@@ -1,57 +1,42 @@
 /* -*- Mode: C; tab-width: 4 -*-
-   Ported from xlockmore 4.03a10 to be a standalone program and thus usable
-   with xscreensaver by Jamie Zawinski <jwz@netscape.com> on 10-May-97.
-
-   Original copyright notice from xlock.c:
-
-    * Copyright (c) 1988-91 by Patrick J. Naughton.
-    *
-    * Permission to use, copy, modify, and distribute this software and its
-    * documentation for any purpose and without fee is hereby granted,
-    * provided that the above copyright notice appear in all copies and that
-    * both that copyright notice and this permission notice appear in
-    * supporting documentation.
-    *
-    * This file is provided AS IS with no warranties of any kind.  The author
-    * shall have no liability with respect to the infringement of copyrights,
-    * trade secrets or any patents by this file or any part thereof.  In no
-    * event will the author be liable for any lost revenue or profits or
-    * other special, indirect and consequential damages.
+ * slip --- lots of blits.
  */
-
 #if !defined( lint ) && !defined( SABER )
 static const char sccsid[] = "@(#)slip.c	4.00 97/01/01 xlockmore";
-
 #endif
 
-/*-
- * slip.c - lots of blits
+/* Copyright (c) 1992 by Scott Draves (spot@cs.cmu.edu)
  *
- * Copyright (c) 1992 by Scott Draves (spot@cs.cmu.edu)
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for any purpose and without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and that
+ * both that copyright notice and this permission notice appear in
+ * supporting documentation.
  *
- * See xlock.c for copying information.
+ * This file is provided AS IS with no warranties of any kind.  The author
+ * shall have no liability with respect to the infringement of copyrights,
+ * trade secrets or any patents by this file or any part thereof.  In no
+ * event will the author be liable for any lost revenue or profits or
+ * other special, indirect and consequential damages.
+ *
+ * Revision History:
  * 12-May-97: jwz@netscape.com: turned into a standalone program.
  * 01-Dec-95: Patched for VMS <joukj@alpha.chem.uva.nl>.
  */
 
-#ifndef STANDALONE
-# include "xlock.h"
-#else  /* STANDALONE */
-
-# define PROGCLASS		"Slip"
-# define HACK_INIT		init_slip
-# define HACK_DRAW		draw_slip
-# define DEF_DELAY		50000
-# define DEF_CYCLES		50
-# define DEF_BATCHCOUNT	35
-# define DEF_NCOLORS	200
-# include "xlockmore.h"
-
-#endif /* STANDALONE */
-
-#ifndef STANDALONE
-ModeSpecOpt slip_opts =
-{0, NULL, 0, NULL, NULL};
+#ifdef STANDALONE
+# define PROGCLASS					"Slip"
+# define HACK_INIT					init_slip
+# define HACK_DRAW					draw_slip
+# define DEF_BATCHCOUNT				35
+# define DEF_CYCLES					50
+# define DEF_DELAY					50000
+# define DEF_NCOLORS				200
+# include "xlockmore.h"				/* from the xscreensaver distribution */
+#else  /* !STANDALONE */
+# include "xlock.h"					/* from the xlockmore distribution */
+  ModeSpecOpt slip_opts = {
+	0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
 
 typedef struct {
@@ -112,8 +97,7 @@ prepare_screen(ModeInfo * mi, slipstruct * s)
 #ifdef STANDALONE			  /* jwz -- sometimes hack the desktop image! */
 	if (halfrandom(5) == 0)
 	  {
-		Pixmap p = grab_screen_image(display, MI_WINDOW(mi));
-		if (p) XFreePixmap(display, p);
+		grab_screen_image(display, MI_WINDOW(mi));
 		return;
 	  }
 #endif

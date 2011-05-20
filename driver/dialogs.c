@@ -1,4 +1,4 @@
-/*    xscreensaver, Copyright (c) 1993-1996 Jamie Zawinski <jwz@netscape.com>
+/*    xscreensaver, Copyright (c) 1993-1997 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -37,7 +37,7 @@
 #include <Xm/SelectioB.h>
 
 extern Visual *visual;
-extern int visual_depth;
+extern int visualdepth;
 extern Colormap cmap;
 
 
@@ -230,7 +230,7 @@ Widget parent;
   ac = 0;
   XtSetArg (al[ac], XmNvisual, visual); ac++;
   XtSetArg (al[ac], XmNcolormap, cmap); ac++;
-  XtSetArg (al[ac], XmNdepth, visual_depth); ac++;
+  XtSetArg (al[ac], XmNdepth, visualdepth); ac++;
 
   real_dialog = XmCreatePromptDialog (parent, "resourcesForm", al, ac);
   resources_dialog = XtParent(real_dialog);
@@ -600,7 +600,7 @@ Widget parent;
   ac = 0;
   XtSetArg (al[ac], XmNvisual, visual); ac++;
   XtSetArg (al[ac], XmNcolormap, cmap); ac++;
-  XtSetArg (al[ac], XmNdepth, visual_depth); ac++;
+  XtSetArg (al[ac], XmNdepth, visualdepth); ac++;
 
 
   real_dialog = XmCreatePromptDialog (parent, "demoForm", al, ac);

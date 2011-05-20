@@ -9,8 +9,6 @@
  * implied warranty.
  */
 
-#include "version.h"
-
 /*   ========================================================================
  *   First we wait until the keyboard and mouse become idle for the specified
  *   amount of time.  We do this in one of three different ways: periodically
@@ -134,29 +132,16 @@
 #include <X11/extensions/xidle.h>
 #endif /* HAVE_XIDLE_EXTENSION */
 
-#ifdef HAVE_MIT_SAVER_EXTENSION
-#include <X11/extensions/scrnsaver.h>
-#endif /* HAVE_MIT_SAVER_EXTENSION */
-
-#ifdef HAVE_SGI_SAVER_EXTENSION
-#include <X11/extensions/XScreenSaver.h>
-#endif /* HAVE_SGI_SAVER_EXTENSION */
-
-#include "yarandom.h"
 #include "xscreensaver.h"
-
-extern char *get_string_resource P((char *, char *));
-extern Bool get_boolean_resource P((char *, char *));
-extern int get_integer_resource P((char *, char *));
-extern unsigned int get_minutes_resource P((char *, char *));
-extern unsigned int get_seconds_resource P((char *, char *));
-
-extern Visual *get_visual_resource P((Display *, char *, char *, Bool));
-extern int get_visual_depth P((Display *, Visual *));
+#include "version.h"
+#include "yarandom.h"
+#include "resources.h"
+#include "visual.h"
 
 extern void notice_events_timer P((XtPointer closure, XtIntervalId *timer));
 extern void cycle_timer P((void *junk1, XtPointer junk2));
 extern void activate_lock_timer P((void *junk1, XtPointer junk2));
+extern void watchdog_timer P((void *junk1, XtPointer junk2));
 extern void sleep_until_idle P((Bool until_idle_p));
 
 extern void ensure_no_screensaver_running P((void));
@@ -181,7 +166,7 @@ XtAppContext app;
 Display *dpy;
 Screen *screen;
 Visual *visual;
-int visual_depth;
+int visualdepth;
 
 Widget toplevel_shell;
 
@@ -194,6 +179,7 @@ extern Time passwd_timeout;
 #endif
 extern Time pointer_timeout;
 extern Time notice_events_timeout;
+extern Time watchdog_timeout;
 extern XtIntervalId lock_id, cycle_id;
 
 Bool use_xidle_extension;
@@ -219,19 +205,22 @@ extern Bool dbox_up_p;
 extern int next_mode_p;
 
 #ifdef HAVE_MIT_SAVER_EXTENSION
-int mit_saver_ext_event_number = 0;
-int mit_saver_ext_error_number = 0;
+extern int mit_saver_ext_event_number;
+extern int mit_saver_ext_error_number;
+extern Bool query_mit_saver_extension P((Display *));
 #endif /* HAVE_MIT_SAVER_EXTENSION */
 
 #ifdef HAVE_SGI_SAVER_EXTENSION
-int sgi_saver_ext_event_number = 0;
-int sgi_saver_ext_error_number = 0;
+extern int sgi_saver_ext_event_number;
+extern int sgi_saver_ext_error_number;
+extern Bool query_sgi_saver_extension P((Display *));
 #endif /* HAVE_SGI_SAVER_EXTENSION */
 
 static time_t initial_delay;
 
 extern Atom XA_VROOT, XA_XSETROOT_ID;
 extern Atom XA_SCREENSAVER_VERSION, XA_SCREENSAVER_ID;
+extern Atom XA_SCREENSAVER_TIME;
 
 static Atom XA_SCREENSAVER;
 static Atom XA_ACTIVATE, XA_DEACTIVATE, XA_CYCLE, XA_NEXT, XA_PREV;
@@ -437,16 +426,20 @@ get_resources P((void))
   passwd_timeout  = 1000 * get_seconds_resource ("passwdTimeout", "Time");
   if (passwd_timeout == 0) passwd_timeout = 30000;
 #endif
-  if (timeout < 10000) timeout = 10000;
-  if (cycle != 0 && cycle < 2000) cycle = 2000;
-  if (pointer_timeout == 0) pointer_timeout = 5000;
-  if (notice_events_timeout == 0) notice_events_timeout = 10000;
+  if (timeout < 10000) timeout = 10000;				 /* 10 secs */
+  if (cycle != 0 && cycle < 2000) cycle = 2000;			 /*  2 secs */
+  if (pointer_timeout == 0) pointer_timeout = 5000;		 /*  5 secs */
+  if (notice_events_timeout == 0) notice_events_timeout = 10000; /* 10 secs */
   if (fade_seconds == 0 || fade_ticks == 0) fade_p = False;
   if (! fade_p) unfade_p = False;
 
-  visual_depth = get_visual_depth (dpy, visual);
+  watchdog_timeout = cycle;
+  if (watchdog_timeout < 30000) watchdog_timeout = 30000;	 /* 30 secs */
+  if (watchdog_timeout > 3600000) watchdog_timeout = 3600000;	 /*  1 hour */
 
-  if (visual_depth <= 1 || CellsOfScreen (screen) <= 2)
+  visualdepth = visual_depth (dpy, visual);
+
+  if (visualdepth <= 1 || CellsOfScreen (screen) <= 2)
     install_cmap_p = False;
 
 #ifdef NO_LOCKING
@@ -590,6 +583,7 @@ initialize_connection (argc, argv)
   XA_SCREENSAVER = XInternAtom (dpy, "SCREENSAVER", False);
   XA_SCREENSAVER_VERSION = XInternAtom (dpy, "_SCREENSAVER_VERSION", False);
   XA_SCREENSAVER_ID = XInternAtom (dpy, "_SCREENSAVER_ID", False);
+  XA_SCREENSAVER_TIME = XInternAtom (dpy, "_SCREENSAVER_TIME", False);
   XA_XSETROOT_ID = XInternAtom (dpy, "_XSETROOT_ID", False);
   XA_ACTIVATE = XInternAtom (dpy, "ACTIVATE", False);
   XA_DEACTIVATE = XInternAtom (dpy, "DEACTIVATE", False);
@@ -601,66 +595,6 @@ initialize_connection (argc, argv)
   XA_DEMO = XInternAtom (dpy, "DEMO", False);
   XA_LOCK = XInternAtom (dpy, "LOCK", False);
 }
-
-#ifdef HAVE_MIT_SAVER_EXTENSION
-
-static int
-#ifdef __STDC__
-ignore_all_errors_ehandler (Display *dpy, XErrorEvent *error)
-#else /* ! __STDC__ */
-ignore_all_errors_ehandler (dpy, error) Display *dpy; XErrorEvent *error;
-#endif /* ! __STDC__ */
-{
-  return 0;
-}
-
-static void
-init_mit_saver_extension P((void))
-{
-  XID kill_id;
-  Atom kill_type;
-  Window root = RootWindowOfScreen (screen);
-  Pixmap blank_pix = XCreatePixmap (dpy, root, 1, 1, 1);
-
-  /* Kill off the old MIT-SCREEN-SAVER client if there is one.
-     This tends to generate X errors, though (possibly due to a bug
-     in the server extension itself?) so just ignore errors here. */
-  if (XScreenSaverGetRegistered (dpy, XScreenNumberOfScreen (screen),
-				 &kill_id, &kill_type)
-      && kill_id != blank_pix)
-    {
-      int (*old_handler) ();
-      old_handler = XSetErrorHandler (ignore_all_errors_ehandler);
-      XKillClient (dpy, kill_id);
-      XSync (dpy, False);
-      XSetErrorHandler (old_handler);
-    }
-
-  XScreenSaverSelectInput (dpy, root, ScreenSaverNotifyMask);
-
-  XScreenSaverRegister (dpy, XScreenNumberOfScreen (screen),
-			(XID) blank_pix, XA_PIXMAP);
-}
-#endif /* HAVE_MIT_SAVER_EXTENSION */
-
-
-#ifdef HAVE_SGI_SAVER_EXTENSION
-
-static void
-init_sgi_saver_extension P((void))
-{
-  if (! XScreenSaverEnable (dpy, XScreenNumberOfScreen(screen)))
-    {
-      fprintf (stderr,
-       "%s: %sSGI SCREEN_SAVER extension exists, but can't be initialized;\n\
-		perhaps some other screensaver program is already running?\n",
-	       progname, (verbose_p ? "## " : ""));
-      use_sgi_saver_extension = False;
-    }
-}
-
-#endif /* HAVE_SGI_SAVER_EXTENSION */
-
 
 extern void init_sigchld P((void));
 
@@ -733,9 +667,7 @@ initialize (argc, argv) int argc; char **argv;
   if (use_sgi_saver_extension)
     {
 #ifdef HAVE_SGI_SAVER_EXTENSION
-      if (! XScreenSaverQueryExtension (dpy,
-					&sgi_saver_ext_event_number,
-					&sgi_saver_ext_error_number))
+      if (! query_sgi_saver_extension (dpy))
 	{
 	  fprintf (stderr,
 	 "%s: %sdisplay %s does not support the SGI SCREEN_SAVER extension.\n",
@@ -767,9 +699,7 @@ initialize (argc, argv) int argc; char **argv;
   if (use_mit_saver_extension)
     {
 #ifdef HAVE_MIT_SAVER_EXTENSION
-      if (! XScreenSaverQueryExtension (dpy,
-					&mit_saver_ext_event_number,
-					&mit_saver_ext_error_number))
+      if (! query_mit_saver_extension (dpy))
 	{
 	  fprintf (stderr,
 	 "%s: %sdisplay %s does not support the MIT-SCREEN-SAVER extension.\n",
@@ -815,16 +745,6 @@ initialize (argc, argv) int argc; char **argv;
   init_sigchld ();
 
   disable_builtin_screensaver (True);
-
-#ifdef HAVE_MIT_SAVER_EXTENSION
-  if (use_mit_saver_extension)
-    init_mit_saver_extension ();
-#endif /* HAVE_MIT_SAVER_EXTENSION */
-
-#ifdef HAVE_SGI_SAVER_EXTENSION
-  if (use_sgi_saver_extension)
-    init_sgi_saver_extension ();
-#endif /* HAVE_SGI_SAVER_EXTENSION */
 
   if (verbose_p && use_mit_saver_extension)
     fprintf (stderr, "%s: using MIT-SCREEN-SAVER server extension.\n",
@@ -875,9 +795,12 @@ initialize (argc, argv) int argc; char **argv;
 
 extern void suspend_screenhack P((Bool suspend_p));
 
+
 static void
 main_loop P((void))
 {
+  watchdog_timer (0, 0);
+
   while (1)
     {
       if (! demo_mode_p)
@@ -996,18 +919,6 @@ handle_clientmessage (event, until_idle_p) XEvent *event; Bool until_idle_p;
 	       progname, (verbose_p ? "## " : ""), event->xclient.format);
       return False;
     }
-
-
-  /* Now is as good a time as any.
-     Make sure the `xset' parameters are still what we require them to be...
-     If somehow the parameters got changed (either because the user gave an
-     ill-conceived xset command, or because some other program was run which
-     messed with them (xlock, say) this sets them back.  If we don't set them
-     back, then there's a chance that the saver will never come on at all,
-     because the server extension may no longer be feeding us events.
-   */
-  disable_builtin_screensaver (False);
-
 
   type = event->xclient.data.l[0];
   if (type == XA_ACTIVATE)

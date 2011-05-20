@@ -1,35 +1,24 @@
 /* -*- Mode: C; tab-width: 4 -*-
-   Ported from xlockmore 4.03a10 to be a standalone program and thus usable
-   with xscreensaver by Jamie Zawinski <jwz@netscape.com> on 10-May-97.
-
-   Original copyright notice from xlock.c:
-
-    * Copyright (c) 1988-91 by Patrick J. Naughton.
-    *
-    * Permission to use, copy, modify, and distribute this software and its
-    * documentation for any purpose and without fee is hereby granted,
-    * provided that the above copyright notice appear in all copies and that
-    * both that copyright notice and this permission notice appear in
-    * supporting documentation.
-    *
-    * This file is provided AS IS with no warranties of any kind.  The author
-    * shall have no liability with respect to the infringement of copyrights,
-    * trade secrets or any patents by this file or any part thereof.  In no
-    * event will the author be liable for any lost revenue or profits or
-    * other special, indirect and consequential damages.
+ * galaxy --- draw spinning, colliding galaxies.
  */
-
 #if !defined( lint ) && !defined( SABER )
 static const char sccsid[] = "@(#)galaxy.c	4.02 97/04/01 xlockmore";
-
 #endif
 
-/*-
- * galaxy.c - Spinning galaxies for xlockmore
- *
- * Originally done by Uli Siegmund (uli@wombat.okapi.sub.org) on Amiga
+/* Originally done by Uli Siegmund (uli@wombat.okapi.sub.org) on Amiga
  *   for EGS in Cluster
- * Port from Cluster/EGS to C/Intuition by Harald Backert
+ *
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for any purpose and without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and that
+ * both that copyright notice and this permission notice appear in
+ * supporting documentation.
+ *
+ * This file is provided AS IS with no warranties of any kind.  The author
+ * shall have no liability with respect to the infringement of copyrights,
+ * trade secrets or any patents by this file or any part thereof.  In no
+ * event will the author be liable for any lost revenue or profits or
+ * other special, indirect and consequential damages.
  * Port to X11 and incorporation into xlockmore by Hubert Feyrer
  *   (hubert.feyrer@rz.uni-regensburg.de)
  *
@@ -47,22 +36,20 @@ static const char sccsid[] = "@(#)galaxy.c	4.02 97/04/01 xlockmore";
  * 18-Apr-97: Memory leak fixed by Tom Schmidt <tschmidt@micron.com>
  */
 
-#ifndef STANDALONE
-# include "xlock.h"
-#else  /* STANDALONE */
-
-# define PROGCLASS		"Galaxy"
-# define HACK_INIT		init_galaxy
-# define HACK_DRAW		draw_galaxy
-# define DEF_DELAY		100
-# define DEF_CYCLES		250
-# define DEF_BATCHCOUNT	5
-# define DEF_SIZE		3
-# define DEF_TRAIL		"False"
-# define SPREAD_COLORS
-# include "xlockmore.h"
-
-#endif /* STANDALONE */
+#ifdef STANDALONE
+# define PROGCLASS					"Galaxy"
+# define HACK_INIT					init_galaxy
+# define HACK_DRAW					draw_galaxy
+# define DEF_BATCHCOUNT				5
+# define DEF_CYCLES					250
+# define DEF_DELAY					100
+# define DEF_SIZE					3
+# define DEF_TRAIL					"False"
+# define UNIFORM_COLORS
+# include "xlockmore.h"				/* from the xscreensaver distribution */
+#else  /* !STANDALONE */
+# include "xlock.h"					/* from the xlockmore distribution */
+#endif /* !STANDALONE */
 
 #define FLOATRAND ((double) LRAND() / ((double) MAXRAND))
 
@@ -117,8 +104,7 @@ static OptionStruct desc[] =
 	{"-/+tracks", "turn on/off star tracks"}
 };
 
-ModeSpecOpt galaxy_opts =
-{2, opts, 1, vars, desc};
+ModeSpecOpt galaxy_opts = { 2, opts, 1, vars, desc };
 #endif /* !STANDALONE */
 
 

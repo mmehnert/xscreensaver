@@ -1,33 +1,11 @@
 /* -*- Mode: C; tab-width: 4 -*-
-   Ported from xlockmore 4.03a10 to be a standalone program and thus usable
-   with xscreensaver by Jamie Zawinski <jwz@netscape.com> on 10-May-97.
-
-   Original copyright notice from xlock.c:
-
-    * Copyright (c) 1988-91 by Patrick J. Naughton.
-    *
-    * Permission to use, copy, modify, and distribute this software and its
-    * documentation for any purpose and without fee is hereby granted,
-    * provided that the above copyright notice appear in all copies and that
-    * both that copyright notice and this permission notice appear in
-    * supporting documentation.
-    *
-    * This file is provided AS IS with no warranties of any kind.  The author
-    * shall have no liability with respect to the infringement of copyrights,
-    * trade secrets or any patents by this file or any part thereof.  In no
-    * event will the author be liable for any lost revenue or profits or
-    * other special, indirect and consequential damages.
+ * laser --- draws swinging laser beams.
  */
-
 #if !defined( lint ) && !defined( SABER )
 static const char sccsid[] = "@(#)laser.c	4.00 97/01/01 xlockmore";
-
 #endif
 
-/*-
- * laser.c - laser for xlockmore
- *
- * Copyright (c) 1995 Pascal Pensa <pensa@aurora.unice.fr>
+/* Copyright (c) 1995 Pascal Pensa <pensa@aurora.unice.fr>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -41,20 +19,20 @@ static const char sccsid[] = "@(#)laser.c	4.00 97/01/01 xlockmore";
  * 10-May-97: jwz@netscape.com: turned into a standalone program.
  */
 
-#ifndef STANDALONE
-# include "xlock.h"
-#else  /* STANDALONE */
-
-# define PROGCLASS		"Laser"
-# define HACK_INIT		init_laser
-# define HACK_DRAW		draw_laser
-# define DEF_DELAY		40000
-# define DEF_BATCHCOUNT	10
-# define DEF_CYCLES		200
-# define SPREAD_COLORS
-# include "xlockmore.h"
-
-#endif /* STANDALONE */
+#ifdef STANDALONE
+# define PROGCLASS					"Laser"
+# define HACK_INIT					init_laser
+# define HACK_DRAW					draw_laser
+# define DEF_BATCHCOUNT				10
+# define DEF_CYCLES					200
+# define DEF_DELAY					40000
+# define SMOOTH_COLORS
+# include "xlockmore.h"				/* from the xscreensaver distribution */
+#else  /* !STANDALONE */
+# include "xlock.h"					/* from the xlockmore distribution */
+  ModeSpecOpt laser_opts = {
+	0, NULL, 0, NULL, NULL };
+#endif /* !STANDALONE */
 
 #define MINREDRAW 3		/* Number of redrawn on each frame */
 #define MAXREDRAW 8
@@ -72,11 +50,6 @@ static const char sccsid[] = "@(#)laser.c	4.00 97/01/01 xlockmore";
 #define COLORSTEP 2		/* Laser color step */
 
 #define RANGE_RAND(min,max) ((min) + LRAND() % ((max) - (min)))
-
-#ifndef STANDALONE
-ModeSpecOpt laser_opts =
-{0, NULL, 0, NULL, NULL};
-#endif /* !STANDALONE */
 
 typedef enum {
 	TOP, RIGHT, BOTTOM, LEFT

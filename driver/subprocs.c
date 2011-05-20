@@ -81,8 +81,8 @@ extern int putenv (/* const char * */);	/* getenv() is in stdlib.h... */
 extern int kill (pid_t, int);		/* signal() is in sys/signal.h... */
 #endif
 
-#include "yarandom.h"
 #include "xscreensaver.h"
+#include "yarandom.h"
 
 /* this must be `sh', not whatever $SHELL happens to be. */
 char *shell;
@@ -334,13 +334,14 @@ init_sigchld P((void))
 }
 
 
-extern void raise_window P((Bool inhibit_fade, Bool between_hacks_p));
+extern void raise_window P((Bool inhibit_fade, Bool between_hacks_p,
+			    Bool dont_clear));
 
 void
 spawn_screenhack (first_time_p)
      Bool first_time_p;
 {
-  raise_window (first_time_p, True);
+  raise_window (first_time_p, True, False);
   XFlush (dpy);
 
   if (screenhacks_count || demo_mode_p)
@@ -456,6 +457,14 @@ suspend_screenhack (suspend_p)
   else if (verbose_p)
     printf ("%s: %s pid %lu.\n", progname,
 	    (suspend_p ? "suspending" : "resuming"), (unsigned long) pid);
+}
+
+
+Bool
+screenhack_running_p P((void))
+{
+  if (pid) return True;
+  else return False;
 }
 
 

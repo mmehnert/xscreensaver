@@ -1,6 +1,6 @@
 /* bubbles.h - definitions for bubbles screensaver */
 
-/* $Id: bubbles.h,v 1.1 1996/09/08 01:35:40 jwz Exp $ */
+/* $Id: bubbles.h,v 1.2 1997/05/19 03:26:05 jwz Exp $ */
 
 #ifndef _BUBBLES_H_
 #define _BUBBLES_H_
@@ -110,11 +110,10 @@
 #define DIRENT_NAME       dp->name
 #endif
 
-/*
- * I don't know why this isn't defined.
- */
+/* I don't know why this isn't defined. */
 #ifdef linux
-extern char *tempnam(char *, char *);
+/* apparently it is defined in recent linuxes.  who knows. */
+/*extern char *tempnam(char *, char *);*/
 #endif
 
 /****************************************************************************
@@ -137,10 +136,10 @@ extern char *tempnam(char *, char *);
 /* Some machines define M_PI and not PI.  If they don't define either, use
 own own.  Really, the accuracy of this is _not_ very important. */
 #ifndef PI
-#define PI  M_PI
-#ifndef M_PI
-#define M_PI 3.1415926535
-#endif
+# define PI  M_PI
+# ifndef M_PI
+#  define M_PI 3.1415926535
+# endif
 #endif
 
 /* for delete_bubble_in_mesh() */
@@ -201,17 +200,15 @@ typedef struct bub_step Bubble_Step;
 /* Make sure default bubble isn't compiled when we don't have XPM
 Disable file I/O code too. */
 #ifndef HAVE_XPM
-#define NO_DEFAULT_BUBBLE
-#ifdef BUBBLES_IO
-#undef BUBBLES_IO
-#endif /* BUBBLES_IO */
+# define NO_DEFAULT_BUBBLE
+# undef BUBBLES_IO
 #endif /* HAVE_XPM */
 
 /* Make sure default bubble is compiled in when we have XPM and no file I/O */
 #ifdef HAVE_XPM
-#ifndef BUBBLES_IO
-#undef NO_DEFAULT_BUBBLE
-#endif /* BUBBLES_IO */
+# ifndef BUBBLES_IO
+#  undef NO_DEFAULT_BUBBLE
+# endif /* BUBBLES_IO */
 #endif /* HAVE_XPM */
 
 #endif /* _BUBBLES_H_ */

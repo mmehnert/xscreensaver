@@ -1,35 +1,24 @@
 /* -*- Mode: C; tab-width: 4 -*-
-   Ported from xlockmore 4.03a10 to be a standalone program and thus usable
-   with xscreensaver by Jamie Zawinski <jwz@netscape.com> on 10-May-97.
-
-   Original copyright notice from xlock.c:
-
-    * Copyright (c) 1988-91 by Patrick J. Naughton.
-    *
-    * Permission to use, copy, modify, and distribute this software and its
-    * documentation for any purpose and without fee is hereby granted,
-    * provided that the above copyright notice appear in all copies and that
-    * both that copyright notice and this permission notice appear in
-    * supporting documentation.
-    *
-    * This file is provided AS IS with no warranties of any kind.  The author
-    * shall have no liability with respect to the infringement of copyrights,
-    * trade secrets or any patents by this file or any part thereof.  In no
-    * event will the author be liable for any lost revenue or profits or
-    * other special, indirect and consequential damages.
+ * ifs --- Modified iterated functions system.
  */
-
 #if !defined( lint ) && !defined( SABER )
 static const char sccsid[] = "@(#)ifs.c	   4.02 97/04/01 xlockmore";
-
 #endif
 
-/*-
- * ifs.c - Modified iterated functions system
+/* Copyright (c) 1997 by Massimino Pascal (Pascal.Massimon@ens.fr)
  *
- * Copyright (c) 1997 by Massimino Pascal (Pascal.Massimon@ens.fr)
  *
- * See xlock.c for copying information.
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for any purpose and without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and that
+ * both that copyright notice and this permission notice appear in
+ * supporting documentation.
+ *
+ * This file is provided AS IS with no warranties of any kind.  The author
+ * shall have no liability with respect to the infringement of copyrights,
+ * trade secrets or any patents by this file or any part thereof.  In no
+ * event will the author be liable for any lost revenue or profits or
+ * other special, indirect and consequential damages.
  *
  * Revision History:
  * 10-May-97: jwz@netscape.com: turned into a standalone program.
@@ -37,23 +26,18 @@ static const char sccsid[] = "@(#)ifs.c	   4.02 97/04/01 xlockmore";
  *			  that onto the screen, to reduce flicker.
  */
 
-#ifndef STANDALONE
-# include "xlock.h"
-#else  /* STANDALONE */
-
-# define PROGCLASS		"IFS"
-# define HACK_INIT		init_ifs
-# define HACK_DRAW		draw_ifs
-# define DEF_DELAY		20000
-# define DEF_NCOLORS	100
-# define SPREAD_COLORS
-# include "xlockmore.h"
-
-#endif /* STANDALONE */
-
-#ifndef STANDALONE
-ModeSpecOpt ifs_opts =
-{0, NULL, 0, NULL, NULL};
+#ifdef STANDALONE
+# define PROGCLASS					"IFS"
+# define HACK_INIT					init_ifs
+# define HACK_DRAW					draw_ifs
+# define DEF_DELAY					20000
+# define DEF_NCOLORS				100
+# define SMOOTH_COLORS
+# include "xlockmore.h"				/* from the xscreensaver distribution */
+#else  /* !STANDALONE */
+# include "xlock.h"					/* from the xlockmore distribution */
+  ModeSpecOpt ifs_opts = {
+	0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
 
 /*****************************************************/

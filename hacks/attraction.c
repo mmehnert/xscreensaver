@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992, 1995, 1996
+/* xscreensaver, Copyright (c) 1992, 1995, 1996, 1997
  *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -520,7 +520,13 @@ run_balls (dpy, window)
 	  switch (cmode)
 	    {
 	    case cycle_mode:
-	      cycle_hue (&color2, color_shift);
+	      {
+		int h;
+		double s, v;
+		rgb_to_hsv (color2.red, color2.green, color2.blue, &h, &s, &v);
+		h = (h + color_shift) % 360;
+		hsv_to_rgb (h, s, v, &color2.red, &color2.green, &color2.blue);
+	      }
 	      break;
 	    case random_mode:
 	      color2.red =   random () % 65535;
@@ -536,7 +542,7 @@ run_balls (dpy, window)
 	    {
 	      /* XAllocColor returns the actual RGB that the hardware let us
 		 allocate.  Restore the requested values into the XColor struct
-		 so that limited-resolution hardware doesn't cause cycle_hue to
+		 so that limited-resolution hardware doesn't cause the cycle to
 		 get "stuck". */
 	      color2.red = desired.red;
 	      color2.green = desired.green;

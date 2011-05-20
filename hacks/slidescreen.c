@@ -36,7 +36,6 @@ init_slide (dpy, window)
   XWindowAttributes xgwa;
   int border;
   unsigned long fg;
-  Pixmap pixmap;
   Drawable d;
   Colormap cmap;
   Visual *visual;
@@ -47,16 +46,23 @@ init_slide (dpy, window)
   max_width = xgwa.width;
   max_height = xgwa.height;
 
-  copy_default_colormap_contents (dpy, cmap, visual);
-
   delay = get_integer_resource ("delay", "Integer");
   delay2 = get_integer_resource ("delay2", "Integer");
   grid_size = get_integer_resource ("gridSize", "Integer");
   pix_inc = get_integer_resource ("pixelIncrement", "Integer");
   border = get_integer_resource ("internalBorderWidth", "InternalBorderWidth");
-  fg = get_pixel_resource ("background", "Background", dpy,
-			   /* Pixels always come out of default map. */
-			   XDefaultColormapOfScreen (xgwa.screen));
+  fg = get_pixel_resource ("background", "Background", dpy, cmap);
+
+  grab_screen_image (dpy, window);
+
+
+  /* Total kludge -- if grab_screen_image() installed a new colormap, assume
+     that pixel 0 is the one we should use.  This further assumes that the
+     pixel is black, which overrides the user's -background setting, alas.
+   */
+  XGetWindowAttributes (dpy, window, &xgwa);
+  if (cmap != xgwa.colormap) fg = 0;
+
 
   if (delay < 0) delay = 0;
   if (delay2 < 0) delay2 = 0;
@@ -69,8 +75,6 @@ init_slide (dpy, window)
   gc = XCreateGC (dpy, window, GCForeground |GCFunction | GCSubwindowMode,
 		  &gcv);
 
-  pixmap = grab_screen_image (dpy, window);
-
   XGetWindowAttributes (dpy, window, &xgwa);
   bitmap_w = xgwa.width;
   bitmap_h = xgwa.height;
@@ -82,7 +86,7 @@ init_slide (dpy, window)
   xoff = (bitmap_w - (grid_w * grid_size)) / 2;
   yoff = (bitmap_h - (grid_h * grid_size)) / 2;
 
-  d = (pixmap ? pixmap : window);
+  d = window;
 
   if (border)
     {
@@ -103,7 +107,6 @@ init_slide (dpy, window)
       XFillRectangle (dpy, d, gc, 0, bitmap_h - yoff, bitmap_w, yoff);
     }
 
-  if (pixmap) XClearWindow (dpy, window);
   XSync (dpy, True);
   if (delay2) usleep (delay2 * 2);
  for (i = 0; i < grid_size; i += pix_inc)
@@ -238,7 +241,7 @@ slide1 (dpy, window)
 char *progclass = "SlidePuzzle";
 
 char *defaults [] = {
-  "SlidePuzzle.dontClearRoot:	True",
+  "*dontClearRoot:		True",
 
 #ifdef __sgi	/* really, HAVE_READ_DISPLAY_EXTENSION */
   "*visualID:			Best",

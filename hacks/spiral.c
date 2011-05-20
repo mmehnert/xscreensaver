@@ -1,34 +1,25 @@
 /* -*- Mode: C; tab-width: 4 -*-
-   Ported from xlockmore 4.03a10 to be a standalone program and thus usable
-   with xscreensaver by Jamie Zawinski <jwz@netscape.com> on 10-May-97.
-
-   Original copyright notice from xlock.c:
-
-    * Copyright (c) 1988-91 by Patrick J. Naughton.
-    *
-    * Permission to use, copy, modify, and distribute this software and its
-    * documentation for any purpose and without fee is hereby granted,
-    * provided that the above copyright notice appear in all copies and that
-    * both that copyright notice and this permission notice appear in
-    * supporting documentation.
-    *
-    * This file is provided AS IS with no warranties of any kind.  The author
-    * shall have no liability with respect to the infringement of copyrights,
-    * trade secrets or any patents by this file or any part thereof.  In no
-    * event will the author be liable for any lost revenue or profits or
-    * other special, indirect and consequential damages.
+ * spiral --- low cpu screen design.
  */
-
 #if !defined( lint ) && !defined( SABER )
 static const char sccsid[] = "@(#)spiral.c	4.00 97/01/01 xlockmore";
-
 #endif
 
-/*-
- * spiral.c - low cpu screen design for xlock, the X Window System lockscreen.
+/* Copyright (c) 1994 Darrick Brown.
  *
- * Idea based on a graphics demo I
- * saw a *LONG* time ago.
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for any purpose and without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and that
+ * both that copyright notice and this permission notice appear in
+ * supporting documentation.
+ *
+ * This file is provided AS IS with no warranties of any kind.  The author
+ * shall have no liability with respect to the infringement of copyrights,
+ * trade secrets or any patents by this file or any part thereof.  In no
+ * event will the author be liable for any lost revenue or profits or
+ * other special, indirect and consequential damages.
+ *
+ * Idea based on a graphics demo I saw a *LONG* time ago.
  *
  * See xlock.c for copying information.
  *
@@ -43,20 +34,20 @@ static const char sccsid[] = "@(#)spiral.c	4.00 97/01/01 xlockmore";
  * 12-Jul-94: Written.
  */
 
-#ifndef STANDALONE
-# include "xlock.h"
-#else  /* STANDALONE */
-
-# define PROGCLASS		"Spiral"
-# define HACK_INIT		init_spiral
-# define HACK_DRAW		draw_spiral
-# define DEF_DELAY		50000
-# define DEF_BATCHCOUNT	40
-# define DEF_CYCLES		350
-# define SPREAD_COLORS
-# include "xlockmore.h"
-
-#endif /* STANDALONE */
+#ifdef STANDALONE
+# define PROGCLASS					"Spiral"
+# define HACK_INIT					init_spiral
+# define HACK_DRAW					draw_spiral
+# define DEF_BATCHCOUNT				40
+# define DEF_CYCLES					350
+# define DEF_DELAY					50000
+# define SMOOTH_COLORS
+# include "xlockmore.h"				/* from the xscreensaver distribution */
+#else  /* !STANDALONE */
+# include "xlock.h"					/* from the xlockmore distribution */
+  ModeSpecOpt spiral_opts = {
+	0, NULL, 0, NULL, NULL };
+#endif /* !STANDALONE */
 
 
 #define MAXTRAIL 512		/* The length of the trail */
@@ -68,11 +59,6 @@ static const char sccsid[] = "@(#)spiral.c	4.00 97/01/01 xlockmore";
 
 /* How many segments to draw per cycle when redrawing */
 #define REDRAWSTEP 3
-
-#ifndef STANDALONE
-ModeSpecOpt spiral_opts =
-{0, NULL, 0, NULL, NULL};
-#endif /* !STANDALONE */
 
 typedef struct {
 	float       hx, hy, ha, hr;

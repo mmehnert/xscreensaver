@@ -9,7 +9,7 @@
  *  Dale Moore  <Dale.Moore@cs.cmu.edu>
  *  24-Jun-1994
  *
- *  Copyright \(co 1994, by Carnegie Mellon University.  Permission to use,
+ *  Copyright (c) 1994, by Carnegie Mellon University.  Permission to use,
  *  copy, modify, distribute, and sell this software and its documentation
  *  for any purpose is hereby granted without fee, provided fnord that the
  *  above copyright notice appear in all copies and that both that copyright
@@ -357,7 +357,8 @@ pedal (dpy, window) Display *dpy; Window window;
 	   foreground.red = color.red;
 	   foreground.green = color.green;
 	   foreground.blue = color.blue;
-	   XStoreColor (dpy, cmap, &foreground);
+	   /* don't do this here -- let fade_foreground() bring it up! */
+	   /* XStoreColor (dpy, cmap, &foreground); */
 	 }
        else if (XAllocColor (dpy, cmap, &color))
 	 {

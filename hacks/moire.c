@@ -89,38 +89,11 @@ init_moire (dpy, window)
       rgb_to_hsv (bgc.red, bgc.green, bgc.blue, &bgh, &bgs, &bgv);
 
       colors = (XColor *) malloc (sizeof (XColor) * (ncolors+2));
-    AGAIN:
       memset(colors, 0, (sizeof (XColor) * (ncolors+2)));
-      {
-	int half = ((ncolors+1) / 2);
-	make_color_ramp (fgh, fgs, fgv, bgh, bgs, bgv, colors, half);
-	for (i = 0; i < half; i++)
-	  colors[half + (half - i) - 1] = colors[i];
-      }
-      for (i = 0; i < ncolors; i++)
-	{
-	  if (!XAllocColor (dpy, xgwa.colormap, &colors [i]))
-	    {
-	      int j;
-	      for (j = 0; j < i; j++)
-		XFreeColors (dpy, xgwa.colormap, &colors[j].pixel, 1, 0);
-
-	      if (ncolors > 10)
-		ncolors = ncolors * 0.9;
-	      else
-		ncolors--;
-
-	      if (ncolors > 2)
-		goto AGAIN;
-	      else
-		{
-		  fprintf(stderr, "%s: unable to allocate %d colors\n",
-			  progname, ncolors);
-		  exit (1);
-		}
-	    }
-	}
-
+      make_color_ramp (dpy, xgwa.colormap,
+		       fgh, fgs, fgv, bgh, bgs, bgv,
+		       colors, &ncolors,
+		       True, True, False);
       if (ncolors != oncolors)
 	fprintf(stderr, "%s: got %d of %d requested colors.\n",
 		progname, ncolors, oncolors);
@@ -154,7 +127,7 @@ moire (dpy, window, offset, colors, ncolors)
   xo = (random() % xgwa.width)  - xgwa.width/2;
   yo = (random() % xgwa.height) - xgwa.height/2;
 
-  depth = get_visual_depth(dpy, xgwa.visual);
+  depth = visual_depth(dpy, xgwa.visual);
   image = XCreateImage (dpy, xgwa.visual,
 			depth, ZPixmap, 0,	 /* depth, format, offset */
 			0, xgwa.width, 1, 8, 0); /* data, w, h, pad, bpl */

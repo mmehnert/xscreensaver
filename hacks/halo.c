@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1993, 1995, 1996
+/* xscreensaver, Copyright (c) 1993, 1995, 1996, 1997
  *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -261,8 +261,17 @@ run_circles (dpy, window) Display *dpy; Window window;
 	  if (! mono_p)
 	    {
 	      XColor d1, d2;
-	      cycle_hue (&fgc, 10);
-	      cycle_hue (&bgc, 10);
+	      int h;
+	      double s, v;
+
+	      rgb_to_hsv (fgc.red, fgc.green, fgc.blue, &h, &s, &v);
+	      h = (h + 10) % 360;
+	      hsv_to_rgb (h, s, v, &fgc.red, &fgc.green, &fgc.blue);
+
+	      rgb_to_hsv (bgc.red, bgc.green, bgc.blue, &h, &s, &v);
+	      h = (h + 10) % 360;
+	      hsv_to_rgb (h, s, v, &bgc.red, &bgc.green, &bgc.blue);
+
 	      XFreeColors (dpy, cmap, &fgc.pixel, 1, 0);
 	      XFreeColors (dpy, cmap, &bgc.pixel, 1, 0);
 	      d1 = fgc;
@@ -307,8 +316,7 @@ run_circles (dpy, window) Display *dpy; Window window;
 	  int fgh, bgh;
 	  double fgs, fgv, bgs, bgv;
 	  if (colors)
-	    for (i = 0; i < ncolors; i++)
-	      XFreeColors (dpy, cmap, &colors [i].pixel, 1, 0);
+	    free_colors (dpy, cmap, colors, ncolors);
 
 	  rgb_to_hsv (fgc.red, fgc.green, fgc.blue, &fgh, &fgs, &fgv);
 	  rgb_to_hsv (bgc.red, bgc.green, bgc.blue, &bgh, &bgs, &bgv);
@@ -318,10 +326,17 @@ run_circles (dpy, window) Display *dpy; Window window;
 		     ? realloc (colors, sizeof (XColor) * ncolors)
 		     : malloc (sizeof (XColor) * ncolors)));
 	  
-	  make_color_ramp (bgh, bgs, bgv, fgh, fgs, fgv, colors, ncolors);
-	  for (i = 0; i < ncolors; i++)
-	    XAllocColor (dpy, cmap, &colors [i]);
+	  XSync(dpy, False);
+	  if (delay) usleep (delay * 10);
+	  XFillRectangle (dpy, window, merge_gc, 0, 0, width, height);
+
+	  make_color_ramp (dpy, cmap,
+			   bgh, bgs, bgv, fgh, fgs, fgv,
+			   colors, &ncolors,
+			   False, True, False);
 	  XSetForeground (dpy, merge_gc, colors [0].pixel);
+
+	  XFillRectangle (dpy, window, merge_gc, 0, 0, width, height);
 	}
       else
 	{
@@ -352,7 +367,11 @@ run_circles (dpy, window) Display *dpy; Window window;
   else
     iterations++;
 
-  if (delay && !inhibit_sleep) usleep (delay);
+  if (delay && !inhibit_sleep)
+    {
+      XSync(dpy, False);
+      usleep (delay);
+    }
 }
 
 

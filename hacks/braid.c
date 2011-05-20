@@ -1,36 +1,24 @@
 /* -*- Mode: C; tab-width: 4 -*-
-   Ported from xlockmore 4.03a10 to be a standalone program and thus usable
-   with xscreensaver by Jamie Zawinski <jwz@netscape.com> on 10-May-97.
-
-   Original copyright notice from xlock.c:
-
-    * Copyright (c) 1988-91 by Patrick J. Naughton.
-    *
-    * Permission to use, copy, modify, and distribute this software and its
-    * documentation for any purpose and without fee is hereby granted,
-    * provided that the above copyright notice appear in all copies and that
-    * both that copyright notice and this permission notice appear in
-    * supporting documentation.
-    *
-    * This file is provided AS IS with no warranties of any kind.  The author
-    * shall have no liability with respect to the infringement of copyrights,
-    * trade secrets or any patents by this file or any part thereof.  In no
-    * event will the author be liable for any lost revenue or profits or
-    * other special, indirect and consequential damages.
+ * braid --- draws random color-cyling rotating braids around a circle.
  */
-
 #if !defined( lint ) && !defined( SABER )
 static const char sccsid[] = "@(#)braid.c	4.00 97/01/01 xlockmore";
-
 #endif
 
-/*-
- * braid - an xlock module which draws random braids around a circle
- *         and then changes the color in a rotational pattern
- *
+/*
  * Copyright (c) 1995 by John Neil.
  *
- * See xlock.c for copying information.
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for any purpose and without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and that
+ * both that copyright notice and this permission notice appear in
+ * supporting documentation.
+ *
+ * This file is provided AS IS with no warranties of any kind.  The author
+ * shall have no liability with respect to the infringement of copyrights,
+ * trade secrets or any patents by this file or any part thereof.  In no
+ * event will the author be liable for any lost revenue or profits or
+ * other special, indirect and consequential damages.
  *
  * Revision History:
  * 10-May-97: jwz@netscape.com: turned into a standalone program.
@@ -38,20 +26,20 @@ static const char sccsid[] = "@(#)braid.c	4.00 97/01/01 xlockmore";
  * 29-Aug-95: Written.  John Neil <neil@math.idbsu.edu>
  */
 
-#ifndef STANDALONE
-# include "xlock.h"
-#else  /* STANDALONE */
-
-# define PROGCLASS		"Braid"
-# define HACK_INIT		init_braid
-# define HACK_DRAW		draw_braid
-# define DEF_DELAY		1000
-# define DEF_BATCHCOUNT	15
-# define DEF_CYCLES		100
-# define SPREAD_COLORS
-# include "xlockmore.h"
-
-#endif /* STANDALONE */
+#ifdef STANDALONE
+# define PROGCLASS					"Braid"
+# define HACK_INIT					init_braid
+# define HACK_DRAW					draw_braid
+# define DEF_BATCHCOUNT				15
+# define DEF_CYCLES					100
+# define DEF_DELAY					1000
+# define UNIFORM_COLORS
+# include "xlockmore.h"				/* from the xscreensaver distribution */
+#else  /* !STANDALONE */
+# include "xlock.h"					/* from the xlockmore distribution */
+  ModeSpecOpt braid_opts = {
+	0, NULL, 0, NULL, NULL };
+#endif /* !STANDALONE */
 
 #if defined( COLORROUND ) && defined( COLORCOMP )
 #undef COLORROUND
@@ -76,11 +64,6 @@ static const char sccsid[] = "@(#)braid.c	4.00 97/01/01 xlockmore";
 
 #define INTRAND(min,max) (NRAND((max+1)-(min))+(min))
 #define FLOATRAND(min,max) ((min)+((double) LRAND()/((double) MAXRAND))*((max)-(min)))
-
-#ifndef STANDALONE
-ModeSpecOpt braid_opts =
-{0, NULL, 0, NULL, NULL};
-#endif /* !STANDALONE */
 
 typedef struct {
 	int         braidword[MAXLENGTH];

@@ -30,8 +30,6 @@
    And that's it...
  */
 
-#include "version.h"
-
 #include <stdio.h>
 #include <X11/Intrinsic.h>
 #include <X11/IntrinsicP.h>
@@ -40,17 +38,12 @@
 #include <X11/StringDefs.h>
 #include <X11/Xmu/Error.h>
 #include "screenhack.h"
+#include "version.h"
+#include "vroot.h"
 
 char *progname;
 XrmDatabase db;
 Bool mono_p;
-
-#ifdef __STDC__
-# define P(x) x
-#else
-# define P(x)()
-#endif
-
 
 static XrmOptionDescRec default_options [] = {
   { "-root",	".root",		XrmoptionNoArg, "True" },
@@ -221,7 +214,7 @@ main (argc, argv)
 	  ac = 0;
 	  XtSetArg (av[ac], XtNvisual, visual); ac++;
 	  XtSetArg (av[ac], XtNcolormap, cmap); ac++;
-	  XtSetArg (av[ac], XtNdepth, get_visual_depth (dpy, visual)); ac++;
+	  XtSetArg (av[ac], XtNdepth, visual_depth (dpy, visual)); ac++;
 	  XtSetArg (av[ac], XtNbackground, (Pixel) bg); ac++;
 	  XtSetArg (av[ac], XtNborderColor, (Pixel) bd); ac++;
 	  new = XtAppCreateShell (progname, progclass,
@@ -264,7 +257,7 @@ main (argc, argv)
       XClearWindow (dpy, window);
     }
 
-  if (!root_p && toplevel->core.mapped_when_managed)
+  if (!root_p)
     /* wait for it to be mapped */
     XIfEvent (dpy, &event, MapNotify_event_p, (XPointer) window);
 

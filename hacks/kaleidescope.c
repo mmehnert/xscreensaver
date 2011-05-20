@@ -27,6 +27,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <time.h>
+#include <X11/Xlib.h>
 #include "spline.h"
 #include "screenhack.h"
 

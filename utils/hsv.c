@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992, 1997 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -12,6 +12,10 @@
 /* This file contains some utility routines for randomly picking the colors
    to hack the screen with.
  */
+
+#ifdef __STDC__
+#include <stdlib.h>
+#endif /* __STDC__ */
 
 #include <X11/Xlib.h>
 
@@ -85,46 +89,4 @@ rgb_to_hsv (r,g,b, h,s,v)
   *h = (H * 60.0);
   *s = S;
   *v = V;
-}
-
-
-void
-#ifdef __STDC__
-make_color_ramp (int h1, double s1, double v1,   /* 0-360, 0-1.0, 0-1.0 */
-		 int h2, double s2, double v2,   /* 0-360, 0-1.0, 0-1.0 */
-		 XColor *pixels, int npixels)
-#else /* !__STDC__ */
-make_color_ramp (h1, s1, v1, h2, s2, v2,
-		 pixels, npixels)
-     int h1, h2;			/* 0 - 360   */
-     double s1, s2, v1, v2;		/* 0.0 - 1.0 */
-     XColor *pixels;
-     int npixels;
-#endif /* !__STDC__ */
-{
-  int dh = (h2 - h1) / npixels;
-  double ds = (s2 - s1) / npixels;
-  double dv = (v2 - v1) / npixels;
-  int i;
-  for (i = 0; i < npixels; i++)
-    hsv_to_rgb ((h1 += dh), (s1 += ds), (v1 += dv),
-		&pixels [i].red, &pixels [i].green, &pixels [i].blue);
-}
-
-
-void
-#ifdef __STDC__
-cycle_hue (XColor *color, int degrees)
-#else /* !__STDC__ */
-cycle_hue (color, degrees)
-     XColor *color;
-     int degrees;
-#endif /* !__STDC__ */
-{
-  int h;
-  double s, v;
-  rgb_to_hsv (color->red, color->green, color->blue,
-	      &h, &s, &v);
-  h = (h + degrees) % 360;
-  hsv_to_rgb (h, s, v, &color->red, &color->green, &color->blue);
 }

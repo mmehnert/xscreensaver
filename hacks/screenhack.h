@@ -50,8 +50,8 @@
  *   AAAAUUUGGGHHH!!!! (server dumps core & falls into the chasm)
  */
 
-#ifndef _SCREENHACK_H_
-#define _SCREENHACK_H_
+#ifndef __SCREENHACK_H__
+#define __SCREENHACK_H__
 
 #ifdef __STDC__
 # include <stdlib.h>
@@ -63,10 +63,34 @@
 # include <values.h>
 #endif
 
+#include <stdio.h>
+
 #include <X11/Xlib.h>
 #include <X11/Xresource.h>
 #include <X11/Xos.h>
-#include "vroot.h"
+
+/* M_PI ought to have been defined in math.h, but... */
+#ifndef M_PI
+# define M_PI 3.1415926535
+#endif
+
+#undef P
+#ifdef __STDC__
+# define P(x)x
+#else
+# define P(x)()
+# ifndef const
+#  define const /**/
+# endif
+#endif
+
+#include "yarandom.h"
+#include "usleep.h"
+#include "resources.h"
+#include "hsv.h"
+#include "colors.h"
+#include "grabscreen.h"
+#include "visual.h"
 
 extern Bool mono_p;
 extern char *progname;
@@ -76,69 +100,6 @@ extern XrmOptionDescRec options [];
 extern int options_size;
 extern char *defaults [];
 
-/* Screw it, we'll just use our own RNG.  See xscreensaver/utils/yarandom.c. */
-#include "yarandom.h"
-
-
-#undef P
-#ifdef __STDC__
-# define P(x)x
-#else
-# define P(x)()
-#endif
-
 extern void screenhack P((Display*,Window));
 
-#define usleep screenhack_usleep
-
-extern void screenhack_usleep P((unsigned long));
-extern char *get_string_resource P((char*,char*));
-extern Bool get_boolean_resource P((char*,char*));
-extern int get_integer_resource P((char*,char*));
-extern double get_float_resource P((char*,char*));
-extern unsigned int get_pixel_resource P((char*,char*,Display*,Colormap));
-extern unsigned int get_minutes_resource P((char*,char*));
-extern unsigned int get_seconds_resource P((char*,char*));
-
-extern Visual *get_visual_resource P((Display *, char *, char *, Bool));
-extern int get_visual_depth P((Display *, Visual *));
-
-extern void hsv_to_rgb P((int,double,double,unsigned short*,
-			  unsigned short*,unsigned short*));
-extern void rgb_to_hsv P((unsigned short,unsigned short,unsigned short,
-			  int*,double*,double*));
-extern void cycle_hue P((XColor*,int));
-
-extern void make_color_ramp P((int h1, double s1, double v1,
-			       int h2, double s2, double v2,
-			       XColor *pixels, int npixels));
-
-extern Pixmap grab_screen_image P((Display *dpy, Window window));
-extern void copy_default_colormap_contents P((Display *dpy, Colormap to_cmap,
-					      Visual *to_visual));
-
-#if defined (__GNUC__) && (__GNUC__ >= 2)
- /* Implement frand using GCC's statement-expression extension. */
-
-# define frand(f)							\
-  ({ double tmp = (((double) random()) /				\
-		   (((double) ((unsigned int)~0)) / ((double) (f+f))));	\
-     tmp < 0 ? (-tmp) : tmp; })
-
-#else /* not GCC2 - implement frand using a global variable.*/
-
-static double _frand_tmp_;
-# define frand(f)							\
-  (_frand_tmp_ = (((double) random()) / 				\
-		  (((double) ((unsigned int)~0)) / ((double) (f+f)))),	\
-   _frand_tmp_ < 0 ? (-_frand_tmp_) : _frand_tmp_)
-
-#endif /* not GCC2 */
-
-
-/* M_PI ought to have been defined in math.h, but... */
-#ifndef M_PI
-# define M_PI 3.1415926535
-#endif
-
-#endif /* _SCREENHACK_H_ */
+#endif /* __SCREENHACK_H__ */

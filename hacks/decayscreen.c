@@ -47,7 +47,6 @@ init_decay (dpy, window)
 {
   XGCValues gcv;
   XWindowAttributes xgwa;
-  Pixmap pixmap;
 
   delay = get_integer_resource ("delay", "Integer");
 
@@ -62,8 +61,7 @@ init_decay (dpy, window)
   sizex = xgwa.width;
   sizey = xgwa.height;
 
-  copy_default_colormap_contents (dpy, xgwa.colormap, xgwa.visual);
-  pixmap = grab_screen_image (dpy, window);
+  grab_screen_image (dpy, window);
 }
 
 
@@ -127,7 +125,7 @@ decay1 (dpy, window)
 char *progclass = "DecayScreen";
 
 char *defaults [] = {
-  "DecayScreen.dontClearRoot:	True",
+  "*dontClearRoot:		True",
 
 #ifdef __sgi	/* really, HAVE_READ_DISPLAY_EXTENSION */
   "*visualID:			Best",

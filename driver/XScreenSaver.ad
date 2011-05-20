@@ -70,9 +70,10 @@
 		penrose -root						\n\
 		sierpinski -root					\n\
 		braid -root						\n\
-		bouboule -root						\n\
 		galaxy -root						\n\
-		slip -root						\n
+		slip -root						\n\
+		bouboule -root						\n\
+		swirl -root						\n
 
 
 ! Programs on this list are run only for monochrome screens.

@@ -1,5 +1,5 @@
 /*
- * Imakefile file for xscreensaver, Copyright (c) 1993, 1995 Jamie Zawinski.
+ * Imakefile file for xscreensaver, Copyright (c) 1993-1997 Jamie Zawinski.
  *
  * You should not need to edit this file; edit ../config.h instead.
  *
@@ -8,8 +8,6 @@
 #include "../config.h"
 
 #ifdef HAVE_XPM
- /* Yeah, this means that all hacks link against libXpm even though only
-    one hack actually uses it.  It doesn't matter: it's a library. */
 # define XPMDEFS -DHAVE_XPM
 # define XPMLIB -lXpm
 #else
@@ -18,6 +16,7 @@
 #endif
 
            STAR = *
+           NULL = 
           UTILS = ../utils
        INCLUDES = -I$(UTILS)
         DEFINES = R5ISMS XPMDEFS -DSTANDALONE
@@ -29,8 +28,8 @@ LOCAL_LIBRARIES = $(XMULIB) $(XTOOLLIB)        $(EXTENSIONLIB) $(XLIB) -lm
                   halo.c flame.c pedal.c lmorph.c deco.c moire.c \
 		  kaleidescope.c bubbles.c bubbles.h bubbles_default.c \
 		  lightning.c strange.c fract.c spiral.c laser.c grav.c \
-		  drift.c ifs.c julia.c penrose.c sierpinski.c hopalong.c \
-		  braid.c galaxy.c slip.c
+		  drift.c ifs.c julia.c penrose.c sierpinski.c braid.c \
+		  galaxy.c slip.c bouboule.c swirl.c
             MEN = attraction.man greynetic.man helix.man hopalong.man \
                   noseguy.man pyro.man xroger.man qix.man rocks.man \
                   rorschach.man blitspin.man imsmap.man slidescreen.man \
@@ -39,9 +38,11 @@ LOCAL_LIBRARIES = $(XMULIB) $(XTOOLLIB)        $(EXTENSIONLIB) $(XLIB) -lm
 		  bubbles.man bubbles.README \
 		  lightning.man strange.man fract.man spiral.man laser.man \
 		  grav.man drift.man ifs.man julia.man penrose.man \
-		  sierpinski.man hopalong.man braid.man galaxy.man slip.man
+		  sierpinski.man braid.man galaxy.man slip.man bouboule.man \
+		  swirl.man
        TARFILES = README Imakefile screenhack.c $(HACKS) screenhack.h \
-		  xlockmore.h vroot.h xlock.h default.xbm $(MEN) .gdbinit \
+		  xlockmore.c xlockmore.h xlockmoreI.h vroot.h xlock.h \
+		  default.xbm $(MEN) .gdbinit \
 		  noses/nose-$(STAR).xbm noses/nose-$(STAR).xpm \
 		  bubbles-tools/bubbles$(STAR) \
 		  bubbles-tools/xpm$(STAR) \
@@ -75,13 +76,14 @@ clean::									 @@\
 	ScreenhackTarget_1(p,p,$(HACK_OBJS) deps,$(LOCAL_LIBS_XPM))
 
 #define ScreenhackTarget_xlockmore(p,deps)\
-p.o:: xlockmore.h .knr_msg						@@\
-	ScreenhackTarget_1(p,p,$(HACK_OBJS) $(UTILS)/hsv.o deps,	  \
-		$(LOCAL_LIBRARIES))
+p.o: xlockmore.h .knr_msg						   @@\
+	ScreenhackTarget_1(p,p, xlockmore.o $(HACK_OBJS) $(COLOR_OBJS) deps, \
+			  $(LOCAL_LIBRARIES))
 
-HACK_OBJS=screenhack.o $(UTILS)/resources.o $(UTILS)/visual.o \
-		       $(UTILS)/usleep.o $(UTILS)/yarandom.o
-NULL=
+    HACK_OBJS = screenhack.o $(UTILS)/resources.o $(UTILS)/visual.o \
+		$(UTILS)/usleep.o $(UTILS)/yarandom.o
+   COLOR_OBJS = $(UTILS)/hsv.o $(UTILS)/colors.o
+    GRAB_OBJS = $(UTILS)/grabscreen.o $(COLOR_OBJS)
 
 ScreenhackTarget     (qix,		  $(UTILS)/hsv.o)
 ScreenhackTarget     (helix,		  $(UTILS)/hsv.o)
@@ -91,32 +93,41 @@ ScreenhackTarget     (rorschach,	  $(UTILS)/hsv.o)
 ScreenhackTarget_2   (xroger,xroger-hack, $(UTILS)/hsv.o $(UTILS)/xroger.o)
 ScreenhackTarget     (rocks,		  $(NULL))
 ScreenhackTarget_XPM (noseguy,		  $(NULL))
-ScreenhackTarget_XPM (blitspin,		  $(NULL))
+ScreenhackTarget_XPM (blitspin,		  $(GRAB_OBJS))
 ScreenhackTarget     (greynetic,	  $(NULL))
-ScreenhackTarget     (slidescreen,	  $(UTILS)/grabscreen.o)
-ScreenhackTarget     (decayscreen,	  $(UTILS)/grabscreen.o)
-ScreenhackTarget     (imsmap,		  $(UTILS)/hsv.o)
+ScreenhackTarget     (slidescreen,	  $(GRAB_OBJS))
+ScreenhackTarget     (decayscreen,	  $(GRAB_OBJS))
+ScreenhackTarget     (imsmap,		  $(UTILS)/hsv.o $(UTILS)/colors.o)
 ScreenhackTarget     (maze,		  $(UTILS)/xroger.o)
 ScreenhackTarget     (hypercube,	  $(NULL))
-ScreenhackTarget     (halo,		  $(UTILS)/hsv.o)
-ScreenhackTarget     (flame,		  $(UTILS)/hsv.o)
+ScreenhackTarget     (halo,		  $(UTILS)/hsv.o $(UTILS)/colors.o)
+ScreenhackTarget     (flame,		  $(UTILS)/hsv.o $(UTILS)/colors.o)
 ScreenhackTarget     (pedal,		  $(UTILS)/hsv.o)
 ScreenhackTarget     (lmorph,		  $(NULL))
-ScreenhackTarget     (deco,		  $(NULL))
-ScreenhackTarget     (moire,		  $(UTILS)/hsv.o)
+ScreenhackTarget     (deco,		  $(UTILS)/hsv.o $(UTILS)/colors.o)
+ScreenhackTarget     (moire,		  $(UTILS)/hsv.o $(UTILS)/colors.o)
 ScreenhackTarget     (kaleidescope,	  $(NULL))
 ScreenhackTarget_XPM (bubbles,		  bubbles_default.o)
 
+/*
+ScreenhackTarget     (hsv-test,		  $(UTILS)/hsv.o $(UTILS)/colors.o)
+*/
+
+
 .knr_msg:
-	@echo ""							    ; \
+  @echo ""								    ; \
   echo "        ==========================================================" ; \
   echo ""								    ; \
   echo "        From this point on, an ANSI C compiler is required."	    ; \
   echo "        If you get compilation errors, that's why."		    ; \
   echo "        (Time for all you SunOS 4 users to upgrade to gcc...)"	    ; \
   echo ""								    ; \
+  echo "        If you can't do ANSI C, then you'll just miss out on"	    ; \
+  echo "        the following graphics hacks; they are not required for"    ; \
+  echo "        the rest of the system to function."			    ; \
+  echo ""								    ; \
   echo "        ==========================================================" ; \
-  echo "" ; \
+  echo ""								    ; \
   touch $@
 clean::
 	$(RM) .knr_msg
@@ -136,6 +147,8 @@ ScreenhackTarget_xlockmore (hopalong,	  $(NULL))
 ScreenhackTarget_xlockmore (braid,	  $(NULL))
 ScreenhackTarget_xlockmore (galaxy,	  $(NULL))
 ScreenhackTarget_xlockmore (slip,	  $(UTILS)/grabscreen.o)
+ScreenhackTarget_xlockmore (bouboule,	  $(NULL))
+ScreenhackTarget_xlockmore (swirl,	  $(NULL))
 
 SRCS=$(HACKS)
 DependTarget()

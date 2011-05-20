@@ -1,55 +1,43 @@
 /* -*- Mode: C; tab-width: 4 -*-
-   Ported from xlockmore 4.03a10 to be a standalone program and thus usable
-   with xscreensaver by Jamie Zawinski <jwz@netscape.com> on 10-May-97.
-
-   Original copyright notice from xlock.c:
-
-    * Copyright (c) 1988-91 by Patrick J. Naughton.
-    *
-    * Permission to use, copy, modify, and distribute this software and its
-    * documentation for any purpose and without fee is hereby granted,
-    * provided that the above copyright notice appear in all copies and that
-    * both that copyright notice and this permission notice appear in
-    * supporting documentation.
-    *
-    * This file is provided AS IS with no warranties of any kind.  The author
-    * shall have no liability with respect to the infringement of copyrights,
-    * trade secrets or any patents by this file or any part thereof.  In no
-    * event will the author be liable for any lost revenue or profits or
-    * other special, indirect and consequential damages.
+ * grav --- simulation of a planetary system.
  */
-
 #if !defined( lint ) && !defined( SABER )
 static const char sccsid[] = "@(#)grav.c	4.00 97/01/01 xlockmore";
-
 #endif
 
-/*-
- * grav.c - for xlock, the X Window System lockscreen.
+/* Copyright (c) 1993 Greg Bowering <greg@smug.student.adelaide.edu.au>
  *
- * See xlock.c for copying information.
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for any purpose and without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and that
+ * both that copyright notice and this permission notice appear in
+ * supporting documentation.
  *
- * Revision History:
+ * This file is provided AS IS with no warranties of any kind.  The author
+ * shall have no liability with respect to the infringement of copyrights,
+ * trade secrets or any patents by this file or any part thereof.  In no
+ * event will the author be liable for any lost revenue or profits or
+ * other special, indirect and consequential damages.
+ *
+ * Revision history:
  * 10-May-97: jwz@netscape.com: turned into a standalone program.
  * 11-Jul-94: color version
- * 6-Oct-93: by Greg Bowering <greg@smug.student.adelaide.edu.au>
+ * 06-Oct-93: by Greg Bowering <greg@smug.student.adelaide.edu.au>
  */
 
-#ifndef STANDALONE
-# include "xlock.h"
-#else  /* STANDALONE */
-
-# define PROGCLASS		"Grav"
-# define HACK_INIT		init_grav
-# define HACK_DRAW		draw_grav
-# define DEF_DELAY		10000
-# define DEF_BATCHCOUNT	12
-# define DEF_DECAY		"False"
-# define DEF_TRAIL		"False"
+#ifdef STANDALONE
+# define PROGCLASS					"Grav"
+# define HACK_INIT					init_grav
+# define HACK_DRAW					draw_grav
+# define DEF_BATCHCOUNT				12
+# define DEF_DELAY					10000
+# define DEF_DECAY					"False"
+# define DEF_TRAIL					"False"
 # define BRIGHT_COLORS
-# include "xlockmore.h"
-
-#endif /* STANDALONE */
+# include "xlockmore.h"				/* from the xscreensaver distribution */
+#else  /* !STANDALONE */
+# include "xlock.h"					/* from the xlockmore distribution */
+#endif /* !STANDALONE */
 
 #define GRAV			-0.02	/* Gravitational constant */
 #define DIST			16.0
@@ -95,10 +83,10 @@ static const char sccsid[] = "@(#)grav.c	4.00 97/01/01 xlockmore";
 #define DEF_DECAY "False"	/* Damping for decaying orbits */
 #define DEF_TRAIL "False"	/* For trails (works good in mono only) */
 
+#ifndef STANDALONE
 static Bool decay;
 static Bool trail;
 
-#ifndef STANDALONE
 static XrmOptionDescRec opts[] =
 {
 	{"-decay", ".grav.decay", XrmoptionNoArg, (caddr_t) "on"},
@@ -117,8 +105,7 @@ static OptionStruct desc[] =
 	{"-/+trail", "turn on/off trail dots"}
 };
 
-ModeSpecOpt grav_opts =
-{4, opts, 2, vars, desc};
+ModeSpecOpt grav_opts = { 4, opts, 2, vars, desc };
 #endif /* !STANDALONE */
 
 typedef struct {

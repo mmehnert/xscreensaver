@@ -1,4 +1,5 @@
-/* xscreensaver, Copyright (c) 1992, 1996 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1992, 1996, 1997
+ *  Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -15,6 +16,10 @@
 
 #include <X11/Xlib.h>
 #include <X11/Xos.h>	/* lazy way out */
+
+#ifdef __SCREENHACK_USLEEP_H__
+ERROR, do not include that here
+#endif
 
 /* usleep() doesn't exist everywhere, and select() is faster anyway.
  */

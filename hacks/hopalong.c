@@ -1,40 +1,29 @@
 /* -*- Mode: C; tab-width: 4 -*-
-   Ported from xlockmore 4.03a10 to be a standalone program and thus usable
-   with xscreensaver by Jamie Zawinski <jwz@netscape.com> on 10-May-97.
-   (I threw away my 1992 port and started over.)
-
-   Original copyright notice from xlock.c:
-
-    * Copyright (c) 1988-91 by Patrick J. Naughton.
-    *
-    * Permission to use, copy, modify, and distribute this software and its
-    * documentation for any purpose and without fee is hereby granted,
-    * provided that the above copyright notice appear in all copies and that
-    * both that copyright notice and this permission notice appear in
-    * supporting documentation.
-    *
-    * This file is provided AS IS with no warranties of any kind.  The author
-    * shall have no liability with respect to the infringement of copyrights,
-    * trade secrets or any patents by this file or any part thereof.  In no
-    * event will the author be liable for any lost revenue or profits or
-    * other special, indirect and consequential damages.
+ * hop --- real plane fractals.
  */
-
 #if !defined( lint ) && !defined( SABER )
 static const char sccsid[] = "@(#)hop.c	4.02 97/04/01 xlockmore";
-
 #endif
 
-/*-
- * hop.c - Real Plane Fractals for xlock, the X Window System lockscreen.
+/* Copyright (c) 1988-91 by Patrick J. Naughton.
  *
- * Copyright (c) 1991 by Patrick J. Naughton.
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for any purpose and without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and that
+ * both that copyright notice and this permission notice appear in
+ * supporting documentation.
  *
- * See xlock.c for copying information.
+ * This file is provided AS IS with no warranties of any kind.  The author
+ * shall have no liability with respect to the infringement of copyrights,
+ * trade secrets or any patents by this file or any part thereof.  In no
+ * event will the author be liable for any lost revenue or profits or
+ * other special, indirect and consequential damages.
  *
  * Revision History:
  * Changes of David Bagley <bagleyd@bigfoot.com>
- * 10-May-97: jwz@netscape.com: made xlockmore version run standalone.
+ * 10-May-97: jwz@netscape.com: ported from xlockmore 4.03a10 to be a 
+ *			  standalone program and thus usable with xscreensaver
+ *			  (I threw away my 1992 port and started over.)
  * 27-Jul-95: added Peter de Jong's hop from Scientific American
  *            July 87 p. 111.  Sometimes they are amazing but there are a
  *            few duds (I did not see a pattern in the parameters).
@@ -57,24 +46,22 @@ static const char sccsid[] = "@(#)hop.c	4.02 97/04/01 xlockmore";
  * 23-Mar-88: Coded HOPALONG routines from Scientific American Sept. 86 p. 14.
  */
 
-#ifndef STANDALONE
-# include "xlock.h"
-#else  /* STANDALONE */
-
-# define PROGCLASS		"Hopalong"
-# define HACK_INIT		init_hop
-# define HACK_DRAW		draw_hop
-# define HACK_FREE		release_hop
-# define DEF_DELAY		10000
-# define DEF_BATCHCOUNT	1000
-# define DEF_CYCLES		2500
-# define DEF_NCOLORS	200
-# define DEF_JONG		"False"
-# define DEF_SINE		"False"
-# define SPREAD_COLORS
-# include "xlockmore.h"
-
-#endif /* STANDALONE */
+#ifdef STANDALONE
+# define PROGCLASS					"Hopalong"
+# define HACK_INIT					init_hop
+# define HACK_DRAW					draw_hop
+# define HACK_FREE					release_hop
+# define DEF_BATCHCOUNT				1000
+# define DEF_CYCLES					2500
+# define DEF_DELAY					10000
+# define DEF_JONG					"False"
+# define DEF_SINE					"False"
+# define DEF_NCOLORS				200
+# define SMOOTH_COLORS
+# include "xlockmore.h"				/* from the xscreensaver distribution */
+#else  /* !STANDALONE */
+# include "xlock.h"					/* from the xlockmore distribution */
+#endif /* !STANDALONE */
 
 #ifndef STANDALONE
 static Bool jong;
@@ -98,8 +85,7 @@ static OptionStruct desc[] =
 	{"-/+sine", "turn on/off sine format"}
 };
 
-ModeSpecOpt hop_opts =
-{4, opts, 2, vars, desc};
+ModeSpecOpt hop_opts = { 4, opts, 2, vars, desc };
 #endif /* !STANDALONE */
 
 

@@ -1,35 +1,23 @@
 /* -*- Mode: C; tab-width: 4 -*-
-   Ported from xlockmore 4.03a10 to be a standalone program and thus usable
-   with xscreensaver by Jamie Zawinski <jwz@netscape.com> on 10-May-97.
-
-   Original copyright notice from xlock.c:
-
-    * Copyright (c) 1988-91 by Patrick J. Naughton.
-    *
-    * Permission to use, copy, modify, and distribute this software and its
-    * documentation for any purpose and without fee is hereby granted,
-    * provided that the above copyright notice appear in all copies and that
-    * both that copyright notice and this permission notice appear in
-    * supporting documentation.
-    *
-    * This file is provided AS IS with no warranties of any kind.  The author
-    * shall have no liability with respect to the infringement of copyrights,
-    * trade secrets or any patents by this file or any part thereof.  In no
-    * event will the author be liable for any lost revenue or profits or
-    * other special, indirect and consequential damages.
+ * strange --- Strange attractors are not so hard to find...
  */
-
 #if !defined( lint ) && !defined( SABER )
 static const char sccsid[] = "@(#)strange.c	   4.02 97/04/01 xlockmore";
-
 #endif
 
-/*-
- * strange.c - Strange attractors are not so hard to find...
+/* Copyright (c) 1997 by Massimino Pascal (Pascal.Massimon@ens.fr)
  *
- * Copyright (c) 1997 by Massimino Pascal (Pascal.Massimon@ens.fr)
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for any purpose and without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and that
+ * both that copyright notice and this permission notice appear in
+ * supporting documentation.
  *
- * See xlock.c for copying information.
+ * This file is provided AS IS with no warranties of any kind.  The author
+ * shall have no liability with respect to the infringement of copyrights,
+ * trade secrets or any patents by this file or any part thereof.  In no
+ * event will the author be liable for any lost revenue or profits or
+ * other special, indirect and consequential damages.
  *
  * Revision History:
  * 10-May-97: jwz@netscape.com: turned into a standalone program.
@@ -37,25 +25,20 @@ static const char sccsid[] = "@(#)strange.c	   4.02 97/04/01 xlockmore";
  *			  that onto the screen, to reduce flicker.
  */
 
-#ifndef STANDALONE
-# include "xlock.h"
-#else  /* STANDALONE */
-
-# define PROGCLASS		"Strange"
-# define HACK_INIT		init_strange
-# define HACK_DRAW		draw_strange
-# define DEF_DELAY   	2000
-# define DEF_NCOLORS 	100
-# define SPREAD_COLORS
-# include "xlockmore.h"
-
-#endif /* STANDALONE */
-
-
-#ifndef STANDALONE
-ModeSpecOpt strange_opts =
-{0, NULL, 0, NULL, NULL};
+#ifdef STANDALONE
+# define PROGCLASS					"Strange"
+# define HACK_INIT					init_strange
+# define HACK_DRAW					draw_strange
+# define DEF_DELAY			   		2000
+# define DEF_NCOLORS		 		100
+# define SMOOTH_COLORS
+# include "xlockmore.h"				/* from the xscreensaver distribution */
+#else  /* !STANDALONE */
+# include "xlock.h"					/* from the xlockmore distribution */
+  ModeSpecOpt strange_opts = {
+	0, NULL, 0, NULL, NULL };
 #endif /* !STANDALONE */
+
 
 /*****************************************************/
 /*****************************************************/

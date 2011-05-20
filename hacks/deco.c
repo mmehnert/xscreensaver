@@ -15,8 +15,8 @@
 #include "screenhack.h"
 #include <stdio.h>
 
-static unsigned long pixels[512];
-static int npixels = 0;
+static XColor colors[255];
+static int ncolors = 0;
 static int max_depth = 0;
 static int min_height = 0;
 static int min_width = 0;
@@ -41,23 +41,10 @@ deco (dpy, window, cmap, fgc, bgc, x, y, w, h, depth)
     {
       if (!mono_p)
 	{
-	  XColor color;
-	  XGCValues gcv;
-	  if (npixels == sizeof (pixels) / sizeof (unsigned long))
-	    goto REUSE;
-	  color.flags = DoRed|DoGreen|DoBlue;
-	  color.red = random ();
-	  color.green = random ();
-	  color.blue = random ();
-	  if (! XAllocColor (dpy, cmap, &color))
-	    goto REUSE;
-	  pixels [npixels++] = color.pixel;
-	  gcv.foreground = color.pixel;
-	  goto DONE;
-	REUSE:
-	  gcv.foreground = pixels [random () % npixels];
-	DONE:
-	  XChangeGC (dpy, bgc, GCForeground, &gcv);
+	  static int current_color = 0;
+	  if (++current_color >= ncolors)
+	    current_color = 0;
+	  XSetForeground(dpy, bgc, colors[current_color].pixel);
 	}
       XFillRectangle (dpy, window, bgc, x, y, w, h);
       XDrawRectangle (dpy, window, fgc, x, y, w, h);
@@ -86,7 +73,10 @@ char *defaults [] = {
   "*maxDepth:		12",
   "*minWidth:		20",
   "*minHeight:		20",
+  "*cycle:		False",
   "*delay:		5",
+  "*cycleDelay:		1000000",
+  "*ncolors:		64",
   0
 };
 
@@ -95,6 +85,10 @@ XrmOptionDescRec options [] = {
   { "-min-width",	".minWidth",	XrmoptionSepArg, 0 },
   { "-min-height",	".minHeight",	XrmoptionSepArg, 0 },
   { "-delay",		".delay",	XrmoptionSepArg, 0 },
+  { "-ncolors",		".ncolors",	XrmoptionSepArg, 0 },
+  { "-cycle",		".cycle",	XrmoptionNoArg, "True" },
+  { "-no-cycle",	".cycle",	XrmoptionNoArg, "False" },
+  { "-cycle-delay",	".cycleDelay",	XrmoptionSepArg, 0 },
 };
 int options_size = (sizeof (options) / sizeof (options[0]));
 
@@ -109,6 +103,8 @@ screenhack (dpy, window) Display *dpy; Window window;
   XGCValues gcv;
   XWindowAttributes xgwa;
   int delay = get_integer_resource ("delay", "Integer");
+  int cycle_delay = get_integer_resource ("cycleDelay", "Integer");
+  Bool writable = get_boolean_resource ("cycle", "Boolean");
 
   max_depth = get_integer_resource ("maxDepth", "Integer");
   if (max_depth < 1) max_depth = 1;
@@ -129,6 +125,14 @@ screenhack (dpy, window) Display *dpy; Window window;
 				      dpy, xgwa.colormap);
   bgc = XCreateGC (dpy, window, GCForeground, &gcv);
 
+  ncolors = get_integer_resource ("ncolors", "Integer");
+
+  make_random_colormap (dpy, xgwa.visual, xgwa.colormap, colors, &ncolors,
+			False, True, &writable, True);
+
+  if (ncolors <= 2)
+    mono_p = True;
+
   if (!mono_p)
     {
       GC tmp = fgc;
@@ -143,7 +147,19 @@ screenhack (dpy, window) Display *dpy; Window window;
       deco (dpy, window, xgwa.colormap, fgc, bgc,
 	    0, 0, xgwa.width, xgwa.height, 0);
       XSync (dpy, True);
-      if (delay)
-	sleep(delay);
+
+      if (!delay) continue;
+      if (!writable)
+	sleep (delay);
+      else
+	{
+	  time_t start = time((time_t) 0);
+	  while (start - delay < time((time_t) 0))
+	    {
+	      rotate_colors (dpy, xgwa.colormap, colors, ncolors, 1);
+	      if (cycle_delay)
+		usleep (cycle_delay);
+	    }
+	}
     }
 }

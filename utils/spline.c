@@ -24,12 +24,15 @@
    from C++ to C by Matthieu Devin <devin@lucid.com> some time in 1992.
  */
 
-#include <stdio.h>
-#include "spline.h"
 #ifdef __STDC__
 # include <stdlib.h>
 #endif
+
+#include <stdio.h>
+#include <X11/Xlib.h>
 #include <math.h>
+
+#include "spline.h"
 
 #define SMOOTHNESS 1.0
 

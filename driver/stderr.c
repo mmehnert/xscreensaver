@@ -1,5 +1,4 @@
-/* xscreensaver, Copyright (c) 1991-1995, 1996
- *  Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1991-1996 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -30,10 +29,7 @@ extern XtAppContext app;
 extern Colormap cmap;
 extern Window screensaver_window;
 
-extern char *get_string_resource P((char *, char *));
-extern Bool get_boolean_resource P((char *, char *));
-extern unsigned int get_pixel_resource P((char *, char *,
-					  Display *, Colormap));
+#include "resources.h"
 
 static char stderr_buffer [1024];
 static char *stderr_tail = 0;

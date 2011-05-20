@@ -27,8 +27,7 @@
 #ifndef _SPLINE_H_
 #define _SPLINE_H_
 
-#include <X11/Xlib.h>
-
+#undef P
 #ifdef __STDC__
 # define P(x)x
 #else

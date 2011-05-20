@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1991-1996 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1991-1997 Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -41,11 +41,11 @@ extern int sgi_saver_ext_event_number;
 #endif
 
 extern XtAppContext app;
-
 Time cycle;
 Time timeout;
 Time pointer_timeout;
 Time notice_events_timeout;
+Time watchdog_timeout;
 
 extern Bool use_xidle_extension;
 extern Bool use_mit_saver_extension;
@@ -56,11 +56,15 @@ extern Window screensaver_window;
 
 extern Bool handle_clientmessage P((XEvent *, Bool));
 
+extern void disable_builtin_screensaver P((Bool turn_off_p));
+extern Bool screenhack_running_p P((void));
+
 static time_t last_activity_time; /* for when we have no server extensions */
 static XtIntervalId timer_id = 0;
 static XtIntervalId check_pointer_timer_id = 0;
 XtIntervalId cycle_id = 0;
 XtIntervalId lock_id = 0;
+XtIntervalId watchdog_id = 0;
 
 void
 #ifdef __STDC__
@@ -539,4 +543,63 @@ sleep_until_idle (until_idle_p) Bool until_idle_p;
     abort ();
 
   return;
+}
+
+
+/* This timer goes off every few minutes, whether the user is idle or not,
+   to try and clean up anything that has gone wrong.
+
+   It calls disable_builtin_screensaver() so that if xset has been used,
+   or some other program (like xlock) has messed with the XSetScreenSaver()
+   settings, they will be set back to sensible values (if a server extension
+   is in use, messing with xlock can cause xscreensaver to never get a wakeup
+   event, and could cause monitor power-saving to occur, and all manner of
+   heinousness.)
+
+   If the screen is currently blanked, it raises the window, in case some
+   other window has been mapped on top of it.
+
+   If the screen is currently blanked, and there is no hack running, it
+   clears the window, in case there is an error message printed on it (we
+   don't want the error message to burn in.)
+ */
+
+extern Bool screen_blanked_p;
+extern Bool demo_mode_p;
+
+void
+#ifdef __STDC__
+watchdog_timer (void *closure, XtPointer this_timer)
+#else /* ! __STDC__ */
+watchdog_timer (closure, this_timer)
+     void *closure;
+     XtPointer this_timer;
+#endif /* ! __STDC__ */
+{
+  if (!demo_mode_p)
+    {
+      disable_builtin_screensaver (False);
+      if (screen_blanked_p)
+	{
+	  Bool running_p = screenhack_running_p();
+#ifdef DEBUG_TIMERS
+	  if (verbose_p)
+	    printf ("%s: watchdog timer raising %sscreen.\n",
+		    progname, (running_p ? "" : "and clearing "));
+#endif
+	  raise_window (True, True, running_p);
+	}
+    }
+
+  if (watchdog_timeout)
+    {
+      watchdog_id = XtAppAddTimeOut (app, watchdog_timeout,
+				     (XtTimerCallbackProc) watchdog_timer, 0);
+
+#ifdef DEBUG_TIMERS
+      if (verbose_p)
+	printf ("%s: restarting watchdog_timer (%ld, %ld)\n",
+		progname, watchdog_timeout, watchdog_id);
+#endif
+    }
 }

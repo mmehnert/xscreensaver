@@ -25,13 +25,15 @@
 # endif
 #endif
 
+#include "fade.h"
+
 extern char *progname, *progclass;
 extern char *screensaver_version;
 
 extern Display *dpy;
 extern Screen *screen;
 extern Visual *visual;
-extern int visual_depth;
+extern int visualdepth;
 
 extern Bool verbose_p;
 
@@ -39,7 +41,8 @@ extern FILE *real_stderr;
 extern FILE *real_stdout;
 
 extern void initialize_screensaver_window P((void));
-extern void raise_window P((Bool inhibit_fade, Bool between_hacks_p));
+extern void raise_window P((Bool inhibit_fade, Bool between_hacks_p,
+			    Bool dont_clear));
 extern void blank_screen P((void));
 extern void unblank_screen P((void));
 extern void restart_process P((void));
@@ -48,10 +51,6 @@ extern void restore_real_vroot P((void));
 
 extern void spawn_screenhack P((Bool));
 extern void kill_screenhack P((void));
-
-extern Colormap copy_colormap P((Display *, Colormap, Colormap));
-extern void fade_colormap P((Display*,Colormap,Colormap,int,int,Bool,Bool));
-extern void blacken_colormap P((Display *, Colormap));
 
 extern int BadWindow_ehandler P((Display *dpy, XErrorEvent *error));
 

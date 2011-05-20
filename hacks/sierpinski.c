@@ -1,53 +1,43 @@
 /* -*- Mode: C; tab-width: 4 -*-
-   Ported from xlockmore 4.03a10 to be a standalone program and thus usable
-   with xscreensaver by Jamie Zawinski <jwz@netscape.com> on 10-May-97.
-
-   Original copyright notice from xlock.c:
-
-    * Copyright (c) 1988-91 by Patrick J. Naughton.
-    *
-    * Permission to use, copy, modify, and distribute this software and its
-    * documentation for any purpose and without fee is hereby granted,
-    * provided that the above copyright notice appear in all copies and that
-    * both that copyright notice and this permission notice appear in
-    * supporting documentation.
-    *
-    * This file is provided AS IS with no warranties of any kind.  The author
-    * shall have no liability with respect to the infringement of copyrights,
-    * trade secrets or any patents by this file or any part thereof.  In no
-    * event will the author be liable for any lost revenue or profits or
-    * other special, indirect and consequential damages.
+ * tri --- Sierpinski triangle fractal.
  */
-
 #if !defined( lint ) && !defined( SABER )
 static const char sccsid[] = "@(#)tri.c	4.00 97/01/01 xlockmore";
-
 #endif
 
-/* 
- * tri.c - Sierpinski triangle fractal for xlock,
- *   the X Window System lockscreen.
+/* Copyright (c) 1988-91 by Patrick J. Naughton.
  *
- * See xlock.c for copying information.
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for any purpose and without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and that
+ * both that copyright notice and this permission notice appear in
+ * supporting documentation.
+ *
+ * This file is provided AS IS with no warranties of any kind.  The author
+ * shall have no liability with respect to the infringement of copyrights,
+ * trade secrets or any patents by this file or any part thereof.  In no
+ * event will the author be liable for any lost revenue or profits or
+ * other special, indirect and consequential damages.
  *
  * Revision History:
  * 10-May-97: jwz@netscape.com: turned into a standalone program.
  * 05-Sep-96: Desmond Daignault Datatimes Incorporated
  *            <tekdd@dtol.datatimes.com> .
  */
-#ifndef STANDALONE
-# include "xlock.h"
-#else  /* STANDALONE */
 
-# define PROGCLASS		"Sierpinski"
-# define HACK_INIT		init_tri
-# define HACK_DRAW		draw_tri
-# define DEF_DELAY		400000
-# define DEF_BATCHCOUNT	2000
-# define DEF_CYCLES		100
-# include "xlockmore.h"
-
-#endif /* STANDALONE */
+#ifdef STANDALONE
+# define PROGCLASS					"Sierpinski"
+# define HACK_INIT					init_tri
+# define HACK_DRAW					draw_tri
+# define DEF_BATCHCOUNT				2000
+# define DEF_CYCLES					100
+# define DEF_DELAY					400000
+# include "xlockmore.h"				/* from the xscreensaver distribution */
+#else  /* !STANDALONE */
+# include "xlock.h"					/* from the xlockmore distribution */
+  ModeSpecOpt tri_opts = {
+	0, NULL, 0, NULL, NULL };
+#endif /* !STANDALONE */
 
 
 typedef struct {
@@ -60,11 +50,6 @@ typedef struct {
 	XPoint     *pointBuffer[3];
 	XPoint      vertex[3];
 } tristruct;
-
-#ifndef STANDALONE
-ModeSpecOpt tri_opts =
-{0, NULL, 0, NULL, NULL};
-#endif /* !STANDALONE */
 
 static tristruct *tris = NULL;
 

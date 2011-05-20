@@ -67,8 +67,8 @@ static int anum;
 static int num_points;
 static int total_points;
 static int pixcol;
-static int npixels;
-static unsigned long *pixels;
+static int ncolors;
+static XColor *colors;
 static XPoint points [POINT_BUFFER_SIZE];
 static GC gc;
 
@@ -97,7 +97,6 @@ halfrandom (mv) int mv;
     }
   return (r % mv);
 }
-
 
 static void
 #ifdef __STDC__
@@ -130,24 +129,14 @@ init_flame (dpy, window) Display *dpy; Window window;
   variation = random() % MAXKINDS;
 
   if (mono_p)
-    npixels = 0;
+    ncolors = 0;
   else
     {
-      int i = get_integer_resource ("ncolors", "Integer");
-      double saturation = 1.0;
-      double value = 1.0;
-      XColor color;
-      if (i <= 0) i = 128;
-
-      pixels = (unsigned long *) malloc ((i+1) * sizeof (*pixels));
-      for (npixels = 0; npixels < i; npixels++)
-	{
-	  hsv_to_rgb ((360*npixels)/i, saturation, value,
-		      &color.red, &color.green, &color.blue);
-	  if (! XAllocColor (dpy, cmap, &color))
-	    break;
-	  pixels [npixels] = color.pixel;
-	}
+      ncolors = get_integer_resource ("colors", "Integer");
+      if (ncolors <= 0) ncolors = 128;
+      colors = (XColor *) malloc ((ncolors+1) * sizeof (*colors));
+      make_smooth_colormap (dpy, xgwa.visual, xgwa.colormap, colors, &ncolors,
+			    True, 0, True);
     }
 
   gcv.foreground = get_pixel_resource ("foreground", "Foreground", dpy, cmap);
@@ -155,8 +144,8 @@ init_flame (dpy, window) Display *dpy; Window window;
 
   if (! mono_p)
     {
-      pixcol = halfrandom (npixels);
-      gcv.foreground = (pixels [pixcol]);
+      pixcol = halfrandom (ncolors);
+      gcv.foreground = (colors [pixcol].pixel);
     }
 
   gc = XCreateGC (dpy, window, GCForeground | GCBackground, &gcv);
@@ -349,11 +338,11 @@ flame (dpy, window) Display *dpy; Window window;
     }
   else
     {
-      if (npixels > 2)
+      if (ncolors > 2)
 	{
-	  XSetForeground (dpy, gc, pixels [pixcol]);
+	  XSetForeground (dpy, gc, colors [pixcol].pixel);
 	  if (--pixcol < 0)
-	    pixcol = npixels - 1;
+	    pixcol = ncolors - 1;
 	}
     }
 
@@ -404,7 +393,7 @@ char *progclass = "Flame";
 char *defaults [] = {
   "Flame.background:	black",		/* to placate SGI */
   "Flame.foreground:	white",
-  "*colors:	128",
+  "*colors:	64",
   "*iterations:	25",
   "*delay:	50000",
   "*delay2:	2000000",
@@ -413,7 +402,7 @@ char *defaults [] = {
 };
 
 XrmOptionDescRec options [] = {
-  { "-ncolors",		".colors",	XrmoptionSepArg, 0 },
+  { "-colors",		".colors",	XrmoptionSepArg, 0 },
   { "-iterations",	".iterations",	XrmoptionSepArg, 0 },
   { "-delay",		".delay",	XrmoptionSepArg, 0 },
   { "-delay2",		".delay2",	XrmoptionSepArg, 0 },

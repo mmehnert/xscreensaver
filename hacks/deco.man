@@ -3,7 +3,7 @@
 deco - draw tacky 70s basement wall panelling
 .SH SYNOPSIS
 .B deco
-[\-display \fIhost:display.screen\fP] [\-foreground \fIcolor\fP] [\-background \fIcolor\fP] [\-window] [\-root] [\-mono] [\-install] [\-visual \fIvisual\fP] [\-delay \fIseconds\fP] [\-max\-depth \fIint\fP] [\-min\-width \fIint\fP] [\-min\-height \fIint\fP]
+[\-display \fIhost:display.screen\fP] [\-foreground \fIcolor\fP] [\-background \fIcolor\fP] [\-window] [\-root] [\-mono] [\-install] [\-visual \fIvisual\fP] [\-delay \fIseconds\fP] [\-max\-depth \fIint\fP] [\-min\-width \fIint\fP] [\-min\-height \fIint\fP] [\-cycle] [\-no\-cycle] [\-cycle\-delay]
 .SH DESCRIPTION
 The \fIdeco\fP program subdivides and colors rectangles randomly.
 It looks kind of like Brady-Bunch-era rec-room wall paneling.
@@ -38,6 +38,15 @@ Default 8.
 .B \-min-width \fIinteger\fP
 .B \-min-height \fIinteger\fP
 The size of the smallest rectangle to draw.  Default 20x20.
+.TP 8
+.B \-cycle
+.TP 8
+.B \-no\-cycle
+Whether to do color cycling.  Default False.
+.TP 8
+.B \-cycle\-delay \fIusecs\fP
+If color cycling, how often to change the colors.  Default 1000000,
+or 1 second.
 .SH ENVIRONMENT
 .PP
 .TP 8

@@ -517,14 +517,22 @@ add_qline (dpy, window, cmap, qline, prev_qline, qix)
   if (!mono_p && !transparent_p)
     {
       XColor desired;
-      cycle_hue (&qline->color, color_shift);
+
+      int h;
+      double s, v;
+      rgb_to_hsv (qline->color.red, qline->color.green, qline->color.blue,
+		  &h, &s, &v);
+      h = (h + color_shift) % 360;
+      hsv_to_rgb (h, s, v,
+		  &qline->color.red, &qline->color.green, &qline->color.blue);
+
       qline->color.flags = DoRed | DoGreen | DoBlue;
       desired = qline->color;
       if (XAllocColor (dpy, cmap, &qline->color))
 	{
 	  /* XAllocColor returns the actual RGB that the hardware let us
 	     allocate.  Restore the requested values into the XColor struct
-	     so that limited-resolution hardware doesn't cause cycle_hue to
+	     so that limited-resolution hardware doesn't cause the cycle to
 	     get "stuck". */
 	  qline->color.red = desired.red;
 	  qline->color.green = desired.green;

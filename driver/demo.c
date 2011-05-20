@@ -1080,7 +1080,7 @@ demo_mode P((void))
 {
   dbox_up_p = True;
   initialize_screensaver_window ();
-  raise_window (True, False);
+  raise_window (True, False, False);
   make_screenhack_dialog (toplevel_shell, screenhacks);
   while (demo_mode_p)
     {

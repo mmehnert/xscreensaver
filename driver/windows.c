@@ -10,26 +10,18 @@
  */
 
 #include <stdio.h>
+#include <X11/Xproto.h>		/* for CARD32 */
 #include <X11/Xlib.h>
-#include <X11/Xutil.h>
+#include <X11/Xutil.h>		/* for XSetClassHint() */
 #include <X11/Xatom.h>
-#include <X11/Xos.h>
-#include <X11/Xmu/SysUtil.h>
+#include <X11/Xos.h>		/* for time() */
+#include <X11/Xmu/SysUtil.h>	/* for XmuGetHostname */
 
 #include <signal.h>		/* for the signal names */
 
 #include "xscreensaver.h"
 
-#ifdef HAVE_MIT_SAVER_EXTENSION
-#include <X11/extensions/scrnsaver.h>
-#endif /* HAVE_MIT_SAVER_EXTENSION */
-
-#ifdef HAVE_SGI_SAVER_EXTENSION
-#include <X11/extensions/XScreenSaver.h>
-#endif /* HAVE_SGI_SAVER_EXTENSION */
-
 extern Bool use_mit_saver_extension;
-extern Bool use_sgi_saver_extension;
 
 #ifdef __STDC__
 extern int kill (pid_t, int);		/* signal() is in sys/signal.h... */
@@ -41,11 +33,14 @@ extern Bool lock_p, demo_mode_p;
 
 Atom XA_VROOT, XA_XSETROOT_ID;
 Atom XA_SCREENSAVER_VERSION, XA_SCREENSAVER_ID;
+Atom XA_SCREENSAVER_TIME;
 
 #ifdef __STDC__
 extern void describe_visual (FILE *, Display *, Visual *);
 extern void reset_stderr (void);
 #endif
+
+static void store_activate_time P((void));
 
 Window screensaver_window = 0;
 Cursor cursor;
@@ -57,8 +52,11 @@ int fade_seconds, fade_ticks;
 static unsigned long black_pixel;
 static Window real_vroot, real_vroot_value;
 
+Bool screen_blanked_p = False;
+
+
 #ifdef HAVE_MIT_SAVER_EXTENSION
-Window server_mit_saver_window = 0;
+extern Window server_mit_saver_window;
 #endif /* HAVE_MIT_SAVER_EXTENSION */
 
 #define ALL_POINTER_EVENTS \
@@ -159,72 +157,6 @@ ensure_no_screensaver_running P((void))
   XSetErrorHandler (old_handler);
 }
 
-
-void
-#ifdef __STDC__
-disable_builtin_screensaver (Bool turn_off_p)
-#else  /* !__STDC__ */
-disable_builtin_screensaver (turn_off_p)
-  Bool turn_off_p;
-#endif /* !__STDC__ */
-{
-  int current_server_timeout, current_server_interval;
-  int current_prefer_blank, current_allow_exp;
-  int desired_server_timeout, desired_server_interval;
-  int desired_prefer_blank, desired_allow_exp;
-
-  XGetScreenSaver (dpy, &current_server_timeout, &current_server_interval,
-		   &current_prefer_blank, &current_allow_exp);
-
-  desired_server_timeout = current_server_timeout;
-  desired_server_interval = current_server_interval;
-  desired_prefer_blank = current_prefer_blank;
-  desired_allow_exp = current_allow_exp;
-
-#if defined(HAVE_MIT_SAVER_EXTENSION) || defined(HAVE_SGI_SAVER_EXTENSION)
-  if (use_mit_saver_extension || use_sgi_saver_extension)
-    {
-      desired_server_interval = 0;
-      desired_server_timeout = (timeout / 1000);
-
-      /* The SGI extension won't give us events unless blanking is on.
-	 I think (unsure right now) that the MIT extension is the opposite. */
-      if (use_sgi_saver_extension)
-	desired_prefer_blank = True;
-      else
-	desired_prefer_blank = False;
-    }
-  else
-#endif /* HAVE_MIT_SAVER_EXTENSION || HAVE_SGI_SAVER_EXTENSION */
-    {
-      desired_server_timeout = 0;
-    }
-
-  if (desired_server_timeout != current_server_timeout ||
-      desired_server_interval != current_server_interval ||
-      desired_prefer_blank != current_prefer_blank ||
-      desired_allow_exp != current_allow_exp)
-    {
-      if (desired_server_timeout == 0)
-	printf ("%s%sisabling server builtin screensaver.\n\
-	You can re-enable it with \"xset s on\".\n",
-		(verbose_p ? "" : progname), (verbose_p ? "\n\tD" : ": d"));
-
-      if (verbose_p)
-	fprintf (stderr, "%s: (xset s %d %d %s %s)\n", progname,
-		 desired_server_timeout, desired_server_interval,
-		 (desired_prefer_blank ? "blank" : "noblank"),
-		 (desired_allow_exp ? "noexpose" : "expose"));
-
-      XSetScreenSaver (dpy, desired_server_timeout, desired_server_interval,
-		       desired_prefer_blank, desired_allow_exp);
-      XSync(dpy, False);
-    }
-
-  if (turn_off_p)
-    /* Turn off the server builtin saver if it is now running. */
-    XForceScreenSaver (dpy, ScreenSaverReset);
-}
 
 
 /* Virtual-root hackery */
@@ -645,7 +577,7 @@ initialize_screensaver_window P((void))
 	 to get created at the right time.  Gag.  */
       XScreenSaverSetAttributes (dpy, root,
 				 0, 0, width, height, 0,
-				 visual_depth, InputOutput, visual,
+				 visualdepth, InputOutput, visual,
 				 attrmask, &attrs);
       XSync (dpy, False);
 #endif /* 0 */
@@ -675,8 +607,9 @@ initialize_screensaver_window P((void))
     {
       screensaver_window =
 	XCreateWindow (dpy, RootWindowOfScreen (screen), 0, 0, width, height,
-		       0, visual_depth, InputOutput, visual, attrmask,
+		       0, visualdepth, InputOutput, visual, attrmask,
 		       &attrs);
+      store_activate_time();
     }
 
 #ifdef HAVE_MIT_SAVER_EXTENSION
@@ -686,6 +619,8 @@ initialize_screensaver_window P((void))
        by screensaver_window only exists while the saver is active.
        So we must be careful to only try and manipulate it while it
        exists...
+       (#### The above comment would be true if the MIT extension actually
+       worked, but it's not true today -- see `server_mit_saver_window'.)
      */
 #endif /* HAVE_MIT_SAVER_EXTENSION */
     {
@@ -725,8 +660,8 @@ initialize_screensaver_window P((void))
 
 
 void 
-raise_window (inhibit_fade, between_hacks_p)
-     Bool inhibit_fade, between_hacks_p;
+raise_window (inhibit_fade, between_hacks_p, dont_clear)
+     Bool inhibit_fade, between_hacks_p, dont_clear;
 {
   initialize_screensaver_window ();
 
@@ -746,7 +681,8 @@ raise_window (inhibit_fade, between_hacks_p)
       fade_colormap (dpy, current_map, cmap2, fade_seconds, fade_ticks,
 		     True, True);
       if (verbose_p) fprintf (stderr, "fading done.\n");
-      XClearWindow (dpy, screensaver_window);
+      if (!dont_clear)
+	XClearWindow (dpy, screensaver_window);
       XMapRaised (dpy, screensaver_window);
 
 #ifdef HAVE_MIT_SAVER_EXTENSION
@@ -764,7 +700,8 @@ raise_window (inhibit_fade, between_hacks_p)
     }
   else
     {
-      XClearWindow (dpy, screensaver_window);
+      if (!dont_clear)
+	XClearWindow (dpy, screensaver_window);
       XMapRaised (dpy, screensaver_window);
 #ifdef HAVE_MIT_SAVER_EXTENSION
       if (server_mit_saver_window &&
@@ -783,23 +720,28 @@ raise_window (inhibit_fade, between_hacks_p)
 static Bool hp_locked_p = False;
 #endif /* __hpux */
 
+
 void
-blank_screen ()
+blank_screen P((void))
 {
   save_real_vroot ();
   store_vroot_property (screensaver_window, screensaver_window);
-  raise_window (False, False);
+  store_activate_time ();
+  raise_window (False, False, False);
   grab_keyboard_and_mouse ();
 #ifdef __hpux
   if (lock_p && !hp_locked_p)
     XHPDisableReset (dpy);	/* turn off C-Sh-Reset */
   hp_locked_p = True;
 #endif
+
+  screen_blanked_p = True;
 }
 
 void
-unblank_screen ()
+unblank_screen P((void))
 {
+  store_activate_time ();
   if (unfade_p && !demo_mode_p)
     {
       int grabbed;
@@ -862,4 +804,17 @@ unblank_screen ()
     XHPEnableReset (dpy);	/* turn C-Sh-Reset back on */
   hp_locked_p = False;
 #endif
+
+  screen_blanked_p = False;
+}
+
+
+static void
+store_activate_time P((void))
+{
+  time_t now = time ((time_t) 0);
+  CARD32 now32 = (CARD32) now;
+  XChangeProperty (dpy, screensaver_window, XA_SCREENSAVER_TIME,
+		   XA_INTEGER, 32, PropModeReplace,
+		   (unsigned char *) &now32, 1);
 }

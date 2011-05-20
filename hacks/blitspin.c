@@ -168,6 +168,44 @@ read_bitmap (bitmap_name, widthP, heightP)
     }
 }
 
+
+static Pixmap
+#ifdef __STDC__
+read_screen (Display *dpy, Window window, int *widthP, int *heightP)
+#else /* ! __STDC__ */
+read_screen (dpy, window, widthP, heightP)
+	Display *dpy;
+	Window window;
+	int *widthP;
+	int *heightP;
+#endif /* ! __STDC__ */
+{
+  Pixmap p;
+  XWindowAttributes xgwa;
+  XGCValues gcv;
+  GC gc;
+  XGetWindowAttributes (dpy, window, &xgwa);
+  *widthP = xgwa.width;
+  *heightP = xgwa.height;
+
+  grab_screen_image(dpy, window);
+  p = XCreatePixmap(dpy, window, xgwa.width, xgwa.height, xgwa.depth);
+  gcv.function = GXcopy;
+  gc = XCreateGC (dpy, window, GCFunction, &gcv);
+  XCopyArea (dpy, window, p, gc, 0, 0, xgwa.width, xgwa.height, 0, 0);
+  XFreeGC (dpy, gc);
+
+
+  /* Reset this... */
+  XSetWindowBackground (dpy, window,
+			get_pixel_resource ("background", "Background",
+					    dpy, xgwa.colormap));
+  XClearWindow (dpy, window);
+
+  return p;
+}
+
+
 static void
 init P((void))
 {
@@ -199,6 +237,10 @@ init P((void))
       height = logo_height;
       bitmap = XCreatePixmapFromBitmapData (dpy, window, (char *) logo_bits,
 					    width, height, fg, bg, depth);
+    }
+  else if (!strcmp (bitmap_name, "(screen)"))
+    {
+      bitmap = read_screen (dpy, window, &width, &height);
     }
   else
     {
@@ -281,7 +323,8 @@ char *defaults [] = {
 XrmOptionDescRec options [] = {
   { "-delay",		".delay",	XrmoptionSepArg, 0 },
   { "-delay2",		".delay2",	XrmoptionSepArg, 0 },
-  { "-bitmap",		".bitmap",	XrmoptionSepArg, 0 }
+  { "-bitmap",		".bitmap",	XrmoptionSepArg, 0 },
+  { "-grab-screen",	".bitmap",	XrmoptionNoArg, "(screen)" }
 };
 int options_size = (sizeof (options) / sizeof (options[0]));
 

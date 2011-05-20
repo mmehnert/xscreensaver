@@ -27,14 +27,18 @@
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
 
-#undef usleep
-# define usleep screenhack_usleep
-
 #ifdef __STDC__
-extern void screenhack_usleep (unsigned long usecs);
+# define P(x)x
+#else
+# define P(x)()
 #endif
 
+#include "usleep.h"
+#include "colors.h"
+
 #ifdef HAVE_READ_DISPLAY_EXTENSION
+# include <stdio.h>
+# include "visual.h"
 # include <X11/extensions/readdisplay.h>
 # ifdef __STDC__
   static Bool read_display (Display *, Window, Pixmap, Bool);
@@ -42,6 +46,14 @@ extern void screenhack_usleep (unsigned long usecs);
   static Bool read_display ();
 # endif /* !__STDC__ */
 #endif /* HAVE_READ_DISPLAY_EXTENSION */
+
+
+#ifdef _VROOT_H_
+ERROR!  You must not include vroot.h in this file.
+#endif
+
+
+static void copy_default_colormap_contents P((Display *, Colormap, Visual *));
 
 
 static Bool
@@ -95,15 +107,14 @@ raise_window(dpy, window, dont_wait)
 }
 
 
-
-#ifdef __STDC__
-static Bool screensaver_window_p (Display *, Window);
-#endif
-
 static Bool
+#ifdef __STDC__
+screensaver_window_p (Display *dpy, Window window)
+#else  /* !__STDC__ */
 screensaver_window_p (dpy, window)
      Display *dpy;
      Window window;
+#endif /* !__STDC__ */
 {
   Atom type;
   int format;
@@ -120,7 +131,7 @@ screensaver_window_p (dpy, window)
   return False;
 }
 
-Pixmap
+void
 #ifdef __STDC__
 grab_screen_image (Display *dpy, Window window)
 #else /* !__STDC__ */
@@ -129,14 +140,12 @@ grab_screen_image (dpy, window)
      Window window;
 #endif /* !__STDC__ */
 {
-  /* note: this assumes vroot.h didn't encapsulate the XRootWindowOfScreen
-     function, only the RootWindowOfScreen macro... */
-  Window real_root = XRootWindowOfScreen (DefaultScreenOfDisplay (dpy));
+  XWindowAttributes xgwa;
+  Window real_root = RootWindowOfScreen (DefaultScreenOfDisplay (dpy));
   Bool root_p = (window == real_root);
   Bool saver_p = screensaver_window_p (dpy, window);
   Bool grab_mouse_p = False;
   int unmap_time = 0;
-  Pixmap pixmap = 0;
 
   if (saver_p)
     /* I think this is redundant, but just to be safe... */
@@ -144,7 +153,7 @@ grab_screen_image (dpy, window)
 
   if (saver_p)
     /* The only time grabbing the mouse is important is if this program
-       is being run while the screen is locked. */
+       is being run while the saver is locking the screen. */
     grab_mouse_p = True;
 
   if (!root_p)
@@ -176,24 +185,34 @@ grab_screen_image (dpy, window)
       usleep(unmap_time); /* wait for everyone to swap in and handle exposes */
     }
 
+  XGetWindowAttributes (dpy, window, &xgwa);
+
   if (!root_p)
     {
 #ifdef HAVE_READ_DISPLAY_EXTENSION
       if (! read_display(dpy, window, 0, saver_p))
 #endif /* HAVE_READ_DISPLAY_EXTENSION */
-	raise_window(dpy, window, saver_p);
+	{
+	  copy_default_colormap_contents (dpy, xgwa.colormap, xgwa.visual);
+	  raise_window(dpy, window, saver_p);
+	}
     }
   else  /* root_p */
     {
+      Pixmap pixmap;
       XWindowAttributes xgwa;
       XGetWindowAttributes(dpy, window, &xgwa);
       pixmap = XCreatePixmap(dpy, window, xgwa.width, xgwa.height, xgwa.depth);
+
 #ifdef HAVE_READ_DISPLAY_EXTENSION
       if (! read_display(dpy, window, pixmap, True))
 #endif
 	{
 	  XGCValues gcv;
 	  GC gc;
+
+	  copy_default_colormap_contents (dpy, xgwa.colormap, xgwa.visual);
+
 	  gcv.function = GXcopy;
 	  gcv.subwindow_mode = IncludeInferiors;
 	  gc = XCreateGC (dpy, window, GCFunction | GCSubwindowMode, &gcv);
@@ -202,6 +221,7 @@ grab_screen_image (dpy, window)
 	  XFreeGC (dpy, gc);
 	}
       XSetWindowBackgroundPixmap (dpy, window, pixmap);
+      XFreePixmap (dpy, pixmap);
     }
 
   if (grab_mouse_p)
@@ -211,7 +231,6 @@ grab_screen_image (dpy, window)
     }
 
   XSync (dpy, True);
-  return pixmap;
 }
 
 
@@ -220,7 +239,7 @@ grab_screen_image (dpy, window)
    started with -install, we need to copy the contents of the default colormap
    into the screensaver's colormap.
  */
-void
+static void
 #ifdef __STDC__
 copy_default_colormap_contents (Display *dpy,
 				Colormap to_cmap,
@@ -240,8 +259,7 @@ copy_default_colormap_contents (dpy, to_cmap, to_visual)
   unsigned long *pixels;
   XVisualInfo vi_in, *vi_out;
   int out_count;
-  int from_cells, to_cells, max_cells;
-  int requested;
+  int from_cells, to_cells, max_cells, got_cells;
   int i;
 
   if (from_cmap == to_cmap)
@@ -272,25 +290,9 @@ copy_default_colormap_contents (dpy, to_cmap, to_visual)
     old_colors[i].pixel = i;
   XQueryColors (dpy, from_cmap, old_colors, max_cells);
 
-  requested = max_cells;
-  while (requested > 0)
-    {
-      if (XAllocColorCells (dpy, to_cmap, False, 0, 0, pixels, requested))
-	{
-	  /* Got all the pixels we asked for. */
-	  for (i = 0; i < requested; i++)
-	    new_colors[i] = old_colors [pixels[i]];
-	  XStoreColors (dpy, to_cmap, new_colors, requested);
-	}
-      else
-	{
-	  /* We didn't get all/any of the pixels we asked for.  This time, ask
-	     for half as many.  (If we do get all that we ask for, we ask for
-	     the same number again next time, so we only do O(log(n)) server
-	     roundtrips.) */
-	  requested = requested / 2;
-	}
-    }
+  got_cells = max_cells;
+  allocate_writable_colors (dpy, to_cmap, pixels, &got_cells);
+  XStoreColors (dpy, to_cmap, old_colors, got_cells);
 
   free (old_colors);
   free (new_colors);
@@ -309,6 +311,8 @@ copy_default_colormap_contents (dpy, to_cmap, to_visual)
 
 #ifdef HAVE_READ_DISPLAY_EXTENSION
 
+static void make_cubic_colormap P((Display *, Window, Visual *));
+
 static Bool
 #ifdef __STDC__
 read_display (Display *dpy, Window window, Pixmap into_pixmap, Bool dont_wait)
@@ -326,21 +330,38 @@ read_display (dpy, window, into_pixmap, dont_wait)
   unsigned long hints = 0;
   XImage *image = 0;
   XGCValues gcv;
+  int class;
   GC gc;
-
-  /* Check to see if the window is >= 24 bits deep; if not, we can't make use
-     of the pixmap returned by XReadDisplay anyway.
-   */
-  XGetWindowAttributes (dpy, window, &xgwa);
-  if (xgwa.depth < 24)
-    return False;
 
   /* Check to see if the server supports the extension, and bug out if not.
    */
   if (! XReadDisplayQueryExtension (dpy, &rd_event_base, &rd_error_base))
     return False;
 
-  /* Finally, try and read the screen.
+  /* If this isn't a visual we know how to handle, bug out.  We handle:
+      = TrueColor in depths 8, 12, 16, and 32;
+      = PseudoColor and DirectColor in depths 8 and 12.
+   */
+  XGetWindowAttributes(dpy, window, &xgwa);
+  class = visual_class (dpy, xgwa.visual);
+  if (class == TrueColor)
+    {
+      if (xgwa.depth != 8  && xgwa.depth != 12 && xgwa.depth != 16 &&
+	  xgwa.depth != 24 && xgwa.depth != 32)
+	return False;
+    }
+  else if (class == PseudoColor || class == DirectColor)
+    {
+      if (xgwa.depth != 8 && xgwa.depth != 12)
+	return False;
+      else
+	/* Install a colormap that makes this visual behave like
+	   a TrueColor visual of the same depth. */
+	make_cubic_colormap(dpy, window, xgwa.visual);
+    }
+
+
+  /* Try and read the screen.
    */
   hints = (XRD_TRANSPARENT | XRD_READ_POINTER);
   image = XReadDisplay (dpy, window, xgwa.x, xgwa.y, xgwa.width, xgwa.height,
@@ -353,10 +374,71 @@ read_display (dpy, window, into_pixmap, dont_wait)
       return False;
     }
 
-  /* Uh, this can't be right, can it?  But it's necessary.  X sucks. */
-  if (image->depth == 32)
-    image->depth = xgwa.depth;
+  /* Uh, this can't be right, can it?  But it's necessary.  X sucks.
+     If the visual is of depth 24, but the image came back as depth 32,
+     hack it to be 24 lest we get a BadMatch from XPutImage.  (I presume
+     I'm expected to look at the server's pixmap formats or some such
+     nonsense... but fuck it.
+   */
+  if (xgwa.depth == 24 && image->depth == 32)
+    image->depth = 24;
 
+  /* If the visual of the window/pixmap into which we're going to draw is
+     less deep than the screen itself, then we need to convert the grabbed bits
+     to match the depth by clipping off the less significant bit-planes of each
+     color component.
+   */
+  if (image->depth > xgwa.depth)
+    {
+      int x, y;
+      /* We use the same image->data in both images -- that's ok, because
+	 since we're reading from B and writing to A, and B uses more bytes
+	 per pixel than A, the write pointer won't overrun the read pointer.
+       */
+      XImage *image2 = XCreateImage (dpy, xgwa.visual, xgwa.depth,
+				     ZPixmap, 0, image->data,
+				     xgwa.width, xgwa.height,
+				     8, 0);
+      if (!image2)
+	return False;
+      for (y = 0; y < image->height; y++)
+	for (x = 0; x < image->width; x++)
+	  {
+	    /* #### really these shift values should be determined from the
+	       mask values -- but that's a pain in the ass, and anyway,
+	       this is an SGI-specific extension so hardcoding assumptions
+	       about the SGI server's behavior isn't *too* heinous... */
+	    unsigned long pixel = XGetPixel(image, x, y);
+	    unsigned int r = (pixel & image->red_mask);
+	    unsigned int g = (pixel & image->green_mask) >> 8;
+	    unsigned int b = (pixel & image->blue_mask) >> 16;
+
+	    if (xgwa.depth == 8)
+	      pixel = ((r >> 5) | ((g >> 5) << 3) | ((b >> 6) << 6));
+	    else if (xgwa.depth == 12)
+	      pixel = ((r >> 4) | ((g >> 4) << 4) | ((b >> 4) << 8));
+	    else if (xgwa.depth == 16)
+	      pixel = ((r >> 3) | ((g >> 3) << 5) | ((b >> 3) << 10));
+	    else
+	      abort();
+
+	    XPutPixel(image2, x, y, pixel);
+	  }
+      image->data = 0;
+      XDestroyImage(image);
+      image = image2;
+    }
+
+
+  /* Now actually put the bits into the window or pixmap -- note the design
+     bogosity of this extension, where we've been forced to take 24 bit data
+     from the server to the client, and then push it back from the client to
+     the server, *without alteration*.  We should have just been able to tell
+     the server, "put a screen image in this drawable", instead of having to
+     go through the intermediate step of converting it to an Image.  Geez.
+     (Assuming that the window is of screen depth; we happen to handle less
+     deep windows, but that's beside the point.)
+   */
   gcv.function = GXcopy;
   gc = XCreateGC (dpy, window, GCFunction, &gcv);
 
@@ -378,7 +460,6 @@ read_display (dpy, window, into_pixmap, dont_wait)
       /* Plop down the bits... */
       XPutImage (dpy, window, gc, image, 0, 0, 0, 0, xgwa.width, xgwa.height);
     }
-
   XFreeGC (dpy, gc);
 
   if (image->data)
@@ -389,5 +470,65 @@ read_display (dpy, window, into_pixmap, dont_wait)
   XDestroyImage(image);
   return True;
 }
+
+static void
+#ifdef __STDC__
+make_cubic_colormap (Display *dpy, Window window, Visual *visual)
+#else  /* !__STDC__ */
+make_cubic_colormap (dpy, window, visual)
+	Display *dpy;
+	Window *window;
+	Visual *visual;
+#endif /* !__STDC__ */
+{
+  Colormap cmap = XCreateColormap(dpy, window, visual, AllocAll);
+  int nr, ng, nb, cells;
+  int r, g, b;
+  int depth;
+  XColor colors[4097];
+  int i;
+
+  depth = visual_depth(dpy, visual);
+  switch (depth)
+    {
+    case 8:  nr = 3; ng = 3; nb = 2; cells = 256;  break;
+    case 12: nr = 4; ng = 4; nb = 4; cells = 4096; break;
+    default: abort(); break;
+    }
+
+  memset(colors, 0, sizeof(colors));
+  for (i = 0; i < cells; i++)
+    {
+      colors[i].flags = DoRed|DoGreen|DoBlue;
+      colors[i].red = colors[i].green = colors[i].blue = 0;
+    }
+
+  for (r = 0; r < (1 << nr); r++)
+    for (g = 0; g < (1 << ng); g++)
+      for (b = 0; b < (1 << nb); b++)
+	{
+	  i = (r | (g << nr) | (b << (nr + ng)));
+	  colors[i].pixel = i;
+	  if (depth == 8)
+	    {
+	      colors[i].red   = ((r << 13) | (r << 10) | (r << 7) |
+				 (r <<  4) | (r <<  1));
+	      colors[i].green = ((g << 13) | (g << 10) | (g << 7) |
+				 (g <<  4) | (g <<  1));
+	      colors[i].blue  = ((b << 14) | (b << 12) | (b << 10) |
+				 (b <<  8) | (b <<  6) | (b <<  4) |
+				 (b <<  2) | b);
+	    }
+	  else
+	    {
+	      colors[i].red   = (r << 8) | (r << 4) | r;
+	      colors[i].green = (g << 8) | (g << 4) | g;
+	      colors[i].blue  = (b << 8) | (b << 4) | b;
+	    }
+	}
+  XStoreColors (dpy, cmap, colors, cells);
+  XSetWindowColormap (dpy, window, cmap);
+}
+
 
 #endif /* HAVE_READ_DISPLAY_EXTENSION */

@@ -1,5 +1,5 @@
-/* xscreensaver-command, Copyright (c) 1991-1995, 1996 
- * Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver-command, Copyright (c) 1991-1997
+ *  by Jamie Zawinski <jwz@netscape.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -10,14 +10,23 @@
  * implied warranty.
  */
 
-#include "version.h"
 #include <stdio.h>
+#include <X11/Xproto.h>		/* for CARD32 */
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
+#include <X11/Xutil.h>		/* for XGetClassHint() */
 #include <X11/Xos.h>
 #ifdef __STDC__
 # include <stdlib.h>
 #endif
+
+#ifndef __STDC__
+# ifndef const
+#  define const /**/
+# endif
+#endif
+
+#include "version.h"
 
 #ifdef _VROOT_H_
 ERROR! you must not include vroot.h in this file
@@ -27,7 +36,7 @@ static char *screensaver_version;
 static char *usage = "usage: %s -<switch>\n\
 \n\
   This program provides external control of a running xscreensaver process.\n\
-  Version %s, copyright (c) 1991-1994 Jamie Zawinski <jwz@netscape.com>.\n\
+  Version %s, copyright (c) 1991-1997 Jamie Zawinski <jwz@netscape.com>.\n\
 \n\
   -demo		Enter interactive demo mode.\n\
   -deactivate	Turns off the screensaver if it is on, as user input would.\n\
@@ -46,22 +55,29 @@ static char *usage = "usage: %s -<switch>\n\
 		the same command line arguments.  This is a good way of \n\
 		causing the screensaver to re-read the resource database.\n\
   -lock         Same as -activate, but with immediate locking.\n\
+  -version      Prints the version of XScreenSaver that is running.\n\
+  -time         Prints the time at which the screensaver turned on.\n\
 \n\
-  See the man page for more details.\n\n";
+  See the man page for more details.\n\
+  For updates, check http://www.netscape.com/people/jwz/xscreensaver/\n\
+\n";
 
 static Window
 #ifdef __STDC__
-find_screensaver_window (Display *dpy, char *progname)
+find_screensaver_window (Display *dpy, char *progname, char **version)
 #else /* ! __STDC__ */
-find_screensaver_window (dpy, progname)
+find_screensaver_window (dpy, progname, version)
      Display *dpy;
      char *progname;
+     char **version;
 #endif /* ! __STDC__ */
 {
   int i;
   Window root = RootWindowOfScreen (DefaultScreenOfDisplay (dpy));
   Window root2, parent, *kids;
   unsigned int nkids;
+
+  if (version) *version = 0;
 
   if (! XQueryTree (dpy, root, &root2, &parent, &kids, &nkids))
     abort ();
@@ -76,16 +92,20 @@ find_screensaver_window (dpy, progname)
       Atom type;
       int format;
       unsigned long nitems, bytesafter;
-      char *version;
+      char *v;
 
       if (XGetWindowProperty (dpy, kids[i],
 			      XInternAtom (dpy, "_SCREENSAVER_VERSION", False),
-			      0, 1, False, XA_STRING,
+			      0, 200, False, XA_STRING,
 			      &type, &format, &nitems, &bytesafter,
-			      (unsigned char **) &version)
+			      (unsigned char **) &v)
 	  == Success
 	  && type != None)
-	return kids[i];
+	{
+	  if (version)
+	    *version = v;
+	  return kids[i];
+	}
     }
   fprintf (stderr, "%s: no screensaver is running on display %s\n", progname,
 	   DisplayString (dpy));
@@ -107,9 +127,13 @@ main (argc, argv)
 {
   Display *dpy;
   Window window;
-  XEvent event;
   int i;
+  int query = 0;
+#define Q_version 1
+#define Q_time    2
   char *message = 0, *dpyname = 0;
+  char *v = 0;
+
   screensaver_version = (char *) malloc (5);
   memcpy (screensaver_version, screensaver_id + 17, 4);
   screensaver_version [4] = 0;
@@ -129,9 +153,11 @@ main (argc, argv)
       else if (!strncmp (s, "-restart", L))	message = "RESTART";
       else if (!strncmp (s, "-demo", L))	message = "DEMO";
       else if (!strncmp (s, "-lock", L))	message = "LOCK";
+      else if (!strncmp (s, "-version", L))	query   = Q_version;
+      else if (!strncmp (s, "-time", L))	query   = Q_time;
       else USAGE ();
     }
-  if (! message) USAGE ();
+  if (!message && !query) USAGE ();
   if (!dpyname) dpyname = (char *) getenv ("DISPLAY");
   dpy = XOpenDisplay (dpyname);
   if (!dpy)
@@ -140,20 +166,107 @@ main (argc, argv)
 	       (dpyname ? dpyname : "(null)"));
       exit (1);
     }
-  window = find_screensaver_window (dpy, argv[0]);
+  window = find_screensaver_window (dpy, argv[0], &v);
 
-  event.xany.type = ClientMessage;
-  event.xclient.display = dpy;
-  event.xclient.window = window;
-  event.xclient.message_type = XInternAtom (dpy, "SCREENSAVER", False);
-  event.xclient.format = 32;
-  event.xclient.data.l[0] = (long) XInternAtom (dpy, message, False);
-  if (! XSendEvent (dpy, window, False, 0L, &event))
+  if (message)
     {
-      fprintf (stderr, "%s: XSendEvent(dpy, 0x%x ...) failed.\n", argv [0],
-	       (unsigned int) window);
-      exit (1);
+      XEvent event;
+      event.xany.type = ClientMessage;
+      event.xclient.display = dpy;
+      event.xclient.window = window;
+      event.xclient.message_type = XInternAtom (dpy, "SCREENSAVER", False);
+      event.xclient.format = 32;
+      event.xclient.data.l[0] = (long) XInternAtom (dpy, message, False);
+      if (! XSendEvent (dpy, window, False, 0L, &event))
+	{
+	  fprintf (stderr, "%s: XSendEvent(dpy, 0x%x ...) failed.\n", argv [0],
+		   (unsigned int) window);
+	  exit (1);
+	}
     }
+  else if (query)
+    {
+      XClassHint hint;
+      memset (hint, 0, sizeof(hint));
+      if (!v || !*v)
+	{
+	  fprintf (stderr, "%s: version property not set on window 0x%x?\n",
+		   argv [0], (unsigned int) window);
+	  exit (1);
+	}
+
+      XGetClassHint(dpy, window, &hint);
+      if (!hint.res_class)
+	{
+	  fprintf (stderr, "%s: class hints not set on window 0x%x?\n",
+		   argv [0], (unsigned int) window);
+	  exit (1);
+	}
+
+      fprintf (stdout, "%s %s", hint.res_class, v);
+
+      if (query != Q_time)
+	{
+	  fprintf (stdout, "\n");
+	}
+      else
+	{
+	  Atom type;
+	  int format;
+	  unsigned long nitems, bytesafter;
+	  unsigned char *data = 0;
+	  XWindowAttributes xgwa;
+	  Bool active_p = False;
+
+	  xgwa.map_state = IsViewable;
+	  XGetWindowAttributes (dpy, window, &xgwa);
+
+	  if (XGetWindowProperty (dpy, window,
+				  XInternAtom (dpy, "__SWM_VROOT", False),
+				  0, 0, False, XA_WINDOW,
+				  &type, &format, &nitems, &bytesafter,
+				  &data)
+	      == Success
+	      && type != None)
+	    active_p = True;
+
+	  if (data) free (data);
+	  data = 0;
+
+	  if (XGetWindowProperty (dpy, window,
+				  XInternAtom (dpy, "_SCREENSAVER_TIME",False),
+				  0, 1, False, XA_INTEGER,
+				  &type, &format, &nitems, &bytesafter,
+				  &data)
+	      == Success
+	      && type == XA_INTEGER
+	      && data)
+	    {
+	      CARD32 time32 = *((CARD32 *)data);
+	      time_t tt = (time_t) time32;
+
+	      if (active_p)
+		fprintf (stdout, ": active since ");
+	      else
+		fprintf (stdout, ": inactive since ");
+	      fprintf (stdout, "%s", ctime(&tt));
+	      if (data) free (data);
+	    }
+	  else
+	    {
+	      if (data) free (data);
+	      fprintf (stdout, "\n");
+	      fflush (stdout);
+	      fprintf (stderr, "%s: no time on window 0x%x (%s %s).\n",
+		       argv[0], (unsigned int) window,
+		       hint.res_class, (v ? v : "???"));
+	      exit (1);
+	    }
+	}
+    }
+
   XSync (dpy, 0);
+  fflush (stdout);
+  fflush (stderr);
   exit (0);
 }

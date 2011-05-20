@@ -38,15 +38,16 @@
 # define _tolower(c)  ((c) - 'A' + 'a')
 #endif
 
+#include "resources.h"  /* for get_string_resource() */
+
 extern char *progname;
-extern char *get_string_resource P((char *, char *));
 
 static Visual *pick_best_visual P ((Screen *, Bool));
 static Visual *pick_best_visual_of_class P((Screen *, int));
 static Visual *id_to_visual P((Screen *, int));
 static int screen_number P((Screen *));
 static Visual *id_to_visual P((Screen *screen, int id));
-int get_visual_depth P((Display *dpy, Visual *visual));
+int visual_depth P((Display *dpy, Visual *visual));
 
 
 #define DEFAULT_VISUAL	-1
@@ -69,6 +70,7 @@ get_visual_resource (dpy, name, class, prefer_writable_cells)
   char *tmp;
   int vclass;
   unsigned long id;
+  Visual *result = 0;
 
   if (v)
     for (tmp = v; *tmp; tmp++)
@@ -90,27 +92,34 @@ get_visual_resource (dpy, name, class, prefer_writable_cells)
       fprintf (stderr, "%s: unrecognized visual \"%s\".\n", progname, v);
       vclass = DEFAULT_VISUAL;
     }
-  if (v) free (v);
 
   if (vclass == DEFAULT_VISUAL)
-    return DefaultVisualOfScreen (screen);
+    result = DefaultVisualOfScreen (screen);
   else if (vclass == BEST_VISUAL)
-    return pick_best_visual (screen, prefer_writable_cells);
+    result = pick_best_visual (screen, prefer_writable_cells);
   else if (vclass == SPECIFIC_VISUAL)
     {
       Visual *visual = id_to_visual (screen, id);
-      if (visual) return visual;
-      fprintf (stderr, "%s: no visual with id 0x%x.\n", progname,
-	       (unsigned int) id);
-      return DefaultVisualOfScreen (screen);
+      if (visual)
+	result = visual;
+      else
+	fprintf (stderr, "%s: no visual with id 0x%x.\n", progname,
+		 (unsigned int) id);
     }
   else
     {
       Visual *visual = pick_best_visual_of_class (screen, vclass);
-      if (visual) return visual;
-      fprintf (stderr, "%s: no visual of class %s.\n", progname, v);
-      return DefaultVisualOfScreen (screen);
+      if (visual)
+	result = visual;
+      else
+	fprintf (stderr, "%s: no visual of class %s.\n", progname, v);
     }
+
+  if (v) free (v);
+  if (result)
+    return result;
+  else
+    return DefaultVisualOfScreen (screen);
 }
 
 static Visual *
@@ -137,7 +146,7 @@ pick_best_visual (screen, prefer_writable_cells)
 	 come the non-colormappable visuals, and non-color visuals.
        */
       if ((visual = pick_best_visual_of_class (screen, TrueColor)) &&
-	  get_visual_depth (DisplayOfScreen(screen), visual) >= 16)
+	  visual_depth (DisplayOfScreen(screen), visual) >= 16)
 	return visual;
     }
 
@@ -225,9 +234,9 @@ id_to_visual (screen, id)
 
 int
 #ifdef __STDC__
-get_visual_depth (Display *dpy, Visual *visual)
+visual_depth (Display *dpy, Visual *visual)
 #else /* !__STDC__ */
-get_visual_depth (dpy, visual)
+visual_depth (dpy, visual)
      Display *dpy;
      Visual *visual;
 #endif /* !__STDC__ */
@@ -247,9 +256,9 @@ get_visual_depth (dpy, visual)
 
 int
 #ifdef __STDC__
-get_visual_class (Display *dpy, Visual *visual)
+visual_class (Display *dpy, Visual *visual)
 #else /* !__STDC__ */
-get_visual_class (dpy, visual)
+visual_class (dpy, visual)
      Display *dpy;
      Visual *visual;
 #endif /* !__STDC__ */

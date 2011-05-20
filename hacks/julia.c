@@ -1,43 +1,32 @@
 /* -*- Mode: C; tab-width: 4 -*-
-   Ported from xlockmore 4.03a10 to be a standalone program and thus usable
-   with xscreensaver by Jamie Zawinski <jwz@netscape.com> on 10-May-97.
-
-   Original copyright notice from xlock.c:
-
-    * Copyright (c) 1988-91 by Patrick J. Naughton.
-    *
-    * Permission to use, copy, modify, and distribute this software and its
-    * documentation for any purpose and without fee is hereby granted,
-    * provided that the above copyright notice appear in all copies and that
-    * both that copyright notice and this permission notice appear in
-    * supporting documentation.
-    *
-    * This file is provided AS IS with no warranties of any kind.  The author
-    * shall have no liability with respect to the infringement of copyrights,
-    * trade secrets or any patents by this file or any part thereof.  In no
-    * event will the author be liable for any lost revenue or profits or
-    * other special, indirect and consequential damages.
+ * julia --- continuously varying Julia set.
  */
-
 #if !defined( lint ) && !defined( SABER )
-static const char sccsid[] = "@(#)julia.c	4.00 97/01/01 xlockmore";
-
+static const char sccsid[] = "@(#)julia.c	4.03 97/04/10 xlockmore";
 #endif
 
-/*- 
- * julia.c - continuously varying Julia set for xlock
- * 
- * Copyright (c) 1995 Sean McCullough <bankshot@mailhost.nmt.edu>.
+/* Copyright (c) 1995 Sean McCullough <bankshot@mailhost.nmt.edu>.
  *
- * See xlock.c for copying information.
+ * Permission to use, copy, modify, and distribute this software and its
+ * documentation for any purpose and without fee is hereby granted,
+ * provided that the above copyright notice appear in all copies and that
+ * both that copyright notice and this permission notice appear in
+ * supporting documentation.
+ *
+ * This file is provided AS IS with no warranties of any kind.  The author
+ * shall have no liability with respect to the infringement of copyrights,
+ * trade secrets or any patents by this file or any part thereof.  In no
+ * event will the author be liable for any lost revenue or profits or
+ * other special, indirect and consequential damages.
  *
  * Revision History:
  * 10-May-97: jwz@netscape.com: turned into a standalone program.
- * 2-Dec-95: snagged boilerplate from hop.c
+ * 02-Dec-95: snagged boilerplate from hop.c
  *           used ifs {w0 = sqrt(x-c), w1 = -sqrt(x-c)} with random iteration 
  *           to plot the julia set, and sinusoidially varied parameter for set 
  *	     and plotted parameter with a circle.
  */
+
 /*-
  * One thing to note is that batchcount is the *depth* of the search tree,
  * so the number of points computed is 2^batchcount - 1.  I use 8 or 9
@@ -45,28 +34,24 @@ static const char sccsid[] = "@(#)julia.c	4.00 97/01/01 xlockmore";
  * might not be as interesting as it could, but it still gives an idea of
  * the effect of the parameter.
  */
-#ifndef STANDALONE
-# include "xlock.h"
-#else  /* STANDALONE */
 
-# define PROGCLASS		"Julia"
-# define HACK_INIT		init_julia
-# define HACK_DRAW		draw_julia
-# define DEF_NCOLORS	200
-# define DEF_DELAY		10000
-# define DEF_CYCLES		20
-# define DEF_BATCHCOUNT	1000
-# define SPREAD_COLORS
-# include "xlockmore.h"
-#endif /* STANDALONE */
-
+#ifdef STANDALONE
+# define PROGCLASS					"Julia"
+# define HACK_INIT					init_julia
+# define HACK_DRAW					draw_julia
+# define DEF_BATCHCOUNT				1000
+# define DEF_CYCLES					20
+# define DEF_DELAY					10000
+# define DEF_NCOLORS				200
+# define UNIFORM_COLORS
+# include "xlockmore.h"				/* in xscreensaver distribution */
+#else  /* !STANDALONE */
+# include "xlock.h"					/* in xlockmore distribution */
+  ModeSpecOpt julia_opts = {
+	0, NULL, 0, NULL, NULL };
+#endif /* !STANDALONE */
 
 #define numpoints ((0x2<<jp->depth)-1)
-
-#ifndef STANDALONE
-ModeSpecOpt julia_opts =
-{0, NULL, 0, NULL, NULL};
-#endif /* !STANDALONE */
 
 typedef struct {
 	int         centerx;

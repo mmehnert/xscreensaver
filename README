@@ -63,6 +63,23 @@ window, which are pointed at by the screensaver's default resource settings.
    deco		- Generates Brady-Bunch-era wall paneling.
    moire	- Circular interference patterns.
    kaleidescope	- Groovy, man.
+   swirl	- Swirly color-cycling patterns.
+   bouboule	- Spinning bubbles on a transparent ball.
+   braid	- Draws random color-cycling braids around a circle.
+   drift	- Drifting recursive fractal cosmic flames.
+   fract	- Small, curvy geometric patterns.
+   galaxy	- Spinning, colliding galaxies.
+   grav		- Orbital simulation and/or cloud chamber.
+   ifs		- Spinning, colliding iterated-function-system shapes.
+   julia	- Animated rendition of the Julia set.
+   laser	- Moving radiating lines.
+   lightning	- Crackling fractal lightning bolts.
+   penrose	- Quasiperiodic tilings.
+   sierpinski	- two-dimensional Sierpinski triangle.
+   slip		- Sucks your desktop through a jet engine.
+   spiral	- Circular color-cycling interference patterns.
+   strange	- Animating strange attractors.
+
 
 All of these will pop up their own window unless given that -root option.
 See their man pages for more details.
@@ -90,11 +107,28 @@ http://www.netscape.com/people/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 1.30:	Improved colors and colormap cycling of many hacks.
+			Cleaned up xlockmore compatibility layer.
+			Made `blitspin' able to grab an image off the screen.
+			Ported `swirl' and `bouboule' hacks from xlockmore.
+			Made the driver more careful about not leaving bits on
+			the screen, or allowing other windows to raise 
+			themselves: it now re-blanks the screen every so often.
+			Added `-time' option to `xscreensaver-command'.
+			Improved SGI screen-grabbing some more: now it can grab
+			TrueColor screens into PseudoColor windows and have the
+			colors still come out semi-reasonably.
 Changes since 1.29:	Made `slidescreen' and `decayscreen' work better on
 			SGIs when windows of different visuals are present, by
 			using the XReadDisplay() extension to get a true 24-bit
 			image out of the frame buffer.
 			Made `noseguy' be in color, if compiled with XPM.
+			Ported `braid', `drift', `fract', `galaxy', `grav', 
+			`ifs', `julia', `laser', `lightning', `penrose',
+			`sierpinski', `slip', `spiral', and `strange' hacks
+			from xlockmore.
+			Merged `hopalong' hack with a more recent version.
+			Added `cde.txt'.
 Changes since 1.27:	Added `deco', `moire', and `kaleidescope' hacks.
 			Merged in support for non-Motif locking and demo mode.
 			Made `blitspin' and `bubbles' work in TrueColor.
