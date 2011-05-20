@@ -1,0 +1,344 @@
+# hacks/Makefile.in --- xscreensaver, Copyright (c) 1997 Jamie Zawinski.
+# the `../configure' script generates `hacks/Makefile' from this file.
+
+@SET_MAKE@
+.SUFFIXES:
+.SUFFIXES: .c .o
+
+srcdir		= @srcdir@
+VPATH		= @srcdir@
+
+install_prefix	=
+prefix		= @prefix@
+exec_prefix	= @exec_prefix@
+bindir		= @bindir@
+mandir		= @mandir@
+man1dir		= $(mandir)/man1
+mansuffix	= 1
+
+CC		= @CC@
+CFLAGS		= @CFLAGS@
+LDFLAGS		= @LDFLAGS@
+DEFS		= -DSTANDALONE @DEFS@
+LIBS		= @LIBS@
+
+SHELL		= /bin/sh
+INSTALL		= @INSTALL@
+INSTALL_PROGRAM = @INSTALL_PROGRAM@
+INSTALL_DATA	= @INSTALL_DATA@
+HACKDIR		= @HACKDIR@
+
+X_CFLAGS	= @X_CFLAGS@
+X_LIBS		= @X_LIBS@
+X_PRE_LIBS	= @X_PRE_LIBS@
+X_EXTRA_LIBS	= @X_EXTRA_LIBS@
+
+HACK_PRE	= $(LIBS) $(X_LIBS) $(X_PRE_LIBS)
+HACK_POST	= -lXt -lX11 -lXext $(X_EXTRA_LIBS) -lm
+HACK_LIBS	= $(HACK_PRE)            @HACK_LIBS@ $(HACK_POST)
+XPM_LIBS	= $(HACK_PRE) @XPM_LIBS@ @HACK_LIBS@ $(HACK_POST)
+XLOCK_LIBS	= $(HACK_LIBS)
+
+UTILS_SRC	= $(srcdir)/../utils
+UTILS_BIN	= ../utils
+
+INCLUDES	= -I$(srcdir) -I$(srcdir)/.. -I$(UTILS_SRC) @INCLUDES@
+
+UTIL_SRCS	= $(UTILS_SRC)/colors.c $(UTILS_SRC)/grabscreen.c \
+		  $(UTILS_SRC)/hsv.c $(UTILS_SRC)/resources.c \
+		  $(UTILS_SRC)/spline.c $(UTILS_SRC)/usleep.c \
+		  $(UTILS_SRC)/visual.c $(UTILS_SRC)/xroger.c \
+		  $(UTILS_SRC)/yarandom.c
+UTIL_OBJS	= $(UTILS_BIN)/colors.o $(UTILS_BIN)/grabscreen.o \
+		  $(UTILS_BIN)/hsv.o $(UTILS_BIN)/resources.o \
+		  $(UTILS_BIN)/spline.o $(UTILS_BIN)/usleep.o \
+		  $(UTILS_BIN)/visual.o $(UTILS_BIN)/xroger.o \
+		  $(UTILS_BIN)/yarandom.o
+
+SRCS		= attraction.c blitspin.c bouboule.c braid.c bubbles.c \
+		  bubbles_default.c decayscreen.c deco.c drift.c flag.c \
+		  flame.c forest.c fract.c galaxy.c grav.c greynetic.c \
+		  halo.c helix.c hopalong.c hypercube.c ifs.c imsmap.c \
+		  julia.c kaleidescope.c laser.c lightning.c lisa.c lmorph.c \
+		  maze.c moire.c noseguy.c pedal.c penrose.c pyro.c qix.c \
+		  rocks.c rorschach.c screenhack.c sierpinski.c slidescreen.c \
+		  slip.c sphere.c spiral.c strange.c swirl.c xlockmore.c \
+		  xroger-hack.c
+
+OBJS		= attraction.o blitspin.o bouboule.o braid.o bubbles.o \
+		  bubbles_default.o decayscreen.o deco.o drift.o flag.o \
+		  flame.o forest.o fract.o galaxy.o grav.o greynetic.o \
+		  halo.o helix.o hopalong.o hypercube.o ifs.o imsmap.o \
+		  julia.o kaleidescope.o laser.o lightning.o lisa.o lmorph.o \
+		  maze.o moire.o noseguy.o pedal.o penrose.o pyro.o qix.o \
+		  rocks.o rorschach.o screenhack.o sierpinski.o slidescreen.o \
+		  slip.o sphere.o spiral.o strange.o swirl.o xlockmore.o \
+		  xroger-hack.o
+
+EXES		= attraction blitspin bouboule braid bubbles decayscreen deco \
+		  drift flag flame forest fract galaxy grav greynetic halo \
+		  helix hopalong hypercube ifs imsmap julia kaleidescope \
+		  laser lightning lisa lmorph maze moire noseguy pedal \
+		  penrose pyro qix rocks rorschach sierpinski slidescreen \
+		  slip sphere spiral strange swirl xroger
+
+HACK_OBJS_1	= $(UTILS_BIN)/resources.o $(UTILS_BIN)/visual.o \
+		  $(UTILS_BIN)/usleep.o $(UTILS_BIN)/yarandom.o @XMU_OBJS@
+HACK_OBJS	= screenhack.o $(HACK_OBJS_1)
+XLOCK_OBJS	= screenhack-xlock.o xlockmore.o $(COLOR_OBJS) $(HACK_OBJS_1)
+COLOR_OBJS	= $(UTILS_BIN)/hsv.o $(UTILS_BIN)/colors.o
+GRAB_OBJS	= $(UTILS_BIN)/grabscreen.o $(COLOR_OBJS)
+
+HDRS		= bubbles.h screenhack.h vroot.h xlockmore.h xlockmoreI.h
+MEN		= attraction.man blitspin.man bouboule.man braid.man \
+		  bubbles.man decayscreen.man deco.man drift.man flag.man \
+		  flame.man forest.man fract.man galaxy.man grav.man \
+		  greynetic.man halo.man helix.man hopalong.man hypercube.man \
+		  ifs.man imsmap.man julia.man kaleidescope.man laser.man \
+		  lightning.man lisa.man lmorph.man maze.man moire.man \
+		  noseguy.man pedal.man penrose.man pyro.man qix.man \
+		  rocks.man rorschach.man sierpinski.man slidescreen.man \
+		  slip.man sphere.man spiral.man strange.man swirl.man \
+		  xroger.man
+STAR		= *
+EXTRAS		= README Makefile.in xlock.h default.xbm bob.xbm .gdbinit \
+		  noses/nose-$(STAR).xbm noses/nose-$(STAR).xpm \
+		  bubbles-tools/bubbles$(STAR) \
+		  bubbles-tools/xpm$(STAR) \
+		  bubbles-sources/$(STAR).pov \
+		  bubbles-samples/$(STAR).bub.gz
+
+TARFILES	= $(SRCS) $(HDRS) $(MEN) $(EXTRAS)
+
+
+all: $(EXES)
+
+install:   install-program   install-man
+uninstall: uninstall-program uninstall-man
+
+install-strip:
+	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
+
+install-program:
+	@for program in $(EXES); do					\
+	  echo $(INSTALL_PROGRAM) $$program $(HACKDIR)/$$program ;	\
+	  $(INSTALL_PROGRAM) $$program $(HACKDIR)/$$program ;		\
+	done
+
+install-man:
+	@for man in $(MEN); do						\
+	  instname=`echo $$man | sed 's/\.man$$/\.$(mansuffix)/'` ;	\
+	  echo $(INSTALL_DATA) $$man $(man1dir)/$$instname ;		\
+	  $(INSTALL_DATA) $$man $(man1dir)/$$instname ;			\
+	done
+
+uninstall-program:
+	@for program in $(EXES); do					\
+	  echo rm -f $(HACKDIR)/$$program ;				\
+	  rm -f $(HACKDIR)/$$program ;					\
+	done
+
+uninstall-man:
+	@for man in $(MEN); do						\
+	  instname=`echo $$man | sed 's/\.man$$/\.$(mansuffix)/'` ;	\
+	  echo rm -f $(man1dir)/$$instname ;				\
+	  rm -f $(man1dir)/$$instname ;					\
+	done
+
+clean:
+	-rm -f *.o a.out core $(EXES)
+
+distclean: clean
+	-rm -f Makefile *~ "#"*
+
+depend:
+	$(MAKEDEP) -I$(srcdir) -I. $(DEFS) $(SRCS)
+
+TAGS: tags
+tags:
+	find $(srcdir) -name '*.[chly]' -print | xargs etags -a
+
+echo_tarfiles:
+	@echo $(TARFILES)
+
+
+# Rules for noticing when the objects from the utils directory are out of
+# date with respect to their sources, and going and building them according
+# to the rules in their own Makefile...
+#
+$(UTILS_BIN)/colors.o:		$(UTILS_SRC)/colors.c
+$(UTILS_BIN)/grabscreen.o:	$(UTILS_SRC)/grabscreen.c
+$(UTILS_BIN)/hsv.o:		$(UTILS_SRC)/hsv.c
+$(UTILS_BIN)/resources.o:	$(UTILS_SRC)/resources.c
+$(UTILS_BIN)/spline.o:		$(UTILS_SRC)/spline.c
+$(UTILS_BIN)/usleep.o:		$(UTILS_SRC)/usleep.c
+$(UTILS_BIN)/visual.o:		$(UTILS_SRC)/visual.c
+$(UTILS_BIN)/xmu.o:		$(UTILS_SRC)/xmu.c
+$(UTILS_BIN)/xroger.o:		$(UTILS_SRC)/xroger.c
+$(UTILS_BIN)/yarandom.o:	$(UTILS_SRC)/yarandom.c
+
+$(UTIL_OBJS):
+	cd $(UTILS_BIN) ; \
+	$(MAKE) $(@F) CC="$(CC)" CFLAGS="$(CFLAGS)" LDFLAGS="$(LDFLAGS)"
+
+# How we build object files in this directory.
+.c.o:
+	$(CC) -c $(INCLUDES) $(DEFS) $(CFLAGS) $(X_CFLAGS) $<
+
+# Some hacks use a slightly-differently-compiled variant of this file.
+# This is how to make the the other .o file from it.
+#
+screenhack-xlock.o: screenhack.c
+	$(CC) -o $@ -c $(INCLUDES) $(DEFS) $(CFLAGS) $(X_CFLAGS) \
+	-DXLOCKMORE $(srcdir)/screenhack.c
+
+# Some abbreviations to keep the lines short...
+HSV		= $(UTILS_BIN)/hsv.o
+SPL		= $(UTILS_BIN)/spline.o
+XROG		= $(UTILS_BIN)/xroger.o
+GRAB		= $(UTILS_BIN)/grabscreen.o
+
+CC_HACK		= $(CC) $(LDFLAGS)
+
+
+# The rules for those hacks which follow the `screenhack.c' API.
+# If make wasn't such an utter abomination, these could all be combined
+# into one rule, but we don't live in such a perfect world.  The $< rule
+# is pretty much useless in the face of more than one dependency, as far
+# as I can tell.
+#
+attraction:		 $(HACK_OBJS) attraction.o $(HSV) $(SPL)
+	$(CC_HACK) -o $@ $(HACK_OBJS) attraction.o $(HSV) $(SPL) $(HACK_LIBS)
+
+blitspin:		 $(HACK_OBJS) blitspin.o $(GRAB_OBJS)
+	$(CC_HACK) -o $@ $(HACK_OBJS) blitspin.o $(GRAB_OBJS) $(XPM_LIBS)
+
+bubbles:		 $(HACK_OBJS) bubbles.o bubbles_default.o 
+	$(CC_HACK) -o $@ $(HACK_OBJS) bubbles.o bubbles_default.o $(XPM_LIBS)
+
+decayscreen:		 $(HACK_OBJS) decayscreen.o $(GRAB_OBJS)
+	$(CC_HACK) -o $@ $(HACK_OBJS) decayscreen.o $(GRAB_OBJS) $(HACK_LIBS)
+
+deco:			 $(HACK_OBJS) deco.o $(COLOR_OBJS)
+	$(CC_HACK) -o $@ $(HACK_OBJS) deco.o $(COLOR_OBJS) $(HACK_LIBS)
+
+flame:			 $(HACK_OBJS) flame.o $(COLOR_OBJS)
+	$(CC_HACK) -o $@ $(HACK_OBJS) flame.o $(COLOR_OBJS) $(HACK_LIBS)
+
+greynetic:		 $(HACK_OBJS) greynetic.o
+	$(CC_HACK) -o $@ $(HACK_OBJS) greynetic.o $(HACK_LIBS)
+
+halo:			 $(HACK_OBJS) halo.o $(COLOR_OBJS)
+	$(CC_HACK) -o $@ $(HACK_OBJS) halo.o $(COLOR_OBJS) $(HACK_LIBS)
+
+helix:			 $(HACK_OBJS) helix.o $(HSV)
+	$(CC_HACK) -o $@ $(HACK_OBJS) helix.o $(HSV) $(HACK_LIBS)
+
+hypercube:		 $(HACK_OBJS) hypercube.o
+	$(CC_HACK) -o $@ $(HACK_OBJS) hypercube.o $(HACK_LIBS)
+
+imsmap:			 $(HACK_OBJS) imsmap.o $(COLOR_OBJS)
+	$(CC_HACK) -o $@ $(HACK_OBJS) imsmap.o $(COLOR_OBJS) $(HACK_LIBS)
+
+kaleidescope:		 $(HACK_OBJS) kaleidescope.o
+	$(CC_HACK) -o $@ $(HACK_OBJS) kaleidescope.o $(HACK_LIBS)
+
+lmorph:			 $(HACK_OBJS) lmorph.o
+	$(CC_HACK) -o $@ $(HACK_OBJS) lmorph.o $(HACK_LIBS)
+
+maze:			 $(HACK_OBJS) maze.o $(UTILS_BIN)/xroger.o
+	$(CC_HACK) -o $@ $(HACK_OBJS) maze.o $(UTILS_BIN)/xroger.o $(HACK_LIBS)
+
+moire:			 $(HACK_OBJS) moire.o $(COLOR_OBJS)
+	$(CC_HACK) -o $@ $(HACK_OBJS) moire.o $(COLOR_OBJS) $(HACK_LIBS)
+
+noseguy:		 $(HACK_OBJS) noseguy.o
+	$(CC_HACK) -o $@ $(HACK_OBJS) noseguy.o $(XPM_LIBS)
+
+pedal:			 $(HACK_OBJS) pedal.o $(HSV)
+	$(CC_HACK) -o $@ $(HACK_OBJS) pedal.o $(HSV) $(HACK_LIBS)
+
+pyro:			 $(HACK_OBJS) pyro.o $(HSV)
+	$(CC_HACK) -o $@ $(HACK_OBJS) pyro.o $(HSV) $(HACK_LIBS)
+
+qix:			 $(HACK_OBJS) qix.o $(HSV)
+	$(CC_HACK) -o $@ $(HACK_OBJS) qix.o $(HSV) $(HACK_LIBS)
+
+rocks:			 $(HACK_OBJS) rocks.o
+	$(CC_HACK) -o $@ $(HACK_OBJS) rocks.o $(HACK_LIBS)
+
+rorschach:		 $(HACK_OBJS) rorschach.o $(HSV)
+	$(CC_HACK) -o $@ $(HACK_OBJS) rorschach.o $(HSV) $(HACK_LIBS)
+
+slidescreen:		 $(HACK_OBJS) slidescreen.o $(GRAB_OBJS)
+	$(CC_HACK) -o $@ $(HACK_OBJS) slidescreen.o $(GRAB_OBJS) $(HACK_LIBS)
+
+xroger:			 $(HACK_OBJS) xroger-hack.o $(HSV) $(XROG)
+	$(CC_HACK) -o $@ $(HACK_OBJS) xroger-hack.o $(HSV) $(XROG) $(HACK_LIBS)
+
+
+# The rules for those hacks which follow the `xlockmore' API.
+#
+
+bouboule:	bouboule.o	$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+braid:		braid.o		$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+drift:		drift.o		$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+flag:		flag.o		$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+forest:		forest.o	$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+fract:		fract.o		$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+galaxy:		galaxy.o	$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+grav:		grav.o		$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+hopalong:	hopalong.o	$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+ifs:		ifs.o		$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+julia:		julia.o		$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+laser:		laser.o		$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+lightning:	lightning.o	$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+lisa:		lisa.o		$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+penrose:	penrose.o	$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+sierpinski:	sierpinski.o	$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+slip:		slip.o		$(XLOCK_OBJS) $(GRAB)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(GRAB) $(HACK_LIBS)
+
+sphere:		sphere.o	$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+spiral:		spiral.o	$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+strange:	strange.o	$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)
+
+swirl:		swirl.o		$(XLOCK_OBJS)
+	$(CC_HACK) -o $@ $@.o	$(XLOCK_OBJS) $(HACK_LIBS)

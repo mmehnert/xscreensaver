@@ -34,7 +34,9 @@
 # endif
 #endif
 
-#include <X11/Xmu/Drawing.h>
+#ifdef HAVE_XMU
+# include <X11/Xmu/Drawing.h>
+#endif
 
 #include "default.xbm"
 
@@ -49,7 +51,7 @@ static Pixmap bitmap;
 static int depth;
 static unsigned int fg, bg;
 
-static void display P((Pixmap));
+static void display (Pixmap);
 
 #define copy_all_to(from, xoff, yoff, to, gc)		\
   XCopyArea (dpy, (from), (to), (gc), 0, 0,		\
@@ -60,7 +62,7 @@ static void display P((Pixmap));
 	     size-(xoff), size-(yoff), 0, 0)
 
 static void
-rotate P((void))
+rotate (void)
 {
   int qwad; /* fuckin' C, man... who needs namespaces? */
   XFillRectangle (dpy, mask, CLR, 0, 0, size, size);
@@ -88,13 +90,7 @@ rotate P((void))
 }
 
 static void
-#ifdef __STDC__
 read_bitmap (char *bitmap_name, int *widthP, int *heightP)
-#else /* ! __STDC__ */
-read_bitmap (bitmap_name, widthP, heightP)
-     char *bitmap_name;
-     int *widthP, *heightP;
-#endif /* ! __STDC__ */
 {
 #ifdef HAVE_XPM
   XWindowAttributes xgwa;
@@ -150,6 +146,8 @@ read_bitmap (bitmap_name, widthP, heightP)
     }
   if (! bitmap)
 #endif
+
+#ifdef HAVE_XMU
     {
       int xh, yh;
       Pixmap b2;
@@ -166,19 +164,20 @@ read_bitmap (bitmap_name, widthP, heightP)
       XFreePixmap (dpy, bitmap);
       bitmap = b2;
     }
+#else  /* !XMU */
+    {
+      fprintf (stderr,
+	       "%s: your vendor doesn't ship the standard Xmu library.\n",
+	       progname);
+      fprintf (stderr, "\tWe can't load XBM files without it.\n");
+      exit (1);
+    }
+#endif /* !XMU */
 }
 
 
 static Pixmap
-#ifdef __STDC__
 read_screen (Display *dpy, Window window, int *widthP, int *heightP)
-#else /* ! __STDC__ */
-read_screen (dpy, window, widthP, heightP)
-	Display *dpy;
-	Window window;
-	int *widthP;
-	int *heightP;
-#endif /* ! __STDC__ */
 {
   Pixmap p;
   XWindowAttributes xgwa;
@@ -207,7 +206,7 @@ read_screen (dpy, window, widthP, heightP)
 
 
 static void
-init P((void))
+init (void)
 {
   XWindowAttributes xgwa;
   Colormap cmap;
@@ -277,11 +276,7 @@ init P((void))
 }
 
 static void
-#ifdef __STDC__
 display (Pixmap pixmap)
-#else /* ! __STDC__ */
-display (pixmap) Pixmap pixmap;
-#endif /* ! __STDC__ */
 {
   XWindowAttributes xgwa;
   static int last_w = 0, last_h = 0;
@@ -329,11 +324,7 @@ XrmOptionDescRec options [] = {
 };
 
 void
-#ifdef __STDC__
 screenhack (Display *d, Window w)
-#else /* ! __STDC__ */
-screenhack (d, w) Display *d; Window w;
-#endif /* ! __STDC__ */
 {
   dpy = d;
   window = w;

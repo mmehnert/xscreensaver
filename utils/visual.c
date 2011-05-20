@@ -15,25 +15,14 @@
    or: having writable color cells...)
  */
 
-#ifdef __STDC__
-# include <stdlib.h>
-# include <unistd.h>
-#endif
+#include "utils.h"
+#include "resources.h"  /* for get_string_resource() */
+#include "visual.h"
 
-#include <string.h>
-#include <stdio.h>
-#include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-#undef P
-#ifdef __STDC__
-# define P(x)x
-#else
-# define P(x)()
-# ifndef const
-#  define const /**/
-# endif
-#endif
+extern char *progname;
+
 
 #ifndef isupper
 # define isupper(c)  ((c) >= 'A' && (c) <= 'Z')
@@ -42,16 +31,12 @@
 # define _tolower(c)  ((c) - 'A' + 'a')
 #endif
 
-#include "resources.h"  /* for get_string_resource() */
-#include "visual.h"
 
-extern char *progname;
-
-static Visual *pick_best_visual P ((Screen *, Bool, Bool));
-static Visual *pick_mono_visual P ((Screen *));
-static Visual *pick_best_visual_of_class P((Screen *, int));
-static Visual *id_to_visual P((Screen *, int));
-static Visual *id_to_visual P((Screen *screen, int id));
+static Visual *pick_best_visual (Screen *, Bool, Bool);
+static Visual *pick_mono_visual (Screen *);
+static Visual *pick_best_visual_of_class (Screen *, int);
+static Visual *id_to_visual (Screen *, int);
+static Visual *id_to_visual (Screen *screen, int id);
 
 
 #define DEFAULT_VISUAL	-1
@@ -62,16 +47,8 @@ static Visual *id_to_visual P((Screen *screen, int id));
 #define SPECIFIC_VISUAL	-6
 
 Visual *
-#ifdef __STDC__
 get_visual (Screen *screen, const char *string, Bool prefer_writable_cells,
 	    Bool verbose_p)
-#else  /* !__STDC__ */
-get_visual (screen, string, prefer_writable_cells, verbose_p)
-	Screen *screen;
-	const char *string;
-	Bool prefer_writable_cells;
-	Bool verbose_p;
-#endif /* !__STDC__ */
 {
   char *v = (string ? strdup(string) : 0);
   char c, *tmp;
@@ -170,16 +147,8 @@ get_visual (screen, string, prefer_writable_cells, verbose_p)
 }
 
 Visual *
-#ifdef __STDC__
 get_visual_resource (Screen *screen, char *name, char *class,
 		     Bool prefer_writable_cells)
-#else  /* !__STDC__ */
-get_visual_resource (screen, name, class, prefer_writable_cells)
-	Screen *screen;
-	char *name;
-	char *class;
-	Bool prefer_writable_cells;
-#endif /* !__STDC__ */
 {
   char *string = get_string_resource (name, class);
   Visual *v = get_visual (screen, string, prefer_writable_cells, True);
@@ -193,14 +162,7 @@ get_visual_resource (screen, name, class, prefer_writable_cells)
 
 
 static Visual *
-#ifdef __STDC__
 pick_best_visual (Screen *screen, Bool prefer_writable_cells, Bool color_only)
-#else  /* !__STDC__ */
-pick_best_visual (screen, prefer_writable_cells, color_only)
-	Screen *screen;
-	Bool prefer_writable_cells;
-	Bool color_only;
-#endif /* !__STDC__ */
 {
   Visual *visual;
 
@@ -244,12 +206,7 @@ pick_best_visual (screen, prefer_writable_cells, color_only)
 }
 
 static Visual *
-#ifdef __STDC__
 pick_mono_visual (Screen *screen)
-#else  /* !__STDC__ */
-pick_mono_visual (screen)
-	Screen *screen;
-#endif /* !__STDC__ */
 {
   Display *dpy = DisplayOfScreen (screen);
   XVisualInfo vi_in, *vi_out;
@@ -273,13 +230,7 @@ pick_mono_visual (screen)
 
 
 static Visual *
-#ifdef __STDC__
 pick_best_visual_of_class (Screen *screen, int visual_class)
-#else /* !__STDC__ */
-pick_best_visual_of_class (screen, visual_class)
-     Screen *screen;
-     int visual_class;
-#endif /* !__STDC__ */
 {
   /* The best visual of a class is the one which on which we can allocate
      the largest range and number of colors, which means the one with the
@@ -317,13 +268,7 @@ pick_best_visual_of_class (screen, visual_class)
 }
 
 static Visual *
-#ifdef __STDC__
 id_to_visual (Screen *screen, int id)
-#else /* !__STDC__ */
-id_to_visual (screen, id)
-     Screen *screen;
-     int id;
-#endif /* !__STDC__ */
 {
   Display *dpy = DisplayOfScreen (screen);
   XVisualInfo vi_in, *vi_out;
@@ -342,13 +287,7 @@ id_to_visual (screen, id)
 }
 
 int
-#ifdef __STDC__
 visual_depth (Screen *screen, Visual *visual)
-#else  /* !__STDC__ */
-visual_depth (screen, visual)
-	Screen *screen;
-	Visual *visual;
-#endif /* !__STDC__ */
 {
   Display *dpy = DisplayOfScreen (screen);
   XVisualInfo vi_in, *vi_out;
@@ -365,13 +304,7 @@ visual_depth (screen, visual)
 
 
 int
-#ifdef __STDC__
 visual_class (Screen *screen, Visual *visual)
-#else  /* !__STDC__ */
-visual_class (screen, visual)
-	Screen *screen;
-	Visual *visual;
-#endif /* !__STDC__ */
 {
   Display *dpy = DisplayOfScreen (screen);
   XVisualInfo vi_in, *vi_out;
@@ -387,14 +320,7 @@ visual_class (screen, visual)
 }
 
 void
-#ifdef __STDC__
 describe_visual (FILE *f, Screen *screen, Visual *visual)
-#else  /* !__STDC__ */
-describe_visual (f, screen, visual)
-	FILE *f;
-	Screen *screen;
-	Visual *visual;
-#endif /* !__STDC__ */
 {
   Display *dpy = DisplayOfScreen (screen);
   XVisualInfo vi_in, *vi_out;
@@ -418,12 +344,7 @@ describe_visual (f, screen, visual)
 }
 
 int
-#ifdef __STDC__
 screen_number (Screen *screen)
-#else /* !__STDC__ */
-screen_number (screen)
-	Screen *screen;
-#endif /* !__STDC__ */
 {
   Display *dpy = DisplayOfScreen (screen);
   int i;
@@ -434,13 +355,7 @@ screen_number (screen)
 }
 
 int
-#ifdef __STDC__
 visual_cells (Screen *screen, Visual *visual)
-#else  /* !__STDC__ */
-visual_cells (screen, visual)
-	Screen *screen;
-	Visual *visual;
-#endif /* !__STDC__ */
 {
   Display *dpy = DisplayOfScreen (screen);
   XVisualInfo vi_in, *vi_out;
@@ -456,13 +371,7 @@ visual_cells (screen, visual)
 }
 
 Visual *
-#ifdef __STDC__
 find_similar_visual(Screen *screen, Visual *old_visual)
-#else  /* !__STDC__ */
-find_similar_visual (screen, old_visual)
-	Screen *screen;
-	Visual *old_visual;
-#endif /* !__STDC__ */
 {
   Display *dpy = DisplayOfScreen (screen);
   XVisualInfo vi_in, *vi_out;

@@ -48,11 +48,7 @@ static Colormap cmap;
 #define max(x,y) ((x)>(y)?(x):(y))
 
 static void
-#ifdef __STDC__
 init_circles_1 (Display *dpy, Window window)
-#else /* ! __STDC__ */
-init_circles_1 (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   int i;
   count = (global_count ? global_count
@@ -79,11 +75,7 @@ init_circles_1 (dpy, window) Display *dpy; Window window;
 }
 
 static void
-#ifdef __STDC__
 init_circles (Display *dpy, Window window)
-#else /* ! __STDC__ */
-init_circles (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   XGCValues gcv;
   XWindowAttributes xgwa;
@@ -182,11 +174,7 @@ init_circles (dpy, window) Display *dpy; Window window;
 }
 
 static void
-#ifdef __STDC__
 run_circles (Display *dpy, Window window)
-#else /* ! __STDC__ */
-run_circles (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   int i;
   static int iterations = 0;
@@ -395,11 +383,7 @@ XrmOptionDescRec options [] = {
 };
 
 void
-#ifdef __STDC__
 screenhack (Display *dpy, Window window)
-#else /* ! __STDC__ */
-screenhack (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   init_circles (dpy, window);
   while (1)

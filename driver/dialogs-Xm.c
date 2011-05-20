@@ -14,8 +14,8 @@
    but I've since hacked it by hand...  It's a mess, avert your eyes.
  */
 
-#ifndef __STDC__
-# define _NO_PROTO
+#ifdef HAVE_CONFIG_H
+# include "config.h"
 #endif
 
 #include <X11/Xatom.h>
@@ -37,14 +37,6 @@
 #include <Xm/SelectioB.h>
 
 #include <stdio.h>
-#ifdef __STDC__
-# define P(x)x
-#else
-# define P(x)()
-# ifndef const
-#  define const /**/
-# endif
-#endif
 
 #include "visual.h"	/* for visual_depth() */
 
@@ -90,14 +82,7 @@ Widget spacer;
 
 
 void
-#ifdef __STDC__
 create_passwd_dialog(Widget parent, Visual *visual, Colormap colormap)
-#else  /* !__STDC__ */
-create_passwd_dialog (parent, visual, colormap)
-	Widget parent;
-	Visual *visual;
-	Colormap colormap;
-#endif /* !__STDC__ */
 {
   Widget shell;
   Widget  form1;
@@ -219,14 +204,7 @@ create_passwd_dialog (parent, visual, colormap)
 
 
 void
-#ifdef __STDC__
 create_resources_dialog(Widget parent, Visual *visual, Colormap colormap)
-#else  /* !__STDC__ */
-create_resources_dialog (parent, visual, colormap)
-	Widget parent;
-	Visual *visual;
-	Colormap colormap;
-#endif /* !__STDC__ */
 {
   Widget children[22];      /* Children to manage */
   Arg al[64];           /* Arg List */
@@ -599,14 +577,7 @@ create_resources_dialog (parent, visual, colormap)
 
 
 void
-#ifdef __STDC__
 create_demo_dialog(Widget parent, Visual *visual, Colormap colormap)
-#else  /* !__STDC__ */
-create_demo_dialog (parent, visual, colormap)
-	Widget parent;
-	Visual *visual;
-	Colormap colormap;
-#endif /* !__STDC__ */
 {
   Arg al[64];           /* Arg List */
   register int ac = 0;      /* Arg Count */

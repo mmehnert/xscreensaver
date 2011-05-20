@@ -25,9 +25,7 @@ XrmOptionDescRec options [] = {
   { 0, 0, 0, 0 }
 };
 
-#ifdef __STDC__
 extern void skull (Display *, Window, GC, GC, int, int, int, int);
-#endif
 
 void
 screenhack (dpy, window)

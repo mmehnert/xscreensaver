@@ -22,20 +22,11 @@ static int min_height = 0;
 static int min_width = 0;
 
 static void
-#ifdef __STDC__
 deco (Display *dpy,
       Window window,
       Colormap cmap,
       GC fgc, GC bgc,
       int x, int y, int w, int h, int depth)
-#else /* !__STDC__ */
-deco (dpy, window, cmap, fgc, bgc, x, y, w, h, depth)
-  Display *dpy;
-  Window window;
-  Colormap cmap;
-  GC fgc, bgc;
-  int x, y, w, h, depth;
-#endif /* !__STDC__ */
 {
   if (((random() % max_depth) < depth) || (w < min_width) || (h < min_height))
     {
@@ -93,11 +84,7 @@ XrmOptionDescRec options [] = {
 };
 
 void
-#ifdef __STDC__
 screenhack (Display *dpy, Window window)
-#else /* ! __STDC__ */
-screenhack (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   GC fgc, bgc;
   XGCValues gcv;

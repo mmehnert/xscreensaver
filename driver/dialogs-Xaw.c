@@ -13,8 +13,8 @@
  * Copyright 1997, with the same permissions as above.
  */
 
-#ifndef __STDC__
-# define _NO_PROTO
+#ifdef HAVE_CONFIG_H
+# include "config.h"
 #endif
 
 #include <X11/Intrinsic.h>
@@ -29,14 +29,6 @@
 #include <X11/Xaw/Dialog.h>
 
 #include <stdio.h>
-#ifdef __STDC__
-# define P(x)x
-#else
-# define P(x)()
-# ifndef const
-#  define const /**/
-# endif
-#endif
 
 #include "visual.h"	/* for visual_depth() */
 
@@ -85,14 +77,7 @@ static Widget buttonbox, textbox, okbox;
 
 
 void
-#ifdef __STDC__
 create_passwd_dialog(Widget parent, Visual *visual, Colormap colormap)
-#else  /* !__STDC__ */
-create_passwd_dialog (parent, visual, colormap)
-	Widget parent;
-	Visual *visual;
-	Colormap colormap;
-#endif /* !__STDC__ */
 {
   Widget box, passwd_label2;
   int depth = visual_depth(XtScreen(parent), visual);
@@ -149,14 +134,7 @@ create_passwd_dialog (parent, visual, colormap)
 
 
 void
-#ifdef __STDC__
 create_resources_dialog(Widget parent, Visual *visual, Colormap colormap)
-#else  /* !__STDC__ */
-create_resources_dialog (parent, visual, colormap)
-	Widget parent;
-	Visual *visual;
-	Colormap colormap;
-#endif /* !__STDC__ */
 {
   Widget rlabel;
   int depth = visual_depth(XtScreen(parent), visual);
@@ -267,14 +245,7 @@ create_resources_dialog (parent, visual, colormap)
 }
 
 void
-#ifdef __STDC__
 create_demo_dialog(Widget parent, Visual *visual, Colormap colormap)
-#else  /* !__STDC__ */
-create_demo_dialog (parent, visual, colormap)
-	Widget parent;
-	Visual *visual;
-	Colormap colormap;
-#endif /* !__STDC__ */
 {
   Widget subform, box, viewport, label2;
   int depth = visual_depth(XtScreen(parent), visual);

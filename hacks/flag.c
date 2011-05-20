@@ -44,7 +44,9 @@ static const char sccsid[] = "@(#)flag.c	4.02 97/04/01 xlockmore";
 # define DEF_BITMAP					""
 # define DEF_TEXT					""
 # include "xlockmore.h"				/* from the xscreensaver distribution */
+#ifdef HAVE_XMU
 # include <X11/Xmu/Drawing.h>
+#endif
 # include "bob.xbm"
 # include <sys/utsname.h>
 #else  /* !STANDALONE */
@@ -55,6 +57,7 @@ static const char sccsid[] = "@(#)flag.c	4.02 97/04/01 xlockmore";
 ModeSpecOpt flag_opts = {
   0, NULL, 0, NULL, NULL };
 
+#include <string.h>
 #include <X11/Xutil.h>
 
 #define MINSIZE 1
@@ -166,6 +169,7 @@ make_flag_bits(ModeInfo *mi)
 	  *bitmap_name &&
 	  !!strcmp(bitmap_name, "(default)"))
 	{
+#ifdef HAVE_XMU
 	  int width, height, xh, yh;
 	  Pixmap bitmap =
 		XmuLocateBitmapFile (DefaultScreenOfDisplay (dpy),
@@ -179,6 +183,15 @@ make_flag_bits(ModeInfo *mi)
 	  fp->image = XGetImage(dpy, bitmap, 0, 0, width, height,
 							1L, XYPixmap);
 	  XFreePixmap(dpy, bitmap);
+
+#else  /* !XMU */
+      fprintf (stderr,
+			   "%s: your vendor doesn't ship the standard Xmu library.\n",
+			   progname);
+      fprintf (stderr, "\tWe can't load XBM files without it.\n");
+      exit (1);
+#endif /* !XMU */
+
 	}
   else if (text && *text)
 	{
@@ -282,7 +295,7 @@ make_flag_bits(ModeInfo *mi)
 		}
 	  free(text2);
 	  XUnloadFont(dpy, font->fid);
-	  XFree(font);
+	  XFree((XPointer) font);
 	  XFreeGC(dpy, gc);
 
 	  fp->image = XGetImage(dpy, bitmap, 0, 0, width, height, 1L, XYPixmap);
@@ -291,7 +304,8 @@ make_flag_bits(ModeInfo *mi)
   else
 	{
 	  fp->image = XCreateImage (dpy, MI_VISUAL(mi), 1, XYBitmap, 0,
-								bob_bits, bob_width, bob_height, 8, 0);
+								(char *) bob_bits, bob_width, bob_height,
+								8, 0);
 	  fp->image->byte_order = LSBFirst;
 	  fp->image->bitmap_bit_order = LSBFirst;
 	}

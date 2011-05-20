@@ -10,12 +10,12 @@
  * implied warranty.
  */
 
-#ifdef __STDC__
-# include <stdlib.h>
+#ifdef HAVE_CONFIG_H
+# include "config.h"
 #endif
 
-#include <X11/Xlib.h>
-#include <X11/Xos.h>	/* lazy way out */
+#include <sys/time.h>	/* for struct timeval */
+
 
 #ifdef __SCREENHACK_USLEEP_H__
 ERROR, do not include that here
@@ -26,30 +26,20 @@ ERROR, do not include that here
 
 #ifndef VMS
 
-#ifdef NO_SELECT
+#ifndef HAVE_SELECT
   /* If you don't have select() or usleep(), I guess you lose...
      Maybe you have napms() instead?  Let me know.
    */
 void
-#ifdef __STDC__
 screenhack_usleep (unsigned long usecs)
-#else /* !__STDC__ */
-screenhack_usleep (usecs)
-     unsigned long usecs;
-#endif /* !__STDC__ */
 {
   usleep (usecs);
 }
 
-#else /* ! NO_SELECT */
+#else /* HAVE_SELECT */
 
 void
-#ifdef __STDC__
 screenhack_usleep (unsigned long usecs)
-#else /* !__STDC__ */
-screenhack_usleep (usecs)
-     unsigned long usecs;
-#endif /* !__STDC__ */
 {
   struct timeval tv;
   tv.tv_sec  = usecs / 1000000L;
@@ -57,7 +47,7 @@ screenhack_usleep (usecs)
   (void) select (0, 0, 0, 0, &tv);
 }
 
-#endif /* ! NO_SELECT */
+#endif /* HAVE_SELECT */
 
 #else /* VMS */
 
@@ -114,4 +104,4 @@ screenhack_usleep (usecs)
   if ((status & 1)) (void) SYS$HIBER ();
 }
 
-#endif /*VMS */
+#endif /* VMS */

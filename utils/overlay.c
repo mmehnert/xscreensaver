@@ -28,22 +28,13 @@
  */
 
 
-#include <stdio.h>
-#include <X11/Xlib.h>
+#include "utils.h"
+
 #include <X11/Xutil.h>
 #include <X11/Xproto.h>
 
-#undef P
-#ifdef __STDC__
-# define P(x)x
-#else
-# define P(x)()
-# ifndef const
-#  define const /**/
-# endif
-#endif
-
 #include "visual.h"
+
 
 struct overlay_data
 {
@@ -54,13 +45,7 @@ struct overlay_data
 };
 
 static int
-#ifdef __STDC__
 get_overlay_prop (Screen *screen, struct overlay_data **data_ret)
-#else  /* !__STDC__ */
-get_overlay_prop (screen, data_ret)
-	Screen *screen;
-	struct overlay_data **data_ret;
-#endif /* !__STDC__ */
 {
   int result;
   Atom actual_type;
@@ -96,13 +81,7 @@ get_overlay_prop (screen, data_ret)
 
 
 Visual *
-#ifdef __STDC__
 get_overlay_visual (Screen *screen, unsigned long *transparent_pixel_ret)
-#else  /* !__STDC__ */
-get_overlay_visual (screen, transparent_pixel_ret)
-	Screen *screen;
-	unsigned long *transparent_pixel_ret;
-#endif /* !__STDC__ */
 {
   struct overlay_data *data = 0;
   int n_visuals = get_overlay_prop (screen, &data);

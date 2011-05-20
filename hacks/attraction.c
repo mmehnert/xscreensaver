@@ -105,13 +105,7 @@ static GC draw_gc, erase_gc;
 #define max(a,b) ((a)>(b)?(a):(b))
 
 static void
-#ifdef __STDC__
 init_balls (Display *dpy, Window window)
-#else /* ! __STDC__ */
-init_balls (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* ! __STDC__ */
 {
   int i;
   XWindowAttributes xgwa;
@@ -300,13 +294,7 @@ init_balls (dpy, window)
 }
 
 static void
-#ifdef __STDC__
 compute_force (int i, float *dx_ret, float *dy_ret)
-#else /* ! __STDC__ */
-compute_force (i, dx_ret, dy_ret)
-     int i;
-     float *dx_ret, *dy_ret;
-#endif /* ! __STDC__ */
 {
   int j;
   float x_dist, y_dist, dist, dist2;
@@ -359,13 +347,7 @@ compute_force (i, dx_ret, dy_ret)
 }
 
 static void
-#ifdef __STDC__
 run_balls (Display *dpy, Window window)
-#else /* ! __STDC__ */
-run_balls (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* ! __STDC__ */
 {
   int last_point_stack_fp = point_stack_fp;
   static int tick = 500, xlim, ylim;
@@ -697,11 +679,7 @@ XrmOptionDescRec options [] = {
 };
 
 void
-#ifdef __STDC__
 screenhack (Display *dpy, Window window)
-#else /* ! __STDC__ */
-screenhack (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   init_balls (dpy, window);
   while (1)

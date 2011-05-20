@@ -17,10 +17,8 @@
 #include "screenhack.h"
 #include <stdio.h>
 
-#ifdef __STDC__
 extern FILE *popen (const char *, const char *);
 extern int pclose (FILE *);
-#endif
 
 #define font_height(font)	  	(font->ascent + font->descent)
 #define FONT_NAME			"-*-times-*-*-*-*-18-*-*-*-*-*-*-*"
@@ -30,16 +28,16 @@ static Window window;
 static int Width, Height;
 static GC fg_gc, bg_gc, text_fg_gc, text_bg_gc;
 static char *words;
-static char *get_words P((void));
+static char *get_words (void);
 static int x, y;
 static XFontStruct *font;
 static char *def_words = "I'm out running around.";
-static void walk P((int dir));
-static void talk P((int erase));
-static void talk_1 P((void));
-static int think P((void));
+static void walk (int dir);
+static void talk (int erase);
+static void talk_1 (void);
+static int think (void);
 static unsigned long interval;
-static unsigned long look P((void)); 
+static unsigned long look (void); 
 static Pixmap left1, left2, right1, right2;
 static Pixmap left_front, right_front, front, down;
 
@@ -55,7 +53,7 @@ static int getwordsfrom;
 #define GET_PASSWD 2
 static int state;	/* indicates states: walking or getting passwd */
 
-static void (*next_fn) P((void));
+static void (*next_fn) (void);
 
 #ifdef HAVE_XPM
 # include <X11/xpm.h>
@@ -80,7 +78,7 @@ static void (*next_fn) P((void));
 #endif
 
 static void
-init_images P((void))
+init_images (void)
 {
   static Pixmap *images[] = {
     &left1, &left2, &right1, &right2,
@@ -154,7 +152,7 @@ init_images P((void))
 #define Y_INCR 2
 
 static void
-move P((void))
+move (void)
 {
     static int      length,
                     dir;
@@ -237,11 +235,7 @@ move P((void))
 #endif
 
 static void
-#ifdef __STDC__
 walk(int dir)
-#else /* ! __STDC__ */
-walk(dir) int dir;
-#endif /* ! __STDC__ */
 {
     register int    incr = 0;
     static int      lastdir;
@@ -310,7 +304,7 @@ walk(dir) int dir;
 }
 
 static int
-think P((void))
+think (void)
 {
     if (random() & 1)
 	walk(FRONT);
@@ -326,11 +320,7 @@ think P((void))
 #define MAXLINES 40
 
 static void
-#ifdef __STDC__
 talk(int force_erase)
-#else /* ! __STDC__ */
-talk(force_erase) int force_erase;
-#endif /* ! __STDC__ */
 {
     int             width = 0,
                     height,
@@ -446,14 +436,14 @@ talk(force_erase) int force_erase;
     next_fn = talk_1;
 }
 
-static void talk_1 P((void)) 
+static void talk_1 (void) 
 {
   talk(0);
 }
 
 
 static unsigned long
-look P((void))
+look (void)
 {
     if (random() % 3)
     {
@@ -478,7 +468,7 @@ look P((void))
 
 
 static void
-init_words P((void))
+init_words (void)
 {
   char *mode = get_string_resource ("mode", "Mode");
 
@@ -526,7 +516,7 @@ init_words P((void))
 static int first_time = 1;
 
 static char *
-get_words P((void))
+get_words (void)
 {
     FILE           *pp;
     static char     buf[BUFSIZ];
@@ -639,11 +629,7 @@ XrmOptionDescRec options [] = {
 
 
 static void
-#ifdef __STDC__
 noseguy_init (Display *d, Window w)
-#else /* ! __STDC__ */
-noseguy_init (d, w) Display *d; Window w;
-#endif /* ! __STDC__ */
 {
   unsigned long fg, bg, text_fg, text_bg;
   XWindowAttributes xgwa;
@@ -714,11 +700,7 @@ noseguy_init (d, w) Display *d; Window w;
 }
      
 void
-#ifdef __STDC__
 screenhack (Display *d, Window w)
-#else /* ! __STDC__ */
-screenhack (d, w) Display *d; Window w;
-#endif /* ! __STDC__ */
 {
   noseguy_init (d, w);
   next_fn = move;

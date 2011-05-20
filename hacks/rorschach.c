@@ -17,13 +17,7 @@ static int iterations, offset;
 static Bool xsym, ysym;
 
 static void
-#ifdef __STDC__
 init_rorschach (Display *dpy, Window window)
-#else /* ! __STDC__ */
-init_rorschach (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* ! __STDC__ */
 {
   XGCValues gcv;
   Colormap cmap;
@@ -44,11 +38,7 @@ init_rorschach (dpy, window)
 }
 
 static void
-#ifdef __STDC__
 hurm (Display *dpy, Window window)
-#else /* ! __STDC__ */
-hurm (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   Colormap cmap;
   XWindowAttributes xgwa;
@@ -136,11 +126,7 @@ XrmOptionDescRec options [] = {
 };
 
 void
-#ifdef __STDC__
 screenhack (Display *dpy, Window window)
-#else /* ! __STDC__ */
-screenhack (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   init_rorschach (dpy, window);
   while (1)

@@ -13,20 +13,7 @@
    to hack the screen with.
  */
 
-#ifdef __STDC__
-# include <stdlib.h>
-#endif /* __STDC__ */
-#include <stdio.h>
-#include <math.h>
-#include <X11/Xlib.h>
-
-#undef P
-#ifdef __STDC__
-# define P(x)x
-#else
-# define P(x)()
-#endif
-
+#include "utils.h"
 #include "hsv.h"
 #include "yarandom.h"
 #include "visual.h"
@@ -34,17 +21,8 @@
 
 extern char *progname;
 
-
 void
-#ifdef __STDC__
 free_colors(Display *dpy, Colormap cmap, XColor *colors, int ncolors)
-#else  /* !__STDC__ */
-free_colors(dpy, cmap, colors, ncolors)
-	Display *dpy;
-	Colormap cmap;
-	XColor *colors;
-	int ncolors;
-#endif /* !__STDC__ */
 {
   int i;
   unsigned long *pixels = (unsigned long *) malloc(sizeof(*pixels) * ncolors);
@@ -56,16 +34,8 @@ free_colors(dpy, cmap, colors, ncolors)
 
 
 void
-#ifdef __STDC__
 allocate_writable_colors (Display *dpy, Colormap cmap,
 			  unsigned long *pixels, int *ncolorsP)
-#else /* !__STDC__ */
-allocate_writable_colors (dpy, cmap, pixels, ncolorsP)
-     Display *dpy;
-     Colormap cmap;
-     unsigned long *pixels;
-     int *ncolorsP;
-#endif /* !__STDC__ */
 {
   int desired = *ncolorsP;
   int got = 0;
@@ -101,7 +71,6 @@ allocate_writable_colors (dpy, cmap, pixels, ncolorsP)
 
 
 void
-#ifdef __STDC__
 make_color_ramp (Display *dpy, Colormap cmap,
 		 int h1, double s1, double v1,   /* 0-360, 0-1.0, 0-1.0 */
 		 int h2, double s2, double v2,   /* 0-360, 0-1.0, 0-1.0 */
@@ -109,18 +78,6 @@ make_color_ramp (Display *dpy, Colormap cmap,
 		 Bool closed_p,
 		 Bool allocate_p,
 		 Bool writable_p)
-#else /* !__STDC__ */
-make_color_ramp (dpy, cmap,
-		 h1, s1, v1, h2, s2, v2,
-		 colors, ncolorsP, closed_p, allocate_p, writable_p)
-     Display *dpy;
-     Colormap cmap;
-     int h1, h2;
-     double s1, s2, v1, v2;
-     XColor *colors;
-     int *ncolorsP;
-     Bool closed_p, allocate_p, writable_p;
-#endif /* !__STDC__ */
 {
   int i;
   int ncolors = *ncolorsP;
@@ -211,26 +168,11 @@ make_color_ramp (dpy, cmap,
 
 
 static void
-#ifdef __STDC__
 make_color_path (Display *dpy, Colormap cmap,
 		 int npoints, int *h, double *s, double *v,
 		 XColor *colors, int *ncolorsP,
 		 Bool allocate_p,
 		 Bool writable_p)
-#else /* !__STDC__ */
-make_color_path (dpy, cmap,
-		 npoints, h, s, v,
-		 colors, ncolorsP,
-		 allocate_p, writable_p)
-     Display *dpy;
-     Colormap cmap;
-     int npoints;
-     int *h;
-     double *s, *v;
-     XColor *colors;
-     int *ncolorsP;
-     Bool allocate_p, writable_p;
-#endif /* !__STDC__ */
 {
   int i, j, k;
   int total_ncolors = *ncolorsP;
@@ -423,7 +365,6 @@ make_color_path (dpy, cmap,
 
 
 void
-#ifdef __STDC__
 make_color_loop (Display *dpy, Colormap cmap,
 		 int h0, double s0, double v0,   /* 0-360, 0-1.0, 0-1.0 */
 		 int h1, double s1, double v1,   /* 0-360, 0-1.0, 0-1.0 */
@@ -431,19 +372,6 @@ make_color_loop (Display *dpy, Colormap cmap,
 		 XColor *colors, int *ncolorsP,
 		 Bool allocate_p,
 		 Bool writable_p)
-#else /* !__STDC__ */
-make_color_loop (dpy, cmap,
-		 h0, s0, v0, h1, s1, v1, h2, s2, v2,
-		 colors, ncolorsP,
-		 allocate_p, writable_p)
-     Display *dpy;
-     Colormap cmap;
-     int h0, h1, h2;
-     double s0, s1, s2, v0, v1, v2;
-     XColor *colors;
-     int *ncolorsP;
-     Bool allocate_p, writable_p;
-#endif /* !__STDC__ */
 {
   int h[3];
   double s[3], v[3];
@@ -458,14 +386,8 @@ make_color_loop (dpy, cmap,
 
 
 static void
-#ifdef __STDC__
 complain (int wanted_colors, int got_colors,
 	  Bool wanted_writable, Bool got_writable)
-#else /* !__STDC__ */
-complain (wanted_colors, got_colors, wanted_writable, got_writable)
-  int wanted_colors, got_colors;
-  Bool wanted_writable, got_writable;
-#endif /* !__STDC__ */
 {
   if (wanted_writable && !got_writable)
     fprintf(stderr,
@@ -481,13 +403,7 @@ complain (wanted_colors, got_colors, wanted_writable, got_writable)
 
 
 static Bool
-#ifdef __STDC__
 has_writable_cells (Screen *screen, Visual *visual)
-#else  /* !__STDC__ */
-has_writable_cells (screen, visual)
-	Screen *screen;
-	Visual *visual;
-#endif /* !__STDC__ */
 {
   int class = visual_class(screen, visual);
   return (class == PseudoColor || class == GrayScale);
@@ -495,26 +411,11 @@ has_writable_cells (screen, visual)
 
 
 void
-#ifdef __STDC__
 make_smooth_colormap (Display *dpy, Visual *visual, Colormap cmap,
 		      XColor *colors, int *ncolorsP,
 		      Bool allocate_p,
 		      Bool *writable_pP,
 		      Bool verbose_p)
-#else /* !__STDC__ */
-make_smooth_colormap (dpy, visual, cmap,
-		      colors, ncolorsP,
-		      allocate_p, writable_pP,
-		      verbose_p)
-     Display *dpy;
-     Visual *visual;
-     Colormap cmap;
-     XColor *colors;
-     int *ncolorsP;
-     Bool allocate_p;
-     Bool *writable_pP;
-     Bool verbose_p;
-#endif /* !__STDC__ */
 {
   int npoints;
   int ncolors = *ncolorsP;
@@ -600,26 +501,11 @@ make_smooth_colormap (dpy, visual, cmap,
 
 
 void
-#ifdef __STDC__
 make_uniform_colormap (Display *dpy, Visual *visual, Colormap cmap,
 		       XColor *colors, int *ncolorsP,
 		       Bool allocate_p,
 		       Bool *writable_pP,
 		       Bool verbose_p)
-#else /* !__STDC__ */
-make_uniform_colormap (dpy, visual, cmap,
-		       colors, ncolorsP,
-		       allocate_p, writable_pP,
-		       verbose_p)
-     Display *dpy;
-     Visual *visual;
-     Colormap cmap;
-     XColor *colors;
-     int *ncolorsP;
-     Bool allocate_p;
-     Bool *writable_pP;
-     Bool verbose_p;
-#endif /* !__STDC__ */
 {
   int ncolors = *ncolorsP;
   Bool wanted_writable = (allocate_p && writable_pP && *writable_pP);
@@ -658,29 +544,12 @@ make_uniform_colormap (dpy, visual, cmap,
 
 
 void
-#ifdef __STDC__
 make_random_colormap (Display *dpy, Visual *visual, Colormap cmap,
 		      XColor *colors, int *ncolorsP,
 		      Bool bright_p,
 		      Bool allocate_p,
 		      Bool *writable_pP,
 		      Bool verbose_p)
-#else /* !__STDC__ */
-make_random_colormap (dpy, visual, cmap,
-		      colors, ncolorsP,
-		      bright_p,
-		      allocate_p, writable_pP,
-		      verbose_p)
-     Display *dpy;
-     Visual *visual;
-     Colormap cmap;
-     XColor *colors;
-     int *ncolorsP;
-     Bool bright_p;
-     Bool allocate_p;
-     Bool *writable_pP;
-     Bool verbose_p;
-#endif /* !__STDC__ */
 {
   Bool wanted_writable = (allocate_p && writable_pP && *writable_pP);
   int ncolors = *ncolorsP;
@@ -759,16 +628,8 @@ make_random_colormap (dpy, visual, cmap,
 
 
 void
-#ifdef __STDC__
 rotate_colors (Display *dpy, Colormap cmap,
 	       XColor *colors, int ncolors, int distance)
-#else /* !__STDC__ */
-rotate_colors (dpy, cmap, colors, ncolors, distance)
-	Display *dpy;
-	Colormap cmap;
-	XColor *colors;
-	int ncolors, distance;
-#endif /* !__STDC__ */
 {
   int i;
   XColor *colors2 = (XColor *) malloc(sizeof(*colors2) * ncolors);

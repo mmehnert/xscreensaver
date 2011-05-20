@@ -27,13 +27,6 @@
 #ifndef _SPLINE_H_
 #define _SPLINE_H_
 
-#undef P
-#ifdef __STDC__
-# define P(x)x
-#else
-# define P(x)()
-#endif
-
 typedef struct _spline
 {
   /* input */
@@ -47,11 +40,11 @@ typedef struct _spline
   u_int		allocated_points;
 } spline;
 
-spline* make_spline P((u_int size));
-void compute_spline P((spline* s));
-void compute_closed_spline P((spline* s));
-void just_fill_spline P((spline* s));
-void append_spline_points P((spline* s1, spline* s2));
-void spline_bounding_box P((spline* s, XRectangle* rectangle_out));
+spline* make_spline (u_int size);
+void compute_spline (spline* s);
+void compute_closed_spline (spline* s);
+void just_fill_spline (spline* s);
+void append_spline_points (spline* s1, spline* s2);
+void spline_bounding_box (spline* s, XRectangle* rectangle_out);
 
 #endif /* _SPLINE_H_ */

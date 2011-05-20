@@ -10,19 +10,33 @@
  * implied warranty.
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include <stdio.h>
 #include <X11/Xproto.h>		/* for CARD32 */
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>		/* for XSetClassHint() */
 #include <X11/Xatom.h>
 #include <X11/Xos.h>		/* for time() */
-#include <X11/Xmu/SysUtil.h>	/* for XmuGetHostname */
-
 #include <signal.h>		/* for the signal names */
+# include <sys/utsname.h>	/* for uname() */
 
 #ifdef HAVE_MIT_SAVER_EXTENSION
 # include <X11/extensions/scrnsaver.h>
 #endif /* HAVE_MIT_SAVER_EXTENSION */
+
+
+#ifdef HAVE_XHPDISABLERESET
+# include <X11/XHPlib.h>
+
+ /* Calls to XHPDisableReset and XHPEnableReset must be balanced,
+    or BadAccess errors occur.  (Ok for this to be global, since it
+    affects the whole machine, not just the current screen.) */
+  Bool hp_locked_p = False;
+
+#endif /* HAVE_XHPDISABLERESET */
 
 
 /* This file doesn't need the Xt headers, so stub these types out... */
@@ -37,9 +51,7 @@
 #include "visual.h"
 #include "fade.h"
 
-#ifdef __STDC__
 extern int kill (pid_t, int);		/* signal() is in sys/signal.h... */
-#endif /* __STDC__ */
 
 Atom XA_VROOT, XA_XSETROOT_ID;
 Atom XA_SCREENSAVER_VERSION, XA_SCREENSAVER_ID;
@@ -49,7 +61,7 @@ Atom XA_SCREENSAVER_TIME;
 extern saver_info *global_si_kludge;	/* I hate C so much... */
 
 
-static void store_activate_time P((saver_info *si, Bool use_last_p));
+static void store_activate_time (saver_info *si, Bool use_last_p);
 
 #define ALL_POINTER_EVENTS \
 	(ButtonPressMask | ButtonReleaseMask | EnterWindowMask | \
@@ -65,14 +77,7 @@ static void store_activate_time P((saver_info *si, Bool use_last_p));
 		GrabModeAsync, GrabModeAsync, None, cursor, CurrentTime)
 
 void
-#ifdef __STDC__
 grab_keyboard_and_mouse (Display *dpy, Window window, Cursor cursor)
-#else  /* !__STDC__ */
-grab_keyboard_and_mouse (dpy, window, cursor)
-	Display *dpy;
-	Window window;
-	Cursor cursor;
-#endif /* !__STDC__ */
 {
   Status status;
   XSync (dpy, False);
@@ -98,11 +103,7 @@ grab_keyboard_and_mouse (dpy, window, cursor)
 }
 
 void
-#ifdef __STDC__
 ungrab_keyboard_and_mouse (Display *dpy)
-#else  /* !__STDC__ */
-ungrab_keyboard_and_mouse (dpy) Display *dpy;
-#endif /* !__STDC__ */
 {
   XUngrabPointer (dpy, CurrentTime);
   XUngrabKeyboard (dpy, CurrentTime);
@@ -110,13 +111,7 @@ ungrab_keyboard_and_mouse (dpy) Display *dpy;
 
 
 void
-#ifdef __STDC__
 ensure_no_screensaver_running (Display *dpy, Screen *screen)
-#else  /* !__STDC__ */
-ensure_no_screensaver_running (dpy, screen)
-	Display *dpy;
-	Screen *screen;
-#endif /* !__STDC__ */
 {
   int i;
   Window root = RootWindowOfScreen (screen);
@@ -172,14 +167,7 @@ ERROR!  You must not include vroot.h in this file.
 #endif
 
 static void
-#ifdef __STDC__
 store_vroot_property (Display *dpy, Window win, Window value)
-#else  /* !__STDC__ */
-store_vroot_property (dpy, win, value)
-	Display *dpy;
-	Window win;
-	Window value;
-#endif /* !__STDC__ */
 {
 #if 0
   if (p->verbose_p)
@@ -199,13 +187,7 @@ store_vroot_property (dpy, win, value)
 }
 
 static void
-#ifdef __STDC__
 remove_vroot_property (Display *dpy, Window win)
-#else  /* !__STDC__ */
-remove_vroot_property (dpy, win)
-	Display *dpy;
-	Window win;
-#endif /* !__STDC__ */
 {
 #if 0
   if (p->verbose_p)
@@ -219,14 +201,7 @@ remove_vroot_property (dpy, win)
 
 
 static void
-#ifdef __STDC__
 kill_xsetroot_data (Display *dpy, Window window, Bool verbose_p)
-#else  /* !__STDC__ */
-kill_xsetroot_data (dpy, window, verbose_p)
-	Display *dpy;
-	Window window;
-	Bool verbose_p;
-#endif /* !__STDC__ */
 {
   Atom type;
   int format;
@@ -268,15 +243,10 @@ kill_xsetroot_data (dpy, window, verbose_p)
 }
 
 
-static void handle_signals P((saver_info *si, Bool on_p));
+static void handle_signals (saver_info *si, Bool on_p);
 
 static void
-#ifdef __STDC__
 save_real_vroot (saver_screen_info *ssi)
-#else  /* !__STDC__ */
-save_real_vroot (ssi)
-	saver_screen_info *ssi;
-#endif /* !__STDC__ */
 {
   saver_info *si = ssi->global;
   Display *dpy = si->dpy;
@@ -332,12 +302,7 @@ save_real_vroot (ssi)
 
 
 static Bool
-#ifdef __STDC__
 restore_real_vroot_2 (saver_screen_info *ssi)
-#else  /* !__STDC__ */
-restore_real_vroot_2 (ssi)
-	saver_screen_info *ssi;
-#endif /* !__STDC__ */
 {
   saver_info *si = ssi->global;
   saver_preferences *p = &si->prefs;
@@ -360,12 +325,7 @@ restore_real_vroot_2 (ssi)
 }
 
 static Bool
-#ifdef __STDC__
 restore_real_vroot_1 (saver_info *si)
-#else  /* !__STDC__ */
-restore_real_vroot_1 (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   int i;
   Bool did_any = False;
@@ -379,12 +339,7 @@ restore_real_vroot_1 (si)
 }
 
 void
-#ifdef __STDC__
 restore_real_vroot (saver_info *si)
-#else  /* !__STDC__ */
-restore_real_vroot (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   if (restore_real_vroot_1 (si))
     handle_signals (si, False);
@@ -396,12 +351,7 @@ restore_real_vroot (si)
  */
 
 const char *
-#ifdef __STDC__
 signal_name(int signal)
-#else  /* !__STDC__ */
-signal_name (signal)
-	int signal;
-#endif /* !__STDC__ */
 {
   switch (signal) {
   case SIGHUP:	  return "SIGHUP";
@@ -465,13 +415,8 @@ signal_name (signal)
 
 
 
-static void
-#ifdef __STDC__
+static RETSIGTYPE
 restore_real_vroot_handler (int sig)
-#else /* !__STDC__ */
-restore_real_vroot_handler (sig)
-     int sig;
-#endif /* !__STDC__ */
 {
   saver_info *si = global_si_kludge;	/* I hate C so much... */
 
@@ -483,20 +428,13 @@ restore_real_vroot_handler (sig)
 }
 
 static void
-#ifdef __STDC__
 catch_signal (saver_info *si, int sig, Bool on_p)
-#else  /* !__STDC__ */
-catch_signal (si, sig, on_p)
-	saver_info *si;
-	int sig;
-	Bool on_p;
-#endif /* !__STDC__ */
 {
   if (! on_p)
     signal (sig, SIG_DFL);
   else
     {
-      if (((int) signal (sig, restore_real_vroot_handler)) == -1)
+      if (((long) signal (sig, restore_real_vroot_handler)) == -1L)
 	{
 	  char buf [255];
 	  sprintf (buf, "%s: couldn't catch %s", progname, signal_name(sig));
@@ -507,13 +445,7 @@ catch_signal (si, sig, on_p)
 }
 
 static void
-#ifdef __STDC__
 handle_signals (saver_info *si, Bool on_p)
-#else  /* !__STDC__ */
-handle_signals (si, on_p)
-	saver_info *si;
-	Bool on_p;
-#endif /* !__STDC__ */
 {
 #if 0
   if (on_p) printf ("handling signals\n");
@@ -549,13 +481,7 @@ handle_signals (si, on_p)
 }
 
 void
-#ifdef __STDC__
 saver_exit (saver_info *si, int status)
-#else  /* !__STDC__ */
-saver_exit (si, status)
-	saver_info *si;
-	int status;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   static Bool exiting = False;
@@ -594,13 +520,7 @@ saver_exit (si, status)
 /* Managing the actual screensaver window */
 
 Bool
-#ifdef __STDC__
 window_exists_p (Display *dpy, Window window)
-#else /* !__STDC__ */
-window_exists_p (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* !__STDC__ */
 {
   XErrorHandler old_handler;
   XWindowAttributes xgwa;
@@ -613,12 +533,7 @@ window_exists_p (dpy, window)
 }
 
 static void
-#ifdef __STDC__
 initialize_screensaver_window_1 (saver_screen_info *ssi)
-#else  /* !__STDC__ */
-initialize_screensaver_window_1 (ssi)
-	saver_screen_info *ssi;
-#endif /* !__STDC__ */
 {
   saver_info *si = ssi->global;
   saver_preferences *p = &si->prefs;
@@ -820,8 +735,13 @@ initialize_screensaver_window_1 (ssi)
 		       strlen (si->version));
 
       sprintf (id, "%lu on host ", (unsigned long) getpid ());
-      if (! XmuGetHostname (id + strlen (id), sizeof (id) - strlen (id) - 1))
-	strcat (id, "???");
+      {
+	struct utsname uts;
+	if (uname (&uts) < 0)
+	  strcat (id, "???");
+	else
+	  strcat (id, uts.nodename);
+      }
       XChangeProperty (si->dpy, ssi->screensaver_window,
 		       XA_SCREENSAVER_ID, XA_STRING,
 		       8, PropModeReplace, (unsigned char *) id, strlen (id));
@@ -849,12 +769,7 @@ initialize_screensaver_window_1 (ssi)
 }
 
 void
-#ifdef __STDC__
 initialize_screensaver_window (saver_info *si)
-#else  /* !__STDC__ */
-initialize_screensaver_window (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   int i;
   for (i = 0; i < si->nscreens; i++)
@@ -863,16 +778,8 @@ initialize_screensaver_window (si)
 
 
 void 
-#ifdef __STDC__
 raise_window (saver_info *si,
 	      Bool inhibit_fade, Bool between_hacks_p, Bool dont_clear)
-#else  /* !__STDC__ */
-raise_window (si, inhibit_fade, between_hacks_p, dont_clear)
-	saver_info *si;
-	Bool inhibit_fade;
-	Bool between_hacks_p;
-	Bool dont_clear;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   int i;
@@ -968,21 +875,8 @@ raise_window (si, inhibit_fade, between_hacks_p, dont_clear)
     }
 }
 
-#ifdef __hpux
- /* Calls to XHPDisableReset and XHPEnableReset must be balanced,
-    or BadAccess errors occur.  (Ok for this to be global, since it
-    affects the whole machine, not just the current screen.) */
-Bool hp_locked_p = False;
-#endif /* __hpux */
-
-
 void
-#ifdef __STDC__
 blank_screen (saver_info *si)
-#else  /* !__STDC__ */
-blank_screen (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   int i;
   for (i = 0; i < si->nscreens; i++)
@@ -999,10 +893,10 @@ blank_screen (si)
   /* #### */
   grab_keyboard_and_mouse (si->dpy, si->screens[0].screensaver_window,
 			   (si->demo_mode_p ? 0 : si->screens[0].cursor));
-#ifdef __hpux
+#ifdef HAVE_XHPDISABLERESET
   if (si->locked_p && !hp_locked_p)
     {
-      XHPDisableReset (dpy);	/* turn off C-Sh-Reset */
+      XHPDisableReset (si->dpy);	/* turn off C-Sh-Reset */
       hp_locked_p = True;
     }
 #endif
@@ -1011,12 +905,7 @@ blank_screen (si)
 }
 
 void
-#ifdef __STDC__
 unblank_screen (saver_info *si)
-#else  /* !__STDC__ */
-unblank_screen (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   int i, j;
@@ -1119,7 +1008,7 @@ unblank_screen (si)
   ungrab_keyboard_and_mouse (si->dpy);
   restore_real_vroot (si);
 
-#ifdef __hpux
+#ifdef HAVE_XHPDISABLERESET
   if (hp_locked_p)
     {
       XHPEnableReset (si->dpy);	/* turn C-Sh-Reset back on */
@@ -1132,13 +1021,7 @@ unblank_screen (si)
 
 
 static void
-#ifdef __STDC__
 store_activate_time (saver_info *si, Bool use_last_p)
-#else  /* !__STDC__ */
-store_activate_time (si, use_last_p)
-	saver_info *si;
-	Bool use_last_p;
-#endif /* !__STDC__ */
 {
   static time_t last_time = 0;
   time_t now = ((use_last_p && last_time) ? last_time : time ((time_t) 0));
@@ -1158,13 +1041,7 @@ store_activate_time (si, use_last_p)
 
 
 Bool
-#ifdef __STDC__
 select_visual (saver_screen_info *ssi, const char *visual_name)
-#else  /* !__STDC__ */
-select_visual (ssi, visual_name)
-	saver_screen_info *ssi;
-	const char *visual_name;
-#endif /* !__STDC__ */
 {
   saver_info *si = ssi->global;
   saver_preferences *p = &si->prefs;

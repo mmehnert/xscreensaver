@@ -12,9 +12,9 @@
 #ifndef __FADE_H__
 #define __FADE_H__
 
-extern Colormap copy_colormap P((Screen *, Colormap from, Colormap to));
-extern void blacken_colormap P((Screen *, Colormap cmap));
-extern void fade_screens P((Display *dpy, Colormap *cmaps,
-			    int seconds, int ticks, Bool out_p));
+extern Colormap copy_colormap (Screen *, Colormap from, Colormap to);
+extern void blacken_colormap (Screen *, Colormap cmap);
+extern void fade_screens (Display *dpy, Colormap *cmaps,
+			  int seconds, int ticks, Bool out_p);
 
 #endif /* __FADE_H__ */

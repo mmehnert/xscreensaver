@@ -23,13 +23,7 @@ static GC gc;
 int max_width, max_height;
 
 static void
-#ifdef __STDC__
 init_slide (Display *dpy, Window window)
-#else /* ! __STDC__ */
-init_slide (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* ! __STDC__ */
 {
   int i;
   XGCValues gcv;
@@ -149,13 +143,7 @@ init_slide (dpy, window)
 }
 
 static void
-#ifdef __STDC__
 slide1 (Display *dpy, Window window)
-#else /* ! __STDC__ */
-slide1 (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* ! __STDC__ */
 {
   /* this code is a total kludge, but who cares, it works... */
  int i, x, y, ix, iy, dx, dy, dir, w, h, size, inc;
@@ -266,11 +254,7 @@ XrmOptionDescRec options [] = {
 };
 
 void
-#ifdef __STDC__
 screenhack (Display *dpy, Window window)
-#else /* ! __STDC__ */
-screenhack (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   init_slide (dpy, window);
   while (1)

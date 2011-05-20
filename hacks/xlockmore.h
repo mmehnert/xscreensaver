@@ -20,12 +20,13 @@
 ERROR!  Define PROGCLASS, HACK_INIT, and HACK_DRAW before including xlockmore.h
 #endif
 
+#include "config.h"
+
 #ifndef __STDC__
 ERROR!  Sorry, xlockmore.h requires ANSI C (gcc, for example.)
   /* (The ansi dependency is that we use string concatenation,
      and cpp-based stringification of tokens.) */
 #endif
-
 
 #include <stdio.h>
 #include <math.h>
@@ -33,7 +34,7 @@ ERROR!  Sorry, xlockmore.h requires ANSI C (gcc, for example.)
 
 #ifdef USE_GL
 # include <GL/glx.h>
-  extern GLXContext init_GL P((ModeInfo *));
+  extern GLXContext init_GL (ModeInfo *);
 #endif
 
 /* Accessor macros for the ModeInfo structure

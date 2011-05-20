@@ -34,13 +34,7 @@ struct point_state {
 };
 
 static void
-#ifdef __STDC__
 move_line (struct point_state *state0, struct point_state *state1, GC gc)
-#else /* ! __STDC__ */
-move_line (state0, state1, gc)
-     struct point_state *state0, *state1;
-     GC gc;
-#endif /* ! __STDC__ */
 {
   if (state0->same_p && state1->same_p)
     return;
@@ -63,11 +57,7 @@ move_line (state0, state1, gc)
 }
 
 static void
-#ifdef __STDC__
 hyper (double xy, double xz, double yz, double xw, double yw, double zw)
-#else /* ! __STDC__ */
-hyper (xy, xz, yz, xw, yw, zw) double xy, xz, yz, xw, yw, zw;
-#endif /* ! __STDC__ */
 {
   double cos_xy = cos (xy), sin_xy = sin (xy);
   double cos_xz = cos (xz), sin_xz = sin (xz);
@@ -275,11 +265,7 @@ XrmOptionDescRec options [] = {
 };
 
 void
-#ifdef __STDC__
 screenhack (Display *d, Window w)
-#else /* ! __STDC__ */
-screenhack (d, w) Display *d; Window w;
-#endif /* ! __STDC__ */
 {
   XGCValues gcv;
   XWindowAttributes xgwa;

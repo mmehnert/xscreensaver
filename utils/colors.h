@@ -14,7 +14,7 @@
 
 /* Like XFreeColors, but works on `XColor *' instead of `unsigned long *'
  */
-extern void free_colors P((Display *, Colormap, XColor *, int ncolors));
+extern void free_colors (Display *, Colormap, XColor *, int ncolors);
 
 
 /* Allocates writable, non-contiguous color cells.  The number requested is
@@ -22,8 +22,8 @@ extern void free_colors P((Display *, Colormap, XColor *, int ncolors));
    (Unlike XAllocColorCells(), this will allocate as many as it can, instead
    of failing if they can't all be allocated.)
  */
-extern void allocate_writable_colors P((Display *dpy, Colormap cmap,
-					unsigned long *pixels, int *ncolorsP));
+extern void allocate_writable_colors (Display *dpy, Colormap cmap,
+				      unsigned long *pixels, int *ncolorsP);
 
 
 /* Generates a sequence of colors evenly spaced between the given pair
@@ -39,13 +39,13 @@ extern void allocate_writable_colors P((Display *dpy, Colormap cmap,
    If writable_p is true, writable color cells will be allocated;
    otherwise, read-only cells will be allocated.
  */
-extern void make_color_ramp P((Display *dpy, Colormap cmap,
-			       int h1, double s1, double v1,
-			       int h2, double s2, double v2,
-			       XColor *colors, int *ncolorsP,
-			       Bool closed_p,
-			       Bool allocate_p,
-			       Bool writable_p));
+extern void make_color_ramp (Display *dpy, Colormap cmap,
+			     int h1, double s1, double v1,
+			     int h2, double s2, double v2,
+			     XColor *colors, int *ncolorsP,
+			     Bool closed_p,
+			     Bool allocate_p,
+			     Bool writable_p);
 
 /* Generates a sequence of colors evenly spaced around the triangle
    indicated by the thee HSV coordinates.
@@ -57,13 +57,13 @@ extern void make_color_ramp P((Display *dpy, Colormap cmap,
    If writable_p is true, writable color cells will be allocated;
    otherwise, read-only cells will be allocated.
  */
-extern void make_color_loop P((Display *, Colormap,
-			       int h1, double s1, double v1,
-			       int h2, double s2, double v2,
-			       int h3, double s3, double v3,
-			       XColor *colors, int *ncolorsP,
-			       Bool allocate_p,
-			       Bool writable_p));
+extern void make_color_loop (Display *, Colormap,
+			     int h1, double s1, double v1,
+			     int h2, double s2, double v2,
+			     int h3, double s3, double v3,
+			     XColor *colors, int *ncolorsP,
+			     Bool allocate_p,
+			     Bool writable_p);
 
 
 /* Allocates a hopefully-interesting colormap, which will be a closed loop
@@ -79,12 +79,12 @@ extern void make_color_loop P((Display *, Colormap,
    cannot be allocated, we will try to allocate unwritable cells
    instead, and print a message on stderr to that effect (if verbose_p).
  */
-extern void make_smooth_colormap P((Display *dpy, Visual *visual,
-				    Colormap cmap,
-				    XColor *colors, int *ncolorsP,
-				    Bool allocate_p,
-				    Bool *writable_pP,
-				    Bool verbose_p));
+extern void make_smooth_colormap (Display *dpy, Visual *visual,
+				  Colormap cmap,
+				  XColor *colors, int *ncolorsP,
+				  Bool allocate_p,
+				  Bool *writable_pP,
+				  Bool verbose_p);
 
 /* Allocates a uniform colormap which touches each hue of the spectrum,
    evenly spaced.  The saturation and intensity are chosen randomly, but
@@ -100,12 +100,12 @@ extern void make_smooth_colormap P((Display *dpy, Visual *visual,
    cannot be allocated, we will try to allocate unwritable cells
    instead, and print a message on stderr to that effect (if verbose_p).
  */
-extern void make_uniform_colormap P((Display *dpy, Visual *visual,
-				     Colormap cmap,
-				     XColor *colors, int *ncolorsP,
-				     Bool allocate_p,
-				     Bool *writable_pP,
-				     Bool verbose_p));
+extern void make_uniform_colormap (Display *dpy, Visual *visual,
+				   Colormap cmap,
+				   XColor *colors, int *ncolorsP,
+				   Bool allocate_p,
+				   Bool *writable_pP,
+				   Bool verbose_p);
 
 /* Allocates a random colormap (the colors are unrelated to one another.)
    If `bright_p' is false, the colors will be completely random; if it is
@@ -121,20 +121,20 @@ extern void make_uniform_colormap P((Display *dpy, Visual *visual,
    cannot be allocated, we will try to allocate unwritable cells
    instead, and print a message on stderr to that effect (if verbose_p).
  */
-extern void make_random_colormap P((Display *dpy, Visual *visual,
-				    Colormap cmap,
-				    XColor *colors, int *ncolorsP,
-				    Bool bright_p,
-				    Bool allocate_p,
-				    Bool *writable_pP,
-				    Bool verbose_p));
+extern void make_random_colormap (Display *dpy, Visual *visual,
+				  Colormap cmap,
+				  XColor *colors, int *ncolorsP,
+				  Bool bright_p,
+				  Bool allocate_p,
+				  Bool *writable_pP,
+				  Bool verbose_p);
 
 
 /* Assuming that the array of colors indicates the current state of a set
    of writable color cells, this rotates the contents of the array by
    `distance' steps, moving the colors of cell N to cell (N - distance).
  */
-extern void rotate_colors P((Display *, Colormap,
-			     XColor *, int ncolors, int distance));
+extern void rotate_colors (Display *, Colormap,
+			   XColor *, int ncolors, int distance);
 
 #endif /* __COLORS_H__ */

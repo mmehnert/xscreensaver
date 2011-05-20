@@ -34,13 +34,7 @@ static unsigned long fg, bg, pixels [512];
 static int npixels;
 
 static void
-#ifdef __STDC__
 init_greynetic (Display *dpy, Window window)
-#else /* ! __STDC__ */
-init_greynetic (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* ! __STDC__ */
 {
   int i;
   XGCValues gcv;
@@ -76,13 +70,7 @@ init_greynetic (dpy, window)
 }
 
 static void
-#ifdef __STDC__
 greynetic (Display *dpy, Window window)
-#else /* ! __STDC__ */
-greynetic (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* ! __STDC__ */
 {
   static int tick = 500, xlim, ylim;
   static Colormap cmap;
@@ -162,11 +150,7 @@ XrmOptionDescRec options [] = {
 };
 
 void
-#ifdef __STDC__
 screenhack (Display *dpy, Window window)
-#else /* ! __STDC__ */
-screenhack (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   init_greynetic (dpy, window);
   while (1)

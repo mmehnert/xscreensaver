@@ -31,7 +31,7 @@ struct projectile {
 static struct projectile *projectiles, *free_projectiles;
 
 static struct projectile *
-get_projectile P((void))
+get_projectile (void)
 {
   struct projectile *p;
   if (free_projectiles)
@@ -47,11 +47,7 @@ get_projectile P((void))
 }
 
 static void
-#ifdef __STDC__
 free_projectile (struct projectile *p)
-#else /* ! __STDC__ */
-free_projectile (p) struct projectile *p;
-#endif /* ! __STDC__ */
 {
   p->next_free = free_projectiles;
   free_projectiles = p;
@@ -59,15 +55,8 @@ free_projectile (p) struct projectile *p;
 }
 
 static void
-#ifdef __STDC__
 launch (int xlim, int ylim, int g,
 	Display *dpy, Colormap cmap)
-#else /* ! __STDC__ */
-launch (xlim, ylim, g, dpy, cmap)
-     int xlim, ylim, g;
-     Display *dpy;
-     Colormap cmap;
-#endif /* ! __STDC__ */
 {
   struct projectile *p = get_projectile ();
   int x, dx, xxx;
@@ -102,14 +91,7 @@ launch (xlim, ylim, g, dpy, cmap)
 }
 
 static struct projectile *
-#ifdef __STDC__
 shrapnel (struct projectile *parent, Display *dpy, Colormap cmap)
-#else /* ! __STDC__ */
-shrapnel (parent, dpy, cmap)
-     struct projectile *parent;
-     Display *dpy;
-     Colormap cmap;
-#endif /* ! __STDC__ */
 {
   struct projectile *p = get_projectile ();
   if (! p) return 0;
@@ -135,13 +117,7 @@ static unsigned int default_fg_pixel;
 static int how_many, frequency, scatter;
 
 static Colormap
-#ifdef __STDC__
 init_pyro (Display *dpy, Window window)
-#else /* ! __STDC__ */
-init_pyro (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* ! __STDC__ */
 {
   int i;
   Colormap cmap;
@@ -171,14 +147,7 @@ init_pyro (dpy, window)
 }
 
 static void
-#ifdef __STDC__
 pyro (Display *dpy, Window window, Colormap cmap)
-#else /* ! __STDC__ */
-pyro (dpy, window, cmap)
-     Display *dpy;
-     Window window;
-     Colormap cmap;
-#endif /* ! __STDC__ */
 {
   XWindowAttributes xgwa;
   static int xlim, ylim, real_xlim, real_ylim;
@@ -269,11 +238,7 @@ XrmOptionDescRec options [] = {
 };
 
 void
-#ifdef __STDC__
 screenhack (Display *dpy, Window window)
-#else /* ! __STDC__ */
-screenhack (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   Colormap cmap = init_pyro (dpy, window);
   while (1)

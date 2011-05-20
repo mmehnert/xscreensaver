@@ -53,9 +53,9 @@
 #ifndef __SCREENHACK_H__
 #define __SCREENHACK_H__
 
-#ifdef __STDC__
-# include <stdlib.h>
-#endif
+#include <stdlib.h>
+
+#include "config.h"
 
 #ifdef __hpux
  /* Which of the ten billion standards does values.h belong to?
@@ -74,16 +74,6 @@
 # define M_PI 3.1415926535
 #endif
 
-#undef P
-#ifdef __STDC__
-# define P(x)x
-#else
-# define P(x)()
-# ifndef const
-#  define const /**/
-# endif
-#endif
-
 #include "yarandom.h"
 #include "usleep.h"
 #include "resources.h"
@@ -99,6 +89,6 @@ extern XrmDatabase db;
 extern XrmOptionDescRec options [];
 extern char *defaults [];
 
-extern void screenhack P((Display*,Window));
+extern void screenhack (Display*,Window);
 
 #endif /* __SCREENHACK_H__ */

@@ -102,11 +102,7 @@ XrmOptionDescRec options [] = {
  **************************************************************************/
 
 static void *
-#ifdef __STDC__
 xmalloc(size_t size)
-#else /* ! __STDC__ */
-xmalloc(size) size_t size;
-#endif /* ! __STDC__ */
 {
     void *ret;
 
@@ -119,7 +115,7 @@ xmalloc(size) size_t size;
 
 
 
-static double frnd P((void))
+static double frnd (void)
 {
     /*
      *  Hm. for some reason the second line (using RAND_MAX) didn't
@@ -134,7 +130,7 @@ static double frnd P((void))
 
 
 
-static void initPointArrays P((void))
+static void initPointArrays (void)
 {
     XWindowAttributes wa;
     int q, w,
@@ -353,7 +349,7 @@ static void initPointArrays P((void))
 
 
 
-static void createPoints P((void))
+static void createPoints (void)
 {
     int    q;
     XPoint *pa = aCurr, *pa1 = aFrom, *pa2 = aTo;
@@ -371,7 +367,7 @@ static void createPoints P((void))
 }
 
 
-static void drawImage P((void))
+static void drawImage (void)
 {
     register int q;
     XPoint *old0, *old1, *new0, *new1;
@@ -403,7 +399,7 @@ static void drawImage P((void))
     XFlush(dpy);
 }
 
-static void initLMorph P((void))
+static void initLMorph (void)
 {
     int               steps;
     XGCValues         gcv;
@@ -435,7 +431,7 @@ static void initLMorph P((void))
     nTo = RND(cFig);
 }
 
-static void animateLMorph P((void))
+static void animateLMorph (void)
 {
     if (gam > maxGamma) {
         gam = 0.0;
@@ -490,11 +486,7 @@ static void animateLMorph P((void))
  **************************************************************************/
 
 void
-#ifdef __STDC__
 screenhack(Display *disp, Window win)
-#else /* ! __STDC__ */
-screenhack(disp, win) Display *disp; Window win;
-#endif /* ! __STDC__ */
 {
     dpy = disp;
     window = win;

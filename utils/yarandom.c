@@ -41,15 +41,12 @@
  */
 
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include <unistd.h>   /* for getpid() */
 #include <sys/time.h> /* for gettimeofday() */
-
-#undef P
-#ifdef __STDC__
-# define P(x)x
-#else
-# define P(x)()
-#endif
 
 #include "yarandom.h"
 
@@ -77,11 +74,7 @@ static unsigned int a[VectorSize] = {
 static int i1, i2;
 
 unsigned int
-#ifdef __STDC__
 ya_random (void)
-#else /* !__STDC__ */
-ya_random ()
-#endif /* !__STDC__ */
 {
   register int ret = a[i1] + a[i2];
   a[i1] = ret;
@@ -91,12 +84,7 @@ ya_random ()
 }
 
 void
-#ifdef __STDC__
 ya_rand_init(unsigned int seed)
-#else /* !__STDC__ */
-ya_rand_init(seed)
-   unsigned int seed;
-#endif /* !__STDC__ */
 {
   int i;
   if (seed == 0)

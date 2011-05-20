@@ -9,23 +9,11 @@
  * implied warranty.
  */
 
-#include <X11/Xlib.h>
-
-#ifdef __STDC__
-static void crossbones (Display *, Window, GC, int x, int y, int w, int h);
-#endif
+#include "utils.h"
 
 static void
-#ifdef __STDC__
 crossbones (Display *dpy, Window window, GC draw_gc,
 	    int x, int y, int w, int h)
-#else /* !__STDC__ */
-crossbones (dpy, window, draw_gc, x, y, w, h)
-     Display *dpy;
-     Window window;
-     GC draw_gc;
-     int x, y, w, h;
-#endif /* !__STDC__ */
 {
   double xscale = w / 440.0;
   double yscale = h / 216.0;
@@ -60,16 +48,8 @@ crossbones (dpy, window, draw_gc, x, y, w, h)
 
 
 void
-#ifdef __STDC__
 skull (Display *dpy, Window window, GC draw_gc, GC erase_gc,
        int x, int y, int w, int h)
-#else /* !__STDC__ */
-skull (dpy, window, draw_gc, erase_gc, x, y, w, h)
-     Display *dpy;
-     Window window;
-     GC draw_gc, erase_gc;
-     int x, y, w, h;
-#endif /* !__STDC__ */
 {
   XPoint points [3];
   crossbones (dpy, window, draw_gc, x, y+h/2, w, h/2);

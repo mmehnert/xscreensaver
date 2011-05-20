@@ -10,26 +10,21 @@
  * implied warranty.
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #ifndef NO_LOCKING  /* whole file */
 
-#ifdef __STDC__
-# include <stdlib.h>
-# ifdef __unix
-#  include <unistd.h>
-# endif
-#else /* !__STDC__ */
-# ifndef const
-#  define const /**/
-# endif
-#endif /* !__STDC__ */
+#include <stdlib.h>
+#ifdef __unix
+# include <unistd.h>
+#endif
 
 #include <stdio.h>
 #include <string.h>
 #include <sys/types.h>
-
-#if !defined(VMS) && !defined(HAVE_ADJUNCT_PASSWD)
-# include <pwd.h>
-#endif
+#include <pwd.h>
 
 
 #ifdef __bsdi__
@@ -40,29 +35,19 @@
 #endif /* __bsdi__ */
 
 
-#if defined(HAVE_SHADOW)	      /* passwds live in /etc/shadow */
+#if defined(HAVE_SHADOW_PASSWD)	      /* passwds live in /etc/shadow */
 
 #   include <shadow.h>
 #   define PWTYPE   struct spwd *
 #   define PWPSLOT  sp_pwdp
 #   define GETPW    getspnam
 
-#elif defined(HAVE_DEC_ENHANCED)      /* passwds live in /tcb/files/auth/ */
+#elif defined(HAVE_ENHANCED_PASSWD)      /* passwds live in /tcb/files/auth/ */
 				      /* M.Matsumoto <matsu@yao.sharp.co.jp> */
 #   include <sys/security.h>
 #   include <prot.h>
 
 #   define PWTYPE   struct pr_passwd *
-#   define PWPSLOT  ufld.fd_encrypt
-#   define GETPW    getprpwnam
-
-#elif defined(SCO)		      /* SCO = DEC + different headers */
-
-#   include <sys/security.h>
-#   include <sys/audit.h>
-#   include <prot.h>
-
-#   define PRTYPE   struct pr_passwd *
 #   define PWPSLOT  ufld.fd_encrypt
 #   define GETPW    getprpwnam
 
@@ -112,11 +97,7 @@ static char *encrypted_user_passwd = 0;
 
 
 static char *
-#ifdef __STDC__
 user_name (void)
-#else  /* !__STDC__ */
-user_name ()
-#endif /* !__STDC__ */
 {
   /* I think that just checking $USER here is not the best idea. */
 
@@ -144,12 +125,7 @@ user_name ()
 
 
 static Bool
-#ifdef __STDC__
 passwd_known_p (const char *pw)
-#else  /* !__STDC__ */
-passwd_known_p (pw)
-	const char *pw;
-#endif /* !__STDC__ */
 {
   return (pw &&
 	  pw[0] != '*' &&	/* This would be sensible...         */
@@ -158,18 +134,13 @@ passwd_known_p (pw)
 
 
 static char *
-#ifdef __STDC__
 get_encrypted_passwd(const char *user)
-#else  /* !__STDC__ */
-get_encrypted_passwd (user)
-	const char *user;
-#endif /* !__STDC__ */
 {
   if (user && *user)
     {
 #ifdef PWTYPE
       {					/* First check the shadow passwords. */
-	PWTYPE p = GETPW(user);
+	PWTYPE p = GETPW((char *) user);
 	if (p && passwd_known_p (p->PWPSLOT))
 	  return strdup(p->PWPSLOT);
       }
@@ -195,17 +166,11 @@ get_encrypted_passwd (user)
    locking isn't possible.  (It will also have written to stderr.)
  */
 Bool
-#ifdef __STDC__
 lock_init (int argc, char **argv)
-#else  /* !__STDC__ */
-lock_init (argc, argv)
-	int argc;
-	char **argv;
-#endif /* !__STDC__ */
 {
   char *u;
 
-#ifdef HAVE_DEC_ENHANCED
+#ifdef HAVE_ENHANCED_PASSWD
   set_auth_parameters(argc, argv);
   check_auth_parameters();
 #endif /* HAVE_DEC_ENHANCED */
@@ -227,12 +192,7 @@ lock_init (argc, argv)
    to root.
  */
 Bool
-#ifdef __STDC__
 passwd_valid_p (const char *typed_passwd)
-#else  /* !__STDC__ */
-passwd_valid_p (typed_passwd)
-	const char *typed_passwd;
-#endif /* !__STDC__ */
 {
   if (encrypted_user_passwd &&
       !strcmp ((char *) crypt (typed_passwd, encrypted_user_passwd),

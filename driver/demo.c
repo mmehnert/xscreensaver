@@ -10,28 +10,19 @@
  * implied warranty.
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include <X11/Intrinsic.h>
 
-#ifndef __STDC__
-# define _NO_PROTO
-#endif
-
-#ifdef NO_MOTIF
-# undef  USE_MOTIF
-# define USE_ATHENA
-#else
-# define USE_MOTIF
-# undef  USE_ATHENA
-#endif
-
-
-#ifdef USE_MOTIF
+#ifdef HAVE_MOTIF
 # include <Xm/Xm.h>
 # include <Xm/Text.h>
 # include <Xm/List.h>
 # include <Xm/ToggleB.h>
 
-#else  /* USE_ATHENA */
+#else  /* HAVE_ATHENA */
   /* Athena demo code contributed by Jon A. Christopher <jac8782@tamu.edu> */
   /* Copyright 1997, with the same permissions as above. */
 # include <X11/StringDefs.h>
@@ -44,7 +35,7 @@
 # include <X11/Xaw/Viewport.h>
 # include <X11/Xaw/Dialog.h>
 # include <X11/Xaw/Scrollbar.h>
-#endif /* USE_ATHENA */
+#endif /* HAVE_ATHENA */
 
 #include "xscreensaver.h"
 #include "resources.h"		/* for parse_time() */
@@ -52,8 +43,8 @@
 #include <string.h>
 #include <ctype.h>
 
-static void demo_mode_hack P((saver_info *si, char *));
-static void demo_mode_done P((saver_info *si));
+static void demo_mode_hack (saver_info *si, char *);
+static void demo_mode_done (saver_info *si);
 
 extern Widget demo_dialog;
 extern Widget label1;
@@ -71,7 +62,7 @@ extern Widget verbose_toggle, cmap_toggle, fade_toggle, unfade_toggle,
   lock_toggle;
 
 
-#ifdef USE_MOTIF
+#ifdef HAVE_MOTIF
 
 # define set_toggle_button_state(toggle,state) \
   XmToggleButtonSetState ((toggle), (state), True)
@@ -83,7 +74,7 @@ extern Widget verbose_toggle, cmap_toggle, fade_toggle, unfade_toggle,
   XtAddCallback ((button), XmNvalueChangedCallback, (cb), (arg))
 # define add_text_callback add_toggle_callback
 
-#else  /* USE_ATHENA */
+#else  /* HAVE_ATHENA */
 
 # define set_toggle_button_state(toggle,state) \
   XtVaSetValues((toggle), XtNstate, (state),  0)
@@ -94,7 +85,7 @@ extern Widget verbose_toggle, cmap_toggle, fade_toggle, unfade_toggle,
 # define add_toggle_callback add_button_callback
 # define add_text_callback(b,c,a) ERROR!
 
-#endif /* USE_ATHENA */
+#endif /* HAVE_ATHENA */
 
 
 #define disable_widget(widget) \
@@ -102,31 +93,21 @@ extern Widget verbose_toggle, cmap_toggle, fade_toggle, unfade_toggle,
 
 
 static char *
-#ifdef __STDC__
 get_text_string (Widget text_widget)
-#else  /* !__STDC__ */
-get_text_string (text_widget)
-	Widget text_widget;
-#endif /* !__STDC__ */
 {
-#ifdef USE_MOTIF
+#ifdef HAVE_MOTIF
   return XmTextGetString (text_widget);
-#else  /* USE_ATHENA */
+#else  /* HAVE_ATHENA */
   char *string = 0;
   XtVaGetValues (text_widget, XtNvalue, &string, 0);
   return string;
-#endif /* USE_ATHENA */
+#endif /* HAVE_ATHENA */
 }
 
 static char *
-#ifdef __STDC__
 get_label_string (Widget label_widget)
-#else  /* !__STDC__ */
-get_label_string (label_widget)
-	Widget label_widget;
-#endif /* !__STDC__ */
 {
-#ifdef USE_MOTIF
+#ifdef HAVE_MOTIF
   char *label = 0;
   XmString xm_label = 0;
   XtVaGetValues (label_widget, XmNlabelString, &xm_label, 0);
@@ -134,41 +115,29 @@ get_label_string (label_widget)
     return 0;
   XmStringGetLtoR (xm_label, XmSTRING_DEFAULT_CHARSET, &label);
   return label;
-#else  /* USE_ATHENA */
+#else  /* HAVE_ATHENA */
   char *label = 0;
   XtVaGetValues (label_widget, XtNlabel, &label, 0);
   return (label ? strdup(label) : 0);
-#endif /* USE_ATHENA */
+#endif /* HAVE_ATHENA */
 }
 
 
 static void
-#ifdef __STDC__
 set_label_string (Widget label_widget, char *string)
-#else  /* !__STDC__ */
-set_label_string (label_widget, string)
-	Widget label_widget;
-	char *string;
-#endif /* !__STDC__ */
 {
-#ifdef USE_MOTIF
+#ifdef HAVE_MOTIF
   XmString xm_string = XmStringCreate (string, XmSTRING_DEFAULT_CHARSET);
   XtVaSetValues (label_widget, XmNlabelString, xm_string, 0);
   XmStringFree (xm_string);
-#else  /* USE_ATHENA */
+#else  /* HAVE_ATHENA */
   XtVaSetValues (label_widget, XtNlabel, string, 0);
-#endif /* USE_ATHENA */
+#endif /* HAVE_ATHENA */
 }
 
 
 void
-#ifdef __STDC__
 format_into_label (Widget label, const char *arg)
-#else  /* !__STDC__ */
-format_into_label (label, arg)
-	Widget label;
-	const char *arg;
-#endif /* !__STDC__ */
 {
   char *text = get_label_string (label);
   char *buf = (char *) malloc ((text ? strlen(text) : 100) + strlen(arg) + 10);
@@ -185,11 +154,7 @@ format_into_label (label, arg)
 
 
 void
-#ifdef __STDC__
 steal_focus_and_colormap (Widget dialog)
-#else /* ! __STDC__ */
-steal_focus_and_colormap (dialog) Widget dialog;
-#endif /* ! __STDC__ */
 {
   Display *dpy = XtDisplay (dialog);
   Window window = XtWindow (dialog);
@@ -202,7 +167,7 @@ steal_focus_and_colormap (dialog) Widget dialog;
 }
 
 static void
-raise_screenhack_dialog P((void))
+raise_screenhack_dialog (void)
 {
   XMapRaised (XtDisplay (demo_dialog), XtWindow (demo_dialog));
   if (resources_dialog)
@@ -211,12 +176,7 @@ raise_screenhack_dialog P((void))
 }
 
 static void
-#ifdef __STDC__
 destroy_screenhack_dialogs (saver_info *si)
-#else  /* !__STDC__ */
-destroy_screenhack_dialogs (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   saver_screen_info *ssi = si->default_screen;
 
@@ -239,16 +199,10 @@ destroy_screenhack_dialogs (si)
     XInstallColormap (si->dpy, ssi->cmap);
 }
 
-#ifdef USE_MOTIF
+#ifdef HAVE_MOTIF
 
 static void
-#ifdef __STDC__
 text_cb (Widget text_widget, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-text_cb (text_widget, client_data, call_data)
-     Widget text_widget;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   saver_info *si = (saver_info *) client_data;
   char *line;
@@ -256,24 +210,18 @@ text_cb (text_widget, client_data, call_data)
   demo_mode_hack (si, line);
 }
 
-#endif /* USE_MOTIF */
+#endif /* HAVE_MOTIF */
 
 
 static void
-#ifdef __STDC__
 select_cb (Widget button, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-select_cb (button, client_data, call_data)
-     Widget button;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   saver_info *si = (saver_info *) client_data;
 
-#ifdef USE_ATHENA
+#ifdef HAVE_ATHENA
   XawListReturnStruct *item = (XawListReturnStruct*)call_data;
   demo_mode_hack (si, item->string);
-#else  /* USE_MOTIF */
+#else  /* HAVE_MOTIF */
   XmListCallbackStruct *lcb = (XmListCallbackStruct *) call_data;
   char *string = 0;
   if (lcb->item)
@@ -283,12 +231,13 @@ select_cb (button, client_data, call_data)
     demo_mode_hack (si, string);
   if (string)
     XtFree (string);
-#endif /* USE_MOTIF */
+#endif /* HAVE_MOTIF */
   steal_focus_and_colormap (demo_dialog);
 }
 
 
-#ifdef USE_ATHENA
+#if 0  /* configure does this now */
+#ifdef HAVE_ATHENA
 # if !defined(_Viewport_h)
    /* The R4 Athena libs don't have this function.  I don't know the right
       way to tell, but I note that the R5 version of Viewport.h defines
@@ -296,19 +245,16 @@ select_cb (button, client_data, call_data)
      try and key off of that... */
 #  define HAVE_XawViewportSetCoordinates
 # endif
-#endif /* USE_ATHENA */
+#endif /* HAVE_ATHENA */
+#endif /* 0 */
 
 
 /* Why this behavior isn't automatic in *either* toolkit, I'll never know.
  */
 static void
-#ifdef __STDC__
 ensure_selected_item_visible (Widget list)
-#else /* ! __STDC__ */
-ensure_selected_item_visible (list) Widget list;
-#endif /* ! __STDC__ */
 {
-#ifdef USE_MOTIF
+#ifdef HAVE_MOTIF
   int *pos_list = 0;
   int pos_count = 0;
   if (XmListGetSelectedPos (list, &pos_list, &pos_count) && pos_count > 0)
@@ -333,7 +279,7 @@ ensure_selected_item_visible (list) Widget list;
   if (pos_list)
     XtFree ((char *) pos_list);
 
-#else  /* USE_ATHENA */
+#else  /* HAVE_ATHENA */
 # ifdef HAVE_XawViewportSetCoordinates
 
   int margin = 16;	/* should be line height or something. */
@@ -382,22 +328,16 @@ ensure_selected_item_visible (list) Widget list;
       XawViewportSetCoordinates (viewport, vp_x, current_y);
     }
 # endif /* HAVE_XawViewportSetCoordinates */
-#endif /* USE_ATHENA */
+#endif /* HAVE_ATHENA */
 }
 
 
 static void
-#ifdef __STDC__
 next_cb (Widget button, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-next_cb (button, client_data, call_data)
-     Widget button;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   saver_info *si = (saver_info *) client_data;
 
-#ifdef USE_ATHENA
+#ifdef HAVE_ATHENA
   int cnt;
   XawListReturnStruct *current = XawListShowCurrent(demo_list);
   if (current->list_index == XAW_LIST_NONE)
@@ -418,7 +358,7 @@ next_cb (button, client_data, call_data)
   current = XawListShowCurrent(demo_list);
   demo_mode_hack (si, current->string);
 
-#else  /* USE_MOTIF */
+#else  /* HAVE_MOTIF */
 
   int *pos_list;
   int pos_count;
@@ -438,22 +378,16 @@ next_cb (button, client_data, call_data)
   ensure_selected_item_visible (demo_list);
   demo_mode_hack (si, get_text_string (text_line));
 
-#endif /* USE_MOTIF */
+#endif /* HAVE_MOTIF */
 }
 
 
 static void
-#ifdef __STDC__
 prev_cb (Widget button, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-prev_cb (button, client_data, call_data)
-     Widget button;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   saver_info *si = (saver_info *) client_data;
 
-#ifdef USE_ATHENA
+#ifdef HAVE_ATHENA
   XawListReturnStruct *current=XawListShowCurrent(demo_list);
   if (current->list_index == XAW_LIST_NONE)
     XawListHighlight(demo_list,1);
@@ -470,7 +404,7 @@ prev_cb (button, client_data, call_data)
   current = XawListShowCurrent(demo_list);
   demo_mode_hack (si, current->string);
 
-#else  /* USE_MOTIF */
+#else  /* HAVE_MOTIF */
 
   int *pos_list;
   int pos_count;
@@ -484,21 +418,15 @@ prev_cb (button, client_data, call_data)
   ensure_selected_item_visible (demo_list);
   demo_mode_hack (si, get_text_string (text_line));
 
-#endif /* USE_MOTIF */
+#endif /* HAVE_MOTIF */
 }
 
 
-static void pop_resources_dialog P((saver_info *si));
-static void make_resources_dialog P((saver_info *si, Widget parent));
+static void pop_resources_dialog (saver_info *si);
+static void make_resources_dialog (saver_info *si, Widget parent);
 
 static void
-#ifdef __STDC__
 edit_cb (Widget button, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-edit_cb (button, client_data, call_data)
-     Widget button;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   saver_info *si = (saver_info *) client_data;
   saver_screen_info *ssi = si->default_screen;
@@ -509,13 +437,7 @@ edit_cb (button, client_data, call_data)
 }
 
 static void
-#ifdef __STDC__
 done_cb (Widget button, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-done_cb (button, client_data, call_data)
-     Widget button;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   saver_info *si = (saver_info *) client_data;
   demo_mode_done (si);
@@ -523,26 +445,14 @@ done_cb (button, client_data, call_data)
 
 
 static void
-#ifdef __STDC__
 restart_cb (Widget button, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-restart_cb (button, client_data, call_data)
-     Widget button;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   saver_info *si = (saver_info *) client_data;
   demo_mode_restart_process (si);
 }
 
 void
-#ifdef __STDC__
 pop_up_dialog_box (Widget dialog, Widget form, int where)
-#else /* ! __STDC__ */
-pop_up_dialog_box (dialog, form, where)
-     Widget dialog, form;
-     int where;
-#endif /* ! __STDC__ */
 {
   /* I'm sure this is the wrong way to pop up a dialog box, but I can't
      figure out how else to do it.
@@ -557,12 +467,12 @@ pop_up_dialog_box (dialog, form, where)
   int ac = 0;
   Dimension sw, sh, x, y, w, h;
 
-#ifdef USE_ATHENA
+#ifdef HAVE_ATHENA
   XtRealizeWidget (dialog);
-#else  /* USE_MOTIF */
+#else  /* HAVE_MOTIF */
   /* Motif likes us to realize the *child* of the shell... */
   XtRealizeWidget (form);
-#endif /* USE_MOTIF */
+#endif /* HAVE_MOTIF */
 
   sw = WidthOfScreen (XtScreen (dialog));
   sh = HeightOfScreen (XtScreen (dialog));
@@ -603,30 +513,25 @@ pop_up_dialog_box (dialog, form, where)
   XtSetArg (av [ac], XtNy, y); ac++;
   XtSetArg (av [ac], XtNoverrideRedirect, True); ac++;
 
-#ifdef USE_MOTIF
+#ifdef HAVE_MOTIF
   XtSetArg (av [ac], XmNdefaultPosition, False); ac++;
-#endif /* USE_MOTIF */
+#endif /* HAVE_MOTIF */
 
   XtSetValues (dialog, av, ac);
   XtSetValues (form, av, ac);
 
-#ifdef USE_ATHENA
+#ifdef HAVE_ATHENA
   XtPopup (dialog, XtGrabNone);
-#else  /* USE_MOTIF */
+#else  /* HAVE_MOTIF */
   XtManageChild (form);
-#endif /* USE_MOTIF */
+#endif /* HAVE_MOTIF */
 
   steal_focus_and_colormap (dialog);
 }
 
 
 static void
-#ifdef __STDC__
 make_screenhack_dialog (saver_info *si)
-#else  /* !__STDC__ */
-make_screenhack_dialog (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   saver_screen_info *ssi = si->default_screen;
   Widget parent = ssi->toplevel_shell;
@@ -656,7 +561,7 @@ make_screenhack_dialog (si)
   add_button_callback (restart, restart_cb, (XtPointer) si);
   add_button_callback (edit,    edit_cb,    (XtPointer) si);
 
-#ifdef USE_MOTIF
+#ifdef HAVE_MOTIF
   XtAddCallback (demo_list, XmNbrowseSelectionCallback,
 		 select_cb, (XtPointer) si);
   XtAddCallback (demo_list, XmNdefaultActionCallback,
@@ -670,7 +575,7 @@ make_screenhack_dialog (si)
       XmStringFree (xmstr);
     }
 
-#else  /* USE_ATHENA */
+#else  /* HAVE_ATHENA */
 
   XtVaSetValues (demo_list,
 		 XtNlist, hacks,
@@ -678,7 +583,7 @@ make_screenhack_dialog (si)
 		 0);
   XtAddCallback (demo_list, XtNcallback, select_cb, si);
 
-#endif /* USE_ATHENA */
+#endif /* HAVE_ATHENA */
 
   pop_up_dialog_box(demo_dialog, demo_form,
 #ifdef DEBUG
@@ -697,15 +602,7 @@ static struct resources {
 
 
 static void 
-#ifdef __STDC__
 hack_time_cb (Display *dpy, char *line, int *store, Bool sec_p)
-#else /* ! __STDC__ */
-hack_time_cb (dpy, line, store, sec_p)
-     Display *dpy;
-     char *line;
-     int *store;
-     Bool sec_p;
-#endif /* ! __STDC__ */
 {
   if (*line)
     {
@@ -719,39 +616,21 @@ hack_time_cb (dpy, line, store, sec_p)
 }
 
 static void
-#ifdef __STDC__
 res_sec_cb (Widget button, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-res_sec_cb (button, client_data, call_data)
-     Widget button;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   hack_time_cb (XtDisplay (button), get_text_string (button),
 		(int *) client_data, True);
 }
 
 static void
-#ifdef __STDC__
 res_min_cb (Widget button, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-res_min_cb (button, client_data, call_data)
-     Widget button;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   hack_time_cb (XtDisplay (button), get_text_string (button),
 		(int *) client_data, False);
 }
 
 static void
-#ifdef __STDC__
 res_int_cb (Widget button, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-res_int_cb (button, client_data, call_data)
-     Widget button;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   char *line = get_text_string (button);
   int *store = (int *) client_data;
@@ -766,32 +645,20 @@ res_int_cb (button, client_data, call_data)
 }
 
 static void
-#ifdef __STDC__
 res_bool_cb (Widget button, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-res_bool_cb (button, client_data, call_data)
-     Widget button;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   int *store = (int *) client_data;
-#ifdef USE_MOTIF
+#ifdef HAVE_MOTIF
   *store = ((XmToggleButtonCallbackStruct *) call_data)->set;
-#else /* USE_ATHENA */
+#else /* HAVE_ATHENA */
   Boolean state = FALSE;
   XtVaGetValues (button, XtNstate, &state, NULL);
   *store = state;
-#endif /* USE_ATHENA */
+#endif /* HAVE_ATHENA */
 }
 
 static void
-#ifdef __STDC__
 res_cancel_cb (Widget button, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-res_cancel_cb (button, client_data, call_data)
-     Widget button;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   XtDestroyWidget (resources_dialog);
   resources_dialog = 0;
@@ -800,20 +667,14 @@ res_cancel_cb (button, client_data, call_data)
 
 
 static void
-#ifdef __STDC__
 res_done_cb (Widget button, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-res_done_cb (button, client_data, call_data)
-     Widget button;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   saver_info *si = (saver_info *) client_data;
   saver_preferences *p = &si->prefs;
 
   res_cancel_cb (button, client_data, call_data);
 
-#ifdef USE_ATHENA
+#ifdef HAVE_ATHENA
   /* Check all text widgets, since we don't have callbacks for these. */
   res_min_cb (timeout_text,     (XtPointer) &res.timeout,     NULL);
   res_min_cb (cycle_text,       (XtPointer) &res.cycle,       NULL);
@@ -821,7 +682,7 @@ res_done_cb (button, client_data, call_data)
   res_int_cb (ticks_text,       (XtPointer) &res.ticks,       NULL);
   res_min_cb (lock_time_text,   (XtPointer) &res.lock_time,   NULL);
   res_sec_cb (passwd_time_text, (XtPointer) &res.passwd_time, NULL);
-#endif /* USE_ATHENA */
+#endif /* HAVE_ATHENA */
 
   /* Throttle the timeouts to minimum sane values. */
   if (res.timeout < 5) res.timeout = 5;
@@ -883,13 +744,7 @@ res_done_cb (button, client_data, call_data)
 
 
 static void
-#ifdef __STDC__
 make_resources_dialog (saver_info *si, Widget parent)
-#else  /* !__STDC__ */
-make_resources_dialog (si, parent)
-	saver_info *si;
-	Widget parent;
-#endif /* !__STDC__ */
 {
   saver_screen_info *ssi = si->default_screen;
 
@@ -918,7 +773,7 @@ make_resources_dialog (si, parent)
 #define CBT(widget,type,slot) \
 	add_toggle_callback ((widget), (type), (XtPointer) (slot))
 
-#ifdef USE_MOTIF
+#ifdef HAVE_MOTIF
   /* When using Athena widgets, we can't set callbacks for these,
      so we'll check them all if "done" gets pressed.
    */
@@ -928,7 +783,7 @@ make_resources_dialog (si, parent)
   CB (ticks_text,	res_int_cb,  &res.ticks);
   CB (lock_time_text,	res_min_cb,  &res.lock_time);
   CB (passwd_time_text,	res_sec_cb,  &res.passwd_time);
-#endif /* USE_MOTIF */
+#endif /* HAVE_MOTIF */
 
   CBT (verbose_toggle,	res_bool_cb, &res.verb);
   CBT (cmap_toggle,	res_bool_cb, &res.cmap);
@@ -956,14 +811,7 @@ make_resources_dialog (si, parent)
 
 
 static void
-#ifdef __STDC__
 fmt_time (char *buf, unsigned int s, int min_p)
-#else /* ! __STDC__ */
-fmt_time (buf, s, min_p)
-     char *buf;
-     unsigned int s;
-     int min_p;
-#endif /* ! __STDC__ */
 {
   unsigned int h = 0, m = 0;
   if (s >= 60)
@@ -990,12 +838,7 @@ fmt_time (buf, s, min_p)
 }
 
 static void
-#ifdef __STDC__
 pop_resources_dialog (saver_info *si)
-#else  /* !__STDC__ */
-pop_resources_dialog (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   char buf [100];
@@ -1039,12 +882,7 @@ pop_resources_dialog (si)
  */
 
 void
-#ifdef __STDC__
 demo_mode (saver_info *si)
-#else  /* !__STDC__ */
-demo_mode (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   si->dbox_up_p = True;
@@ -1112,13 +950,7 @@ demo_mode (si)
 }
 
 static void
-#ifdef __STDC__
 demo_mode_hack (saver_info *si, char *hack)
-#else  /* !__STDC__ */
-demo_mode_hack (si, hack)
-	saver_info *si;
-	char *hack;
-#endif /* !__STDC__ */
 {
   if (! si->demo_mode_p) abort ();
   kill_screenhack (si);
@@ -1130,12 +962,7 @@ demo_mode_hack (si, hack)
 }
 
 static void
-#ifdef __STDC__
 demo_mode_done (saver_info *si)
-#else  /* !__STDC__ */
-demo_mode_done (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   kill_screenhack (si);
   if (si->demo_hack)

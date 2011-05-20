@@ -12,14 +12,14 @@
 #ifndef __VISUAL_H__
 #define __VISUAL_H__
 
-extern Visual *get_visual P((Screen *, const char *name, Bool, Bool));
-extern Visual *get_visual_resource P((Screen *, char *, char *, Bool));
-extern int visual_depth P((Screen *, Visual *));
-extern int visual_class P((Screen *, Visual *));
-extern int visual_cells P((Screen *, Visual *));
-extern int screen_number P((Screen *));
-extern Visual *find_similar_visual P((Screen *, Visual *old));
-extern void describe_visual P((FILE *f, Screen *, Visual *));
-extern Visual *get_overlay_visual P((Screen *, unsigned long *pixel_return));
+extern Visual *get_visual (Screen *, const char *name, Bool, Bool);
+extern Visual *get_visual_resource (Screen *, char *, char *, Bool);
+extern int visual_depth (Screen *, Visual *);
+extern int visual_class (Screen *, Visual *);
+extern int visual_cells (Screen *, Visual *);
+extern int screen_number (Screen *);
+extern Visual *find_similar_visual (Screen *, Visual *old);
+extern void describe_visual (FILE *f, Screen *, Visual *);
+extern Visual *get_overlay_visual (Screen *, unsigned long *pixel_return);
 
 #endif /* __VISUAL_H__ */

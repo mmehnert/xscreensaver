@@ -49,13 +49,7 @@ static int npoly;
 static GC *gcs[2];
 
 static void
-#ifdef __STDC__
 get_geom (Display *dpy, Window window)
-#else /* ! __STDC__ */
-get_geom (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* ! __STDC__ */
 {
   XWindowAttributes xgwa;
   XGetWindowAttributes (dpy, window, &xgwa);
@@ -64,15 +58,7 @@ get_geom (dpy, window)
 }
 
 static struct qix *
-#ifdef __STDC__
 init_one_qix (Display *dpy, Window window, int nlines, int npoly)
-#else /* ! __STDC__ */
-init_one_qix (dpy, window, nlines, npoly)
-     Display *dpy;
-     Window window;
-     int nlines;
-     int npoly;
-#endif /* ! __STDC__ */
 {
   int i, j;
   struct qix *qix = (struct qix *) calloc (1, sizeof (struct qix));
@@ -140,11 +126,7 @@ init_one_qix (dpy, window, nlines, npoly)
 /* I don't believe this fucking language doesn't have builtin exponentiation.
    I further can't believe that the fucking ^ character means fucking XOR!! */
 static int 
-#ifdef __STDC__
 i_exp (int i, int j)
-#else /* ! __STDC__ */
-i_exp (i,j) int i, j;
-#endif /* ! __STDC__ */
 {
   int k = 1;
   while (j--) k *= i;
@@ -153,17 +135,8 @@ i_exp (i,j) int i, j;
 
 
 static void
-#ifdef __STDC__
 merge_colors (int argc, XColor **argv, XColor *into_color, int mask,
 	      Bool increment_p)
-#else /* ! __STDC__ */
-merge_colors (argc, argv, into_color, mask, increment_p)
-     int argc;
-     XColor **argv;
-     XColor *into_color;
-     int mask;
-     Bool increment_p;
-#endif /* ! __STDC__ */
 {
   int j;
   *into_color = *argv [0];
@@ -190,18 +163,10 @@ merge_colors (argc, argv, into_color, mask, increment_p)
 /* fill in all the permutations of colors that XAllocColorCells() has 
    allocated for us.  Thanks Ron, you're an additive kind of guy. */
 static void
-#ifdef __STDC__
 permute_colors (XColor *pcolors, XColor *colors,
 		int count,
 		unsigned long *plane_masks,
 		Bool increment_p)
-#else /* ! __STDC__ */
-permute_colors (pcolors, colors, count, plane_masks, increment_p)
-     XColor *pcolors, *colors;
-     int count;
-     unsigned long *plane_masks;
-     Bool increment_p;
-#endif /* ! __STDC__ */
 {
   int out = 0;
   int max = i_exp (2, count);
@@ -224,13 +189,7 @@ permute_colors (pcolors, colors, count, plane_masks, increment_p)
 
 
 static struct qix **
-#ifdef __STDC__
 init_qix (Display *dpy, Window window)
-#else /* ! __STDC__ */
-init_qix (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* ! __STDC__ */
 {
   int nlines;
   struct qix **qixes;
@@ -404,19 +363,10 @@ init_qix (dpy, window)
 }
 
 static void
-#ifdef __STDC__
 free_qline (Display *dpy, Window window, Colormap cmap,
 	    struct qline *qline,
 	    struct qline *prev,
 	    struct qix *qix)
-#else /* ! __STDC__ */
-free_qline (dpy, window, cmap, qline, prev, qix)
-     Display *dpy;
-     Window window;
-     Colormap cmap;
-     struct qline *qline, *prev;
-     struct qix *qix;
-#endif /* ! __STDC__ */
 {
   int i;
   if (qline->dead || !prev)
@@ -458,19 +408,10 @@ free_qline (dpy, window, cmap, qline, prev, qix)
 }
 
 static void
-#ifdef __STDC__
 add_qline (Display *dpy, Window window, Colormap cmap,
 	   struct qline *qline,
 	   struct qline *prev_qline,
 	   struct qix *qix)
-#else /* ! __STDC__ */
-add_qline (dpy, window, cmap, qline, prev_qline, qix)
-     Display *dpy;
-     Window window;
-     Colormap cmap;
-     struct qline *qline, *prev_qline;
-     struct qix *qix;
-#endif /* ! __STDC__ */
 {
   int i;
 
@@ -579,14 +520,7 @@ add_qline (dpy, window, cmap, qline, prev_qline, qix)
 }
 
 static void
-#ifdef __STDC__
 qix1 (Display *dpy, Window window, struct qix *qix)
-#else /* ! __STDC__ */
-qix1 (dpy, window, qix)
-     Display *dpy;
-     Window window;
-     struct qix *qix;
-#endif /* ! __STDC__ */
 {
   int ofp = qix->fp - 1;
   static int gtick = 0;
@@ -646,11 +580,7 @@ XrmOptionDescRec options [] = {
 };
 
 void
-#ifdef __STDC__
 screenhack (Display *dpy, Window window)
-#else /* ! __STDC__ */
-screenhack (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   struct qix **q1 = init_qix (dpy, window);
   struct qix **qn;

@@ -23,8 +23,8 @@
 #define random()   ya_random()
 #define srandom(i) ya_rand_init(0)
 
-extern unsigned int ya_random P((void));
-extern void ya_rand_init P((unsigned int));
+extern unsigned int ya_random (void);
+extern void ya_rand_init (unsigned int);
 
 
 #if defined (__GNUC__) && (__GNUC__ >= 2)

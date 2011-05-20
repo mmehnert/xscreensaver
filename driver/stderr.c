@@ -13,10 +13,12 @@
 /* stderr hackery - Why Unix Sucks, reason number 32767.
  */
 
-#ifdef __STDC__
-# include <stdlib.h>
-# include <unistd.h>
+#ifdef HAVE_CONFIG_H
+# include "config.h"
 #endif
+
+#include <stdlib.h>
+#include <unistd.h>
 
 #include <stdio.h>
 #include <fcntl.h>
@@ -39,16 +41,11 @@ static char stderr_buffer [4096];
 static char *stderr_tail = 0;
 static time_t stderr_last_read = 0;
 
-static void make_stderr_overlay_window P((saver_screen_info *));
+static void make_stderr_overlay_window (saver_screen_info *);
 
 
 void
-#ifdef __STDC__
 reset_stderr (saver_screen_info *ssi)
-#else  /* !__STDC__ */
-reset_stderr (ssi)
-	saver_screen_info *ssi;
-#endif /* !__STDC__ */
 {
   saver_info *si = ssi->global;
 
@@ -75,12 +72,7 @@ reset_stderr (ssi)
 }
 
 void
-#ifdef __STDC__
 clear_stderr (saver_screen_info *ssi)
-#else  /* !__STDC__ */
-clear_stderr (ssi)
-	saver_screen_info *ssi;
-#endif /* !__STDC__ */
 {
   saver_info *si = ssi->global;
   ssi->stderr_text_x = 0;
@@ -91,13 +83,7 @@ clear_stderr (ssi)
 
 
 static void
-#ifdef __STDC__
 print_stderr_1 (saver_screen_info *ssi, char *string)
-#else  /* !__STDC__ */
-print_stderr_1 (ssi, string)
-	saver_screen_info *ssi;
-	char *string;
-#endif /* !__STDC__ */
 {
   saver_info *si = ssi->global;
   saver_preferences *p = &si->prefs;
@@ -208,12 +194,7 @@ print_stderr_1 (ssi, string)
 }
 
 static void
-#ifdef __STDC__
 make_stderr_overlay_window (saver_screen_info *ssi)
-#else  /* !__STDC__ */
-make_stderr_overlay_window (ssi)
-	saver_screen_info *ssi;
-#endif /* !__STDC__ */
 {
   saver_info *si = ssi->global;
   unsigned long transparent_pixel = 0;
@@ -254,13 +235,7 @@ make_stderr_overlay_window (ssi)
 
 
 static void
-#ifdef __STDC__
 print_stderr (saver_info *si, char *string)
-#else  /* !__STDC__ */
-print_stderr (si, string)
-	saver_info *si;
-	char *string;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   int i;
@@ -275,13 +250,7 @@ print_stderr (si, string)
 
 
 static void
-#ifdef __STDC__
 stderr_popup_timer_fn (XtPointer closure, XtIntervalId *id)
-#else /* ! __STDC__ */
-stderr_popup_timer_fn (closure, id)
-     XtPointer closure;
-     XtIntervalId *id;
-#endif /* ! __STDC__ */
 {
   saver_info *si = (saver_info *) closure;
   char *s = stderr_buffer;
@@ -303,14 +272,7 @@ stderr_popup_timer_fn (closure, id)
 
 
 static void
-#ifdef __STDC__
 stderr_callback (XtPointer closure, int *fd, XtIntervalId *id)
-#else /* ! __STDC__ */
-stderr_callback (closure, fd, id)
-     XtPointer closure;
-     int *fd;
-     XtIntervalId *id;
-#endif /* ! __STDC__ */
 {
   saver_info *si = (saver_info *) closure;
   char *s;
@@ -371,12 +333,7 @@ stderr_callback (closure, fd, id)
 }
 
 void
-#ifdef __STDC__
 initialize_stderr (saver_info *si)
-#else  /* !__STDC__ */
-initialize_stderr (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   static Boolean done = False;
   int fds [2];

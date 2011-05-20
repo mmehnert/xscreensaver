@@ -75,17 +75,17 @@ typedef struct {
   OptionStruct *desc;
 } ModeSpecOpt;
 
-extern void xlockmore_screenhack P((Display *dpy, Window window,
-				    Bool want_writable_colors,
-				    Bool want_uniform_colors,
-				    Bool want_smooth_colors,
-				    Bool want_bright_colors,
-				    void (*hack_init) (ModeInfo *),
-				    void (*hack_draw) (ModeInfo *),
-				    void (*hack_free) (ModeInfo *)));
+extern void xlockmore_screenhack (Display *dpy, Window window,
+				  Bool want_writable_colors,
+				  Bool want_uniform_colors,
+				  Bool want_smooth_colors,
+				  Bool want_bright_colors,
+				  void (*hack_init) (ModeInfo *),
+				  void (*hack_draw) (ModeInfo *),
+				  void (*hack_free) (ModeInfo *));
 
 #ifdef USE_GL
-extern Visual *get_gl_visual P((Screen *screen, char *name, char *class));
+extern Visual *get_gl_visual (Screen *screen, char *name, char *class);
 #endif
 
 #endif /* __XLOCKMORE_INTERNAL_H__ */

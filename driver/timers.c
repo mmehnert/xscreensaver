@@ -10,13 +10,21 @@
  * implied warranty.
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 /* #define DEBUG_TIMERS */
 
 #include <stdio.h>
 #include <X11/Xlib.h>
 #include <X11/Intrinsic.h>
 #include <X11/Xos.h>
-#include <X11/Xmu/Error.h>
+#ifdef HAVE_XMU
+# include <X11/Xmu/Error.h>
+#else
+# include "xmu.h"
+#endif
 
 #ifdef HAVE_XIDLE_EXTENSION
 #include <X11/extensions/xidle.h>
@@ -30,17 +38,16 @@
 #include <X11/extensions/XScreenSaver.h>
 #endif /* HAVE_SGI_SAVER_EXTENSION */
 
+#ifdef HAVE_XHPDISABLERESET
+# include <X11/XHPlib.h>
+  extern Bool hp_locked_p;	/* from windows.c */
+#endif /* HAVE_XHPDISABLERESET */
+
 #include "xscreensaver.h"
 
 
 void
-#ifdef __STDC__
 idle_timer (XtPointer closure, XtIntervalId *id)
-#else  /* !__STDC__ */
-idle_timer (closure, id)
-	XtPointer closure;
-	XtIntervalId *id;
-#endif /* !__STDC__ */
 {
   saver_info *si = (saver_info *) closure;
 
@@ -64,14 +71,7 @@ idle_timer (closure, id)
 
 
 static void
-#ifdef __STDC__
 notice_events (saver_info *si, Window window, Bool top_p)
-#else  /* !__STDC__ */
-notice_events (si, window, top_p)
-	saver_info *si;
-	Window window;
-	Bool top_p;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   XWindowAttributes attrs;
@@ -116,11 +116,7 @@ notice_events (si, window, top_p)
 
 
 int
-#ifdef __STDC__
 BadWindow_ehandler (Display *dpy, XErrorEvent *error)
-#else /* ! __STDC__ */
-BadWindow_ehandler (dpy, error) Display *dpy; XErrorEvent *error;
-#endif /* ! __STDC__ */
 {
   /* When we notice a window being created, we spawn a timer that waits
      30 seconds or so, and then selects events on that window.  This error
@@ -142,13 +138,7 @@ struct notice_events_timer_arg {
 };
 
 static void
-#ifdef __STDC__
 notice_events_timer (XtPointer closure, XtIntervalId *id)
-#else  /* !__STDC__ */
-notice_events_timer (closure, id)
-	XtPointer closure;
-	XtIntervalId *id;
-#endif /* !__STDC__ */
 {
   struct notice_events_timer_arg *arg =
     (struct notice_events_timer_arg *) closure;
@@ -165,13 +155,7 @@ notice_events_timer (closure, id)
 }
 
 void
-#ifdef __STDC__
 start_notice_events_timer (saver_info *si, Window w)
-#else  /* !__STDC__ */
-start_notice_events_timer (si, w)
-	saver_info *si;
-	Window w;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   struct notice_events_timer_arg *arg =
@@ -187,13 +171,7 @@ start_notice_events_timer (si, w)
    the running program.
  */
 void
-#ifdef __STDC__
 cycle_timer (XtPointer closure, XtIntervalId *id)
-#else  /* !__STDC__ */
-cycle_timer (closure, id)
-	XtPointer closure;
-	XtIntervalId id;
-#endif /* !__STDC__ */
 {
   saver_info *si = (saver_info *) closure;
   saver_preferences *p = &si->prefs;
@@ -222,18 +200,8 @@ cycle_timer (closure, id)
 }
 
 
-#ifdef __hpux
-extern Bool hp_locked_p;	/* from windows.c */
-#endif
-
 void
-#ifdef __STDC__
 activate_lock_timer (XtPointer closure, XtIntervalId *id)
-#else  /* !__STDC__ */
-activate_lock_timer (closure, id)
-	XtPointer closure;
-	XtIntervalId *id;
-#endif /* !__STDC__ */
 {
   saver_info *si = (saver_info *) closure;
   saver_preferences *p = &si->prefs;
@@ -242,10 +210,10 @@ activate_lock_timer (closure, id)
     printf ("%s: timed out; activating lock\n", progname);
   si->locked_p = True;
 
-#ifdef __hpux
+#ifdef HAVE_XHPDISABLERESET
   if (!hp_locked_p)
     {
-      XHPDisableReset (dpy);	/* turn off C-Sh-Reset */
+      XHPDisableReset (si->dpy);	/* turn off C-Sh-Reset */
       hp_locked_p = True;
     }
 #endif
@@ -255,11 +223,7 @@ activate_lock_timer (closure, id)
 /* Call this when user activity (or "simulated" activity) has been noticed.
  */
 static void
-#ifdef __STDC__
 reset_timers (saver_info *si)
-#else  /* !__STDC__ */
-reset_timers (si) saver_info *si;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   if (p->use_mit_saver_extension || p->use_sgi_saver_extension)
@@ -289,13 +253,7 @@ reset_timers (si) saver_info *si;
    selecting motion events on every window.
  */
 static void
-#ifdef __STDC__
 check_pointer_timer (XtPointer closure, XtIntervalId *id)
-#else  /* !__STDC__ */
-check_pointer_timer (closure, id)
-	XtPointer closure;
-	XtIntervalId *id;
-#endif /* !__STDC__ */
 {
   int i;
   saver_info *si = (saver_info *) closure;
@@ -354,13 +312,7 @@ check_pointer_timer (closure, id)
 
 
 void
-#ifdef __STDC__
 sleep_until_idle (saver_info *si, Bool until_idle_p)
-#else  /* !__STDC__ */
-sleep_until_idle (si, until_idle_p)
-	saver_info *si;
-	Bool until_idle_p;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   XEvent event;
@@ -401,7 +353,7 @@ sleep_until_idle (si, until_idle_p)
 		if (! XGetIdleTime (si->dpy, &idle))
 		  {
 		    fprintf (stderr, "%s: XGetIdleTime() failed.\n", progname);
-		    saver_exit (si->global, 1);
+		    saver_exit (si, 1);
 		  }
 	      }
 	    else
@@ -626,13 +578,7 @@ sleep_until_idle (si, until_idle_p)
  */
 
 static void
-#ifdef __STDC__
 watchdog_timer (XtPointer closure, XtIntervalId *id)
-#else  /* !__STDC__ */
-watchdog_timer (closure, id)
-	XtPointer closure;
-	XtIntervalId *id;
-#endif /* !__STDC__ */
 {
   saver_info *si = (saver_info *) closure;
   if (!si->demo_mode_p)
@@ -653,13 +599,7 @@ watchdog_timer (closure, id)
 
 
 void
-#ifdef __STDC__
 reset_watchdog_timer (saver_info *si, Bool on_p)
-#else  /* !__STDC__ */
-reset_watchdog_timer (si, on_p)
-	saver_info *si;
-	Bool on_p;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
 

@@ -74,15 +74,11 @@ static int nrocks;
 static Pixmap pixmaps [MAX_SIZE];
 static int delay;
 
-static void rock_compute P((struct rock *));
-static void rock_draw P((struct rock *, Bool draw_p));
+static void rock_compute (struct rock *);
+static void rock_draw (struct rock *, Bool draw_p);
 
 static void
-#ifdef __STDC__
 rock_reset (struct rock *rock)
-#else /* ! __STDC__ */
-rock_reset (rock) struct rock *rock;
-#endif /* ! __STDC__ */
 {
   rock->real_size = MAX_SIZE;
   rock->r = (SIN_RESOLUTION * 0.7) + (random () % (30 * SIN_RESOLUTION));
@@ -93,11 +89,7 @@ rock_reset (rock) struct rock *rock;
 }
 
 static void
-#ifdef __STDC__
 rock_tick (struct rock *rock, int d)
-#else /* ! __STDC__ */
-rock_tick (rock, d) struct rock *rock; int d;
-#endif /* ! __STDC__ */
 {
   if (rock->depth > 0)
     {
@@ -122,11 +114,7 @@ rock_tick (rock, d) struct rock *rock; int d;
 }
 
 static void
-#ifdef __STDC__
 rock_compute (struct rock *rock)
-#else /* ! __STDC__ */
-rock_compute (rock) struct rock *rock;
-#endif /* ! __STDC__ */
 {
   double factor = depths [rock->depth];
   double rsize = rock->real_size * factor;
@@ -231,11 +219,7 @@ rock_draw (rock, draw_p)
 
 
 static void
-#ifdef __STDC__
 init_pixmaps (Display *dpy, Window window)
-#else /* ! __STDC__ */
-init_pixmaps (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   int i;
   XGCValues gcv;
@@ -276,11 +260,7 @@ init_pixmaps (dpy, window) Display *dpy; Window window;
 
 
 static int
-#ifdef __STDC__
 compute_move(int axe)				/* 0 for x, 1 for y */
-#else
-compute_move(axe) int axe;
-#endif
 {
   static int current_dep[2] = {0, 0};
   static int speed[2] = {0, 0};
@@ -331,11 +311,7 @@ compute_move(axe) int axe;
 }
 
 static void
-#ifdef __STDC__
 tick_rocks (int d)
-#else /* ! __STDC__ */
-tick_rocks (d) int d;
-#endif /* ! __STDC__ */
 {
   int i;
 
@@ -351,7 +327,7 @@ tick_rocks (d) int d;
 
 
 static void
-rocks_once P((void))
+rocks_once (void)
 {
   static int current_delta = 0;	/* observer Z rotation */
   static int window_tick = 50;
@@ -393,11 +369,7 @@ rocks_once P((void))
 }
 
 static void
-#ifdef __STDC__
 init_rocks (Display *d, Window w)
-#else /* ! __STDC__ */
-init_rocks (d, w) Display *d; Window w;
-#endif /* ! __STDC__ */
 {
   int i;
   XGCValues gcv;
@@ -494,11 +466,7 @@ XrmOptionDescRec options [] = {
 };
 
 void
-#ifdef __STDC__
 screenhack (Display *dpy, Window window)
-#else /* ! __STDC__ */
-screenhack (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   init_rocks (dpy, window);
   while (1)

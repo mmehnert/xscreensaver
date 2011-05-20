@@ -1,6 +1,6 @@
 /* bubbles.c - frying pan / soft drink in a glass simulation */
 
-/*$Id: bubbles.c,v 1.5 1997/05/14 06:17:30 jwz Exp $*/
+/*$Id: bubbles.c,v 1.7 1997/06/08 11:10:43 jwz Exp $*/
 
 /*
  *  Copyright (C) 1995-1996 James Macnicol
@@ -42,7 +42,7 @@
  */
 
 #include <math.h>
-
+#include "screenhack.h"
 #include "bubbles.h"
 
 #ifdef BUBBLES_IO
@@ -58,8 +58,7 @@
 #include <string.h>
 #include <sys/wait.h>
 #include <unistd.h>
-#include "screenhack.h"
-#include "../utils/yarandom.h"
+#include "yarandom.h"
 
 #ifdef HAVE_XPM
 #include <X11/xpm.h>
@@ -165,11 +164,7 @@ static int delay;
  */
 
 static long
-#ifdef __STDC__
 calc_bubble_area(int r)
-#else /* ! __STDC__ */
-calc_bubble_area(r) int r;
-#endif /* ! __STDC__ */
 /* Calculate the area of a bubble of radius r */
 {
 #ifdef DEBUG
@@ -183,11 +178,7 @@ calc_bubble_area(r) int r;
 }
 
 static void *
-#ifdef __STDC__
 xmalloc(size_t size)
-#else /* ! __STDC__ */
-xmalloc(size) size_t size;
-#endif /* ! __STDC__ */
 /* Safe malloc */
 {
   void *ret;
@@ -201,11 +192,7 @@ xmalloc(size) size_t size;
 
 #ifdef DEBUG
 static void 
-#ifdef __STDC__
 die_bad_bubble(Bubble *bb)
-#else /* ! __STDC__ */
-die_bad_bubble(bb) Bubble *bb;
-#endif /* ! __STDC__ */
 /* This is for use with GDB */
 {
   fprintf(stderr, "Bad bubble detected at 0x%x!\n", (int)bb);
@@ -214,11 +201,7 @@ die_bad_bubble(bb) Bubble *bb;
 #endif
 
 static int
-#ifdef __STDC__
 null_bubble(Bubble *bb)
-#else /* ! __STDC__ */
-null_bubble(bb) Bubble *bb;
-#endif /* ! __STDC__ */
 /* Returns true if the pointer passed is NULL.  If not then this checks to
 see if the bubble is valid (i.e. the (x,y) position is valid and the magic
 number is set correctly.  This only a sanity check for debugging and is
@@ -264,11 +247,7 @@ turned off if DEBUG isn't set. */
 
 #ifdef DEBUG
 static void 
-#ifdef __STDC__
 print_bubble_list(Bubble *bb)
-#else /* ! __STDC__ */
-print_bubble_list(bb) Bubble *bb;
-#endif /* ! __STDC__ */
 /* Print list of where all the bubbles are.  For debugging purposes only. */
 {
   if (! null_bubble(bb)) {
@@ -279,11 +258,7 @@ print_bubble_list(bb) Bubble *bb;
 #endif /* DEBUG */
 
 static void 
-#ifdef __STDC__
 add_bubble_to_list(Bubble **list, Bubble *bb)
-#else /* ! __STDC__ */
-add_bubble_to_list(list, bb) Bubble **list; Bubble *bb;
-#endif /* ! __STDC__ */
 /* Take a pointer to a list of bubbles and stick bb at the head of the
  list. */
 {
@@ -307,7 +282,7 @@ add_bubble_to_list(list, bb) Bubble **list; Bubble *bb;
 
 
 static void 
-init_mesh P((void))
+init_mesh (void)
 /* Setup the mesh of bubbles */
 {
   int i;
@@ -318,11 +293,7 @@ init_mesh P((void))
 }
 
 static int
-#ifdef __STDC__
 cell_to_mesh(int x, int y)
-#else /* ! __STDC__ */
-cell_to_mesh(x, y) int x; int y;
-#endif /* ! __STDC__ */
 /* convert cell coordinates to mesh index */
 {
 #ifdef DEBUG
@@ -335,11 +306,7 @@ cell_to_mesh(x, y) int x; int y;
 }
 
 static void 
-#ifdef __STDC__
 mesh_to_cell(int mi, int *cx, int *cy)
-#else /* ! __STDC__ */
-mesh_to_cell(mi, cx, cy) int mi; int *cx; int *cy;
-#endif /* ! __STDC__ */
 /* convert mesh index into cell coordinates */
 {
   *cx = mi % mesh_width;
@@ -347,22 +314,14 @@ mesh_to_cell(mi, cx, cy) int mi; int *cx; int *cy;
 }
 
 static int
-#ifdef __STDC__
 pixel_to_mesh(int x, int y)
-#else /* ! __STDC__ */
-pixel_to_mesh(x, y) int x; int y;
-#endif /* ! __STDC__ */
 /* convert screen coordinates into mesh index */
 {
   return cell_to_mesh((x / mesh_length), (y / mesh_length));
 }
 
 static int
-#ifdef __STDC__
 verify_mesh_index(int x, int y)
-#else /* ! __STDC__ */
-verify_mesh_index(x, y) int x; int y;
-#endif /* ! __STDC__ */
 /* check to see if (x,y) is in the mesh */
 {
   if ((x < 0) || (y < 0) || (x >= mesh_width) || (y >= mesh_height))
@@ -372,11 +331,7 @@ verify_mesh_index(x, y) int x; int y;
 
 #ifdef DEBUG
 static void 
-#ifdef __STDC__
 print_adjacents(int *adj)
-#else /* ! __STDC__ */
-print_adjacents(adj) int *adj;
-#endif /* ! __STDC__ */
 /* Print a list of the cells calculated above.  For debugging only. */
 {
   int i;
@@ -389,11 +344,7 @@ print_adjacents(adj) int *adj;
 #endif /* DEBUG */
 
 static void 
-#ifdef __STDC__
 add_to_mesh(Bubble *bb)
-#else /* ! __STDC__ */
-add_to_mesh(bb) Bubble *bb;
-#endif /* ! __STDC__ */
 /* Add the given bubble to the mesh by sticking it on the front of the
 list.  bb is already allocated so no need to malloc() anything, just
 adjust pointers. */
@@ -410,7 +361,7 @@ adjust pointers. */
 
 #ifdef DEBUG
 static void 
-print_mesh P((void))
+print_mesh (void)
 /* Print the contents of the mesh */
 {
   int i;
@@ -424,7 +375,7 @@ print_mesh P((void))
 }
 
 static void 
-valid_mesh P((void))
+valid_mesh (void)
 /* Check to see if the mesh is Okay.  For debugging only. */
 {
   int i;
@@ -438,7 +389,7 @@ valid_mesh P((void))
 }
 
 static int
-total_bubbles P((void))
+total_bubbles (void)
 /* Count how many bubbles there are in total.  For debugging only. */
 {
   int rv = 0;
@@ -458,7 +409,7 @@ total_bubbles P((void))
 #endif /* DEBUG */
 
 static void 
-calculate_adjacent_list P((void))
+calculate_adjacent_list (void)
 /* Calculate the list of cells adjacent to a particular cell for use
    later. */
 {
@@ -482,7 +433,7 @@ calculate_adjacent_list P((void))
 }
 
 static void
-adjust_areas P((void))
+adjust_areas (void)
 /* Adjust areas of bubbles so we don't get overflow in weighted_mean() */
 {
   double maxvalue;
@@ -544,7 +495,7 @@ adjust_areas P((void))
  */
 
 static Bubble *
-new_bubble P((void))
+new_bubble (void)
 /* Add a new bubble at some random position on the screen of the smallest
 size. */
 {
@@ -576,11 +527,7 @@ size. */
 }
 
 static void 
-#ifdef __STDC__
 show_bubble(Bubble *bb)
-#else /* ! __STDC__ */
-show_bubble(bb) Bubble *bb;
-#endif /* ! __STDC__ */
 /* paint the bubble on the screen */
 {
   if (null_bubble(bb)) {
@@ -613,11 +560,7 @@ show_bubble(bb) Bubble *bb;
 }
 
 static void 
-#ifdef __STDC__
 hide_bubble(Bubble *bb)
-#else /* ! __STDC__ */
-hide_bubble(bb) Bubble *bb;
-#endif /* ! __STDC__ */
 /* erase the bubble */
 {
   if (null_bubble(bb)) {
@@ -650,11 +593,7 @@ hide_bubble(bb) Bubble *bb;
 }
 
 static void 
-#ifdef __STDC__
 delete_bubble_in_mesh(Bubble *bb, int keep_bubble)
-#else /* ! __STDC__ */
-delete_bubble_in_mesh(bb, keep_bubble) Bubble *bb; int keep_bubble;
-#endif /* ! __STDC__ */
 /* Delete an individual bubble, adjusting list of bubbles around it.
    If keep_bubble is true then the bubble isn't actually deleted.  We
    use this to allow bubbles to change mesh cells without reallocating,
@@ -682,22 +621,14 @@ delete_bubble_in_mesh(bb, keep_bubble) Bubble *bb; int keep_bubble;
 }
 
 static unsigned long 
-#ifdef __STDC__
 ulongsqrint(int x)
-#else /* ! __STDC__ */
-ulongsqrint(x) int x;
-#endif /* ! __STDC__ */
 /* Saves ugly inline code */
 {
   return ((unsigned long)x * (unsigned long)x);
 }
 
 static Bubble *
-#ifdef __STDC__
 get_closest_bubble(Bubble *bb)
-#else /* ! __STDC__ */
-get_closest_bubble(bb) Bubble *bb;
-#endif /* ! __STDC__ */
 /* Find the closest bubble touching the this bubble, NULL if none are
    touching. */
 {
@@ -750,17 +681,13 @@ get_closest_bubble(bb) Bubble *bb;
 
 #ifdef DEBUG
 static void
-ldr_barf P((void))
+ldr_barf (void)
 {
 }
 #endif /* DEBUG */
 
 static long
-#ifdef __STDC__
 long_div_round(long num, long dem)
-#else /* ! __STDC__ */
-long_div_round(num, dem) long num; long dem;
-#endif /* ! __STDC__ */
 {
   long divvie, moddo;
 
@@ -789,11 +716,7 @@ long_div_round(num, dem) long num; long dem;
 }
 
 static int
-#ifdef __STDC__
 weighted_mean(int n1, int n2, long w1, long w2)
-#else /* ! __STDC__ */
-weighted_mean(n1, n2, w1, w2) int n1; int n2; long w1; long w2;
-#endif /* ! __STDC__ */
 /* Mean of n1 and n2 respectively weighted by weights w1 and w2. */
 {
 #ifdef DEBUG
@@ -809,11 +732,7 @@ weighted_mean(n1, n2, w1, w2) int n1; int n2; long w1; long w2;
 }
 
 static int
-#ifdef __STDC__
 bubble_eat(Bubble *diner, Bubble *food)
-#else /* ! __STDC__ */
-bubble_eat(diner, food) Bubble *diner; Bubble *food;
-#endif /* ! __STDC__ */
 /* The diner eats the food.  Returns true (1) if the diner still exists */
 { 
   int i;
@@ -886,11 +805,7 @@ bubble_eat(diner, food) Bubble *diner; Bubble *food;
 }
 
 static int
-#ifdef __STDC__
 merge_bubbles(Bubble *b1, Bubble *b2)
-#else /* ! __STDC__ */
-merge_bubbles(b1, b2) Bubble *b1; Bubble *b2;
-#endif /* ! __STDC__ */
 /* These two bubbles merge into one.  If the first one wins out return
 1 else return 2.  If there is no winner (it explodes) then return 0 */
 {
@@ -964,11 +879,7 @@ merge_bubbles(b1, b2) Bubble *b1; Bubble *b2;
 }
 
 static void 
-#ifdef __STDC__
 insert_new_bubble(Bubble *tmp)
-#else /* ! __STDC__ */
-insert_new_bubble(tmp) Bubble *tmp;
-#endif /* ! __STDC__ */
 /* Calculates which bubbles are eaten when a new bubble tmp is
    inserted.  This is called recursively in case when a bubble grows
    it eats others.  Careful to pick out disappearing bubbles. */
@@ -1014,11 +925,7 @@ insert_new_bubble(tmp) Bubble *tmp;
 
 #ifdef DEBUG
 static int
-#ifdef __STDC__
 get_length_of_bubble_list(Bubble *bb)
-#else /* ! __STDC__ */
-get_length_of_bubble_list(bb) Bubble *bb;
-#endif /* ! __STDC__ */
 {
   Bubble *tmp = bb;
   int rv = 0;
@@ -1040,7 +947,7 @@ get_length_of_bubble_list(bb) Bubble *bb;
 #ifdef HAVE_XPM
 
 static void 
-free_pixmaps P((void))
+free_pixmaps (void)
 /* Free resources associated with XPM */
 {
   int i;
@@ -1065,11 +972,7 @@ free_pixmaps P((void))
 }
 
 static void 
-#ifdef __STDC__
 onintr(int a)
-#else /* ! __STDC__ */
-onintr(a) int a;
-#endif /* ! __STDC__ */
 /* This gets called when SIGINT or SIGTERM is received */
 {
   free_pixmaps();
@@ -1078,11 +981,7 @@ onintr(a) int a;
 
 #ifdef DEBUG
 static void
-#ifdef __STDC__
 onsegv(int a)
-#else /* ! __STDC__ */
-onsegv(a) int a;
-#endif /* ! __STDC__ */
 /* Called when SEGV detected.   Hmmmmm.... */
 {
   fflush(stdout);
@@ -1097,11 +996,7 @@ onsegv(a) int a;
  */
 
 static void 
-#ifdef __STDC__
 pixmap_sort(Bubble_Step **head, int numelems)
-#else /* ! __STDC__ */
-pixmap_sort(head, numelems) Bubble_Step **head; int numelems;
-#endif /* ! __STDC__ */
 /* Couldn't get qsort to work right with this so I wrote my own.  This puts
 the numelems length array with first element at head into order of radius.
 */
@@ -1128,21 +1023,13 @@ the numelems length array with first element at head into order of radius.
 }
 
 static int
-#ifdef __STDC__
 extrapolate(int i1, int i2)
-#else /* ! __STDC__ */
-extrapolate(i1, i2) int i1; int i2;
-#endif /* ! __STDC__ */
 {
   return (i2 + (i2 - i1));
 }
 
 static void 
-#ifdef __STDC__
 make_pixmap_array(Bubble_Step *list)
-#else /* ! __STDC__ */
-make_pixmap_array(list) Bubble_Step *list;
-#endif /* ! __STDC__ */
 /* From a linked list of bubbles construct the array step_pixmaps */
 {
   Bubble_Step *tmp = list;
@@ -1217,13 +1104,7 @@ make_pixmap_array(list) Bubble_Step *list;
 
 #ifndef NO_DEFAULT_BUBBLE
 static void
-#ifdef __STDC__
 make_pixmap_from_default(char **pixmap_data, Bubble_Step *bl)
-#else /* ! __STDC__ */
-make_pixmap_from_default(pixmap_data, bl)
-     char **pixmap_data;
-     Bubble_Step *bl;
-#endif /* ! __STDC__ */
 /* Read pixmap data which has been compiled into the program and a pointer
  to which has been passed. 
 
@@ -1301,7 +1182,7 @@ changes made to either should be propagated onwards! */
 }
 
 static void 
-default_to_pixmaps P((void))
+default_to_pixmaps (void)
 /* Make pixmaps out of default ball data stored in bubbles_default.c */
 {
   int i;
@@ -1356,11 +1237,7 @@ default_to_pixmaps P((void))
 #ifdef BUBBLES_IO
 
 static DIR *
-#ifdef __STDC__
 my_opendir(char *name)
-#else /* ! __STDC__ */
-my_opendir(name) char *name;
-#endif /* ! __STDC__ */
 /* Like opendir() but checks for things so we don't have to do it multiple
 times in the code. */
 {
@@ -1380,11 +1257,7 @@ times in the code. */
 }
 
 static int
-#ifdef __STDC__
 regular_file(char *name)
-#else /* ! __STDC__ */
-regular_file(name) char *name;
-#endif /* ! __STDC__ */
 /* Check to see if we can use the named file.  This was broken under Linux
 1.3.45 but seems to be okay under 1.3.54.  The parameter "name" was being
 trashed if the file didn't exist.  Yeah, I know 1.3.x are development
@@ -1403,11 +1276,7 @@ kernels....
 }
 
 static char *
-#ifdef __STDC__
 get_random_name(char *dir)
-#else /* ! __STDC__ */
-get_random_name(dir) char *dir;
-#endif /* ! __STDC__ */
 /* Pick an appropriate file at random out of the files in the directory dir */
 {
   STRUCT_DIRENT *dp;
@@ -1473,11 +1342,7 @@ get_random_name(dir) char *dir;
 }
 
 static int
-#ifdef __STDC__
 read_line(int fd, char **buf, int bufsize)
-#else /* ! __STDC__ */
-read_line(fd, buf, bufsize) int fd; char **buf; int bufsize;
-#endif /* ! __STDC__ */
 /* A line is read from fd until a '\n' is found or EOF is reached.  (*buf)
 is initially of length bufsize and is extended by bufsize chars if need
 be (for as many times as it takes). */
@@ -1514,11 +1379,7 @@ be (for as many times as it takes). */
 }
 
 static int
-#ifdef __STDC__
 create_temp_file(char **name)
-#else /* ! __STDC__ */
-create_temp_file(name) char **name;
-#endif /* ! __STDC__ */
 /* Create a temporary file in /tmp and return a filedescriptor to it */
 {
   int rv;
@@ -1542,11 +1403,7 @@ create_temp_file(name) char **name;
 
 #ifdef BUBBLES_IO
 static void 
-#ifdef __STDC__
 make_pixmap_from_file(char *fname, Bubble_Step *bl)
-#else /* ! __STDC__ */
-make_pixmap_from_file(fname, bl) char *fname; Bubble_Step *bl;
-#endif /* ! __STDC__ */
 /* Read the pixmap in file fname into structure bl which must already
  be allocated. */
 {
@@ -1598,11 +1455,7 @@ make_pixmap_from_file(fname, bl) char *fname; Bubble_Step *bl;
 #endif /* BUBBLES_IO */
 
 static void 
-#ifdef __STDC__
 read_file_to_pixmaps(char *fname)
-#else /* ! __STDC__ */
-read_file_to_pixmaps(fname) char *fname;
-#endif /* ! __STDC__ */
 /* Read the pixmaps contained in the file fname into memory.  THESE SHOULD
 BE UNCOMPRESSED AND READY TO GO! */
 {
@@ -1714,11 +1567,7 @@ BE UNCOMPRESSED AND READY TO GO! */
 }
 
 static void 
-#ifdef __STDC__
 shell_exec(char *command)
-#else /* ! __STDC__ */
-shell_exec(command) char *command;
-#endif /* ! __STDC__ */
 /* Forks a shell to execute "command" then waits for command to finish */
 {
   int pid, status, wval;
@@ -1744,11 +1593,7 @@ shell_exec(command) char *command;
 }
 
 static void 
-#ifdef __STDC__
 uncompress_file(char *current, char *namebuf)
-#else /* ! __STDC__ */
-uncompress_file(current, namebuf) char *current; char *namebuf;
-#endif /* ! __STDC__ */
 /* If the file current is compressed (i.e. its name ends in .gz or .Z,
 no check is made to see if it is actually a compressed file...) then a
 new temporary file is created for it and it is decompressed into there,
@@ -1788,11 +1633,7 @@ namebuf */
 
 
 static void 
-#ifdef __STDC__
 get_resources(Display *dpy, Window window)
-#else /* ! __STDC__ */
-get_resources(dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 /* Get the appropriate X resources and warn about any inconsistencies. */
 {
   Bool nodelay;
@@ -1878,11 +1719,7 @@ get_resources(dpy, window) Display *dpy; Window window;
 }
 
 static void
-#ifdef __STDC__
 init_bubbles (Display *dpy, Window window)
-#else /* ! __STDC__ */
-init_bubbles (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   XGCValues gcv;
   XWindowAttributes xgwa;
@@ -1997,11 +1834,7 @@ init_bubbles (dpy, window) Display *dpy; Window window;
 }
 
 static void 
-#ifdef __STDC__
 bubbles (Display *dpy, Window window)
-#else /* ! __STDC__ */
-bubbles (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   Bubble *tmp;
 
@@ -2014,11 +1847,7 @@ bubbles (dpy, window) Display *dpy; Window window;
 
 
 void 
-#ifdef __STDC__
 screenhack (Display *dpy, Window window)
-#else /* ! __STDC__ */
-screenhack (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   init_bubbles (dpy, window);
   while (1) {

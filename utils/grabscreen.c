@@ -17,37 +17,20 @@
    breaks down...
  */
 
-#include <stdio.h>
-#ifdef __STDC__
-# include <stdlib.h>
-# include <unistd.h>
-# include <string.h>
-#endif
+#include "utils.h"
 
-#include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>
-
-#undef P
-#ifdef __STDC__
-# define P(x)x
-#else
-# define P(x)()
-#endif
 
 #include "usleep.h"
 #include "colors.h"
 #include "grabscreen.h"
 
+
 #ifdef HAVE_READ_DISPLAY_EXTENSION
-# include <stdio.h>
 # include "visual.h"
 # include <X11/extensions/readdisplay.h>
-# ifdef __STDC__
   static Bool read_display (Screen *, Window, Pixmap, Bool);
-# else /* !__STDC__ */
-  static Bool read_display ();
-# endif /* !__STDC__ */
 #endif /* HAVE_READ_DISPLAY_EXTENSION */
 
 
@@ -56,18 +39,11 @@ ERROR!  You must not include vroot.h in this file.
 #endif
 
 
-static void copy_default_colormap_contents P((Screen *, Colormap, Visual *));
+static void copy_default_colormap_contents (Screen *, Colormap, Visual *);
 
 
 static Bool
-#ifdef __STDC__
 MapNotify_event_p (Display *dpy, XEvent *event, XPointer window)
-#else /* !__STDC__ */
-MapNotify_event_p (dpy, event, window)
-     Display *dpy;
-     XEvent *event;
-     XPointer window;
-#endif /* !__STDC__ */
 {
   return (event->xany.type == MapNotify &&
 	  event->xvisibility.window == (Window) window);
@@ -79,14 +55,7 @@ extern char *progname;
 
 
 static void
-#ifdef __STDC__
 raise_window(Display *dpy, Window window, Bool dont_wait)
-#else  /* !__STDC__ */
-raise_window(dpy, window, dont_wait)
-  Display *dpy;
-  Window window;
-  Bool dont_wait;
-#endif /* !__STDC__ */
 {
 #ifdef DEBUG
   fprintf(stderr, "%s: raising window 0x%08lX (%s)\n",
@@ -122,13 +91,7 @@ raise_window(dpy, window, dont_wait)
 
 
 static Bool
-#ifdef __STDC__
 screensaver_window_p (Display *dpy, Window window)
-#else  /* !__STDC__ */
-screensaver_window_p (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* !__STDC__ */
 {
   Atom type;
   int format;
@@ -146,13 +109,7 @@ screensaver_window_p (dpy, window)
 }
 
 void
-#ifdef __STDC__
 grab_screen_image (Screen *screen, Window window)
-#else  /* !__STDC__ */
-grab_screen_image (screen, window)
-	Screen *screen;
-	Window window;
-#endif /* !__STDC__ */
 {
   Display *dpy = DisplayOfScreen (screen);
   XWindowAttributes xgwa;
@@ -275,16 +232,9 @@ grab_screen_image (screen, window)
    into the screensaver's colormap.
  */
 static void
-#ifdef __STDC__
 copy_default_colormap_contents (Screen *screen,
 				Colormap to_cmap,
 				Visual *to_visual)
-#else  /* !__STDC__ */
-copy_default_colormap_contents (screen, to_cmap, to_visual)
-	Screen *screen;
-	Colormap to_cmap;
-	Visual *to_visual;
-#endif /* !__STDC__ */
 {
   Display *dpy = DisplayOfScreen (screen);
   Visual *from_visual = DefaultVisualOfScreen (screen);
@@ -350,19 +300,11 @@ copy_default_colormap_contents (screen, to_cmap, to_visual)
 
 #ifdef HAVE_READ_DISPLAY_EXTENSION
 
-static void make_cubic_colormap P((Screen *, Window, Visual *));
+static void make_cubic_colormap (Screen *, Window, Visual *);
 
 static Bool
-#ifdef __STDC__
 read_display (Screen *screen, Window window, Pixmap into_pixmap,
 	      Bool dont_wait)
-#else  /* !__STDC__ */
-read_display (screen, window, into_pixmap, dont_wait)
-	Screen *screen;
-	Window window;
-	Pixmap into_pixmap;
-	Bool dont_wait;
-#endif /* !__STDC__ */
 {
   Display *dpy = DisplayOfScreen (screen);
   XWindowAttributes xgwa;
@@ -524,14 +466,7 @@ read_display (screen, window, into_pixmap, dont_wait)
 }
 
 static void
-#ifdef __STDC__
 make_cubic_colormap (Screen *screen, Window window, Visual *visual)
-#else  /* !__STDC__ */
-make_cubic_colormap (screen, window, visual)
-	Screen *screen;
-	Window window;
-	Visual *visual;
-#endif /* !__STDC__ */
 {
   Display *dpy = DisplayOfScreen (screen);
   Colormap cmap = XCreateColormap(dpy, window, visual, AllocAll);

@@ -11,6 +11,10 @@
  * implied warranty.
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
@@ -35,10 +39,8 @@
 #define SIGCHLD SIGCLD
 #endif
 
-#ifdef __STDC__
 extern int putenv (/* const char * */);	/* getenv() is in stdlib.h... */
 extern int kill (pid_t, int);		/* signal() is in sys/signal.h... */
-#endif
 
 /* This file doesn't need the Xt headers, so stub these types out... */
 #undef XtPointer
@@ -54,21 +56,16 @@ extern int kill (pid_t, int);		/* signal() is in sys/signal.h... */
 
 extern saver_info *global_si_kludge;	/* I hate C so much... */
 
-static void hack_environment P((saver_screen_info *ssi));
+static void hack_environment (saver_screen_info *ssi);
 
 
 static void
-#ifdef __STDC__
 nice_subproc (int nice_level)
-#else  /* !__STDC__ */
-nice_subproc (nice_level)
-	int nice_level;
-#endif /* !__STDC__ */
 {
   if (nice_level == 0)
     return;
 
-#if defined(SYSV) || defined(SVR4) || defined(__hpux)
+#if defined(HAVE_NICE)
   {
     int old_nice = nice (0);
     int n = nice_level - old_nice;
@@ -80,15 +77,14 @@ nice_subproc (nice_level)
 	perror (buf);
     }
   }
-#elif defined(PRIO_PROCESS)
+#elif defined(HAVE_SETPRIORITY) && defined(PRIO_PROCESS)
   if (setpriority (PRIO_PROCESS, getpid(), nice_level) != 0)
     {
       char buf [512];
-      sprintf (buf, "%s: setpriority(PRIO_PROCESS, %d, %d) failed",
+      sprintf (buf, "%s: setpriority(PRIO_PROCESS, %lu, %d) failed",
 	       progname, (unsigned long) getpid(), nice_level);
       perror (buf);
     }
-
 #else
   fprintf (stderr,
 	   "%s: don't know how to change process priority on this system.\n",
@@ -99,12 +95,7 @@ nice_subproc (nice_level)
 
 
 static void
-#ifdef __STDC__
 exec_simple_command (const char *command)
-#else  /* !__STDC__ */
-exec_simple_command (command)
-	const char *command;
-#endif /* !__STDC__ */
 {
   char *av[1024];
   int ac = 0;
@@ -120,7 +111,7 @@ exec_simple_command (command)
 
   {
     char buf [512];
-    sprintf (buf, "%s: execvp() failed", progname);
+    sprintf (buf, "%s: execvp(\"%s\") failed", progname, av[0]);
     perror (buf);
     fflush(stderr);
     fflush(stdout);
@@ -130,13 +121,7 @@ exec_simple_command (command)
 
 
 static void
-#ifdef __STDC__
 exec_complex_command (const char *shell, const char *command)
-#else  /* !__STDC__ */
-exec_complex_command (shell, command)
-	const char *shell;
-	const char *command;
-#endif /* !__STDC__ */
 {
   char *av[5];
   int ac = 0;
@@ -154,7 +139,7 @@ exec_complex_command (shell, command)
 
   {
     char buf [512];
-    sprintf (buf, "%s: execvp() failed", progname);
+    sprintf (buf, "%s: execvp(\"%s\") failed", progname, av[0]);
     perror (buf);
     fflush(stderr);
     fflush(stdout);
@@ -164,13 +149,7 @@ exec_complex_command (shell, command)
 
 
 static void
-#ifdef __STDC__
 exec_screenhack (saver_info *si, const char *command)
-#else  /* !__STDC__ */
-exec_screenhack (si, command)
-	saver_info *si;
-	const char *command;
-#endif /* !__STDC__ */
 {
   /* I don't believe what a sorry excuse for an operating system UNIX is!
 
@@ -268,16 +247,10 @@ show_job_list (void)
 #endif
 
 
-static void clean_job_list P((void));
+static void clean_job_list (void);
 
 static struct screenhack_job *
-#ifdef __STDC__
 make_job (pid_t pid, const char *cmd)
-#else  /* !__STDC__ */
-make_job (pid, cmd)
-	pid_t pid;
-	const char *cmd;
-#endif /* !__STDC__ */
 {
   struct screenhack_job *job = (struct screenhack_job *) malloc (sizeof(*job));
 
@@ -311,12 +284,7 @@ make_job (pid, cmd)
 
 
 static void
-#ifdef __STDC__
 free_job (struct screenhack_job *job)
-#else  /* !__STDC__ */
-free_job (job)
-	struct screenhack_job *job;
-#endif /* !__STDC__ */
 {
   if (!job)
     return;
@@ -343,7 +311,7 @@ free_job (job)
    from the main thread, not from a signal handler. 
  */
 static void
-clean_job_list P((void))
+clean_job_list (void)
 {
   struct screenhack_job *job, *prev, *next;
   for (prev = 0, job = jobs, next = (job ? job->next : 0);
@@ -362,12 +330,7 @@ clean_job_list P((void))
 
 
 static struct screenhack_job *
-#ifdef __STDC__
 find_job (pid_t pid)
-#else  /* !__STDC__ */
-find_job (pid)
-	pid_t pid;
-#endif /* !__STDC__ */
 {
   struct screenhack_job *job;
   for (job = jobs; job; job = job->next)
@@ -376,8 +339,8 @@ find_job (pid)
   return 0;
 }
 
-static void await_dying_children P((saver_info *si));
-static void describe_dead_child P((saver_info *, pid_t, int wait_status));
+static void await_dying_children (saver_info *si);
+static void describe_dead_child (saver_info *, pid_t, int wait_status);
 
 
 
@@ -385,14 +348,7 @@ static void describe_dead_child P((saver_info *, pid_t, int wait_status));
 static int block_sigchld_handler = 0;
 
 static int
-#ifdef __STDC__
 kill_job (saver_info *si, pid_t pid, int signal)
-#else  /* !__STDC__ */
-kill_job (si, pid, signal)
-	saver_info *si;
-	pid_t pid;
-	int signal;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   struct screenhack_job *job;
@@ -460,13 +416,8 @@ kill_job (si, pid, signal)
 
 
 #ifdef SIGCHLD
-static void
-#ifdef __STDC__
+static RETSIGTYPE
 sigchld_handler (int sig)
-#else /* !__STDC__ */
-sigchld_handler (sig)
-     int sig;
-#endif /* !__STDC__ */
 {
   saver_info *si = global_si_kludge;	/* I hate C so much... */
 
@@ -491,12 +442,7 @@ sigchld_handler (sig)
 
 
 static void
-#ifdef __STDC__
 await_dying_children (saver_info *si)
-#else  /* !__STDC__ */
-await_dying_children (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   while (1)
     {
@@ -527,14 +473,7 @@ await_dying_children (si)
 
 
 static void
-#ifdef __STDC__
 describe_dead_child (saver_info *si, pid_t kid, int wait_status)
-#else  /* !__STDC__ */
-describe_dead_child (si, kid, wait_status)
-	saver_info *si;
-	pid_t kid;
-	int wait_status;
-#endif /* !__STDC__ */
 {
   int i;
   saver_preferences *p = &si->prefs;
@@ -611,10 +550,10 @@ describe_dead_child (si, kid, wait_status)
 
 
 void
-init_sigchld P((void))
+init_sigchld (void)
 {
 #ifdef SIGCHLD
-  if (((int) signal (SIGCHLD, sigchld_handler)) == -1)
+  if (((long) signal (SIGCHLD, sigchld_handler)) == -1L)
     {
       char buf [255];
       sprintf (buf, "%s: couldn't catch SIGCHLD", progname);
@@ -628,13 +567,7 @@ init_sigchld P((void))
 
 
 static Bool
-#ifdef __STDC__
 select_visual_of_hack (saver_screen_info *ssi, const char *hack)
-#else  /* !__STDC__ */
-select_visual_of_hack (ssi, hack)
-	saver_screen_info *ssi;
-	const char *hack;
-#endif /* !__STDC__ */
 {
   saver_info *si = ssi->global;
   saver_preferences *p = &si->prefs;
@@ -669,13 +602,7 @@ select_visual_of_hack (ssi, hack)
 
 
 static void
-#ifdef __STDC__
 spawn_screenhack_1 (saver_screen_info *ssi, Bool first_time_p)
-#else  /* !__STDC__ */
-spawn_screenhack_1 (ssi, first_time_p)
-	saver_screen_info *ssi;
-	Bool first_time_p;
-#endif /* !__STDC__ */
 {
   saver_info *si = ssi->global;
   saver_preferences *p = &si->prefs;
@@ -779,13 +706,7 @@ spawn_screenhack_1 (ssi, first_time_p)
 
 
 void
-#ifdef __STDC__
 spawn_screenhack (saver_info *si, Bool first_time_p)
-#else  /* !__STDC__ */
-spawn_screenhack (si, first_time_p)
-	saver_info *si;
-	Bool first_time_p;
-#endif /* !__STDC__ */
 {
   int i;
   for (i = 0; i < si->nscreens; i++)
@@ -797,12 +718,7 @@ spawn_screenhack (si, first_time_p)
 
 
 void
-#ifdef __STDC__
 kill_screenhack (saver_info *si)
-#else  /* !__STDC__ */
-kill_screenhack (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   int i;
   for (i = 0; i < si->nscreens; i++)
@@ -816,13 +732,7 @@ kill_screenhack (si)
 
 
 void
-#ifdef __STDC__
 suspend_screenhack (saver_info *si, Bool suspend_p)
-#else  /* !__STDC__ */
-suspend_screenhack (si, suspend_p)
-	saver_info *si;
-	Bool suspend_p;
-#endif /* !__STDC__ */
 {
   int i;
   for (i = 0; i < si->nscreens; i++)
@@ -836,12 +746,7 @@ suspend_screenhack (si, suspend_p)
 
 /* Called when we're exiting abnormally, to kill off the subproc. */
 void
-#ifdef __STDC__
 emergency_kill_subproc (saver_info *si)
-#else  /* !__STDC__ */
-emergency_kill_subproc (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   int i;
 #ifdef SIGCHLD
@@ -860,12 +765,7 @@ emergency_kill_subproc (si)
 }
 
 Bool
-#ifdef __STDC__
 screenhack_running_p (saver_info *si)
-#else  /* !__STDC__ */
-screenhack_running_p (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   Bool result = True;
   int i;
@@ -884,13 +784,7 @@ screenhack_running_p (si)
 static char **saved_argv;
 
 void
-#ifdef __STDC__
 save_argv (int argc, char **argv)
-#else /* !__STDC__ */
-save_argv (argc, argv)
-     int argc;
-     char **argv;
-#endif /* !__STDC__ */
 {
   saved_argv = (char **) malloc ((argc + 2) * sizeof (char *));
   saved_argv [argc] = 0;
@@ -903,12 +797,7 @@ save_argv (argc, argv)
 }
 
 void
-#ifdef __STDC__
 restart_process (saver_info *si)
-#else  /* !__STDC__ */
-restart_process (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   fflush (real_stdout);
   fflush (real_stderr);
@@ -924,12 +813,7 @@ restart_process (si)
 /* Like restart_process(), but ensures that when it restarts,
    it comes up in demo-mode. */
 void
-#ifdef __STDC__
 demo_mode_restart_process (saver_info *si)
-#else  /* !__STDC__ */
-demo_mode_restart_process (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   int i;
   for (i = 0; saved_argv [i]; i++);
@@ -942,12 +826,7 @@ demo_mode_restart_process (si)
 }
 
 static void
-#ifdef __STDC__
 hack_environment (saver_screen_info *ssi)
-#else  /* !__STDC__ */
-hack_environment (ssi)
-	saver_screen_info *ssi;
-#endif /* !__STDC__ */
 {
   /* Store $DISPLAY into the environment, so that the $DISPLAY variable that
      the spawned processes inherit is correct.  First, it must be on the same
@@ -1003,12 +882,7 @@ static int hack_uid_errno;
 static char hack_uid_buf [255], *hack_uid_error;
 
 void
-#ifdef __STDC__
 hack_uid (saver_info *si)
-#else  /* !__STDC__ */
-hack_uid (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
 
   /* If we've been run as setuid or setgid to someone else (most likely root)
@@ -1090,12 +964,7 @@ hack_uid (si)
 }
 
 void
-#ifdef __STDC__
 hack_uid_warn (saver_info *si)
-#else  /* !__STDC__ */
-hack_uid_warn (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
 

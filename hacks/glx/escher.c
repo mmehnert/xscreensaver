@@ -324,7 +324,7 @@ static void RotateAaroundU(float  Ax, float  Ay, float Az,
 static void
 draw_moebius(ModeInfo * mi)
 {
-        GLfloat X,Y;
+/*        GLfloat X,Y;*/
         GLfloat Phi, Theta;
         GLfloat cPhi, sPhi;
 	escherstruct *ep = &escher[MI_SCREEN(mi)];
@@ -513,7 +513,7 @@ reshape(ModeInfo * mi, int width, int height)
 static void
 pinit(ModeInfo * mi)
 {
-	escherstruct *ep = &escher[MI_SCREEN(mi)];
+/*	escherstruct *ep = &escher[MI_SCREEN(mi)];*/
 
 	glClearDepth(1.0);
 	glClearColor(0.0, 0.0, 0.0, 1.0);

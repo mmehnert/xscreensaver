@@ -10,12 +10,15 @@
  * implied warranty.
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include <stdio.h>
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 #include <X11/Xatom.h>
 #include <X11/Xos.h>
-#include <X11/Xmu/SysUtil.h>
 
 /* This file doesn't need the Xt headers, so stub these types out... */
 #undef XtPointer
@@ -36,12 +39,7 @@
 # include <X11/extensions/scrnsaver.h>
 
 Bool
-#ifdef __STDC__
 query_mit_saver_extension (saver_info *si)
-#else  /* !__STDC__ */
-query_mit_saver_extension (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   return XScreenSaverQueryExtension (si->dpy,
 				     &si->mit_saver_ext_event_number,
@@ -49,22 +47,13 @@ query_mit_saver_extension (si)
 }
 
 static int
-#ifdef __STDC__
 ignore_all_errors_ehandler (Display *dpy, XErrorEvent *error)
-#else /* ! __STDC__ */
-ignore_all_errors_ehandler (dpy, error) Display *dpy; XErrorEvent *error;
-#endif /* ! __STDC__ */
 {
   return 0;
 }
 
 static void
-#ifdef __STDC__
 init_mit_saver_extension (saver_info *si)
-#else  /* !__STDC__ */
-init_mit_saver_extension (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   int i;
   Pixmap *blank_pix = (Pixmap *) calloc (sizeof(Pixmap), ss->nscreens);
@@ -109,12 +98,7 @@ init_mit_saver_extension (si)
 # include <X11/extensions/XScreenSaver.h>
 
 Bool
-#ifdef __STDC__
 query_sgi_saver_extension (saver_info *si)
-#else  /* !__STDC__ */
-query_sgi_saver_extension (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   return XScreenSaverQueryExtension (si->dpy,
 				     &si->sgi_saver_ext_event_number,
@@ -122,12 +106,7 @@ query_sgi_saver_extension (si)
 }
 
 static void
-#ifdef __STDC__
 init_sgi_saver_extension (saver_info *si)
-#else  /* !__STDC__ */
-init_sgi_saver_extension (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   int i;
@@ -160,13 +139,7 @@ init_sgi_saver_extension (si)
  */
 
 void
-#ifdef __STDC__
 disable_builtin_screensaver (saver_info *si, Bool turn_off_p)
-#else  /* !__STDC__ */
-disable_builtin_screensaver (si, turn_off_p)
-	saver_info *si;
-	Bool turn_off_p;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   int current_server_timeout, current_server_interval;

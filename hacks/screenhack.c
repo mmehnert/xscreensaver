@@ -37,7 +37,11 @@
 #include <X11/CoreP.h>
 #include <X11/Shell.h>
 #include <X11/StringDefs.h>
-#include <X11/Xmu/Error.h>
+#ifdef HAVE_XMU
+# include <X11/Xmu/Error.h>
+#else
+# include "xmu.h"
+#endif
 #include "screenhack.h"
 #include "version.h"
 #include "vroot.h"
@@ -70,7 +74,7 @@ static int merged_options_size;
 static char **merged_defaults;
 
 static void
-merge_options P((void))
+merge_options (void)
 {
   int def_opts_size, opts_size;
   int def_defaults_size, defaults_size;
@@ -108,13 +112,7 @@ merge_options P((void))
  */
 
 static int
-#ifdef __STDC__
 screenhack_ehandler (Display *dpy, XErrorEvent *error)
-#else /* !__STDC__ */
-screenhack_ehandler (dpy, error)
-     Display *dpy;
-     XErrorEvent *error;
-#endif /* !__STDC__ */
 {
   fprintf (stderr, "\nX error in %s:\n", progname);
   if (XmuPrintDefaultErrorMessage (dpy, error, stderr))
@@ -125,14 +123,7 @@ screenhack_ehandler (dpy, error)
 }
 
 static Bool
-#ifdef __STDC__
 MapNotify_event_p (Display *dpy, XEvent *event, XPointer window)
-#else /* !__STDC__ */
-MapNotify_event_p (dpy, event, window)
-     Display *dpy;
-     XEvent *event;
-     XPointer window;
-#endif /* !__STDC__ */
 {
   return (event->xany.type == MapNotify &&
 	  event->xvisibility.window == (Window) window);
@@ -140,23 +131,17 @@ MapNotify_event_p (dpy, event, window)
 
 
 #ifdef USE_GL
-extern Visual *get_gl_visual P((Screen *, const char *, const char *));
+extern Visual *get_gl_visual (Screen *, const char *, const char *);
 #endif
 
 #ifdef XLOCKMORE
-extern void pre_merge_options P((void));
+extern void pre_merge_options (void);
 #endif
 
 
 
 void
-#ifdef __STDC__
 main (int argc, char **argv)
-#else /* !__STDC__ */
-main (argc, argv)
-     int argc;
-     char **argv;
-#endif /* !__STDC__ */
 {
   XtAppContext app;
   Widget toplevel;

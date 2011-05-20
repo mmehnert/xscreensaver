@@ -12,7 +12,7 @@
 #ifndef __SCREENHACK_USLEEP_H__
 #define __SCREENHACK_USLEEP_H__
 
-extern void screenhack_usleep P((unsigned long usecs));
+extern void screenhack_usleep (unsigned long usecs);
 
 #undef usleep
 #define usleep(usecs) screenhack_usleep(usecs)

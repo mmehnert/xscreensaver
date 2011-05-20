@@ -11,18 +11,16 @@
  * implied warranty.
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #ifndef NO_LOCKING  /* whole file */
 
-#ifdef __STDC__
-# include <stdlib.h>
-# ifdef __unix
-#  include <unistd.h>
-# endif
-#else /* !__STDC__ */
-# ifndef const
-#  define const /**/
-# endif
-#endif /* !__STDC__ */
+#include <stdlib.h>
+#ifdef __unix
+# include <unistd.h>
+#endif
 
 #include <stdio.h>
 #include <string.h>
@@ -76,13 +74,7 @@ static char *tk_file;
    We don't use the arguments we're given, though.
  */
 Bool
-#ifdef __STDC__
 lock_init (int argc, char **argv)
-#else  /* !__STDC__ */
-lock_init (argc, argv)
-	int argc;
-	char **argv;
-#endif /* !__STDC__ */
 {
     int k_errno;
     
@@ -129,14 +121,8 @@ lock_init (argc, argv)
    we are. Calling it ive_got_your_local_function_right_here_buddy()
    would have been rude.
  */
-int 
-#ifdef __STDC__
+static int 
 key_to_key(char *user, char *instance, char *realm, char *passwd, C_Block key)
-#else  /* !__STDC__ */
-key_to_key(user, instance, realm, passwd, key)
-    char *user, *instance, *realm, *passwd;
-    C_Block key;
-#endif /* !__STDC__ */
 {
   memcpy(key, passwd, sizeof(des_cblock));
   return (0);
@@ -150,12 +136,7 @@ key_to_key(user, instance, realm, passwd, key)
    some sites. So, we do a quick, painful hack with a tmpfile.
  */
 Bool
-#ifdef __STDC__
 passwd_valid_p (const char *typed_passwd)
-#else  /* !__STDC__ */
-passwd_valid_p (typed_passwd)
-	const char *typed_passwd;
-#endif /* !__STDC__ */
 {
     C_Block mitkey;
     Bool success;

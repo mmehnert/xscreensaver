@@ -62,9 +62,9 @@ typedef struct Obj OBJECT;
 struct Obj {
   int type;
   int time;
-  void (*propogate) P((OBJECT *));
-  void (*draw) P((OBJECT *));
-  void (*init) P((OBJECT *));
+  void (*propogate) (OBJECT *);
+  void (*draw) (OBJECT *);
+  void (*init) (OBJECT *);
   void *cur;
 };
 
@@ -123,12 +123,7 @@ XrmOptionDescRec options [] = {
 /* END global variables */
 
 static void
-#ifdef __STDC__
 krandom_color(XColor *color)
-#else  /* !__STDC__ */
-krandom_color(color)
-  XColor *color;
-#endif /* !__STDC__ */
 {
   int r;
   r = ya_random() % 3;
@@ -151,12 +146,7 @@ krandom_color(color)
 
 
 static void
-#ifdef __STDC__
 kcopy_color(XColor *to, XColor *from)
-#else  /* !__STDC__ */
-kcopy_color(to, from)
-  XColor *to, *from;
-#endif /* !__STDC__ */
 {
   to->red   = from->red;
   to->green = from->green;
@@ -165,18 +155,10 @@ kcopy_color(to, from)
 }
 
 static void
-#ifdef __STDC__
 kcycle_color(XColor *color,
 	     unsigned short redstep,
 	     unsigned short greenstep,
 	     unsigned short bluestep) 
-#else  /* !__STDC__ */
-kcycle_color(color, redstep, greenstep, bluestep)
-  XColor *color;
-  unsigned short redstep;
-  unsigned short greenstep;
-  unsigned short bluestep;
-#endif /* !__STDC__ */
 {
   unsigned short red,green,blue;
 
@@ -204,7 +186,7 @@ kcycle_color(color, redstep, greenstep, bluestep)
 
 
 static Ksegment *
-create_ksegment P((void))
+create_ksegment (void)
 {
   Ksegment *seg, *prev;
   XColor new_color;
@@ -241,12 +223,7 @@ create_ksegment P((void))
 }
 
 static void
-#ifdef __STDC__
 init_ksegment (OBJECT *obj)
-#else  /* !__STDC__ */
-init_ksegment (obj)
-  OBJECT *obj;
-#endif /* !__STDC__ */
 {
 
   /* Give the segment some random values */
@@ -258,12 +235,7 @@ init_ksegment (obj)
 
 
 static void
-#ifdef __STDC__
 draw_ksegment (OBJECT *obj)
-#else  /* !__STDC__ */
-draw_ksegment (obj)
-  OBJECT *obj;
-#endif /* !__STDC__ */
 {
   register short x1, y1, x2, y2;
   int dx, dy;
@@ -312,12 +284,7 @@ draw_ksegment (obj)
 }
 
 static void
-#ifdef __STDC__
 propogate_ksegment(OBJECT *obj)
-#else  /* !__STDC__ */
-propogate_ksegment(obj)
-  OBJECT *obj;
-#endif /* !__STDC__ */
 {
   int t;
   short int x1,y1,x2,y2;
@@ -361,7 +328,7 @@ propogate_ksegment(obj)
 }
 
 static void
-init_objects P((void))
+init_objects (void)
 {
   int i;
   for (i=0; i<g.nobjects; i++) {
@@ -370,7 +337,7 @@ init_objects P((void))
 }
 
 static void
-create_objects P((void))
+create_objects (void)
 {
   int i;
 
@@ -390,7 +357,7 @@ create_objects P((void))
 
 
 static void
-propogate_objects P((void))
+propogate_objects (void)
 {
   int i;
 
@@ -400,7 +367,7 @@ propogate_objects P((void))
 }
 
 static void
-draw_objects P((void))
+draw_objects (void)
 {
   int i;
 
@@ -410,13 +377,7 @@ draw_objects P((void))
 }
 
 static void
-#ifdef __STDC__
 init_g (Display *dpy, Window window)
-#else  /* !__STDC__ */
-init_g (dpy, window)
-  Display *dpy;
-  Window window;
-#endif /* !__STDC__ */
 {
   XWindowAttributes xgwa;
   XGCValues gcv;
@@ -474,7 +435,7 @@ init_g (dpy, window)
 }
 
 static void
-init_rand P((void))
+init_rand (void)
 {
   time_t t;
   time(&t);
@@ -484,13 +445,7 @@ init_rand P((void))
 }
 
 void
-#ifdef __STDC__
 screenhack (Display *dpy, Window window)
-#else  /* !__STDC__ */
-screenhack (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* !__STDC__ */
 {
   init_rand();
   init_g (dpy, window);

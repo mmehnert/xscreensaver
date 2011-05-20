@@ -10,21 +10,17 @@
  * implied warranty.
  */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include <stdio.h>
 #include <X11/Xproto.h>		/* for CARD32 */
 #include <X11/Xlib.h>
 #include <X11/Xatom.h>
 #include <X11/Xutil.h>		/* for XGetClassHint() */
 #include <X11/Xos.h>
-#ifdef __STDC__
-# include <stdlib.h>
-#endif
-
-#ifndef __STDC__
-# ifndef const
-#  define const /**/
-# endif
-#endif
+#include <stdlib.h>
 
 #include "version.h"
 
@@ -63,14 +59,7 @@ static char *usage = "usage: %s -<switch>\n\
 \n";
 
 static Window
-#ifdef __STDC__
 find_screensaver_window (Display *dpy, char *progname, char **version)
-#else /* ! __STDC__ */
-find_screensaver_window (dpy, progname, version)
-     Display *dpy;
-     char *progname;
-     char **version;
-#endif /* ! __STDC__ */
 {
   int i;
   Window root = RootWindowOfScreen (DefaultScreenOfDisplay (dpy));
@@ -117,13 +106,7 @@ find_screensaver_window (dpy, progname, version)
  { fprintf (stderr, usage, argv[0], screensaver_version); exit (1); }
 
 void
-#ifdef __STDC__
 main (int argc, char **argv)
-#else /* ! __STDC__ */
-main (argc, argv)
-     int argc;
-     char **argv;
-#endif /* ! __STDC__ */
 {
   Display *dpy;
   Window window;

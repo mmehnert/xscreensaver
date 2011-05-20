@@ -18,6 +18,7 @@
 
 #include <stdio.h>
 #include <math.h>
+#include <string.h>
 #include "screenhack.h"
 #include "xlockmoreI.h"
 
@@ -27,7 +28,7 @@ extern ModeSpecOpt xlockmore_opts[];
 extern const char *app_defaults;
 
 void
-pre_merge_options P((void))
+pre_merge_options (void)
 {
   int i, j;
   char *s;
@@ -133,7 +134,7 @@ pre_merge_options P((void))
 
 
 static void
-xlockmore_read_resources P((void))
+xlockmore_read_resources (void)
 {
   int i;
   for (i = 0; i < xlockmore_opts->numvarsdesc; i++)
@@ -171,7 +172,6 @@ xlockmore_read_resources P((void))
 
 
 void 
-#ifdef __STDC__
 xlockmore_screenhack (Display *dpy, Window window,
 		      Bool want_writable_colors,
 		      Bool want_uniform_colors,
@@ -180,23 +180,6 @@ xlockmore_screenhack (Display *dpy, Window window,
 		      void (*hack_init) (ModeInfo *),
 		      void (*hack_draw) (ModeInfo *),
 		      void (*hack_free) (ModeInfo *))
-#else  /*! __STDC__ */
-xlockmore_screenhack (dpy, window,
-		      want_writable_colors,
-		      want_uniform_colors,
-		      want_smooth_colors,
-		      want_bright_colors,
-		      hack_init, hack_draw, hack_free)
-	Display *dpy;
-	Window window;
-	Bool want_writable_colors;
-	Bool want_uniform_colors;
-	Bool want_smooth_colors;
-	Bool want_bright_colors;
-	void (*hack_init) ();
-	void (*hack_draw) ();
-	void (*hack_free) ();
-#endif /* !__STDC__ */
 {
   ModeInfo mi;
   XGCValues gcv;

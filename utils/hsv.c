@@ -13,31 +13,12 @@
    to hack the screen with.
  */
 
-#ifdef __STDC__
-#include <stdlib.h>
-#endif /* __STDC__ */
-
-#include <X11/Xlib.h>
-
-#undef P
-#ifdef __STDC__
-# define P(x)x
-#else
-# define P(x)()
-#endif
-
+#include "utils.h"
 #include "hsv.h"
 
 void
-#ifdef __STDC__
 hsv_to_rgb (int h, double s, double v,
 	    unsigned short *r, unsigned short *g, unsigned short *b)
-#else
-hsv_to_rgb (h,s,v, r,g,b)
-     int h;			/* 0 - 360   */
-     double s, v;		/* 0.0 - 1.0 */
-     unsigned short *r, *g, *b;	/* 0 - 65535 */
-#endif
 {
   double H, S, V, R, G, B;
   double p1, p2, p3;
@@ -62,15 +43,8 @@ hsv_to_rgb (h,s,v, r,g,b)
 }
 
 void
-#ifdef __STDC__
 rgb_to_hsv (unsigned short r, unsigned short g, unsigned short b,
 	    int *h, double *s, double *v)
-#else
-rgb_to_hsv (r,g,b, h,s,v)
-     unsigned short r, g, b;	/* 0 - 65535 */
-     int *h;			/* 0 - 360   */
-     double *s, *v;		/* 0.0 - 1.0 */
-#endif
 {
   double R, G, B, H, S, V;
   double cmax, cmin;

@@ -13,6 +13,10 @@
 /* Athena locking code contributed by Jon A. Christopher <jac8782@tamu.edu> */
 /* Copyright 1997, with the same permissions as above. */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #ifndef NO_LOCKING   /* whole file */
 
 #include <X11/Intrinsic.h>
@@ -22,21 +26,8 @@
 # include <pwd.h>
 #endif
 
-#ifndef __STDC__
-# define _NO_PROTO
-#endif
 
-#ifdef NO_MOTIF
-# undef  USE_MOTIF
-# define USE_ATHENA
-#else
-# define USE_MOTIF
-# undef  USE_ATHENA
-#endif
-
-
-
-#ifdef USE_ATHENA
+#ifdef HAVE_ATHENA
 
 # include <X11/Shell.h>
 # include <X11/StringDefs.h>
@@ -44,7 +35,7 @@
 # include <X11/Xaw/Label.h>
 # include <X11/Xaw/Dialog.h>
 
-static void passwd_done_cb P((Widget, XtPointer, XtPointer));
+static void passwd_done_cb (Widget, XtPointer, XtPointer);
 static XtActionsRec actionsList[] =
 {
     {"passwdentered", (XtActionProc) passwd_done_cb},
@@ -55,13 +46,13 @@ static char Translations[] =
 <Key>Return:   passwdentered()\
 ";
 
-#else  /* USE_MOTIF */
+#else  /* HAVE_MOTIF */
 
 # include <Xm/Xm.h>
 # include <Xm/List.h>
 # include <Xm/TextF.h>
 
-#endif /* USE_MOTIF */
+#endif /* HAVE_MOTIF */
 
 extern Widget passwd_dialog;
 extern Widget passwd_form;
@@ -70,13 +61,13 @@ extern Widget passwd_label1;
 extern Widget passwd_label3;
 extern Widget passwd_cancel;
 
-#ifdef USE_MOTIF
+#ifdef HAVE_MOTIF
 extern Widget passwd_text;
 extern Widget passwd_done;
-#else  /* USE_ATHENA */
+#else  /* HAVE_ATHENA */
 static Widget passwd_text = 0;	/* gag... */
 static Widget passwd_done = 0;
-#endif /* USE_ATHENA */
+#endif /* HAVE_ATHENA */
 
 
 
@@ -85,44 +76,32 @@ static enum { pw_read, pw_ok, pw_fail, pw_cancel, pw_time } passwd_state;
 static char typed_passwd [PASSWDLEN];
 
 
-#if defined(USE_ATHENA) || (XmVersion >= 1002)
+#if defined(HAVE_ATHENA) || (XmVersion >= 1002)
    /* The `destroy' bug apears to be fixed as of Motif 1.2.1, but
       the `verify-callback' bug is still present. */
 # define DESTROY_WORKS
 #endif
 
 static void
-#ifdef __STDC__
 passwd_cancel_cb (Widget button, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-passwd_cancel_cb (button, client_data, call_data)
-     Widget button;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   passwd_state = pw_cancel;
 }
 
 static void
-#ifdef __STDC__
 passwd_done_cb (Widget button, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-passwd_done_cb (button, client_data, call_data)
-     Widget button;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   if (passwd_state != pw_read) return; /* already done */
-#ifdef USE_ATHENA
+#ifdef HAVE_ATHENA
   strncpy(typed_passwd, XawDialogGetValueString(passwd_form), PASSWDLEN);
-#endif /* USE_ATHENA */
+#endif /* HAVE_ATHENA */
   if (passwd_valid_p (typed_passwd))
     passwd_state = pw_ok;
   else
     passwd_state = pw_fail;
 }
 
-#if defined(USE_MOTIF) && defined(VERIFY_CALLBACK_WORKS)
+#if defined(HAVE_MOTIF) && defined(VERIFY_CALLBACK_WORKS)
 
   /* It looks to me like adding any modifyVerify callback causes
      Motif 1.1.4 to free the the TextF_Value() twice.  I can't see
@@ -135,13 +114,7 @@ passwd_done_cb (button, client_data, call_data)
    */
 
 static void 
-#ifdef __STDC__
 check_passwd_cb (Widget button, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-check_passwd_cb (button, client_data, call_data)
-     Widget button;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   XmTextVerifyCallbackStruct *vcb = (XmTextVerifyCallbackStruct *) call_data;
 
@@ -165,12 +138,12 @@ check_passwd_cb (button, client_data, call_data)
     }
 }
 
-# else /* USE_ATHENA || !VERIFY_CALLBACK_WORKS */
+# else /* HAVE_ATHENA || !VERIFY_CALLBACK_WORKS */
 
-static void keypress P((Widget w, XEvent *event, String *av, Cardinal *ac));
-static void backspace P((Widget w, XEvent *event, String *av, Cardinal *ac));
-static void kill_line P((Widget w, XEvent *event, String *av, Cardinal *ac));
-static void done P((Widget w, XEvent *event, String *av, Cardinal *ac));
+static void keypress (Widget w, XEvent *event, String *av, Cardinal *ac);
+static void backspace (Widget w, XEvent *event, String *av, Cardinal *ac);
+static void kill_line (Widget w, XEvent *event, String *av, Cardinal *ac);
+static void done (Widget w, XEvent *event, String *av, Cardinal *ac);
 
 static XtActionsRec actions[] = {{"keypress",  keypress},
 				 {"backspace", backspace},
@@ -178,7 +151,7 @@ static XtActionsRec actions[] = {{"keypress",  keypress},
 				 {"done",      done}
 			        };
 
-# ifdef USE_MOTIF
+# ifdef HAVE_MOTIF
 #  if 0  /* oh fuck, why doesn't this work? */
 static char translations[] = "\
 <Key>BackSpace:		backspace()\n\
@@ -193,24 +166,17 @@ Ctrl<Key>M:		done()\n\
 #  else  /* !0 */
 static char translations[] = "<Key>:keypress()";
 #  endif /* !0 */
-# endif /* USE_MOTIF */
+# endif /* HAVE_MOTIF */
 
 
 static void
-#ifdef __STDC__
 text_field_set_string (Widget widget, char *text, int position)
-#else /* ! __STDC__ */
-text_field_set_string (widget, text, position)
-     Widget widget;
-     char *text;
-     int position;
-#endif /* ! __STDC__ */
 {
-#ifdef USE_MOTIF
+#ifdef HAVE_MOTIF
   XmTextFieldSetString (widget, text);
   XmTextFieldSetInsertionPosition (widget, position);
 
-#else /* USE_ATHENA */
+#else /* HAVE_ATHENA */
   char *buf;
   int end_pos;
 
@@ -229,20 +195,12 @@ text_field_set_string (widget, text, position)
     }
   XawTextReplace (widget, 0, end_pos, &block);
   XawTextSetInsertionPoint (widget, position);
-#endif /* USE_ATHENA */
+#endif /* HAVE_ATHENA */
 }
 
 
 static void
-#ifdef __STDC__
 keypress (Widget w, XEvent *event, String *argv, Cardinal *argc)
-#else /* ! __STDC__ */
-keypress (w, event, argv, argc)
-     Widget w;
-     XEvent *event;
-     String *argv;
-     Cardinal *argc;
-#endif /* ! __STDC__ */
 {
   int i, j;
   char s [sizeof (typed_passwd)];
@@ -267,15 +225,7 @@ keypress (w, event, argv, argc)
 }
 
 static void
-#ifdef __STDC__
 backspace (Widget w, XEvent *event, String *argv, Cardinal *argc)
-#else /* ! __STDC__ */
-backspace (w, event, argv, argc)
-     Widget w;
-     XEvent *event;
-     String *argv;
-     Cardinal *argc;
-#endif /* ! __STDC__ */
 {
   char s [sizeof (typed_passwd)];
   int i = strlen (typed_passwd);
@@ -291,49 +241,25 @@ backspace (w, event, argv, argc)
 }
 
 static void
-#ifdef __STDC__
 kill_line (Widget w, XEvent *event, String *argv, Cardinal *argc)
-#else /* ! __STDC__ */
-kill_line (w, event, argv, argc)
-     Widget w;
-     XEvent *event;
-     String *argv;
-     Cardinal *argc;
-#endif /* ! __STDC__ */
 {
   memset (typed_passwd, 0, sizeof (typed_passwd));
   text_field_set_string (passwd_text, "", 0);
 }
 
 static void
-#ifdef __STDC__
 done (Widget w, XEvent *event, String *argv, Cardinal *argc)
-#else /* ! __STDC__ */
-done (w, event, argv, argc)
-     Widget w;
-     XEvent *event;
-     String *argv;
-     Cardinal *argc;
-#endif /* ! __STDC__ */
 {
   passwd_done_cb (w, 0, 0);
 }
 
-#endif /* USE_ATHENA || !VERIFY_CALLBACK_WORKS */
+#endif /* HAVE_ATHENA || !VERIFY_CALLBACK_WORKS */
 
 
-#ifdef __STDC__
 extern void skull (Display *, Window, GC, GC, int, int, int, int);
-#endif
 
 static void
-#ifdef __STDC__
 roger (Widget button, XtPointer client_data, XtPointer call_data)
-#else /* ! __STDC__ */
-roger (button, client_data, call_data)
-     Widget button;
-     XtPointer client_data, call_data;
-#endif /* ! __STDC__ */
 {
   Display *dpy = XtDisplay (button);
   Screen *screen = XtScreen (button);
@@ -370,12 +296,7 @@ roger (button, client_data, call_data)
 }
 
 static void
-#ifdef __STDC__
 make_passwd_dialog (saver_info *si)
-#else  /* !__STDC__ */
-make_passwd_dialog (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   char *username = 0;
   saver_screen_info *ssi = si->default_screen;
@@ -398,7 +319,7 @@ make_passwd_dialog (si)
 
   create_passwd_dialog (parent, ssi->default_visual, ssi->demo_cmap);
 
-#ifdef USE_ATHENA
+#ifdef HAVE_ATHENA
 
   XtVaSetValues(passwd_form, XtNvalue, typed_passwd, 0);
 
@@ -411,7 +332,7 @@ make_passwd_dialog (si)
 		  actionsList, XtNumber(actionsList));
   XtOverrideTranslations(passwd_text, XtParseTranslationTable(Translations));
 
-#else  /* USE_MOTIF */
+#else  /* HAVE_MOTIF */
 
   XtAddCallback (passwd_done, XmNactivateCallback, passwd_done_cb, 0);
   XtAddCallback (passwd_cancel, XmNactivateCallback, passwd_cancel_cb, 0);
@@ -425,7 +346,7 @@ make_passwd_dialog (si)
   XtOverrideTranslations (passwd_text, XtParseTranslationTable (translations));
 # endif
 
-# if defined(USE_MOTIF) && (XmVersion >= 1002)
+# if defined(HAVE_MOTIF) && (XmVersion >= 1002)
   /* The focus stuff changed around; this didn't exist in 1.1.5. */
   XtVaSetValues (passwd_form, XmNinitialFocus, passwd_text, 0);
 # endif
@@ -433,7 +354,7 @@ make_passwd_dialog (si)
   /* Another random thing necessary in 1.2.1 but not 1.1.5... */
   XtVaSetValues (roger_label, XmNborderWidth, 2, 0);
 
-#endif /* USE_MOTIF */
+#endif /* HAVE_MOTIF */
 
 #ifndef VMS
   {
@@ -453,19 +374,13 @@ static int passwd_idle_timer_tick;
 static XtIntervalId passwd_idle_id;
 
 static void
-#ifdef __STDC__
 passwd_idle_timer (XtPointer closure, XtIntervalId *id)
-#else  /* !__STDC__ */
-passwd_idle_timer (closure, id)
-	XtPointer closure;
-	XtIntervalId *id;
-#endif /* !__STDC__ */
 {
   saver_info *si = (saver_info *) closure;
   saver_preferences *p = &si->prefs;
 
   Display *dpy = XtDisplay (passwd_form);
-#ifdef USE_ATHENA
+#ifdef HAVE_ATHENA
   Window window = XtWindow (passwd_form);
 #else  /* MOTIF */
   Window window = XtWindow (XtParent(passwd_done));
@@ -479,7 +394,7 @@ passwd_idle_timer (closure, id)
   if (passwd_idle_timer_tick == max)  /* first time */
     {
       XGCValues gcv;
-#ifdef USE_MOTIF
+#ifdef HAVE_MOTIF
       unsigned long fg, bg, ts, bs;
       Dimension w = 0, h = 0;
       XtVaGetValues(XtParent(passwd_done),
@@ -507,7 +422,7 @@ passwd_idle_timer (closure, id)
       x -= d/2;
       y += d/2;
 
-#else  /* USE_ATHENA */
+#else  /* HAVE_ATHENA */
 
       Arg av [100];
       int ac = 0;
@@ -524,7 +439,7 @@ passwd_idle_timer (closure, id)
       y -= d;
       d -= 4;
 
-#endif /* USE_ATHENA */
+#endif /* HAVE_ATHENA */
 
       gcv.foreground = fg;
       if (gc) XFreeGC (dpy, gc);
@@ -547,17 +462,11 @@ passwd_idle_timer (closure, id)
     }
 }
 
-#ifdef USE_ATHENA
+#ifdef HAVE_ATHENA
 
 void
-#ifdef __STDC__
 pop_up_athena_dialog_box (Widget parent, Widget focus, Widget dialog,
 			  Widget form, int where)
-#else  /* !__STDC__ */
-pop_up_athena_dialog_box (parent, focus, dialog, form, where)
-     Widget parent, focus, dialog, form;
-     int where;
-#endif /* !__STDC__ */
 {
   /* modified from demo.c */
   /* I'm sure this is the wrong way to pop up a dialog box, but I can't
@@ -613,11 +522,7 @@ pop_up_athena_dialog_box (parent, focus, dialog, form, where)
 }
 
 static void
-#ifdef __STDC__
 passwd_set_label (char *buf, int len)
-#else /* ! __STDC__ */
-passwd_set_label (buf,len) char *buf; int len;
-#endif /* ! __STDC__ */
 {
   Widget label;
   if (!passwd_text)
@@ -627,15 +532,10 @@ passwd_set_label (buf,len) char *buf; int len;
 		XtNlabel, buf,
 		NULL);
 }
-#endif /* USE_ATHENA */
+#endif /* HAVE_ATHENA */
 
 static Bool
-#ifdef __STDC__
 pop_passwd_dialog (saver_info *si)
-#else  /* !__STDC__ */
-pop_passwd_dialog (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   saver_screen_info *ssi = si->default_screen;
@@ -655,7 +555,7 @@ pop_passwd_dialog (si)
     XMapRaised(si->dpy, si->screens[i].screensaver_window);
 
   XGetInputFocus (dpy, &focus, &revert_to);
-#if defined(USE_MOTIF) && !defined(DESTROY_WORKS)
+#if defined(HAVE_MOTIF) && !defined(DESTROY_WORKS)
   /* This fucker blows up if we destroy the widget.  I can't figure
      out why.  The second destroy phase dereferences freed memory...
      So we just keep it around; but unrealizing or unmanaging it
@@ -665,7 +565,7 @@ pop_passwd_dialog (si)
     XMapRaised (dpy, XtWindow (passwd_dialog));
 #endif
 
-#ifdef USE_ATHENA
+#ifdef HAVE_ATHENA
   pop_up_athena_dialog_box (parent, passwd_text, passwd_dialog,
 			    passwd_form, 2);
 #else
@@ -677,7 +577,7 @@ pop_passwd_dialog (si)
   XtManageChild (passwd_form);
 #endif
 
-#if defined(USE_MOTIF) && (XmVersion < 1002)
+#if defined(HAVE_MOTIF) && (XmVersion < 1002)
   /* The focus stuff changed around; this causes problems in 1.2.1
      but is necessary in 1.1.5. */
   XmProcessTraversal (passwd_text, XmTRAVERSE_CURRENT);
@@ -687,10 +587,10 @@ pop_passwd_dialog (si)
   passwd_idle_id = XtAppAddTimeOut (si->app, 1000,  passwd_idle_timer,
 				    (XtPointer) si);
 
-#ifdef USE_ATHENA
+#ifdef HAVE_ATHENA
   if (roger_label)
     roger(roger_label, 0, 0);
-#endif /* USE_ATHENA */
+#endif /* HAVE_ATHENA */
 
 #ifdef DEBUG
   if (!si->prefs.debug_p)
@@ -726,12 +626,12 @@ pop_passwd_dialog (si)
 	case pw_cancel: lose = 0; break;
 	default: abort ();
 	}
-#ifdef USE_MOTIF
+#ifdef HAVE_MOTIF
       XmProcessTraversal (passwd_cancel, 0); /* turn off I-beam */
 #endif
       if (lose)
 	{
-#ifdef USE_ATHENA
+#ifdef HAVE_ATHENA
 	  /* show the message */
 	  passwd_set_label(lose,strlen(lose)+1);
 
@@ -789,12 +689,7 @@ pop_passwd_dialog (si)
 }
 
 Bool
-#ifdef __STDC__
 unlock_p (saver_info *si)
-#else  /* !__STDC__ */
-unlock_p (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   static Bool initted = False;
   if (! initted)

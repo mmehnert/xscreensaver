@@ -9,22 +9,9 @@
  * implied warranty.
  */
 
-#ifdef __STDC__
-# include <stdlib.h>
-#endif
+#include "utils.h"
 
-#include <stdio.h>
 #include <sys/time.h> /* for gettimeofday() */
-
-#include <X11/Xlib.h>
-#include <X11/Xos.h>
-
-#undef P
-#ifdef __STDC__
-# define P(x)x
-#else
-# define P(x)()
-#endif
 
 #include "visual.h"
 #include "usleep.h"
@@ -32,14 +19,7 @@
 
 
 Colormap
-#ifdef __STDC__
 copy_colormap (Screen *screen, Colormap cmap, Colormap into_cmap)
-#else  /* !__STDC__ */
-copy_colormap (screen, cmap, into_cmap)
-	Screen *screen;
-	Colormap cmap;
-	Colormap into_cmap;
-#endif /* !__STDC__ */
 {
   int i;
   Display *dpy = DisplayOfScreen (screen);
@@ -73,13 +53,7 @@ copy_colormap (screen, cmap, into_cmap)
 
 
 void
-#ifdef __STDC__
 blacken_colormap (Screen *screen, Colormap cmap)
-#else  /* !__STDC__ */
-blacken_colormap (screen, cmap)
-	Screen *screen;
-	Colormap cmap;
-#endif /* !__STDC__ */
 {
   Display *dpy = DisplayOfScreen (screen);
   int ncolors = CellsOfScreen (screen);
@@ -103,18 +77,9 @@ blacken_colormap (screen, cmap)
    that all screens really go black.  */
 
 void
-#ifdef __STDC__
 fade_screens (Display *dpy, Colormap *cmaps,
 	      int seconds, int ticks,
 	      Bool out_p)
-#else  /* !__STDC__ */
-fade_screens (dpy, cmaps, seconds, ticks, out_p)
-	Display *dpy;
-	Colormap *cmaps;
-	int seconds;
-	int ticks;
-	Bool out_p;
-#endif /* !__STDC__ */
 {
   int i, j, k;
   int steps = seconds * ticks;

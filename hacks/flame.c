@@ -76,11 +76,7 @@ static int delay, delay2;
 static int width, height;
 
 static short
-#ifdef __STDC__
 halfrandom (int mv)
-#else /* ! __STDC__ */
-halfrandom (mv) int mv;
-#endif /* ! __STDC__ */
 {
   static short lasthalf = 0;
   unsigned long r;
@@ -99,11 +95,7 @@ halfrandom (mv) int mv;
 }
 
 static void
-#ifdef __STDC__
 init_flame (Display *dpy, Window window)
-#else /* ! __STDC__ */
-init_flame (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   XGCValues gcv;
   XWindowAttributes xgwa;
@@ -152,15 +144,7 @@ init_flame (dpy, window) Display *dpy; Window window;
 }
 
 static int
-#ifdef __STDC__
 recurse (double x, double y, int l, Display *dpy, Window win)
-#else /* ! __STDC__ */
-recurse (x, y, l, dpy, win)
-     register double x, y;
-     register int l;
-     Display *dpy;
-     Window win;
-#endif /* ! __STDC__ */
 {
   int xp, yp, i;
   double nx, ny;
@@ -319,11 +303,7 @@ recurse (x, y, l, dpy, win)
 
 
 static void
-#ifdef __STDC__
 flame (Display *dpy, Window window)
-#else /* ! __STDC__ */
-flame (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   int i, j, k;
   static int alt = 0;
@@ -411,11 +391,7 @@ XrmOptionDescRec options [] = {
 };
 
 void
-#ifdef __STDC__
 screenhack (Display *dpy, Window window)
-#else /* ! __STDC__ */
-screenhack (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   init_flame (dpy, window);
   while (1)

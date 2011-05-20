@@ -24,13 +24,7 @@ unsigned long fg_pixel = 0;
 unsigned long bg_pixel = 0;
 
 static void
-#ifdef __STDC__
 init_moire (Display *dpy, Window window)
-#else /* !__STDC__ */
-init_moire (dpy, window)
-  Display *dpy;
-  Window window;
-#endif /* !__STDC__ */
 {
   int oncolors;
   int i;
@@ -105,16 +99,7 @@ init_moire (dpy, window)
 
 
 static void
-#ifdef __STDC__
 moire (Display *dpy, Window window, int offset, XColor *colors, int ncolors)
-#else /* !__STDC__ */
-moire (dpy, window, offset, colors, ncolors)
-  Display *dpy;
-  Window window;
-  int offset;
-  XColor *colors;
-  int ncolors;
-#endif /* !__STDC__ */
 {
   long x, y, xo, yo;
   int factor = (random() % offset) + 1;
@@ -181,11 +166,7 @@ XrmOptionDescRec options [] = {
 };
 
 void
-#ifdef __STDC__
 screenhack (Display *dpy, Window window)
-#else /* ! __STDC__ */
-screenhack (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   int delay = get_integer_resource ("delay", "Integer");
   while (1)

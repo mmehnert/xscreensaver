@@ -12,25 +12,13 @@
 #ifndef __XSCREENSAVER_H__
 #define __XSCREENSAVER_H__
 
-#ifdef __STDC__
-# include <stdlib.h>
-# ifdef __unix
-#  include <unistd.h>
-# endif
-# include <string.h>
+#include <stdlib.h>
+#ifdef __unix
+# include <unistd.h>
 #endif
 
+#include <string.h>
 #include <stdio.h>
-
-#ifdef __STDC__
-# define P(x)x
-#else  /* !__STDC__ */
-# define P(x)()
-# ifndef const
-#  define const /**/
-# endif
-#endif /* !__STDC__ */
-
 
 extern char *progname;
 extern char *progclass;
@@ -252,15 +240,15 @@ struct saver_screen_info {
    server extensions and virtual roots
    ======================================================================= */
 
-extern void restore_real_vroot P((saver_info *si));
-extern void disable_builtin_screensaver P((saver_info *si, Bool turn_off_p));
-extern void ensure_no_screensaver_running P((Display *, Screen *));
+extern void restore_real_vroot (saver_info *si);
+extern void disable_builtin_screensaver (saver_info *si, Bool turn_off_p);
+extern void ensure_no_screensaver_running (Display *, Screen *);
 
 #ifdef HAVE_MIT_SAVER_EXTENSION
-extern Bool query_mit_saver_extension P((saver_info *));
+extern Bool query_mit_saver_extension (saver_info *);
 #endif
 #ifdef HAVE_SGI_SAVER_EXTENSION
-extern Bool query_sgi_saver_extension P((saver_info *));
+extern Bool query_sgi_saver_extension (saver_info *);
 #endif
 
 
@@ -268,24 +256,24 @@ extern Bool query_sgi_saver_extension P((saver_info *));
    blanking
    ======================================================================= */
 
-extern void initialize_screensaver_window P((saver_info *si));
-extern void raise_window P((saver_info *si,
+extern void initialize_screensaver_window (saver_info *si);
+extern void raise_window (saver_info *si,
 			    Bool inhibit_fade, Bool between_hacks_p,
-			    Bool dont_clear));
-extern void blank_screen P((saver_info *si));
-extern void unblank_screen P((saver_info *si));
-extern void grab_keyboard_and_mouse P((Display *, Window, Cursor));
-extern void ungrab_keyboard_and_mouse P((Display *dpy));
+			    Bool dont_clear);
+extern void blank_screen (saver_info *si);
+extern void unblank_screen (saver_info *si);
+extern void grab_keyboard_and_mouse (Display *, Window, Cursor);
+extern void ungrab_keyboard_and_mouse (Display *dpy);
 
 /* =======================================================================
    locking
    ======================================================================= */
 
 #ifndef NO_LOCKING
-extern Bool unlock_p P((saver_info *si));
-extern create_passwd_dialog P((Widget, Visual *, Colormap));
-extern Bool lock_init P((int argc, char **argv));
-extern Bool passwd_valid_p P((const char *typed_passwd));
+extern Bool unlock_p (saver_info *si);
+extern create_passwd_dialog (Widget, Visual *, Colormap);
+extern Bool lock_init (int argc, char **argv);
+extern Bool passwd_valid_p (const char *typed_passwd);
 #endif
 
 /* =======================================================================
@@ -293,47 +281,47 @@ extern Bool passwd_valid_p P((const char *typed_passwd));
    ======================================================================= */
 
 #ifndef NO_DEMO_MODE
-extern void demo_mode P((saver_info *si));
-extern void demo_mode_restart_process P((saver_info *si));
-extern create_demo_dialog P((Widget, Visual *, Colormap));
-extern create_resources_dialog P((Widget, Visual *, Colormap));
+extern void demo_mode (saver_info *si);
+extern void demo_mode_restart_process (saver_info *si);
+extern create_demo_dialog (Widget, Visual *, Colormap);
+extern create_resources_dialog (Widget, Visual *, Colormap);
 #endif
 
 #if !defined(NO_LOCKING) || !defined(NO_DEMO_MODE)
-extern void pop_up_dialog_box P((Widget dialog, Widget form, int where));
-extern void format_into_label P((Widget label, const char *arg));
-extern void steal_focus_and_colormap P((Widget dialog));
+extern void pop_up_dialog_box (Widget dialog, Widget form, int where);
+extern void format_into_label (Widget label, const char *arg);
+extern void steal_focus_and_colormap (Widget dialog);
 #endif
 
 /* =======================================================================
    timers
    ======================================================================= */
 
-extern void start_notice_events_timer P((saver_info *, Window));
-extern void cycle_timer P((XtPointer si, XtIntervalId *id));
-extern void activate_lock_timer P((XtPointer si, XtIntervalId *id));
-extern void reset_watchdog_timer P((saver_info *si, Bool on_p));
-extern void idle_timer P((XtPointer si, XtIntervalId *id));
-extern void sleep_until_idle P((saver_info *si, Bool until_idle_p));
+extern void start_notice_events_timer (saver_info *, Window);
+extern void cycle_timer (XtPointer si, XtIntervalId *id);
+extern void activate_lock_timer (XtPointer si, XtIntervalId *id);
+extern void reset_watchdog_timer (saver_info *si, Bool on_p);
+extern void idle_timer (XtPointer si, XtIntervalId *id);
+extern void sleep_until_idle (saver_info *si, Bool until_idle_p);
 
 /* =======================================================================
    remote control
    ======================================================================= */
 
-extern Bool handle_clientmessage P((saver_info *, XEvent *, Bool));
+extern Bool handle_clientmessage (saver_info *, XEvent *, Bool);
 
 /* =======================================================================
    subprocs
    ======================================================================= */
 
-extern void init_sigchld P((void));
-extern void spawn_screenhack P((saver_info *si, Bool first_time_p));
-extern void kill_screenhack P((saver_info *si));
-extern void suspend_screenhack P((saver_info *si, Bool suspend_p));
-extern Bool screenhack_running_p P((saver_info *si));
-extern void emergency_kill_subproc P((saver_info *si));
-extern Bool select_visual P((saver_screen_info *ssi, const char *visual_name));
-extern const char *signal_name P((int signal));
+extern void init_sigchld (void);
+extern void spawn_screenhack (saver_info *si, Bool first_time_p);
+extern void kill_screenhack (saver_info *si);
+extern void suspend_screenhack (saver_info *si, Bool suspend_p);
+extern Bool screenhack_running_p (saver_info *si);
+extern void emergency_kill_subproc (saver_info *si);
+extern Bool select_visual (saver_screen_info *ssi, const char *visual_name);
+extern const char *signal_name (int signal);
 
 /* =======================================================================
    subprocs security
@@ -343,8 +331,8 @@ extern const char *signal_name P((int signal));
 # define hack_uid()
 # define hack_uid_warn()
 #else /* !NO_SETUID */
- extern void hack_uid P((saver_info *si));
- extern void hack_uid_warn P((saver_info *si));
+ extern void hack_uid (saver_info *si);
+ extern void hack_uid_warn (saver_info *si);
 #endif /* NO_SETUID */
 
 /* =======================================================================
@@ -353,22 +341,22 @@ extern const char *signal_name P((int signal));
 
 extern FILE *real_stderr;
 extern FILE *real_stdout;
-extern void initialize_stderr P((saver_info *si));
-extern void reset_stderr P((saver_screen_info *ssi));
-extern void clear_stderr P((saver_screen_info *ssi));
+extern void initialize_stderr (saver_info *si);
+extern void reset_stderr (saver_screen_info *ssi);
+extern void clear_stderr (saver_screen_info *ssi);
 
 /* =======================================================================
    misc
    ======================================================================= */
 
-extern void save_argv P((int argc, char **argv));
-extern void saver_exit P((saver_info *si, int status));
-extern void restart_process P((saver_info *si));
+extern void save_argv (int argc, char **argv);
+extern void saver_exit (saver_info *si, int status);
+extern void restart_process (saver_info *si);
 
-extern int saver_ehandler P((Display *dpy, XErrorEvent *error));
-extern int BadWindow_ehandler P((Display *dpy, XErrorEvent *error));
-extern Bool window_exists_p P((Display *dpy, Window window));
-extern char *timestring P((void));
+extern int saver_ehandler (Display *dpy, XErrorEvent *error);
+extern int BadWindow_ehandler (Display *dpy, XErrorEvent *error);
+extern Bool window_exists_p (Display *dpy, Window window);
+extern char *timestring (void);
 
 extern Atom XA_VROOT, XA_XSETROOT_ID;
 extern Atom XA_SCREENSAVER_VERSION, XA_SCREENSAVER_ID;

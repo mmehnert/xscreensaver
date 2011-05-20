@@ -27,13 +27,7 @@ static GC draw_gc, erase_gc;
 static unsigned int default_fg_pixel;
 
 static void
-#ifdef __STDC__
 init_helix (Display *dpy, Window window)
-#else /* ! __STDC__ */
-init_helix (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* ! __STDC__ */
 {
   int i;
   XGCValues gcv;
@@ -55,11 +49,7 @@ init_helix (dpy, window)
 }
 
 static int
-#ifdef __STDC__
 gcd (int a, int b)
-#else /* ! __STDC__ */
-gcd (a, b) int a, b;
-#endif /* ! __STDC__ */
 {
   while (b > 0)
     {
@@ -72,19 +62,9 @@ gcd (a, b) int a, b;
 }
 
 static void
-#ifdef __STDC__
 helix (Display *dpy, Window window,
        int radius1, int radius2, int d_angle,
        int factor1, int factor2, int factor3, int factor4)
-#else /* ! __STDC__ */
-helix (dpy, window,
-       radius1, radius2, d_angle,
-       factor1, factor2, factor3, factor4)
-     Display *dpy;
-     Window window;
-     int radius1, radius2, d_angle;
-     int factor1, factor2, factor3, factor4;
-#endif /* ! __STDC__ */
 {
   XWindowAttributes xgwa;
   int width, height;
@@ -124,20 +104,9 @@ helix (dpy, window,
 }
 
 static void
-#ifdef __STDC__
 trig (Display *dpy, Window window,
       int d_angle, int factor1, int factor2,
       int offset, int d_angle_offset, int dir, int density)
-#else /* ! __STDC__ */
-trig (dpy, window,
-      d_angle, factor1, factor2,
-      offset, d_angle_offset, dir, density)
-     Display *dpy;
-     Window window;
-     int d_angle;
-     int factor1, factor2;
-     int offset, d_angle_offset, dir, density;
-#endif /* ! __STDC__ */
 {
   XWindowAttributes xgwa;
   int width, height;
@@ -173,15 +142,7 @@ trig (dpy, window,
 #define min(a,b) ((a)<(b)?(a):(b))
 
 static void
-#ifdef __STDC__
 random_helix (Display *dpy, Window window, XColor *color, Bool *got_color)
-#else /* ! __STDC__ */
-random_helix (dpy, window, color, got_color)
-     Display *dpy;
-     Window window;
-     XColor *color;
-     Bool *got_color;
-#endif /* ! __STDC__ */
 {
   Colormap cmap;
   int width, height;
@@ -245,15 +206,7 @@ random_helix (dpy, window, color, got_color)
 }
 
 static void
-#ifdef __STDC__
 random_trig (Display *dpy, Window window, XColor *color, Bool *got_color)
-#else /* ! __STDC__ */
-random_trig (dpy, window, color, got_color)
-     Display *dpy;
-     Window window;
-     XColor *color;
-     Bool *got_color;
-#endif /* ! __STDC__ */
 {
   Colormap cmap;
   int width, height;
@@ -295,13 +248,7 @@ random_trig (dpy, window, color, got_color)
 }
 
 static void
-#ifdef __STDC__
 random_helix_or_trig (Display *dpy, Window window)
-#else /* ! __STDC__ */
-random_helix_or_trig (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* ! __STDC__ */
 {
   int i;
   Bool free_color = False;
@@ -347,11 +294,7 @@ char *defaults [] = {
 XrmOptionDescRec options [] = { { 0, } };
 
 void
-#ifdef __STDC__
 screenhack (Display *dpy, Window window)
-#else /* ! __STDC__ */
-screenhack (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
   init_helix (dpy, window);
   while (1)

@@ -49,13 +49,7 @@ static int xmax, ymax;
 static int iterations;
 
 static void
-#ifdef __STDC__
 init_map (Display *dpy, Window window)
-#else /* ! __STDC__ */
-init_map (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* ! __STDC__ */
 {
   unsigned long fg_pixel = 0, bg_pixel = 0;
   int fg_h, bg_h;
@@ -268,16 +262,10 @@ init_map (dpy, window)
 
 
 static unsigned int
-#ifdef __STDC__
 set (unsigned int l,
      unsigned int c,
      unsigned int size,
      int height)
-#else /* ! __STDC__ */
-set (l, c, size, height)
-     unsigned int l, c, size;
-     int height;
-#endif /* ! __STDC__ */
 {
   int rang = 1 << (NSTEPS - size);
   height = height + (random () % rang) - rang / 2;
@@ -287,13 +275,7 @@ set (l, c, size, height)
 }
 
 static void
-#ifdef __STDC__
 floyd_steinberg (Display *dpy, Window window)
-#else /* ! __STDC__ */
-floyd_steinberg (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* ! __STDC__ */
 {
   int x, y, err;
 
@@ -336,16 +318,8 @@ floyd_steinberg (dpy, window)
 }
 
 static void
-#ifdef __STDC__
 draw (Display *dpy, Window window,
       int x, int y, unsigned long pixel, int grid_size)
-#else /* ! __STDC__ */
-draw (dpy, window, x, y, pixel, grid_size)	/* not called in mono mode */
-     Display *dpy;
-     Window window;
-     int x, y, grid_size;
-     unsigned long pixel;
-#endif /* ! __STDC__ */
 {
   static unsigned int last_pixel, last_valid = 0;
   if (! (last_valid && pixel == last_pixel))
@@ -359,13 +333,7 @@ draw (dpy, window, x, y, pixel, grid_size)	/* not called in mono mode */
 
 
 static void 
-#ifdef __STDC__
 draw_map (Display *dpy, Window window)
-#else /* ! __STDC__ */
-draw_map (dpy, window)
-     Display *dpy;
-     Window window;
-#endif /* ! __STDC__ */
 {
   int xstep, ystep, xnextStep, ynextStep;
   int x, y, i, x1, x2, y1, y2;
@@ -498,11 +466,7 @@ XrmOptionDescRec options [] = {
 
 
 void
-#ifdef __STDC__
 screenhack (Display *dpy, Window window)
-#else /* ! __STDC__ */
-screenhack (dpy, window) Display *dpy; Window window;
-#endif /* ! __STDC__ */
 {
     while (1)
       {

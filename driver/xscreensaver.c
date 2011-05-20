@@ -119,6 +119,10 @@
  *       
  * ======================================================================== */
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif
+
 #include <stdio.h>
 #include <ctype.h>
 #include <X11/Xlib.h>
@@ -127,7 +131,11 @@
 #include <X11/StringDefs.h>
 #include <X11/Shell.h>
 #include <X11/Xos.h>
-#include <X11/Xmu/Error.h>
+#ifdef HAVE_XMU
+# include <X11/Xmu/Error.h>
+#else
+# include "xmu.h"
+#endif
 
 #ifdef HAVE_XIDLE_EXTENSION
 #include <X11/extensions/xidle.h>
@@ -173,17 +181,12 @@ static XrmOptionDescRec options [] = {
 };
 
 static char *defaults[] = {
-#include "XScreenSaver.ad.h"
+#include "XScreenSaver_ad.h"
  0
 };
 
 static void
-#ifdef __STDC__
 do_help (saver_info *si)
-#else  /* !__STDC__ */
-do_help (si)
-	saver_info *si;
-#endif /* !__STDC__ */
 {
   printf ("\
 xscreensaver %s, copyright (c) 1991-1997 by Jamie Zawinski <jwz@netscape.com>\n\
@@ -233,12 +236,7 @@ http://www.netscape.com/people/jwz/xscreensaver/\n\n",
 
 
 static char *
-#ifdef __STDC__
 reformat_hack(const char *hack)
-#else  /* !__STDC__ */
-reformat_hack (hack)
-	const char *hack;
-#endif /* !__STDC__ */
 {
   int i;
   const char *in = hack;
@@ -273,11 +271,7 @@ reformat_hack (hack)
 
 
 static void
-#ifdef __STDC__
 get_screenhacks (saver_info *si)
-#else  /* !__STDC__ */
-get_screenhacks (si) saver_info *si;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   int i = 0;
@@ -377,11 +371,7 @@ get_screenhacks (si) saver_info *si;
 
 
 static void
-#ifdef __STDC__
 get_resources (saver_info *si)
-#else  /* !__STDC__ */
-get_resources (si) saver_info *si;
-#endif /* !__STDC__ */
 {
   char *s;
   saver_preferences *p = &si->prefs;
@@ -414,33 +404,33 @@ get_resources (si) saver_info *si;
   if ((s = get_string_resource ("xidleExtension", "Boolean")))
     p->use_xidle_extension = get_boolean_resource ("xidleExtension","Boolean");
   else
-#ifdef HAVE_XIDLE_EXTENSION	/* pick a default */
-    p->use_xidle_extension = True;
+#ifdef HAVE_XIDLE_EXTENSION		/* pick a default */
+    p->use_xidle_extension = True;	/* if we have it, use it */
 #else  /* !HAVE_XIDLE_EXTENSION */
     p->use_xidle_extension = False;
 #endif /* !HAVE_XIDLE_EXTENSION */
   if (s) free (s);
 
-  /* don't set use_saver_extension unless it is explicitly specified */
+  /* don't set use_mit_extension unless it is explicitly specified */
   if ((s = get_string_resource ("mitSaverExtension", "Boolean")))
     p->use_mit_saver_extension = get_boolean_resource ("mitSaverExtension",
 						       "Boolean");
   else
-#ifdef HAVE_MIT_SAVER_EXTENSION	/* pick a default */
-    p->use_mit_saver_extension = True;
+#ifdef HAVE_MIT_SAVER_EXTENSION		/* pick a default */
+    p->use_mit_saver_extension = False;	/* Default false, because it sucks */
 #else  /* !HAVE_MIT_SAVER_EXTENSION */
     p->use_mit_saver_extension = False;
 #endif /* !HAVE_MIT_SAVER_EXTENSION */
   if (s) free (s);
 
 
-  /* don't set use_saver_extension unless it is explicitly specified */
+  /* don't set use_mit_extension unless it is explicitly specified */
   if (get_string_resource ("sgiSaverExtension", "Boolean"))
     p->use_sgi_saver_extension = get_boolean_resource ("sgiSaverExtension",
 						       "Boolean");
   else
-#ifdef HAVE_SGI_SAVER_EXTENSION	/* pick a default */
-    p->use_sgi_saver_extension = True;
+#ifdef HAVE_SGI_SAVER_EXTENSION		/* pick a default */
+    p->use_sgi_saver_extension = True;	/* if we have it, use it */
 #else  /* !HAVE_SGI_SAVER_EXTENSION */
     p->use_sgi_saver_extension = False;
 #endif /* !HAVE_SGI_SAVER_EXTENSION */
@@ -497,26 +487,20 @@ get_resources (si) saver_info *si;
 
 
 char *
-timestring P((void))
+timestring (void)
 {
-  long now = time ((time_t *) 0);
+  time_t now = time ((time_t *) 0);
   char *str = (char *) ctime (&now);
   char *nl = (char *) strchr (str, '\n');
   if (nl) *nl = 0; /* take off that dang newline */
   return str;
 }
 
-static void initialize P((saver_info *si, int argc, char **argv));
-static void main_loop P((saver_info *si));
+static void initialize (saver_info *si, int argc, char **argv);
+static void main_loop (saver_info *si);
 
 void
-#ifdef __STDC__
 main (int argc, char **argv)
-#else /* ! __STDC__ */
-main (argc, argv)
-     int argc;
-     char **argv;
-#endif /* ! __STDC__ */
 {
   saver_info si;
   memset(&si, 0, sizeof(si));
@@ -527,11 +511,7 @@ main (argc, argv)
 
 
 int
-#ifdef __STDC__
 saver_ehandler (Display *dpy, XErrorEvent *error)
-#else /* ! __STDC__ */
-saver_ehandler (dpy, error) Display *dpy; XErrorEvent *error;
-#endif /* ! __STDC__ */
 {
   saver_info *si = global_si_kludge;	/* I hate C so much... */
 
@@ -544,14 +524,7 @@ saver_ehandler (dpy, error) Display *dpy; XErrorEvent *error;
 }
 
 static void
-#ifdef __STDC__
 initialize_connection (saver_info *si, int argc, char **argv)
-#else  /* !__STDC__ */
-initialize_connection (si, argc, argv)
-	saver_info *si;
-	int argc;
-	char **argv;
-#endif /* !__STDC__ */
 {
   int i;
   Widget toplevel_shell = XtAppInitialize (&si->app, progclass,
@@ -630,14 +603,7 @@ initialize_connection (si, argc, argv)
 
 
 static void
-#ifdef __STDC__
 initialize (saver_info *si, int argc, char **argv)
-#else  /* !__STDC__ */
-initialize (si, argc, argv)
-	saver_info *si;
-	int argc;
-	char **argv;
-#endif /* !__STDC__ */
 {
   int i;
   saver_preferences *p = &si->prefs;
@@ -829,11 +795,7 @@ initialize (si, argc, argv)
 }
 
 static void
-#ifdef __STDC__
 main_loop (saver_info *si)
-#else  /* !__STDC__ */
-main_loop (si) saver_info *si;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   while (1)
@@ -939,14 +901,7 @@ main_loop (si) saver_info *si;
 
 
 Bool
-#ifdef __STDC__
 handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
-#else  /* !__STDC__ */
-handle_clientmessage (si, event, until_idle_p)
-	saver_info *si;
-	XEvent *event;
-	Bool until_idle_p;
-#endif /* !__STDC__ */
 {
   saver_preferences *p = &si->prefs;
   Atom type = 0;
