@@ -163,11 +163,19 @@ http://people.netscape.com/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 2.15:	Made `flag' able to do XPM images.
+			New look for the xscreensaver logo (`xroger').
+			Fixed compilation error on Suns with adjunct passwords.
+			Got multi-architecture builds working again.
+			Some configure tweaks for building on HPUX and Solaris.
+			Fixed bug in decayscreen.
+			Fixed typo i passwd.c.
+			Made `cynosure' not die when colormap is full.
 Changes since 2.14:	Added `cynosure' hack.
 			Added `moire2' hack.
 			Tweaked `erase.c' some more.
 			Made unfading a bit smoother.
-			Added dropshadows to `cynosure'.
+			Added `vidwhacker' hack (not installed by default.)
 			Added `stairs' hack.
 			Split `escher' into `cage' and `moebius', as per
 			xlockmore.

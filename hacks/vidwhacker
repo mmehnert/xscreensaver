@@ -8,7 +8,7 @@
 # random TV station into it...
 #
 # The video grabbing part is SGI-specific -- if you want to use this on
-# another system, write your own version of the grab() procedure.
+# another system, add a new clause to the grab() procedure.
 
 
 # Process command-line args...
@@ -59,15 +59,57 @@ clean() {
 # Grab a frame of video.
 #
 grab() {
-  # SGI's "vidtomem" returns an SGI RGB image of the default video input,
-  # and has stupid non-overridable ouput-file-naming conventions.  So, let 
-  # it write its file; and then convert it to a pgm.
-  #
-  vidtomem -f $tmp
-  sgitopnm $tmp_rgb |
+  if [ `uname` = IRIX ]; then
+    #
+    # SGI's "vidtomem" returns an SGI RGB image of the default video input,
+    # and has stupid non-overridable ouput-file-naming conventions.  So, let 
+    # it write its file; and then convert it to a pgm.
+    #
+    vidtomem -f $tmp
+    sgitopnm $tmp_rgb > $tmp_ppm
+    # Cut off the close-captioning blips in the NTSC overscan region.  YMMV.
+    #  | pnmcut 12 7 695 477 
 
-  # Cut off the close-captioning blips in the NTSC overscan region.  YMMV.
-  pnmcut 12 7 695 477 > $tmp_ppm
+  else
+    echo "$0: don't know how to grab video on this OS." >&2
+    clean
+    exit 1
+  fi
+
+
+  # I got this message from Marcus Herbert <rhoenie@chillout.org>.
+  # I'm not sure of the best way to make the presence of qcam be
+  #  auto-detected, but here's what he said, FYI...
+  #
+  #    i am using a black/white Connectix Qcam on linux and its very simple
+  #    to adept the script:
+  #
+  #    # qcam: Version 0.91
+  #    #   Options:
+  #    #   O  -x width   Set width
+  #    #   O  y height   Setheight
+  #    #   O  B bpp      Setbits per pixel
+  #    #   O  W         Auto-set white balance
+  #    #   O  E "vals"  Autoexposure mode, parameters required
+  #    #   O  D         Remove dark speckling
+  #    #   O  s val     Set scaling factor (1, 2, or 4)
+  #    #
+  #    qcam -x 320 -y 240 -B 6 -W -E 1 -D -s 1 > $tmp_ppm
+  #
+  #   You dont really need the parameters for qcam as it reads out a system
+  #   config file where you store the values for brightnes, contrast and
+  #   white balance.  But with this parameters you are independant of the
+  #   light ratios at the place the cam is set up.
+  #
+  #   Other versions of qcam (0.7, 0.96..) don't support the autoexposure and
+  #   auto- whitebalance commandline parameters. On such systems (and on
+  #   color-qcam systems) a simple qcam > $tmp_ppm (or cqcam > $tmp_ppm) is
+  #   enough.
+  #
+  #   I dont know about other systems but afaik fBSD uses the Qcam in this way:
+  #
+  #     qcamcontrol -bla -foo -bar > picture.pgm    
+  #
 }
 
 
@@ -198,11 +240,22 @@ while true; do
     pid=""
   fi
 
-  if [ "$onroot" = true ]; then
-    xv - $xvargs < $tmp_ppm3
+  if [ ! -s $tmp_ppm3 ]; then
+    echo "$0: no image grabbed" >&2
   else
-    xv - $xvargs < $tmp_ppm3 &
-    pid=$!
+
+    pnmtosgi < $tmp_ppm3 > $tmp_ppm2
+    rm -f $tmp_ppm3
+
+    if [ "$onroot" = true ]; then
+      xv $xvargs $tmp_ppm2
+    else
+      xv $xvargs $tmp_ppm2 &
+      pid=$!
+    fi
+
+    #xv -geom =320x220 $tmp_ppm3 &
+    #pid=
   fi
 
   clean

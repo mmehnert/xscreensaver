@@ -61,7 +61,7 @@
 #   include <sys/audit.h>
 #   include <pwdadj.h>
 
-#   define PWTYPE   passwd_adjunct *
+#   define PWTYPE   struct passwd_adjunct *
 #   define PWPSLOT  pwa_passwd
 #   define GETPW    getpwanam
 

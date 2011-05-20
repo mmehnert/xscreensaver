@@ -332,15 +332,22 @@ case "$host" in
     if test -d /usr/contrib/X11R6/include ; then
       X_CFLAGS="-I/usr/contrib/X11R6/include $X_CFLAGS"
       X_LIBS="-L/usr/contrib/X11R6/lib $X_LIBS"
+    elif test -d /usr/X11R6/include ; then
+      X_CFLAGS="-I/usr/X11R6/include $X_CFLAGS"
+      X_LIBS="-L/usr/X11R6/lib $X_LIBS"
     elif test -d /usr/contrib/X11R5/include ; then
       X_CFLAGS="-I/usr/contrib/X11R5/include $X_CFLAGS"
       X_LIBS="-L/usr/contrib/X11R5/lib $X_LIBS"
+    elif test -d /usr/X11R5/include ; then
+      X_CFLAGS="-I/usr/X11R5/include $X_CFLAGS"
+      X_LIBS="-L/usr/X11R5/lib $X_LIBS"
     fi
 
   ;;
   *-solaris*)
     # Same to you, pinheads.  (Is this really the standard location now?
     # What happened to the joke that this kind of thing went in /opt?)
+    # cthomp says "answer: CDE (Common Disorganized Environment)"
     if test -f /usr/dt/include/Xm/Xm.h ; then
       X_CFLAGS="$X_CFLAGS -I/usr/dt/include"
       X_LIBS="$X_LIBS -L/usr/dt/lib -R:/usr/dt/lib"
@@ -817,7 +824,7 @@ if test $with_sgivideo = yes; then
     have_sgivideo=no
     AC_CHECK_LIB(vl, vlOpenVideo, have_sgivideo=yes)
     if test $have_sgivideo = yes; then
-      SGI_VIDEO_OBJS="$(UTILS_SRC)/sgivideo.o"
+      SGI_VIDEO_OBJS="$(UTILS_BIN)/sgivideo.o"
       SGI_VIDEO_LIBS="-lvl"
       AC_DEFINE(HAVE_SGI_VIDEO)
     fi

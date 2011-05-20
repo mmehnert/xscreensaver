@@ -68,7 +68,7 @@ z *
 # define HACK_DRAW			draw_stairs
 # define stairs_opts		xlockmore_opts
 # define DEFAULTS			"*cycles:		1       \n"			\
-							"*delay:		1000    \n"			\
+							"*delay:		200000  \n"			\
 							"*wireframe:	False	\n"
 # include "xlockmore.h"		/* from the xscreensaver distribution */
 #else /* !STANDALONE */
@@ -109,7 +109,7 @@ typedef struct {
 	GLfloat     step;
 	Bool        direction;
   int         AreObjectsDefined[1];
-	GLfloat     sphere_position;
+	int     sphere_position;
 	GLXContext *glx_context;
 } stairsstruct;
 
@@ -130,6 +130,7 @@ static float lmodel_ambient[] =
 static float lmodel_twoside[] =
 {GL_TRUE};
 
+#if 0
 static float MaterialRed[] =
 {0.7, 0.0, 0.0, 1.0};
 static float MaterialGreen[] =
@@ -138,12 +139,8 @@ static float MaterialBlue[] =
 {0.0, 0.0, 0.7, 1.0};
 static float MaterialCyan[] =
 {0.2, 0.5, 0.7, 1.0};
-static float MaterialYellow[] =
-{0.7, 0.7, 0.0, 1.0};
 static float MaterialMagenta[] =
 {0.6, 0.2, 0.5, 1.0};
-static float MaterialWhite[] =
-{0.7, 0.7, 0.7, 1.0};
 static float MaterialGray[] =
 {0.2, 0.2, 0.2, 1.0};
 static float MaterialGray5[] =
@@ -152,6 +149,51 @@ static float MaterialGray6[] =
 {0.6, 0.6, 0.6, 1.0};
 static float MaterialGray8[] =
 {0.8, 0.8, 0.8, 1.0};
+#endif
+static float MaterialYellow[] =
+{0.7, 0.7, 0.0, 1.0};
+static float MaterialWhite[] =
+{0.7, 0.7, 0.7, 1.0};
+
+static float positions[] =
+{
+  -2.5, 4.0, 0.0, /* First one is FUDGED :) */
+  -3.0, 3.25, 1.0,
+  -3.0, 4.4, 1.5,
+  -3.0, 3.05, 2.0,
+  -3.0, 4.2, 2.5,
+
+  -3.0, 2.85, 3.0,
+  -2.5, 4.0, 3.0,
+  -2.0, 2.75, 3.0,
+  -1.5, 3.9, 3.0,
+  -1.0, 2.65, 3.0,
+  -0.5, 3.8, 3.0,
+  0.0, 2.55, 3.0,
+  0.5, 3.7, 3.0,
+  1.0, 2.45, 3.0,
+  1.5, 3.6, 3.0,
+  2.0, 2.35, 3.0,
+
+  2.0, 3.5, 2.5,
+  2.0, 2.25, 2.0,
+  2.0, 3.4, 1.5,
+  2.0, 2.15, 1.0,
+  2.0, 3.3, 0.5,
+  2.0, 2.05, 0.0,
+  2.0, 3.2, -0.5,
+  2.0, 1.95, -1.0,
+  2.0, 3.1, -1.5,
+  2.0, 1.85, -2.0,
+
+  1.5, 2.9, -2.0,
+  1.0, 1.65, -2.0,
+  0.5, 2.7, -2.0,
+  0.0, 1.55, -2.0,
+  -0.5, 2.5, -2.0,
+  -1.0, 1.45, -2.0,
+};
+#define NPOSITIONS ((sizeof positions) / (sizeof positions[0]))
 
 static stairsstruct *stairs = NULL;
 static GLuint objects;
@@ -241,11 +283,19 @@ draw_degree(stairsstruct * sp, GLfloat w, GLfloat h , GLfloat t)
 }
 
 static void
-draw_stairs_internal(stairsstruct * sp)
+draw_stairs_internal(ModeInfo *mi)
 {
+	stairsstruct *sp = &stairs[MI_SCREEN(mi)];
   GLfloat X;
   
   glPushMatrix();
+  glPushMatrix();
+  glTranslatef(-3.0, 0.1, 2.0);
+  for (X=0; X< 2; X++) {
+    draw_degree(sp, 0.5, 2.7+0.1*X, 0.5);
+    glTranslatef( 0.0, 0.1,-1.0);
+  }
+	glPopMatrix();
   glTranslatef(-3.0, 0.0, 3.0);
   glPushMatrix();
 
@@ -264,13 +314,22 @@ draw_stairs_internal(stairsstruct * sp)
     glTranslatef(-1.0,-0.1, 0.0);
   }
 	glPopMatrix();
-  glTranslatef(0.0, 0.1,-1.0);
-  for (X=0; X< 2; X++) {
-    draw_degree(sp, 0.5, 2.7+0.1*X, 0.5);
-    glTranslatef( 0.0, 0.1,-1.0);
-  }
-
 	glPopMatrix();
+
+  glPushMatrix();
+  glMaterialfv(GL_FRONT_AND_BACK, GL_DIFFUSE, MaterialYellow);
+
+  glTranslatef((GLfloat) positions[sp->sphere_position],
+       (GLfloat) positions[sp->sphere_position + 1],
+       (GLfloat) positions[sp->sphere_position + 2]);
+  if (sp->sphere_position == 0) /* FUDGE soo its not so obvious */
+     mySphere(0.48);
+   else
+     mySphere(0.5);
+  glPopMatrix();
+  sp->sphere_position += 3;
+  if (sp->sphere_position >= NPOSITIONS)
+    sp->sphere_position = 0;
 }
 
 static void
@@ -351,7 +410,7 @@ init_stairs(ModeInfo * mi)
 	sp = &stairs[screen];
 	sp->step = 0.0;
   sp->direction = LRAND() & 1;
-	/* sp->sphere_position = NRAND(90);*/
+	sp->sphere_position = NRAND(NPOSITIONS / 3) * 3;
 
 	if ((sp->glx_context = init_GL(mi)) != NULL) {
 
@@ -392,12 +451,12 @@ draw_stairs(ModeInfo * mi)
 
 	glRotatef(44.5, 1, 0, 0);
   glRotatef(50 + ((sp->direction) ? 1 : -1 ) *
-     ((sp->step * 100 > 360) ? sp->step * 100 : 0), 0, 1, 0);
-  if (sp->step * 100 >= 720) {  /* stop showing secrets */
+     ((sp->step * 100 > 120) ? sp->step * 100 - 120 : 0), 0, 1, 0);
+  if (sp->step * 100 >= 360 + 120) {  /* stop showing secrets */
     sp->step = 0;
     sp->direction = LRAND() & 1;
   }
-  draw_stairs_internal(sp);
+  draw_stairs_internal(mi);
 
 	glPopMatrix();
 

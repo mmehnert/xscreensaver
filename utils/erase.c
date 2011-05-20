@@ -109,7 +109,7 @@ triple_wipe (Display *dpy, Window window, GC gc,
 
   for (i = 0; i < max; i++)
     { 
-      int x, y, x2, y2, swap;
+      int x, y, x2, y2;
       if (lines[i] < height)
 	x = 0, y = lines[i], x2 = width, y2 = y;
       else
@@ -151,7 +151,7 @@ quad_wipe (Display *dpy, Window window, GC gc,
 
   for (i = 0; i < max; i++)
     { 
-      int x, y, x2, y2, swap;
+      int x, y, x2, y2;
       if (lines[i] < height)
 	x = 0, y = lines[i], x2 = width, y2 = y;
       else

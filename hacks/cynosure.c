@@ -171,9 +171,16 @@ void screenhack(Display *d, Window w)
 
   if (mono_p)
     ;
-  else
+  else {
     make_smooth_colormap (dpy, xgwa.visual, xgwa.colormap, colors, &ncolors,
 			  True, 0, True);
+    if (ncolors <= 2) {
+      mono_p = True;
+      ncolors = 2;
+      if (colors) free(colors);
+      colors = 0;
+    }
+  }
 
   bg_pixel = get_pixel_resource("background", "Background", dpy,
 				xgwa.colormap);

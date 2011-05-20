@@ -13,7 +13,8 @@ size() {
 
 TAR_SIZE=`size xscreensaver-*.gz`
 README_SIZE=`size README`
-LSM_SIZE=`size xscreensaver.lsm`
+#LSM_SIZE=`size xscreensaver.lsm`
+LSM_SIZE="1K"
 
 VERSION=`sed -n 's/.*\([0-9][0-9]*\.[0-9]*\).*/\1/p' < utils/version.h`
 DATE=`date '+%d%b%y' | tr a-z A-Z`

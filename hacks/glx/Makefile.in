@@ -147,7 +147,8 @@ distdepend:
 	      -e 's@\.\./\.\./utils@$$(UTILS_SRC)@g'			    \
 	      -e 's@\.\./glx/@@g'					    \
 	      -e 's@ \.\./@ $$(HACK_SRC)/@g'				    \
-	      -e 's@ \([^$$]\)@ $$(srcdir)/\1@g' ;			    \
+	      -e 's@ \([^$$]\)@ $$(srcdir)/\1@g'			    \
+	      -e 's@ $$(srcdir)/\(.*config.h\)@ \1@g' ;			    \
 	  echo ''							    \
 	) > /tmp/distdepend.$$$$ &&					    \
 	mv Makefile.in Makefile.in.bak &&				    \

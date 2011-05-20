@@ -4469,7 +4469,7 @@ else
 fi
 
     if test $have_sgivideo = yes; then
-      SGI_VIDEO_OBJS="$(UTILS_SRC)/sgivideo.o"
+      SGI_VIDEO_OBJS="$(UTILS_BIN)/sgivideo.o"
       SGI_VIDEO_LIBS="-lvl"
       cat >> confdefs.h <<\EOF
 #define HAVE_SGI_VIDEO 1
