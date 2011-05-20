@@ -274,7 +274,7 @@ done (Widget w, XEvent *event, String *argv, Cardinal *argc)
 
 extern void skull (Display *, Window, GC, GC, int, int, int, int);
 
-static void
+void
 roger (Widget button, XtPointer client_data, XtPointer call_data)
 {
   Display *dpy = XtDisplay (button);
@@ -571,10 +571,6 @@ pop_passwd_dialog (saver_info *si)
 
   if (!si->prefs.debug_p)
     XGrabServer (dpy);				/* ############ DANGER! */
-
-  /* this call to ungrab used to be in main_loop() - see comment in
-      xscreensaver.c around line 857. */
-  ungrab_keyboard_and_mouse (si);
 
   while (passwd_state == pw_read)
     {

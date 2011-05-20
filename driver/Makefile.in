@@ -94,9 +94,9 @@ UTIL_OBJS	= $(UTILS_BIN)/fade.o $(UTILS_BIN)/overlay.o \
 		  $(UTILS_BIN)/yarandom.o @XMU_OBJS@
 
 SAVER_SRCS_1	= demo.c stderr.c subprocs.c timers.c windows.c \
-		  xscreensaver.c xset.c
+		  xscreensaver.c splash.c xset.c
 SAVER_OBJS_1	= demo.o stderr.o subprocs.o timers.o windows.o \
-		  xscreensaver.o xset.o
+		  xscreensaver.o splash.o xset.o
 
 SAVER_SRCS	= $(SAVER_SRCS_1) $(DIALOG_SRCS) $(LOCK_SRCS) $(UTIL_SRCS)
 SAVER_OBJS	= $(SAVER_OBJS_1) $(DIALOG_OBJS) $(LOCK_OBJS) $(UTIL_OBJS)
@@ -350,6 +350,8 @@ xscreensaver.o: $(UTILS_SRC)/yarandom.h
 xscreensaver.o: $(UTILS_SRC)/resources.h
 xscreensaver.o: $(UTILS_SRC)/visual.h
 xscreensaver.o: XScreenSaver_ad.h
+splash.o: ../config.h
+splash.o: $(srcdir)/xscreensaver.h
 xset.o: ../config.h
 xset.o: $(srcdir)/xscreensaver.h
 dialogs-Xm.o: ../config.h

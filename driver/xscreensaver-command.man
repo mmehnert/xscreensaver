@@ -11,13 +11,14 @@
 .if n .sp 1
 .if t .sp .5
 ..
-.TH XScreenSaver 1 "21-Sep-98 (2.28)" "X Version 11"
+.TH XScreenSaver 1 "23-Sep-98 (2.29)" "X Version 11"
 .SH NAME
 xscreensaver-command - control a running xscreensaver process
 .SH SYNOPSIS
 .B xscreensaver-command
 [\-help] \
 [\-demo] \
+[\-prefs] \
 [\-activate] \
 [\-deactivate] \
 [\-cycle] \
@@ -46,6 +47,13 @@ Prints a brief summary of command-line options.
 .B \-demo
 Cause the screensaver to enter its interactive demo mode, in which one
 can experiment with the various graphics hacks available.  See
+.BR xscreensaver (1)
+for details.
+.TP 8
+.B \-prefs
+Cause the screensaver to enter its interactive demo mode, and bring up
+the Preferences control panel, in which one can change most of the settings
+that control the xscreensaver daemon's behavior.  See
 .BR xscreensaver (1)
 for details.
 .TP 8

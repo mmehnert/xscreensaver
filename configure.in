@@ -63,14 +63,14 @@ AC_DEFUN(AC_PROG_INSTALL_DIRS,
    if mkdir conftestdir; then
       cd conftestdir
 
-      ${INSTALL} -d `pwd`/dir1/dir2 >&- 2>&1
+      ${INSTALL} -d `pwd`/dir1/dir2 >&- 2>&-
       if test -d dir1/dir2 ; then
         AC_MSG_RESULT(yes)
       else
         AC_MSG_RESULT(no)
         AC_MSG_CHECKING(whether \"mkdir -p\" creates intermediate directories)
         rm -rf dir1
-        mkdir -p dir1/dir2 >&- 2>&1
+        mkdir -p dir1/dir2 >&- 2>&-
         if test -d dir1/dir2/. ; then
 	  AC_MSG_RESULT(yes)
 	  INSTALL_DIRS='mkdir -p'
@@ -172,8 +172,7 @@ AC_PATH_XTRA
 # Try and find the app-defaults directory.
 # It sucks that autoconf doesn't do this already...
 #
-AC_DEFUN(AC_PATH_X_APP_DEFAULTS_XMKMF,
-  [
+AC_DEFUN(AC_PATH_X_APP_DEFAULTS_XMKMF,[
   rm -fr conftestdir
   if mkdir conftestdir; then
     cd conftestdir
@@ -190,8 +189,8 @@ EOF
     rm -fr conftestdir
   fi])
 
-AC_DEFUN(AC_PATH_X_APP_DEFAULTS_DIRECT,
-[  # Look for the directory under a standard set of common directories.
+AC_DEFUN(AC_PATH_X_APP_DEFAULTS_DIRECT,[
+  # Look for the directory under a standard set of common directories.
   # Check X11 before X11Rn because it's often a symlink to the current release.
   for ac_dir in					\
     /usr/X11/lib/app-defaults			\
@@ -341,6 +340,60 @@ AC_DEFUN(AC_TRY_X_RUN, [
 
 
 
+# Usage: HANDLE_X_PATH_ARG([variable_name],
+#			   [--command-line-option],
+#			   [descriptive string])
+#
+# All of the --with options take three forms:
+#
+#   --with-foo (or --with-foo=yes)
+#   --without-foo (or --with-foo=no)
+#   --with-foo=/DIR
+#
+# This function, HANDLE_X_PATH_ARG, deals with the /DIR case.  When it sees
+# a directory (string beginning with a slash) it checks to see whether
+# /DIR/include and /DIR/lib exist, and adds them to $X_CFLAGS and $X_LIBS
+# as appropriate.
+#
+AC_DEFUN(HANDLE_X_PATH_ARG, [
+   case "$[$1]" in
+    yes) ;;
+    no)  ;;
+
+    /*)
+     AC_MSG_CHECKING([for [$3] headers])
+     d=$[$1]/include
+     if test -d $d; then
+       X_CFLAGS="-I$d $X_CFLAGS"
+       AC_MSG_RESULT($d)
+     else
+       AC_MSG_RESULT(not found ($d: no such directory))
+     fi
+
+     AC_MSG_CHECKING([for [$3] libs])
+     d=$[$1]/lib
+     if test -d $d; then
+       X_LIBS="-L$d $X_LIBS"
+       AC_MSG_RESULT($d)
+     else
+       AC_MSG_RESULT(not found ($d: no such directory))
+     fi
+
+     # replace the directory string with "yes".
+     [$1]_req="yes"
+     [$1]=$[$1]_req
+     ;;
+
+    *)
+     echo ""
+     echo "error: argument to [$2] must be \"yes\", \"no\", or a directory."
+     echo "       If it is a directory, then \`DIR/include' will be added to"
+     echo "       the -I list, and \`DIR/lib' will be added to the -L list."
+     exit 1
+     ;;
+   esac
+  ])
+
 
 
 # check for the HP XHPDisableReset server extension headers.
@@ -367,78 +420,86 @@ fi
 case "$host" in
   *-hpux*)
 
-    # On HPUX 10.x, the only libXaw.sl is in /usr/lib/X11R4/.  However, the
-    # other X libs are symlinked to by /usr/lib/ (this was not the case on
-    # 9.x and earlier.)
+    # The following arcana was gleaned from conversations with
+    # Eric Schwartz <erics@col.hp.com>:
     #
-    # The Xaw and (more importantly) Xmu headers and libraries are not in
-    # /usr/lib/X11R6/ but are instead in /usr/contrib/X11R6/lib, because HP
-    # doesn't consider them "standard" enough or something.
+    # On HPUX 10.x, the parts of X that HP considers "standard" live in
+    # /usr/{include,lib}/X11R6/.  The parts that HP doesn't consider
+    # "standard", notably, Xaw and Xmu, live in /usr/contrib/X11R6/.
+    # Also, there are symlinks from /usr/include/ and /usr/lib/ into
+    # /usr/{include,lib}/X11R6/, so that (if you don't use Xmu at all)
+    # you don't need any -I or -L arguments.
     #
-    # HPUX 9.x did not have R6 by default; but it could be installed as a
-    # patch, in which case, the whole thing went in /usr/contrib/X11R6/.
+    # On HPUX 9.x, /usr/{include,lib}/X11R5/ and /usr/contrib/X11R5/
+    # are the same division as 10.x.  However, there are no symlinks to
+    # the X stuff from /usr/include/ and /usr/lib/, so -I and -L
+    # arguments are always necessary.
     #
-    # Confused yet?
+    # However, X11R6 was available on HPUX 9.x as a patch: if that
+    # patch was installed, then all of X11R6 went in to
+    # /usr/contrib/X11R6/ (there was no /usr/{include,lib}/X11R6/.)
     #
-    # So.  We try and put all of these directories on the -I and -L list,
-    # and in the right order.  Because depending on the system, there might
-    # be crucial files in any of them.
+    # HPUX 8.x was the same as 9.x, but was X11R4 instead (I don't know
+    # whether R5 was available as a patch; R6 undoubtedly was not.)
     #
+    # So.  We try and use the highest numbered pair of
+    # /usr/{include,lib}/X11R?/ and /usr/contrib/X11R?/{include,lib}/
+    # that are available.  We do not mix and match different versions
+    # of X.
+    #
+    # Questions I still don't know the answers to: (do you?)
+    #
+    #   * Does HPUX 10.x come with /usr/contrib/X11R6/ standard?  
+    #     Or does that need to be installed separately?
+    #
+    #   * On HPUX 9.x, where /usr/include/X11R5/ was standard, and
+    #     /usr/contrib/X11R6/ could be installed as a patch, what was in
+    #     that contrib directory?  Did it contain so-called "standard"
+    #     X11R6, or did it include Xaw and Xmu as well?  If the former,
+    #     where did one find Xaw and Xmu on 9.x R6 systems?  Would this
+    #     be a situation where one had to reach into the R5 headers and
+    #     libs to find Xmu?  That is, must both R6 and R5 directories
+    #     be on the -I and -L lists in that case?
+    #
+    for version in X11R6 X11R5 X11R4 ; do
+      # if either pair of directories exists...
+      if test -d /usr/lib/$version || test -d /usr/contrib/$version/lib ; then
+         # if contrib exists, use it...
+         if test -d /usr/contrib/$version/lib ; then
+           X_CFLAGS="$X_CFLAGS -I/usr/contrib/$version/include"
+           X_LIBS="$X_LIBS -L/usr/contrib/$version/lib"
+         fi
+         # if the "standard" one exists, use it.
+         if test -d /usr/lib/$version ; then
+           X_CFLAGS="$X_CFLAGS -I/usr/include/$version"
+           X_LIBS="$X_LIBS -L/usr/lib/$version"
+         fi
+         # since at least one of the pair exists, go no farther.
+         break
+      fi
+    done
 
-    if test -d /usr/contrib/X11R6/include ; then
-      X_CFLAGS="-I/usr/contrib/X11R6/include $X_CFLAGS"
-      X_LIBS="-L/usr/contrib/X11R6/lib $X_LIBS"
-    fi
-
-    if test -d /usr/contrib/X11R5/include ; then
-      X_CFLAGS="-I/usr/contrib/X11R5/include $X_CFLAGS"
-      X_LIBS="-L/usr/contrib/X11R5/lib $X_LIBS"
-    fi
-
-    if test -d /usr/contrib/X11R4/include ; then
-      X_CFLAGS="-I/usr/contrib/X11R4/include $X_CFLAGS"
-      X_LIBS="-L/usr/contrib/X11R4/lib $X_LIBS"
-    fi
-
-
-    if test -d /usr/lib/X11R6 ; then
-      X_CFLAGS="-I/usr/include/X11R6 $X_CFLAGS"
-      X_LIBS="-L/usr/lib/X11R6 $X_LIBS"
-    fi
-
-    if test -d /usr/lib/X11R5 ; then
-      X_CFLAGS="-I/usr/include/X11R5 $X_CFLAGS"
-      X_LIBS="-L/usr/lib/X11R5 $X_LIBS"
-    fi
-
-    if test -d /usr/lib/X11R4 ; then
-      X_CFLAGS="-I/usr/include/X11R4 $X_CFLAGS"
-      X_LIBS="-L/usr/lib/X11R4 $X_LIBS"
-    fi
-
-
-    # Now find Motif.  Thanks for not making xmkmf find this by 
+    # Now find Motif.  Thanks for not making xmkmf find this by
     # default, you losers.
     #
     if test -d /usr/lib/Motif1.2 ; then
-      X_CFLAGS="-I/usr/include/Motif1.2 $X_CFLAGS"
-      X_LIBS="-L/usr/lib/Motif1.2 $X_LIBS"
+      X_CFLAGS="$X_CFLAGS -I/usr/include/Motif1.2"
+      X_LIBS="$X_LIBS -L/usr/lib/Motif1.2"
     elif test -d /usr/lib/Motif1.1 ; then
-      X_CFLAGS="-I/usr/include/Motif1.1 $X_CFLAGS"
-      X_LIBS="-L/usr/lib/Motif1.1 $X_LIBS"
+      X_CFLAGS="$X_CFLAGS -I/usr/include/Motif1.1"
+      X_LIBS="$X_LIBS -L/usr/lib/Motif1.1"
     fi
-
 
     # Now let's check for the pseudo-standard locations for OpenGL and XPM.
     #
     if test -d /opt/Mesa/lib ; then
-      X_CFLAGS="$X_CFLAGS -I/opt/Mesa/include"
-      X_LIBS="$X_LIBS -L/opt/Mesa/lib"
+      X_CFLAGS="-I/opt/Mesa/include $X_CFLAGS"
+      X_LIBS="-L/opt/Mesa/lib $X_LIBS"
     fi
 
     if test -d /opt/xpm/lib/X11 ; then
-      X_CFLAGS="$X_CFLAGS -I/opt/xpm/include"
-      X_LIBS="$X_LIBS -L/opt/xpm/lib/X11"
+      X_CFLAGS="-I/opt/xpm/include $X_CFLAGS"
+      X_LIBS="-L/opt/xpm/lib/X11 $X_LIBS"
     fi
 
     # On HPUX, default to installing in /opt/xscreensaver/ instead of
@@ -530,13 +591,21 @@ fi
 #
 have_sgi=no
 with_sgi_req=unspecified
-AC_ARG_WITH(sgi-ext,[
+AC_ARG_WITH(sgi-ext,
+[Except where noted, all of the --with options below can also take a
+directory argument: for example, --with-motif=/opt/Motif.  That would
+cause /opt/Motif/include/ to be added to the -I list, and /opt/Motif/lib/
+to be added to the -L list, assuming those directories exist.
+
 X Server Extension options:
 
   --with-sgi-ext          Include support for the SGI SCREEN_SAVER
                           server extension, if possible (this is the default).
   --without-sgi-ext       Do not compile in support for this extension.],
   [with_sgi="$withval"; with_sgi_req="$withval"],[with_sgi=yes])
+
+HANDLE_X_PATH_ARG(with_sgi, --with-sgi-ext, SGI SCREEN_SAVER)
+
 if test $with_sgi = yes; then
   AC_CHECK_X_HEADER(X11/extensions/XScreenSaver.h,
 		    [have_sgi=yes
@@ -557,6 +626,9 @@ AC_ARG_WITH(mit-ext,
                           server extension, if possible (this is the default).
   --without-mit-ext       Do not compile in support for this extension.],
   [with_mit="$withval"; with_mit_req="$withval"],[with_mit=yes])
+
+HANDLE_X_PATH_ARG(with_mit, --with-mit-ext, MIT-SCREEN-SAVER)
+
 if test $have_sgi != yes; then
   if test $with_mit = yes; then
     AC_CHECK_X_HEADER(X11/extensions/scrnsaver.h, [have_mit=yes])
@@ -607,6 +679,9 @@ AC_ARG_WITH(xidle-ext,
                           if possible (this is the default).
   --without-xidle-ext     Do not compile in support for this extension.],
   [with_xidle="$withval"; with_xidle_req="$withval"],[with_xidle=yes])
+
+HANDLE_X_PATH_ARG(with_xidle, --with-xidle-ext, XIDLE)
+
 if test $with_xidle = yes; then
   AC_CHECK_X_HEADER(X11/extensions/xidle.h,
 		    [have_xidle=yes
@@ -626,6 +701,9 @@ AC_ARG_WITH(xshm-ext,
                           extension, if possible (this is the default).
   --without-xshm-ext      Do not compile in support for this extension.],
   [with_xshm="$withval"; with_xshm_req="$withval"],[with_xshm=yes])
+
+HANDLE_X_PATH_ARG(with_xshm, --with-xshm-ext, XSHM)
+
 if test $with_xshm = yes; then
 
   # first check for Xshm.h.
@@ -677,6 +755,9 @@ AC_ARG_WITH(sgivc-ext,
                           extension, if possible (this is the default).
   --without-sgivc-ext     Do not compile in support for this extension.],
   [with_sgivc="$withval"; with_sgivc_req="$withval"],[with_sgivc=yes])
+
+HANDLE_X_PATH_ARG(with_sgivc, --with-sgivc-ext, SGI-VIDEO-CONTROL)
+
 if test $with_sgivc = yes; then
 
   # first check for XSGIvc.h
@@ -710,6 +791,9 @@ AC_ARG_WITH(dpms-ext,
                           if possible (this is the default).
   --without-dpms-ext      Do not compile in support for this extension.],
   [with_dpms="$withval"; with_dpms_req="$withval"],[with_dpms=yes])
+
+HANDLE_X_PATH_ARG(with_dpms, --with-dpms-ext, DPMS)
+
 if test $with_dpms = yes; then
 
   # first check for dpms.h
@@ -746,16 +830,20 @@ with_athena_req=unspecified
 AC_ARG_WITH(motif,[
 X Client Toolkit options:
 
-  --with-motif            Use the Motif toolkit for the user interface,
-                          if possible (this is the default).
+  --with-motif            Use the Motif toolkit for the user interface, if
+                          possible (this is the default).
   --without-motif         Do not use Motif.],
   [with_motif="$withval"; with_motif_req="$withval"],[with_motif=no])
+
+HANDLE_X_PATH_ARG(with_motif, --with-motif, Motif)
 
 AC_ARG_WITH(athena,
 [  --with-athena           Use the Athena toolkit for the user interface, if
                           possible (this is the default if Motif isn't used.)
   --without-athena        Do not use Athena.],
   [with_athena="$withval"; with_athena_req="$withval"],[with_athena=no])
+
+HANDLE_X_PATH_ARG(with_athena, --with-athena, Athena)
 
 if test $with_motif != yes -a $with_motif != no ; then
   echo "error: must be yes or no: --with-motif=$with_motif"
@@ -874,22 +962,39 @@ if test $have_motif = yes ; then
   have_lesstif=$ac_cv_have_lesstif
 fi
 
-# don't cache this
-unset ac_cv_good_lesstif
+# don't cache these
+unset ac_cv_lesstif_version
+unset ac_cv_lesstif_version_string
 
-good_lesstif=no
+lesstif_version=unknown
+lesstif_version_string=unknown
+
 if test $have_lesstif = yes ; then
-  # It must be at least "GNU Lesstif 0.82".
-  # #### If you change this, also sync the warning message lower down.
-  AC_CACHE_CHECK([whether LessTif is of a recent enough vintage],
-		 ac_cv_good_lesstif,
-		 [AC_TRY_X_RUN([#include <Xm/Xm.h>
-				int main() { exit(LesstifVersion < 82); }],
-			       [ac_cv_good_lesstif=yes],
-			       [ac_cv_good_lesstif=no],
-			       # cross compiling?  Make an ass out of umption.
-			       [ac_cv_good_lesstif=yes])])
-  good_lesstif=$ac_cv_good_lesstif
+  ltv=unknown
+  echo unknown > conftest-lt
+  AC_CACHE_CHECK([LessTif version number],
+		 ac_cv_lesstif_version_string,
+      [AC_TRY_X_RUN([#include <stdio.h>
+		     #include <Xm/Xm.h>
+		     int main() {
+		       FILE *f = fopen("conftest-lt", "w");
+		       if (!f) exit(1);
+		       fprintf(f, "%d %d.%d\n", LesstifVersion,
+		     	  LESSTIF_VERSION, LESSTIF_REVISION);
+		       fclose(f);
+		       exit(0);
+		     }],
+		    [ltv=`cat conftest-lt`
+		     ac_cv_lesstif_version=`echo $ltv | sed 's/ .*//'`
+		     ac_cv_lesstif_version_string=`echo $ltv | sed 's/.* //'`],
+		    [ac_cv_lesstif_version=unknown
+		     ac_cv_lesstif_version_string=unknown],
+		    [ac_cv_lesstif_version=unknown
+		     ac_cv_lesstif_version_string=unknown])])
+  rm -f conftest-lt
+  lesstif_version=$ac_cv_lesstif_version
+  lesstif_version_string=$ac_cv_lesstif_version_string
+
 fi
 
 
@@ -917,6 +1022,9 @@ Graphics Demo options:
                           if possible (this is the default).
   --without-xpm           Do not compile in support for XPM files.],
   [with_xpm="$withval"; with_xpm_req="$withval"],[with_xpm=yes])
+
+HANDLE_X_PATH_ARG(with_xpm, --with-xpm, XPM)
+
 if test $with_xpm = yes; then
   AC_CHECK_X_HEADER(X11/xpm.h,
 	           [have_xpm=yes
@@ -937,6 +1045,8 @@ AC_ARG_WITH(gl,
                           if possible (this is the default).
   --without-gl            Do not build the OpenGL demos.],
   [with_gl="$withval"; with_gl_req="$withval"],[with_gl=yes])
+
+HANDLE_X_PATH_ARG(with_gl, --with-gl, GL)
 
 if test $with_gl = yes; then
   AC_CHECK_X_HEADER(GL/gl.h, have_gl=yes, have_gl=no)
@@ -983,6 +1093,9 @@ AC_ARG_WITH(readdisplay,
   --without-readdisplay   Do not compile in support for this extension.],
   [with_readdisplay="$withval"; with_readdisplay_req="$withval"],
   [with_readdisplay=yes])
+
+HANDLE_X_PATH_ARG(with_readdisplay, --with-readdisplay, XReadDisplay)
+
 if test $with_readdisplay = yes; then
   AC_CHECK_X_HEADER(X11/extensions/readdisplay.h,
 	            AC_DEFINE(HAVE_READ_DISPLAY_EXTENSION))
@@ -1002,6 +1115,9 @@ AC_ARG_WITH(sgivideo,
   --without-sgivideo       Do not compile in support for this library.],
   [with_sgivideo="$withval"; with_sgivideo_req="$withval"],
   [with_sgivideo=yes])
+
+HANDLE_X_PATH_ARG(with_sgivideo, --with-sgivideo, Iris Video)
+
 if test $with_sgivideo = yes; then
   AC_CHECK_X_HEADER(dmedia/vl.h, have_sgivideo=yes)
   if test $have_sgivideo = yes; then
@@ -1189,6 +1305,9 @@ if test $enable_locking = yes; then
                           if possible (this is the default.)
   --without-kerberos      Do not compile in support for Kerberos.],
   [with_kerberos="$withval"; with_kerberos_req="$withval"],[with_kerberos=yes])
+
+  HANDLE_X_PATH_ARG(with_kerberos, --with-kerberos, Kerberos)
+
   if test $with_kerberos = yes; then
     AC_CACHE_CHECK([for Kerberos], ac_cv_kerberos,
 		   [AC_TRY_X_COMPILE([#include <krb.h>],,
@@ -1213,6 +1332,9 @@ if test $enable_locking = yes; then
   --without-shadow        Do not compile in support for shadow passwords.
 ],
   [with_shadow="$withval"; with_shadow_req="$withval"],[with_shadow=yes])
+
+  HANDLE_X_PATH_ARG(with_shadow, --with-shadow, shadow password)
+
   if test $with_shadow = no; then
     passwd_cruft_done=yes
   elif test $with_shadow != yes; then
@@ -1545,12 +1667,28 @@ elif test $with_athena_req = yes -a $have_athena = no ; then
 fi
 
 if test $have_motif = yes -a $have_lesstif = yes ; then
-  if test $good_lesstif != yes ; then
-    warnL "Motif is being used, but it appears to actually be"
-    warn2 "LessTif, and the version number is less than 0.82!"
-    warn2 "Such old versions of LessTif are too buggy to use"
-    warn2 "with XScreenSaver; it is strongly recommended that"
-    warn2 "you upgrade!  See <http://www.lesstif.org/>."
+
+  preferred_lesstif=0.87
+
+  if test $lesstif_version = unknown; then
+    warnL "Unable to determine the LessTif version number!"
+    warn2 "Make sure you are using version $preferred_lesstif or newer."
+    warn2 "See <http://www.lesstif.org/>."
+
+  elif test \! $lesstif_version -gt 82; then
+    warnL "LessTif version $lesstif_version_string is being used."
+    warn2 "LessTif versions 0.82 and earlier are too buggy to"
+    warn2 "use with XScreenSaver; it is strongly recommended"
+    warn2 "that you upgrade to at least version $preferred_lesstif!"
+    warn2 "See <http://www.lesstif.org/>."
+
+  elif test \! $lesstif_version -gt 86; then
+    warnL "LessTif version $lesstif_version_string is being used."
+    warn2 "LessTif versions 0.86 and earlier have a bug that"
+    warn2 "can cause a security problem with xscreensaver."
+    warn2 "If you want to use xscreensaver as a screen locker,"
+    warn2 "it is strongly recommended that you upgrade to at"
+    warn2 "least version $preferred_lesstif.  See <http://www.lesstif.org/>."
   fi
 fi
 

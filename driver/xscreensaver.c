@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1991-1998 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1991-1998 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -159,7 +159,8 @@ XrmDatabase db = 0;
 
 
 static Atom XA_ACTIVATE, XA_DEACTIVATE, XA_CYCLE, XA_NEXT, XA_PREV;
-static Atom XA_EXIT, XA_RESTART, XA_DEMO, XA_LOCK;
+static Atom XA_EXIT, XA_RESTART, XA_LOCK;
+Atom XA_DEMO, XA_PREFS;
 
 
 static XrmOptionDescRec options [] = {
@@ -180,6 +181,8 @@ static XrmOptionDescRec options [] = {
   { "-no-mit-extension",   ".mitSaverExtension",XrmoptionNoArg, "off" },
   { "-sgi-extension",	   ".sgiSaverExtension",XrmoptionNoArg, "on" },
   { "-no-sgi-extension",   ".sgiSaverExtension",XrmoptionNoArg, "off" },
+  { "-splash",		   ".splash",		XrmoptionNoArg, "on" },
+  { "-no-splash",	   ".splash",		XrmoptionNoArg, "off" },
   { "-idelay",		   ".initialDelay",	XrmoptionSepArg, 0 },
   { "-nice",		   ".nice",		XrmoptionSepArg, 0 },
 
@@ -208,6 +211,7 @@ The standard Xt command-line options are accepted; other options include:\n\
     -visual <id-or-class>    Which X visual to run on.\n\
     -install                 Install a private colormap.\n\
     -verbose                 Be loud.\n\
+    -no-splash               Don't display a splash-screen at startup.\n\
     -help                    This message.\n\
 \n\
 See the manual for other options and X resources.\n\
@@ -379,8 +383,11 @@ get_resources (saver_info *si)
   char *s;
   saver_preferences *p = &si->prefs;
 
-  p->verbose_p	    = get_boolean_resource ("verbose", "Boolean");
   p->xsync_p	    = get_boolean_resource ("synchronous", "Synchronous");
+  if (p->xsync_p)
+    XSynchronize(si->dpy, True);
+
+  p->verbose_p	    = get_boolean_resource ("verbose", "Boolean");
   p->timestamp_p    = get_boolean_resource ("timestamp", "Boolean");
   p->lock_p	    = get_boolean_resource ("lock", "Boolean");
   p->fade_p	    = get_boolean_resource ("fade", "Boolean");
@@ -390,10 +397,11 @@ get_resources (saver_info *si)
   p->install_cmap_p = get_boolean_resource ("installColormap", "Boolean");
   p->nice_inferior  = get_integer_resource ("nice", "Nice");
 
-  p->initial_delay  = get_seconds_resource ("initialDelay", "Time");
-  p->timeout        = 1000 * get_minutes_resource ("timeout", "Time");
-  p->lock_timeout   = 1000 * get_minutes_resource ("lockTimeout", "Time");
-  p->cycle          = 1000 * get_minutes_resource ("cycle", "Time");
+  p->initial_delay   = get_seconds_resource ("initialDelay", "Time");
+  p->splash_duration = 1000 * get_seconds_resource ("splashDuration", "Time");
+  p->timeout         = 1000 * get_minutes_resource ("timeout", "Time");
+  p->lock_timeout    = 1000 * get_minutes_resource ("lockTimeout", "Time");
+  p->cycle           = 1000 * get_minutes_resource ("cycle", "Time");
 
 #ifndef NO_LOCKING
   p->passwd_timeout = 1000 * get_seconds_resource ("passwdTimeout", "Time");
@@ -404,6 +412,13 @@ get_resources (saver_info *si)
 						       "Time");
   p->shell = get_string_resource ("bourneShell", "BourneShell");
 
+  p->help_url = get_string_resource("helpURL", "URL");
+  p->load_url_command = get_string_resource("loadURL", "LoadURL");
+
+  if ((s = get_string_resource ("splash", "Boolean")))
+    if (!get_string_resource("splash", "Boolean"))
+      p->splash_duration = 0;
+  if (s) free (s);
 
   /* don't set use_xidle_extension unless it is explicitly specified */
   if ((s = get_string_resource ("xidleExtension", "Boolean")))
@@ -513,6 +528,7 @@ main (int argc, char **argv)
   memset(&si, 0, sizeof(si));
   global_si_kludge = &si;	/* I hate C so much... */
   initialize (&si, argc, argv);
+  pop_splash_dialog (&si);
   main_loop (&si);		/* doesn't return */
   return 0;
 }
@@ -526,7 +542,7 @@ saver_ehandler (Display *dpy, XErrorEvent *error)
   fprintf (real_stderr, "\n"
 	   "#######################################"
 	   "#######################################\n\n"
-	   "%s: X Error!  PLEASE REPORT THIS BUG!\n\n"
+	   "%s: X Error!  PLEASE REPORT THIS BUG.\n\n"
 	   "#######################################"
 	   "#######################################\n\n",
 	   blurb());
@@ -614,6 +630,8 @@ initialize_connection (saver_info *si, int argc, char **argv)
 	  !strcmp (s, "-exit") ||
 	  !strcmp (s, "-restart") ||
 	  !strcmp (s, "-demo") ||
+	  !strcmp (s, "-prefs") ||
+	  !strcmp (s, "-preferences") ||
 	  !strcmp (s, "-lock") ||
 	  !strcmp (s, "-version") ||
 	  !strcmp (s, "-time"))
@@ -654,6 +672,7 @@ initialize_connection (saver_info *si, int argc, char **argv)
   XA_PREV = XInternAtom (si->dpy, "PREV", False);
   XA_EXIT = XInternAtom (si->dpy, "EXIT", False);
   XA_DEMO = XInternAtom (si->dpy, "DEMO", False);
+  XA_PREFS = XInternAtom (si->dpy, "PREFS", False);
   XA_LOCK = XInternAtom (si->dpy, "LOCK", False);
 
   si->nscreens = ScreenCount(si->dpy);
@@ -757,6 +776,20 @@ initialize (saver_info *si, int argc, char **argv)
 
   si->demo_mode_p = initial_demo_mode_p;
   srandom ((int) time ((time_t *) 0));
+
+  if (p->debug_p)
+    fprintf (stderr, "\n"
+	     "%s: Warning: running in DEBUG MODE.  Be afraid.\n"
+	     "\n"
+	     "\tNote that in debug mode, the xscreensaver window will only\n"
+	     "\tcover the left half of the screen.  (The idea is that you\n"
+	     "\tcan still see debugging output in a shell, if you position\n"
+	     "\tit on the right side of the screen.)\n"
+	     "\n"
+	     "\tDebug mode is NOT SECURE.  Do not run with -debug in\n"
+	     "\tuntrusted environments.\n"
+	     "\n",
+	     progname);
 
   if (p->use_sgi_saver_extension)
     {
@@ -940,19 +973,6 @@ main_loop (saver_info *si)
 	      if (si->locking_disabled_p) abort ();
 	      si->dbox_up_p = True;
 
-	      /* We used to ungrab the keyboard here, before calling unlock_p()
-		 to pop up the dialog box.  This left the keyboard ungrabbed
-		 for a small window, during an insecure state.  Bennett Todd
-		 was seeing the bahavior that, when the load was high, he could
-		 actually get characters through to a shell under the saver
-		 window (he accidentally typed his password there...)
-
-		 So the ungrab has been moved down into pop_passwd_dialog()
-		 just after the server is grabbed, closing this window
-		 entirely.
-	       */
-	      /* ungrab_keyboard_and_mouse (si); */
-
 	      {
 		saver_screen_info *ssi = si->default_screen;
 		suspend_screenhack (si, True);
@@ -965,12 +985,6 @@ main_loop (saver_info *si)
 		si->dbox_up_p = False;
 		XDefineCursor (si->dpy, ssi->screensaver_window, ssi->cursor);
 		suspend_screenhack (si, False);
-
-		/* I think this grab is now redundant, but it shouldn't hurt.
-		 */
-		if (!si->demo_mode_p)
-		  grab_keyboard_and_mouse (si, ssi->screensaver_window,
-					   ssi->cursor);
 	      }
 
 	      if (! val)
@@ -978,6 +992,10 @@ main_loop (saver_info *si)
 	      si->locked_p = False;
 	    }
 #endif /* !NO_LOCKING */
+
+	  if (p->verbose_p)
+	    fprintf (stderr, "%s: user is active at %s.\n",
+		     blurb(), timestring ());
 
 	  /* Let's kill it before unblanking, to get it to stop drawing as
 	     soon as possible... */
@@ -999,9 +1017,7 @@ main_loop (saver_info *si)
 #endif /* !NO_LOCKING */
 
 	  if (p->verbose_p)
-	    fprintf (stderr,
-		     "%s: user is active; going to sleep at %s.\n", blurb(),
-		     timestring ());
+	    fprintf (stderr, "%s: going to sleep.\n", blurb());
 	}
     }
 }
@@ -1166,6 +1182,23 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
 	}
       fprintf (stderr,
 	       "%s: DEMO ClientMessage received while active.\n", blurb());
+#endif
+    }
+  else if (type == XA_PREFS)
+    {
+#ifdef NO_DEMO_MODE
+      fprintf (stderr, "%s: not compiled with support for DEMO mode\n",
+	       blurb());
+#else
+      if (until_idle_p)
+	{
+	  if (p->verbose_p)
+	    fprintf (stderr, "%s: PREFS ClientMessage received.\n", blurb());
+	  si->demo_mode_p = (Bool) 2;  /* kludge, so sue me. */
+	  return True;
+	}
+      fprintf (stderr,
+	       "%s: PREFS ClientMessage received while active.\n", blurb());
 #endif
     }
   else if (type == XA_LOCK)

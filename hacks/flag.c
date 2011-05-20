@@ -82,14 +82,15 @@ static const char sccsid[] = "@(#)flag.c	4.02 97/04/01 xlockmore";
 #ifdef STANDALONE
 static XrmOptionDescRec opts[] =
 {
-  { "-bitmap", ".flag.bitmap", XrmoptionSepArg, 0 }
+  { "-bitmap", ".flag.bitmap", XrmoptionSepArg, 0 },
+  { "-text",   ".flag.text",   XrmoptionSepArg, 0 }
 };
 
 #endif /* STANDALONE */
 
 ModeSpecOpt flag_opts = {
 #ifdef STANDALONE
-  1, opts, 0, NULL, NULL
+  2, opts, 0, NULL, NULL
 #else  /* !STANDALONE */
   0, NULL, 0, NULL, NULL
 #endif /* STANDALONE */

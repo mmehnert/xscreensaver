@@ -4,8 +4,8 @@
 !            a screen saver and locker for the X window system
 !                            by Jamie Zawinski
 !
-!                              version 2.28
-!                                21-Sep-98
+!                              version 2.29
+!                                23-Sep-98
 !
 ! See "man xscreensaver" for more info.  The latest version is always
 ! available at http://www.jwz.org/xscreensaver/
@@ -22,6 +22,8 @@
 *unfade:		False
 *fadeSeconds:		3
 *fadeTicks:		20
+*splash:		True
+*splashDuration:	5
 
 *captureStderr: 	True
 *captureStdout: 	True
@@ -29,6 +31,13 @@
 *overlayTextBackground:	#000000
 *overlayStderr:		True
 *font:			*-medium-r-*-140-*-m-*
+
+! This is the URL that the "Help" button on the splash screen loads.
+*helpURL: http://www.jwz.org/xscreensaver/man.html
+
+! This is how the "Help" button loads URLs (in /bin/sh syntax.)
+*loadURL: netscape -remote 'openURL(%s)' || netscape '%s' &
+
 
 ! Turning on "installColormap" interacts erratically with twm and tvtwm,
 ! but seems to work fine with mwm and olwm.  Try it and see.  If your
@@ -278,6 +287,10 @@
 *passwdDialog*fontList:          *-helvetica-medium-r-*-*-*-140-*-*-*-iso8859-1
 *XmTextField.fontList:             *-courier-medium-r-*-*-*-120-*-*-*-iso8859-1
 *passwdDialog.passwdText.fontList: *-courier-medium-r-*-*-*-120-*-*-*-iso8859-1
+*splashDialog*fontList:		   *-helvetica-bold-r-*-*-*-120-*-*-*-iso8859-1
+*splashDialog*splashLabel1.fontList:   *-times-bold-r-*-*-*-180-*-*-*-iso8859-1
+*splashDialog*splashLabel2.fontList:   *-times-bold-r-*-*-*-140-*-*-*-iso8859-1
+*splashDialog*splashLabel3.fontList:   *-times-bold-r-*-*-*-140-*-*-*-iso8859-1
 XScreenSaver*XmList.fontList:      *-courier-medium-r-*-*-*-120-*-*-*-iso8859-1
 ! Need to fully-qualify the preceeding in the case of of *sgiMode.
 
@@ -341,6 +354,21 @@ XScreenSaver*XmDialogShell*rogerLabel.background:	#FFFFFF
 *passwdLabel3.alignment:	ALIGNMENT_BEGINNING
 *rogerLabel.width:		150
 
+*splashDialog.title:		XScreenSaver
+*splashLabel1.labelString:	XScreenSaver %s
+*splashLabel2.labelString:	Copyright © 1991-1998 by
+*splashLabel3.labelString:	Jamie Zawinski <jwz@jwz.org>
+*splashDemo.labelString:	Demo
+*splashPrefs.labelString:	Prefs
+*splashDialog*Help.labelString:	Help
+
+*splashLabel1.alignment:	ALIGNMENT_CENTER
+*splashLabel2.alignment:	ALIGNMENT_CENTER
+*splashLabel3.alignment:	ALIGNMENT_CENTER
+
+*splashDialog.borderWidth:	1
+*splashForm.shadowThickness:	4
+
 ! Disable Motif drag-and-drop in dialog boxes.  This is kind of pathetic, but
 ! in some older versions of Motif, most any attempt to drag cause immediate
 ! flaming death from above.  This *should* rip the legs off that bug.
@@ -355,6 +383,10 @@ XScreenSaver*dragReceiverProtocolStyle:  DRAG_NONE
 *demo_dialog*font:		*-helvetica-bold-r-*-*-*-120-*-*-*-iso8859-1
 *resources_dialog*font:		*-helvetica-bold-r-*-*-*-120-*-*-*-iso8859-1
 *passwd_dialog*font:		*-helvetica-bold-r-*-*-*-120-*-*-*-iso8859-1
+*splash_dialog*font:		*-helvetica-bold-r-*-*-*-140-*-*-*-iso8859-1
+*splash_dialog*splashLabel1.font:   *-times-bold-r-*-*-*-180-*-*-*-iso8859-1
+*splash_dialog*splashLabel2.font:   *-times-bold-r-*-*-*-140-*-*-*-iso8859-1
+*splash_dialog*splashLabel3.font:   *-times-bold-r-*-*-*-140-*-*-*-iso8859-1
 *demo_dialog*label1.font:	*-helvetica-bold-r-*-*-*-140-*-*-*-iso8859-1
 *resources_dialog*label1.font:	*-helvetica-bold-r-*-*-*-140-*-*-*-iso8859-1
 XScreenSaver.demo_dialog*List.font: \
@@ -384,6 +416,13 @@ XScreenSaver.passwd_dialog*Command.background:		#D9D9D9
 XScreenSaver.passwd_dialog*Text*background:		#FFFFFF
 XScreenSaver.passwd_dialog*roger.foreground:		#CD0000
 XScreenSaver.passwd_dialog*roger.background:		#FFFFFF
+
+XScreenSaver.splash_dialog*foreground:			#000000
+XScreenSaver.splash_dialog*background:			#E5E5E5
+XScreenSaver.splash_dialog*Command.background:		#D9D9D9
+XScreenSaver.splash_dialog*Text*background:		#FFFFFF
+XScreenSaver.splash_dialog*roger.foreground:		#CD0000
+XScreenSaver.splash_dialog*roger.background:		#FFFFFF
 
 *demo_dialog*viewport.height:			200
 *Form.borderWidth:				0
@@ -427,6 +466,25 @@ XScreenSaver.demo_dialog*Command.internalHeight: 4
 *passwd_dialog*roger.width:			150
 *passwd_dialog*roger.height:			150
 *passwd_dialog*roger.borderWidth:		1
+
+*splash_dialog*splashLabel1.label:		XScreenSaver %s
+*splash_dialog*splashLabel2.label:		Copyright © 1991-1998 by
+*splash_dialog*splashLabel3.label:		Jamie Zawinski <jwz@jwz.org>
+*splash_dialog*splash_form*label.label:		
+*splash_dialog*Dialog.label:			
+*splash_dialog*splash_form.borderWidth:		0
+*splash_dialog*roger.width:			150
+*splash_dialog*roger.height:			150
+*splash_dialog*roger.borderWidth:		1
+*splash_dialog*demo.label:			Demo
+*splash_dialog*prefs.label:			Prefs
+*splash_dialog*help.label:			Help
+*splash_dialog.box.defaultDistance:		0
+*splash_dialog*splashLabel1.internalHeight:	10
+*splash_dialog*splashLabel1.internalWidth:	10
+*splash_dialog*splashLabel2.internalHeight:	0
+*splash_dialog*splashLabel3.internalHeight:	0
+
 
 
 ! You probably won't need to change these.  They are only used if no server

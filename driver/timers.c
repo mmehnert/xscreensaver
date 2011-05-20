@@ -443,8 +443,14 @@ sleep_until_idle (saver_info *si, Bool until_idle_p)
 	    else if (event.xany.type == KeyPress)
 	      fprintf (stderr, "%s: KeyPress seen on 0x%X at %s\n", blurb(),
 		       (unsigned int) event.xkey.window, timestring ());
+	    else if (event.xany.type == ButtonPress)
+	      fprintf (stderr, "%s: ButtonPress seen on 0x%X at %s\n", blurb(),
+		       (unsigned int) event.xbutton.window, timestring ());
 	  }
 #endif /* DEBUG_TIMERS */
+
+	/* If any widgets want to handle this event, let them. */
+	XtDispatchEvent (&event);
 
 	/* We got a user event */
 	if (!until_idle_p)

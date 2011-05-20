@@ -11,7 +11,7 @@
 .if n .sp 1
 .if t .sp .5
 ..
-.TH XScreenSaver 1 "21-Sep-98 (2.28)" "X Version 11"
+.TH XScreenSaver 1 "23-Sep-98 (2.29)" "X Version 11"
 .SH NAME
 xscreensaver - graphics hack and screen locker, launched when the user is idle
 .SH SYNOPSIS
@@ -27,6 +27,8 @@ xscreensaver - graphics hack and screen locker, launched when the user is idle
 [\-no\-install] \
 [\-verbose] \
 [\-silent] \
+[\-splash] \
+[\-no\-splash] \
 [\-nice \fIint\fP] \
 [\-mit\-extension] \
 [\-no\-mit\-extension] \
@@ -241,6 +243,21 @@ the \fBdefault\-n\fP name in the section about the \fBprograms\fP resource.
 .TP 8
 .B verbose\fP (class \fBBoolean\fP)
 Whether to print diagnostics.  Default false.
+.TP 8
+.B splash\fP (class \fBBoolean\fP)
+Whether to display a splash screen at startup.  Default true.
+.TP 8
+.B splashDuration\fP (class \fBTime\fP)
+How long the splash screen should remain visible; default 5 seconds.
+.TP 8
+.B helpURL\fP (class \fBURL\fP)
+The splash screen has a \fIHelp\fP button on it.  When you press it, it will
+display the web page indicated here in your web browser.
+.TP 8
+.B loadURL\fP (class \fBLoadURL\fP)
+This is the shell command used to load a URL into your web browser.
+The default setting will load it into Netscape if it is already running,
+otherwise, will launch a new Netscape looking at the \fIhelpURL\fP.
 .TP 8
 .B nice\fP (class \fBNice\fP)
 The sub-processes created by \fIxscreensaver\fP will be ``niced'' to this
@@ -488,6 +505,12 @@ Same as setting the \fIverbose\fP resource to \fItrue\fP.
 .TP 8
 .B \-silent
 Same as setting the \fIverbose\fP resource to \fIfalse\fP.
+.TP 8
+.B \-splash
+Same as setting the \fIsplash\fP resource to \fItrue\fP.
+.TP 8
+.B \-no\-splash
+Same as setting the \fIsplash\fP resource to \fIfalse\fP.
 .TP 8
 .B \-nice \fIinteger\fP
 Same as the \fInice\fP resource.
@@ -758,6 +781,7 @@ menu XScreenSaver
  "Blank Screen Now" !"sleep 3; xscreensaver-command -activate"
  "Lock Screen Now"  !"sleep 3; xscreensaver-command -lock"
  "Screen Saver Demo"         !"xscreensaver-command -demo"
+ "Screen Saver Preferences"  !"xscreensaver-command -prefs"
  "Reinitialize Screen Saver" !"xscreensaver-command -restart"
  "Kill Screen Saver"         !"xscreensaver-command -exit"
  "Launch Screen Saver"       !"xscreensaver &"

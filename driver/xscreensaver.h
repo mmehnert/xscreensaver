@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1993-1998 Jamie Zawinski <jwz@netscape.com>
+/* xscreensaver, Copyright (c) 1993-1998 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -57,6 +57,7 @@ struct saver_preferences {
   int nice_inferior;		/* nice value for subprocs */
 
   int initial_delay;		/* how long to sleep after launch */
+  Time splash_duration;		/* how long the splash screen stays up */
   Time timeout;			/* how much idle time before activation */
   Time lock_timeout;		/* how long after activation locking starts */
   Time cycle;			/* how long each hack should run */
@@ -73,6 +74,8 @@ struct saver_preferences {
 
   char *shell;			/* where to find /bin/sh */
 
+  char *help_url;		/* Where the help document resides. */
+  char *load_url_command;	/* How one loads URLs. */
 };
 
 
@@ -144,7 +147,7 @@ struct saver_info {
   Bool question_up_p;		/* Whether the question dialog is currently
 				   visible. */
   Widget question_dialog;	/* The question dialog, if any. */
-
+  Widget splash_dialog;		/* The splash screen window, if any. */
 
   /* =======================================================================
      timers
@@ -293,7 +296,7 @@ extern void ungrab_keyboard_and_mouse (saver_info *si);
 
 #ifndef NO_LOCKING
 extern Bool unlock_p (saver_info *si);
-extern create_passwd_dialog (Widget, Visual *, Colormap);
+extern void create_passwd_dialog (Widget, Visual *, Colormap);
 extern Bool lock_init (int argc, char **argv);
 extern Bool passwd_valid_p (const char *typed_passwd);
 #endif
@@ -305,19 +308,19 @@ extern Bool passwd_valid_p (const char *typed_passwd);
 #ifndef NO_DEMO_MODE
 extern void demo_mode (saver_info *si);
 extern void demo_mode_restart_process (saver_info *si);
-extern create_demo_dialog (Widget, Visual *, Colormap);
-extern create_resources_dialog (Widget, Visual *, Colormap);
+extern void create_demo_dialog (Widget, Visual *, Colormap);
+extern void create_resources_dialog (Widget, Visual *, Colormap);
 #endif
 
 #if !defined(NO_LOCKING) || !defined(NO_DEMO_MODE)
 extern void pop_up_dialog_box (Widget dialog, Widget form, int where);
 extern void format_into_label (Widget label, const char *arg);
 extern void steal_focus_and_colormap (Widget dialog);
+extern void roger (Widget button, XtPointer client_data, XtPointer call_data);
 #endif
 
-#ifdef HAVE_MOTIF
-extern void disable_motif_drag_and_drop(Widget w);
-#endif
+extern void create_splash_dialog (Widget, Visual *, Colormap);
+extern void pop_splash_dialog (saver_info *si);
 
 
 /* =======================================================================
@@ -390,5 +393,6 @@ extern char *timestring (void);
 extern Atom XA_VROOT, XA_XSETROOT_ID;
 extern Atom XA_SCREENSAVER, XA_SCREENSAVER_VERSION, XA_SCREENSAVER_ID;
 extern Atom XA_SCREENSAVER_TIME;
+extern Atom XA_DEMO, XA_PREFS;
 
 #endif /* __XSCREENSAVER_H__ */
