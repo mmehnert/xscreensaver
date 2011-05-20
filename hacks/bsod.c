@@ -36,7 +36,7 @@
 static void
 draw_string (Display *dpy, Window window, GC gc, XGCValues *gcv,
 	     XFontStruct *font, int win_width, int win_height,
-	     const char *string)
+	     const char *string, int delay)
 {
   int x, y;
   int width = 0, height = 0, cw = 0;
@@ -105,6 +105,12 @@ draw_string (Display *dpy, Window window, GC gc, XGCValues *gcv,
 	  y += line_height;
 	  if (!*s) break;
 	  se = s+1;
+
+	  if (delay)
+	    {
+	      XSync(dpy, False);
+	      usleep(delay);
+	    }
 	}
       s++;
     }
@@ -160,7 +166,7 @@ windows (Display *dpy, Window window, int delay, Bool w95p)
      "  You will lose any unsaved information in all applications.\n"
      "\n"
      "\n"
-     "_Press any key to continue\n");
+     "_Press any key to continue");
 
   const char *wnt =
     ("*** STOP: 0x0000001E (0x80000003,0x80106fc0,0x8025ea21,0xfd6829e8)\n"
@@ -205,7 +211,7 @@ windows (Display *dpy, Window window, int delay, Bool w95p)
    "Kernel Debugger Using: COM2 (Port 0x2f8, Baud Rate 19200)\n"
    "Restart and set the recovery options in the system control panel\n"
    "or the /CRASHDEBUG system start option. If this message reappears,\n"
-   "contact your system administrator or technical support group.\n"
+   "contact your system administrator or technical support group."
      );
 
   XGetWindowAttributes (dpy, window, &xgwa);
@@ -236,9 +242,9 @@ windows (Display *dpy, Window window, int delay, Bool w95p)
   gc = XCreateGC(dpy, window, GCFont|GCForeground|GCBackground, &gcv);
 
   if (w95p)
-    draw_string(dpy, window, gc, &gcv, font, xgwa.width, xgwa.height, w95);
+    draw_string(dpy, window, gc, &gcv, font, xgwa.width, xgwa.height, w95, 0);
   else
-    draw_string(dpy, window, gc, &gcv, font, 10, 10, wnt);
+    draw_string(dpy, window, gc, &gcv, font, 10, 10, wnt, 750);
 
   XFreeGC(dpy, gc);
   XSync(dpy, False);
@@ -263,7 +269,7 @@ amiga (Display *dpy, Window window, int delay)
 
   const char *string =
     ("_Software failure.  Press left mouse button to continue.\n"
-     "_Guru meditation #00000003.00C01570");
+     "_Guru Meditation #00000003.00C01570");
 
   XGetWindowAttributes (dpy, window, &xgwa);
 
@@ -327,9 +333,6 @@ amiga (Display *dpy, Window window, int delay)
   }
 #endif /* HAVE_XPM */
 
-  XFillRectangle(dpy, window, gc2, 0, 0, xgwa.width, height);
-  draw_string(dpy, window, gc, &gcv, font, xgwa.width, height, string);
-
   if (pixmap && xgwa.height > 600)	/* scale up the bitmap */
     {
       pixmap = double_pixmap(dpy, gc, xgwa.visual, xgwa.depth,
@@ -341,12 +344,19 @@ amiga (Display *dpy, Window window, int delay)
   if (pixmap)
     {
       int x = (xgwa.width - pix_w) / 2;
-      int y = ((xgwa.height - pix_h) / 2) + height;
-      if (y < height + 100)
-	y = height + 100;
+      int y = ((xgwa.height - pix_h) / 2);
       XCopyArea(dpy, pixmap, window, gc, 0, 0, pix_w, pix_h, x, y);
+
+      XSync(dpy, False);
+      sleep(3);
+
+      XCopyArea(dpy, pixmap, window, gc, 0, 0, pix_w, pix_h, x, y + height);
+      XClearArea(dpy, window, 0, 0, xgwa.width, y + height, False);
       XFreePixmap(dpy, pixmap);
     }
+
+  XFillRectangle(dpy, window, gc2, 0, 0, xgwa.width, height);
+  draw_string(dpy, window, gc, &gcv, font, xgwa.width, height, string, 0);
 
   {
     GC gca = gc;
@@ -418,7 +428,7 @@ mac (Display *dpy, Window window, int delay)
 				       xgwa.depth);
 
   draw_string(dpy, window, gc, &gcv, font, xgwa.width, xgwa.height + offset,
-	      string);
+	      string, 0);
 
   for(i = 0; i < 2; i++)
     {
@@ -443,8 +453,6 @@ mac (Display *dpy, Window window, int delay)
   XClearWindow(dpy, window);
   XFreeFont(dpy, font);
 }
-
-
 
 
 char *progclass = "BSOD";
@@ -476,11 +484,15 @@ XrmOptionDescRec options [] = {
 void
 screenhack (Display *dpy, Window window)
 {
+  int i = -1;
+  int j = -1;
   int delay = get_integer_resource ("delay", "Integer");
   if (delay < 3) delay = 3;
   while (1)
     {
-      int i = random() % 4;
+      while (i == j) i = random() % 4;
+      j = i;
+
       switch (i)
 	{
 	case 0: windows(dpy, window, delay, True); break;

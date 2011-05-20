@@ -169,6 +169,7 @@ http://people.netscape.com/jwz/xscreensaver/.
 	-- Jamie Zawinski <jwz@netscape.com>
 
 
+Changes since 2.18:	One file was missing from the tar file.  Fixed.
 Changes since 2.17:	Oops, atlantis wasn't being built by default.  Fixed.
 			Added `epicycle' hack.
 			Added `interference' hack.

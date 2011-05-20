@@ -126,6 +126,7 @@ STAR		= *
 EXTRAS		= README Makefile.in xlock_23.h .gdbinit \
 		  vidwhacker \
 		  images/$(STAR).xbm \
+		  images/$(STAR).xpm \
 		  images/bubbles/$(STAR).pov \
 		  images/bubbles/$(STAR).xpm \
 		  images/noseguy/$(STAR).xbm \
