@@ -73,7 +73,8 @@ SRCS		= attraction.c blitspin.c bouboule.c braid.c bubbles.c \
 		  slip.c sphere.c spiral.c strange.c swirl.c xlockmore.c \
 		  xroger-hack.c goop.c starfish.c munch.c fadeplot.c \
 		  rd-bomb.c coral.c mountain.c triangle.c lissie.c worm.c \
-		  rotor.c ant.c xjack.c xlyap.c puzzle.c xscreensaver-sgigl.c
+		  rotor.c ant.c xjack.c xlyap.c puzzle.c xscreensaver-sgigl.c \
+		  cynosure.c moire2.c 
 
 OBJS		= attraction.o blitspin.o bouboule.o braid.o bubbles.o \
 		  bubbles_default.o decayscreen.o deco.o drift.o flag.o \
@@ -85,7 +86,8 @@ OBJS		= attraction.o blitspin.o bouboule.o braid.o bubbles.o \
 		  slip.o sphere.o spiral.o strange.o swirl.o xlockmore.o \
 		  xroger-hack.o goop.o starfish.o munch.o fadeplot.o \
 		  rd-bomb.o coral.o mountain.o triangle.o lissie.o worm.o \
-		  rotor.o ant.o xjack.o xlyap.o puzzle.o xscreensaver-sgigl.o
+		  rotor.o ant.o xjack.o xlyap.o puzzle.o xscreensaver-sgigl.o \
+		  cynosure.o moire2.o
 
 EXES		= attraction blitspin bouboule braid bubbles decayscreen deco \
 		  drift flag flame forest vines galaxy grav greynetic halo \
@@ -94,7 +96,7 @@ EXES		= attraction blitspin bouboule braid bubbles decayscreen deco \
 		  penrose pyro qix rocks rorschach sierpinski slidescreen \
 		  slip sphere spiral strange swirl xroger goop starfish munch \
 		  fadeplot rd-bomb coral mountain triangle lissie worm rotor \
-		  ant xjack xlyap puzzle
+		  ant xjack xlyap puzzle cynosure moire2
 
 HACK_OBJS_1	= $(UTILS_BIN)/resources.o $(UTILS_BIN)/visual.o \
 		  $(UTILS_BIN)/usleep.o $(UTILS_BIN)/yarandom.o @XMU_OBJS@
@@ -124,7 +126,8 @@ EXTRAS		= README Makefile.in xlock.h default.xbm bob.xbm .gdbinit \
 		  bubbles-tools/bubbles$(STAR) \
 		  bubbles-tools/xpm$(STAR) \
 		  bubbles-sources/$(STAR).pov \
-		  bubbles-samples/$(STAR).bub.gz
+		  bubbles-samples/$(STAR).bub.gz \
+		  vidwhacker
 
 VMSFILES	= compile_axp.com compile_decc.com link_axp.com link_decc.com \
 		  vms_axp.opt vms_axp_12.opt vms_decc.opt vms_decc_12.opt
@@ -361,6 +364,9 @@ maze:			 $(HACK_OBJS) maze.o $(ERASE) $(UTILS_BIN)/xroger.o
 moire:			 $(HACK_OBJS) moire.o $(COL)
 	$(CC_HACK) -o $@ $(HACK_OBJS) moire.o $(COL) $(HACK_LIBS)
 
+moire2:			 $(HACK_OBJS) moire2.o $(COL)
+	$(CC_HACK) -o $@ $(HACK_OBJS) moire2.o $(COL) $(HACK_LIBS)
+
 noseguy:		 $(HACK_OBJS) noseguy.o
 	$(CC_HACK) -o $@ $(HACK_OBJS) noseguy.o $(XPM_LIBS)
 
@@ -408,6 +414,9 @@ xlyap: $(HACK_OBJS) xlyap.o $(COL)
 
 puzzle: $(HACK_OBJS) puzzle.o $(GRAB)
 	$(CC_HACK) -o $@ $(HACK_OBJS) puzzle.o $(GRAB) $(HACK_LIBS) $(GRAB_LIBS)
+
+cynosure: $(HACK_OBJS) cynosure.o $(COL)
+	$(CC_HACK) -o $@ $(HACK_OBJS) cynosure.o $(COL) $(HACK_LIBS)
 
 
 # The rules for those hacks which follow the `xlockmore' API.
@@ -1178,4 +1187,22 @@ puzzle.o: $(srcdir)/pieces/puzzle_b_sw_f.xbm
 puzzle.o: $(srcdir)/pieces/puzzle_b_w_f.xbm
 puzzle.o: $(srcdir)/pieces/puzzle_b_nw_f.xbm
 xscreensaver-sgigl.o: $(UTILS_SRC)/vroot.h
+cynosure.o: $(srcdir)/screenhack.h
+cynosure.o: $(srcdir)/../config.h
+cynosure.o: $(UTILS_SRC)/yarandom.h
+cynosure.o: $(UTILS_SRC)/usleep.h
+cynosure.o: $(UTILS_SRC)/resources.h
+cynosure.o: $(UTILS_SRC)/hsv.h
+cynosure.o: $(UTILS_SRC)/colors.h
+cynosure.o: $(UTILS_SRC)/grabscreen.h
+cynosure.o: $(UTILS_SRC)/visual.h
+moire2.o: $(srcdir)/screenhack.h
+moire2.o: $(srcdir)/../config.h
+moire2.o: $(UTILS_SRC)/yarandom.h
+moire2.o: $(UTILS_SRC)/usleep.h
+moire2.o: $(UTILS_SRC)/resources.h
+moire2.o: $(UTILS_SRC)/hsv.h
+moire2.o: $(UTILS_SRC)/colors.h
+moire2.o: $(UTILS_SRC)/grabscreen.h
+moire2.o: $(UTILS_SRC)/visual.h
 

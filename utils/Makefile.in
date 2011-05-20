@@ -183,5 +183,6 @@ sgivideo.o: $(srcdir)/utils.h
 sgivideo.o: $(srcdir)/../config.h
 sgivideo.o: $(srcdir)/sgivideo.h
 sgivideo.o: $(srcdir)/resources.h
+sgivideo.o: $(srcdir)/visual.h
 sgivideo.o: $(srcdir)/usleep.h
 

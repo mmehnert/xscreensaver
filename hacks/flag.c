@@ -69,8 +69,21 @@ static const char sccsid[] = "@(#)flag.c	4.02 97/04/01 xlockmore";
 # include <sys/utsname.h>
 #endif /* HAVE_UNAME */
 
+#ifdef STANDALONE
+static XrmOptionDescRec opts[] =
+{
+  { "-bitmap", ".flag.bitmap", XrmoptionSepArg, 0 }
+};
+
+#endif /* STANDALONE */
+
 ModeSpecOpt flag_opts = {
-  0, NULL, 0, NULL, NULL };
+#ifdef STANDALONE
+  1, opts, 0, NULL, NULL
+#else  /* !STANDALONE */
+  0, NULL, 0, NULL, NULL
+#endif /* STANDALONE */
+};
 
 #include <string.h>
 #include <X11/Xutil.h>

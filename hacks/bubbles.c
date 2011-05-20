@@ -58,7 +58,6 @@
 #endif /* SIGNAL_NONSENSE */
 
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 #ifndef VMS

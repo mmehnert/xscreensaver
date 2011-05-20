@@ -151,7 +151,11 @@ screenhack (Display *dpy, Window win)
   /* This code only deals with pixmap depths of 1, 8, 16, and 32.
      Therefore, we assume that those depths will be supported by the
      coresponding visual depths (that depth-24 displays accept depth-32
-     pixmaps, and that depth-12 displays accept depth-16 pixmaps.) */
+     pixmap data, and that depth-12 displays accept depth-16 pixmap data.)
+     That is, we're making assumptions about what XListPixmapFormats()
+     will return, and therefore, what XCreateImage/XPutImage will do.
+     This is deeply bogus.
+   */
   pdepth = (vdepth == 1 ? 1 :
 	    vdepth <= 8 ? 8 :
 	    vdepth <= 16 ? 16 :
