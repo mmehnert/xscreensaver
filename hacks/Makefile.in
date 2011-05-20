@@ -21,6 +21,7 @@ CFLAGS		= @CFLAGS@
 LDFLAGS		= @LDFLAGS@
 DEFS		= -DSTANDALONE @DEFS@
 LIBS		= @LIBS@
+PERL		= @PERL@
 
 DEPEND		= @DEPEND@
 DEPEND_FLAGS	= @DEPEND_FLAGS@
@@ -84,6 +85,7 @@ SRCS		= attraction.c blitspin.c bouboule.c braid.c bubbles.c \
 		  sonar.c demon.c loop.c t3d.c penetrate.c deluxe.c compass.c \
 		  squiral.c xflame.c wander.c spotlight.c critical.c \
 		  phosphor.c xmatrix.c petri.c shadebobs.c
+SCRIPTS		= vidwhacker webcollage
 
 OBJS		= attraction.o blitspin.o bouboule.o braid.o bubbles.o \
 		  bubbles-default.o decayscreen.o deco.o drift.o flag.o \
@@ -113,7 +115,7 @@ EXES		= attraction blitspin bouboule braid bubbles decayscreen deco \
 		  interference truchet bsod crystal discrete distort kumppa \
 		  sonar demon loop t3d penetrate deluxe compass squiral \
 		  xflame wander spotlight critical phosphor xmatrix petri \
-		  shadebobs vidwhacker webcollage
+		  shadebobs
 
 HACK_OBJS_1	= $(UTILS_BIN)/resources.o $(UTILS_BIN)/visual.o \
 		  $(UTILS_BIN)/usleep.o $(UTILS_BIN)/yarandom.o @XMU_OBJS@
@@ -142,7 +144,6 @@ MEN		= attraction.man blitspin.man bouboule.man braid.man \
 		  vidwhacker.man webcollage.man
 STAR		= *
 EXTRAS		= README Makefile.in xlock_23.h .gdbinit \
-		  vidwhacker webcollage \
 		  images/$(STAR).xbm \
 		  images/$(STAR).xpm \
 		  images/bubbles/$(STAR).pov \
@@ -154,24 +155,48 @@ EXTRAS		= README Makefile.in xlock_23.h .gdbinit \
 VMSFILES	= compile_axp.com compile_decc.com link_axp.com link_decc.com \
 		  vms_axp.opt vms_axp_12.opt vms_decc.opt vms_decc_12.opt
 
-TARFILES	= $(SRCS) $(HDRS) $(MEN) $(EXTRAS) $(VMSFILES)
+TARFILES	= $(SRCS) $(HDRS) $(SCRIPTS) $(MEN) $(EXTRAS) $(VMSFILES)
 
 
 default: all
 all: $(EXES)
 
-install:   install-program   install-man
+install:   install-program   install-scripts install-man
 uninstall: uninstall-program uninstall-man
 
 install-strip:
 	$(MAKE) INSTALL_PROGRAM='$(INSTALL_PROGRAM) -s' install
 
 install-program: $(EXES)
-	@exes="$(EXES)" ;						\
-	if [ ! -d $(HACKDIR) ]; then $(INSTALL_DIRS) $(HACKDIR) ; fi ;	\
-	for program in $$exes; do					\
+	@if [ ! -d $(HACKDIR) ]; then $(INSTALL_DIRS) $(HACKDIR) ; fi ;	\
+	for program in $(EXES); do					\
 	  echo $(INSTALL_PROGRAM) $$program $(HACKDIR)/$$program ;	\
 	  $(INSTALL_PROGRAM) $$program $(HACKDIR)/$$program ;		\
+	done
+
+install-scripts: $(SCRIPTS) munge-scripts
+	@for program in $(SCRIPTS); do					\
+	  if [ -r $$program ] ; then					\
+	    p=$$program ;						\
+	  else								\
+	    p=$(srcdir)/$$program ;					\
+	  fi ;								\
+	  echo $(INSTALL_PROGRAM) $$p $(HACKDIR)/$$program ;		\
+	  $(INSTALL_PROGRAM) $$p $(HACKDIR)/$$program ;			\
+	done
+
+munge-scripts: $(SCRIPTS)
+	@tmp=/tmp/mf.$$$$ ;						\
+	perl="${PERL}" ;						\
+	for program in $(SCRIPTS); do					\
+	  echo "adjusting location of perl in $$program..." ;		\
+	  sed "s@^\(#!\)\(/[^ ]*/perl[^ ]*\)\(.*\)\$$@\1$$perl\3@"	\
+	      < $(srcdir)/$$program > $$tmp ;				\
+	  if cmp -s $(srcdir)/$$program $$tmp ; then			\
+	    true ;							\
+	  else								\
+	    cat $$tmp > ./$$program ;					\
+	  fi ;								\
 	done
 
 install-man: $(MEN)
@@ -184,7 +209,7 @@ install-man: $(MEN)
 	done
 
 uninstall-program:
-	@for program in $(EXES); do					\
+	@for program in $(EXES) $(SCRIPTS); do				\
 	  echo rm -f $(HACKDIR)/$$program ;				\
 	  rm -f $(HACKDIR)/$$program ;					\
 	done

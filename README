@@ -77,6 +77,13 @@ http://www.jwz.org/xscreensaver/.
 
                               ============
 
+Changes since 3.15:   * New version of `shadebobs'.
+                      * Improved image selection in `webcollage', and sped it
+                        up slightly.
+                      * Made configure find the right version of perl.
+                      * Rewrote the CGI part of `webcollage'.
+                      * `make clean' was deleting some things it shouldn't.
+                      * Fixed a typo in the default programs list.
 Changes since 3.14:   * Added `webcollage' and `shadebobs' hacks.
                       * Added a `-stdout' arg to `vidwhacker' so that it can
                         be used in a pipeline.

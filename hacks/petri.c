@@ -1,4 +1,4 @@
-/* petri, simulate mold in a petri dish. v2.5
+/* petri, simulate mold in a petri dish. v2.6
  * by Dan Bornstein, danfuzz@milk.com
  * with help from Jamie Zawinski, jwz@jwz.org
  * Copyright (c) 1992-1999 Dan Bornstein.
@@ -39,6 +39,8 @@
  *   maximum possible speed (fraction, between 0 and 1)
  * maxdeathspeed: the maximum speed for black death cells as a fraction of the
  *   maximum possible speed (fraction, between 0 and 1)
+ * originalcolors: if true, count must be 8 or less and the colors are a 
+ *   fixed set of primary and secondary colors (the artist's original choices)
  *
  * Interesting settings:
  *
@@ -113,27 +115,140 @@ static FLOAT minlifespeed;
 static FLOAT maxlifespeed;
 static FLOAT mindeathspeed;
 static FLOAT maxdeathspeed;
+static Bool originalcolors;
 
 static int random_life_value (void)
 {
     return (int) ((RAND_FLOAT * (maxlifespan - minlifespan)) + minlifespan);
 }
 
-static void setup_display (void)
+static void setup_random_colormap (XWindowAttributes *xgwa)
 {
     XGCValues gcv;
+    int lose = 0;
+    int ncolors = count - 1;
+    int n;
+    XColor *colors = (XColor *) calloc (sizeof(*colors), count*2);
+    
+    colors[0].pixel = get_pixel_resource ("background", "Background",
+					  display, xgwa->colormap);
+    
+    make_random_colormap (display, xgwa->visual, xgwa->colormap,
+			  colors+1, &ncolors, True, True, 0, True);
+    if (ncolors < 1)
+	exit (-1);
+    
+    ncolors++;
+    count = ncolors;
+    
+    memcpy (colors + count, colors, count * sizeof(*colors));
+    colors[count].pixel = get_pixel_resource ("foreground", "Foreground",
+					      display, xgwa->colormap);
+    
+    for (n = 1; n < count; n++)
+    {
+	int m = n + count;
+	colors[n].red = colors[m].red / 2;
+	colors[n].green = colors[m].green / 2;
+	colors[n].blue = colors[m].blue / 2;
+	
+	if (!XAllocColor (display, xgwa->colormap, &colors[n]))
+	{
+	    lose++;
+	    colors[n] = colors[m];
+	}
+    }
+
+    if (lose)
+    {
+	fprintf (stderr, 
+		 "%s: unable to allocate %d half-intensity colors.\n",
+		 progname, lose);
+    }
+    
+    for (n = 0; n < count*2; n++) 
+    {
+	gcv.foreground = colors[n].pixel;
+	coloredGCs[n] = XCreateGC (display, window, GCForeground, &gcv);
+    }
+
+    free (colors);
+}
+
+static void setup_original_colormap (XWindowAttributes *xgwa)
+{
+    XGCValues gcv;
+    int lose = 0;
+    int n;
+    XColor *colors = (XColor *) calloc (sizeof(*colors), count*2);
+    
+    colors[0].pixel = get_pixel_resource ("background", "Background",
+					  display, xgwa->colormap);
+
+    colors[count].pixel = get_pixel_resource ("foreground", "Foreground",
+					      display, xgwa->colormap);
+
+    for (n = 1; n < count; n++)
+    {
+	int m = n + count;
+	colors[n].red =   ((n & 0x01) != 0) * 0x8000;
+	colors[n].green = ((n & 0x02) != 0) * 0x8000;
+	colors[n].blue =  ((n & 0x04) != 0) * 0x8000;
+
+	if (!XAllocColor (display, xgwa->colormap, &colors[n]))
+	{
+	    lose++;
+	    colors[n] = colors[0];
+	}
+
+	colors[m].red   = colors[n].red + 0x4000;
+	colors[m].green = colors[n].green + 0x4000;
+	colors[m].blue  = colors[n].blue + 0x4000;
+
+	if (!XAllocColor (display, xgwa->colormap, &colors[m]))
+	{
+	    lose++;
+	    colors[m] = colors[count];
+	}
+    }
+
+    if (lose)
+    {
+	fprintf (stderr, 
+		 "%s: unable to allocate %d colors.\n",
+		 progname, lose);
+    }
+    
+    for (n = 0; n < count*2; n++) 
+    {
+	gcv.foreground = colors[n].pixel;
+	coloredGCs[n] = XCreateGC (display, window, GCForeground, &gcv);
+    }
+
+    free (colors);
+}
+
+static void setup_display (void)
+{
     XWindowAttributes xgwa;
     Colormap cmap;
-    int n;
+
     int cell_size = get_integer_resource ("size", "Integer");
     if (cell_size < 1) cell_size = 1;
 
     XGetWindowAttributes (display, window, &xgwa);
 
+    originalcolors = get_boolean_resource ("originalcolors", "Boolean");
+
     count = get_integer_resource ("count", "Integer");
     if (count < 2) count = 2;
     if (count > (1L << (xgwa.depth-1)))
       count = (1L << (xgwa.depth-1));
+
+    if (originalcolors && (count > 8))
+    {
+	count = 8;
+    }
 
     coloredGCs = (GC *) calloc (sizeof(GC), count * 2);
 
@@ -257,50 +372,13 @@ static void setup_display (void)
     xOffset = (windowWidth - (arr_width * xSize)) / 2;
     yOffset = (windowHeight - (arr_height * ySize)) / 2;
 
+    if (originalcolors)
     {
-      int lose = 0;
-      int ncolors = count - 1;
-      XColor *colors = (XColor *) calloc (sizeof(*colors), count*2);
-
-      colors[0].pixel = get_pixel_resource ("background", "Background",
-                                            display, xgwa.colormap);
-
-      make_random_colormap (display, xgwa.visual, xgwa.colormap,
-                            colors+1, &ncolors, True, True, 0, True);
-      if (ncolors < 1)
-        exit (-1);
-
-      ncolors++;
-      count = ncolors;
-
-      memcpy (colors + count, colors, count * sizeof(*colors));
-      colors[count].pixel = get_pixel_resource ("foreground", "Foreground",
-                                                display, xgwa.colormap);
-
-      for (n = 1; n < count; n++)
-      {
-          int m = n + count;
-          colors[n].red = colors[m].red / 2;
-          colors[n].green = colors[m].green / 2;
-          colors[n].blue = colors[m].blue / 2;
-	  
-          if (!XAllocColor (display, xgwa.colormap, &colors[n]))
-	  {
-              lose++;
-              colors[n] = colors[m];
-	  }
-      }
-
-      if (lose)
-        fprintf (stderr, "%s: unable to allocate %d half-intensity colors.\n",
-                 progname, lose);
-
-      for (n = 0; n < count*2; n++) 
-        {
-          gcv.foreground = colors[n].pixel;
-          coloredGCs[n] = XCreateGC (display, window, GCForeground, &gcv);
-        }
-      free (colors);
+	setup_original_colormap (&xgwa);
+    }
+    else
+    {
+	setup_random_colormap (&xgwa);
     }
 }
 
@@ -519,27 +597,29 @@ char *defaults [] = {
   "*instantdeathchan:	0.2",
   "*minlifespan:	500",
   "*maxlifespan:	1500",
-  "*minlifespeed:	0.04244",
-  "*maxlifespeed:	0.13083",
-  "*mindeathspeed:	0.42433",
-  "*maxdeathspeed:	0.45969",
+  "*minlifespeed:	0.04",
+  "*maxlifespeed:	0.13",
+  "*mindeathspeed:	0.42",
+  "*maxdeathspeed:	0.46",
+  "*originalcolors:	false",
     0
 };
 
 XrmOptionDescRec options [] = {
-  { "-delay",		".delay",	XrmoptionSepArg, 0 },
-  { "-size",		".size",	XrmoptionSepArg, 0 },
-  { "-count",		".count",	XrmoptionSepArg, 0 },
-  { "-diaglim",		".diaglim",	XrmoptionSepArg, 0 },
-  { "-anychan",		".anychan",	XrmoptionSepArg, 0 },
-  { "-minorchan",	".minorchan",	XrmoptionSepArg, 0 },
-  { "-instantdeathchan", ".instantdeathchan", XrmoptionSepArg, 0 },
-  { "-minlifespan",	".minlifespan",	XrmoptionSepArg, 0 },
-  { "-maxlifespan",	".maxlifespan",	XrmoptionSepArg, 0 },
-  { "-minlifespeed",	".minlifespeed", XrmoptionSepArg, 0 },
-  { "-maxlifespeed",	".maxlifespeed", XrmoptionSepArg, 0 },
-  { "-mindeathspeed",	".mindeathspeed", XrmoptionSepArg, 0 },
-  { "-maxdeathspeed",	".maxdeathspeed", XrmoptionSepArg, 0 },
+  { "-delay",		 ".delay",		XrmoptionSepArg, 0 },
+  { "-size",		 ".size",		XrmoptionSepArg, 0 },
+  { "-count",		 ".count",		XrmoptionSepArg, 0 },
+  { "-diaglim",		 ".diaglim",		XrmoptionSepArg, 0 },
+  { "-anychan",		 ".anychan",		XrmoptionSepArg, 0 },
+  { "-minorchan",	 ".minorchan",		XrmoptionSepArg, 0 },
+  { "-instantdeathchan", ".instantdeathchan",	XrmoptionSepArg, 0 },
+  { "-minlifespan",	 ".minlifespan",	XrmoptionSepArg, 0 },
+  { "-maxlifespan",	 ".maxlifespan",	XrmoptionSepArg, 0 },
+  { "-minlifespeed",	 ".minlifespeed",	XrmoptionSepArg, 0 },
+  { "-maxlifespeed",	 ".maxlifespeed",	XrmoptionSepArg, 0 },
+  { "-mindeathspeed",	 ".mindeathspeed",	XrmoptionSepArg, 0 },
+  { "-maxdeathspeed",	 ".maxdeathspeed",	XrmoptionSepArg, 0 },
+  { "-originalcolors",	 ".originalcolors",	XrmoptionNoArg,  "true" },
   { 0, 0, 0, 0 }
 };
 

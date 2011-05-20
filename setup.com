@@ -81,10 +81,8 @@ $ swirl		:== $'mydir'swirl
 $ t3d		:== $'mydir't3d
 $ triangle	:== $'mydir'triangle
 $ truchet	:== $'mydir'truchet
-$ vidwhacker	:== $'mydir'vidwhacker
 $ vines		:== $'mydir'vines
 $ wander	:== $'mydir'wander
-$ webcollage	:== $'mydir'webcollage
 $ worm		:== $'mydir'worm
 $ xflame	:== $'mydir'xflame
 $ xjack		:== $'mydir'xjack

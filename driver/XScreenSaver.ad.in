@@ -4,8 +4,8 @@
 !            a screen saver and locker for the X window system
 !                            by Jamie Zawinski
 !
-!                              version 3.15
-!                                20-Jun-99
+!                              version 3.16
+!                                23-Jun-99
 !
 ! See "man xscreensaver" for more info.  The latest version is always
 ! available at http://www.jwz.org/xscreensaver/
@@ -204,8 +204,8 @@
 		   -minorchan 0 -anychan 0.3				\n\
 		shadebobs -root						\n\
     default-n:  webcollage -root					\n\
- -  default-n	webcollage -root -filter 'vidwhacker -stdin -stdout'    \n\
- -  default-n	vidwhacker -root					\n\
+ -  default-n:	webcollage -root -filter 'vidwhacker -stdin -stdout'    \n\
+ -  default-n:	vidwhacker -root					\n\
 									  \
 	 mono:	rocks -root						\n\
 	color:	rocks -root -fg darksalmon				\n\

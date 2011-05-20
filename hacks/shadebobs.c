@@ -24,6 +24,10 @@
  * [06/11/99] - Shane Smit: Stopped trying to rape the palette.
  * [06/20/99] - jwz: cleaned up ximage handling, gave resoources short names,
  *                introduced delay, made it restart after N iterations.
+ * [06/21/99] - Shane Smit: Modified default values slightly, color changes
+ *                on cycle, and the extents of the sinus pattern change in
+ *                real-time.
+ * [06/22/99] - Shane Smit: Fixed delay to be fast and use little CPU :).
  */
 
 #include <math.h>
@@ -35,10 +39,11 @@
 char *progclass = "ShadeBobs";
 
 char *defaults [] = {
-  "*degrees:  720",
+  "*degrees:  512",
   "*color:    random",
   "*count:    2",
-  "*cycles:   8",
+  "*cycles:   50",
+  "*ncolors:  64",    /* changing this doesn't work particularly well */
   "*delay:    5000",
   0
 };
@@ -54,22 +59,39 @@ XrmOptionDescRec options [] = {
 
 static unsigned short nDegreeCount;
 static double *anSinTable;
-static unsigned short nMaxWidth, nMaxHeight;
+static unsigned short nMaxExtentX, nMaxExtentY;
+static unsigned short nMinExtentX, nMinExtentY;
 static unsigned short nHalfWidth, nHalfHeight;
+static char *sColor;
+
+#define RANDOM() ((int) (random() & 0X7FFFFFFFL))
 
 
 /* Ahem. Chocolate is a flavor; not a food. Thank you */
 
 
+#define MAPSIZE 32
+
 typedef struct
 {
-  char anDeltaMap[ 1024 ];  /* 32 x 32 Delta Map */
-  double nAngleX, nAngleY;
+  char anDeltaMap[ MAPSIZE * MAPSIZE ];  /* 32 x 32 Delta Map */
   double nVelocityX, nVelocityY;
+  double nAngleX, nAngleY;
+  short nExtentX, nExtentY;
 } SShadeBob;
 
 
-void InitShadeBob( SShadeBob *pShadeBob, Bool bDark )
+static void ResetShadeBob( SShadeBob *pShadeBob )
+{
+  pShadeBob->nAngleX = RANDOM() % nDegreeCount;
+  pShadeBob->nAngleY = RANDOM() % nDegreeCount;
+
+  pShadeBob->nExtentX = (RANDOM() % (nMaxExtentX - nMinExtentX)) + nMinExtentX;
+  pShadeBob->nExtentY = (RANDOM() % (nMaxExtentY - nMinExtentY)) + nMinExtentY;
+}
+
+
+static void InitShadeBob( SShadeBob *pShadeBob, Bool bDark )
 {
   double nDelta;
   char iWidth, iHeight;
@@ -80,79 +102,80 @@ void InitShadeBob( SShadeBob *pShadeBob, Bool bDark )
       nDelta = 9 - (sqrt( pow( iWidth+0.5, 2 ) + pow( iHeight+0.5, 2 ) ) / 2 );
       if( nDelta < 0 )  nDelta = 0;
       if( bDark ) nDelta = -nDelta;
-      pShadeBob->anDeltaMap[ (iWidth+16)*32 + iHeight+16 ] = (char)nDelta;
+      pShadeBob->anDeltaMap[ (iWidth+(MAPSIZE/2))*MAPSIZE
+                           + iHeight+(MAPSIZE/2) ] = (char)nDelta;
     }
 
-  pShadeBob->nAngleX = random() % nDegreeCount;
-  pShadeBob->nAngleY = random() % nDegreeCount;
+	ResetShadeBob( pShadeBob );
 }
 
 
-void Execute( SShadeBob *pShadeBob, Display *pDisplay, Window MainWindow,
-              GC *pGC, XImage *pXImage, XColor *aXColors )
+static void Execute( SShadeBob *pShadeBob, Display *pDisplay,
+                     Window MainWindow,
+                     GC *pGC, XImage *pXImage,
+                     int ncolors, XColor *aXColors )
 {
   long nColor;
   short nIndex;
   unsigned int nXPos, nYPos;
   unsigned int iWidth, iHeight;
-/*  unsigned short *pData; */
 
-  pShadeBob->nVelocityX += ( ( random() % 200 ) - 100 ) / 5000.0F;
-  pShadeBob->nVelocityY += ( ( random() % 200 ) - 100 ) / 5000.0F;
+  pShadeBob->nVelocityX += ( ( RANDOM() % 200 ) - 100 ) / 1000.0F;
+  pShadeBob->nVelocityY += ( ( RANDOM() % 200 ) - 100 ) / 1000.0F;
 
-  if(    pShadeBob->nVelocityX > 3 )  pShadeBob->nVelocityX = 3;
-  else if( pShadeBob->nVelocityX < 2 )  pShadeBob->nVelocityX = 2;
-  if(    pShadeBob->nVelocityY > 3 )  pShadeBob->nVelocityY = 3;
-  else if( pShadeBob->nVelocityY < 2 )  pShadeBob->nVelocityY = 2;
+  if(      pShadeBob->nVelocityX > 4 )  pShadeBob->nVelocityX = 4;
+  else if( pShadeBob->nVelocityX < 3 )  pShadeBob->nVelocityX = 3;
+  if(      pShadeBob->nVelocityY > 4 )  pShadeBob->nVelocityY = 4;
+  else if( pShadeBob->nVelocityY < 3 )  pShadeBob->nVelocityY = 3;
 
   pShadeBob->nAngleX += pShadeBob->nVelocityX;
   pShadeBob->nAngleY += pShadeBob->nVelocityY;
 
-  if(    pShadeBob->nAngleX >= nDegreeCount )
-    pShadeBob->nAngleX -= nDegreeCount;
-  else if( pShadeBob->nAngleX < 0 )
-    pShadeBob->nAngleX += nDegreeCount;
-  if(    pShadeBob->nAngleY >= nDegreeCount )
-    pShadeBob->nAngleY -= nDegreeCount;
-  else if( pShadeBob->nAngleY < 0 )       pShadeBob->nAngleY += nDegreeCount;
+  if(      pShadeBob->nAngleX >= nDegreeCount ) pShadeBob->nAngleX -= nDegreeCount;
+  else if( pShadeBob->nAngleX < 0 )             pShadeBob->nAngleX += nDegreeCount;
+  if(      pShadeBob->nAngleY >= nDegreeCount ) pShadeBob->nAngleY -= nDegreeCount;
+  else if( pShadeBob->nAngleY < 0 )             pShadeBob->nAngleY += nDegreeCount;
+
+  pShadeBob->nExtentX += ( RANDOM() % 5 ) - 2;
+  if( pShadeBob->nExtentX > nMaxExtentX ) pShadeBob->nExtentX = nMaxExtentX;
+  if( pShadeBob->nExtentX < nMinExtentX ) pShadeBob->nExtentX = nMinExtentX;
+  pShadeBob->nExtentY += ( RANDOM() % 5 ) - 2;
+  if( pShadeBob->nExtentY > nMaxExtentY ) pShadeBob->nExtentY = nMaxExtentY;
+  if( pShadeBob->nExtentY < nMinExtentY ) pShadeBob->nExtentY = nMinExtentY;
 
   /* Trig is your friend :) */
-  nXPos = (unsigned int)(( anSinTable[ (int)pShadeBob->nAngleX ] * nMaxWidth )
+  nXPos = (unsigned int)(( anSinTable[ (int)pShadeBob->nAngleX ] * pShadeBob->nExtentX )
                          + nHalfWidth);
-  nYPos = (unsigned int)(( anSinTable[ (int)pShadeBob->nAngleY ] * nMaxHeight )
+  nYPos = (unsigned int)(( anSinTable[ (int)pShadeBob->nAngleY ] * pShadeBob->nExtentY )
                          + nHalfHeight);
 
-  for( iHeight=0; iHeight<32; iHeight++ )
+  for( iHeight=0; iHeight < MAPSIZE; iHeight++ )
   {
-/*  pData = (unsigned short *)pXImage->data + ( ( nYPos + iHeight )
-        * pXImage->width ); */
-    for( iWidth=0; iWidth<32; iWidth++ )
+    for( iWidth=0; iWidth < MAPSIZE; iWidth++ )
     {
-/*      nColor = pData[ nXPos + iWidth ]; */
       nColor = XGetPixel( pXImage, nXPos + iWidth, nYPos + iHeight );
 
       /*  FIXME: Here is a loop I'd love to take out. */
-      for( nIndex=0; nIndex<64; nIndex++ )
+      for( nIndex=0; nIndex < ncolors; nIndex++ )
         if( aXColors[ nIndex ].pixel == nColor )
           break;
 
-      nIndex += pShadeBob->anDeltaMap[ iWidth*32+iHeight ];
-      if( nIndex > 63 ) nIndex = 63;
+      nIndex += pShadeBob->anDeltaMap[ iWidth * MAPSIZE + iHeight ];
+      if( nIndex >= ncolors ) nIndex = ncolors-1;
       if( nIndex < 0 )  nIndex = 0;
 
-/*      pData[ nXPos + iWidth ] = (unsigned short)aXColors[ nIndex ].pixel; */
       XPutPixel( pXImage, nXPos + iWidth, nYPos + iHeight,
                  aXColors[ nIndex ].pixel );
     }
   }
   /* Place graphics in window */
   XPutImage( pDisplay, MainWindow, *pGC, pXImage,
-             nXPos, nYPos, nXPos, nYPos, 32, 32 );
+             nXPos, nYPos, nXPos, nYPos, MAPSIZE, MAPSIZE );
   XSync (pDisplay, False);
 }
 
 
-void CreateTables( unsigned int nDegrees )
+static void CreateTables( unsigned int nDegrees )
 {
   double nRadian;
   unsigned int iDegree;
@@ -166,27 +189,27 @@ void CreateTables( unsigned int nDegrees )
 }
 
 
-void SetPalette(Display *pDisplay, Window Win, char *sColor, XColor *aXColors)
+static void SetPalette(Display *pDisplay, Window Win, char *sColor,
+                       int *ncolorsP, XColor *aXColors )
 {
   XWindowAttributes XWinAttrib;
   Colormap CMap;
   XColor Color;
   int nHue;
   double nSat, nVal;
-  int nRampCount = 32;
 
-  Color.red = ( random() % 3 ) * 0x7FFF;    /*  Either full, half or none. */
-  Color.green = ( random() % 3 ) * 0x7FFF;
-  Color.blue = ( random() % 3 ) * 0x7FFF;
+  XGetWindowAttributes( pDisplay, Win, &XWinAttrib );
+  CMap = XWinAttrib.colormap;
+
+  Color.red = ( RANDOM() % 3 ) * 0x7FFF;    /*  Either full, half or none. */
+  Color.green = ( RANDOM() % 3 ) * 0x7FFF;
+  Color.blue = ( RANDOM() % 3 ) * 0x7FFF;
 
   /*  If Color is black, grey, or white, then make SURE its a color */
   if( Color.red == Color.green && Color.green == Color.blue )
   { Color.red = 0xFFFF;
-    Color.green = ( random() % 3 ) * 0x7FFF;
+    Color.green = ( RANDOM() % 3 ) * 0x7FFF;
     Color.blue = 0; }
-
-  XGetWindowAttributes( pDisplay, Win, &XWinAttrib );
-  CMap = XWinAttrib.colormap;
 
   if( strcasecmp( sColor, "random" ) &&
       !XParseColor( pDisplay, CMap, sColor, &Color ) )
@@ -200,19 +223,34 @@ void SetPalette(Display *pDisplay, Window Win, char *sColor, XColor *aXColors)
           Color.red, Color.green, Color.blue, nHue, nSat, nVal );
 #endif  /*  VERBOSE */
 
-  make_color_ramp( pDisplay, CMap, 0, 0, 0, nHue, nSat, nVal, aXColors,
-                   &nRampCount, False, True, False );
-  make_color_ramp( pDisplay, CMap, nHue, nSat, nVal, 0, 0, 1,
-                   &aXColors[ nRampCount ], &nRampCount, False, True, False );
+  if (*ncolorsP != 0)
+    free_colors (pDisplay, CMap, aXColors, *ncolorsP);
+
+  *ncolorsP = get_integer_resource ("ncolors", "Integer");
+  if (*ncolorsP <= 0) *ncolorsP = 64;
+
+  /* allocate two color ramps, black -> color -> white. */
+  {
+    int n1, n2;
+    n1 = *ncolorsP / 2;
+    make_color_ramp( pDisplay, CMap, 0, 0, 0, nHue, nSat, nVal,
+                     aXColors, &n1,
+                     False, True, False );
+    n2 = *ncolorsP - n1;
+    make_color_ramp( pDisplay, CMap, nHue, nSat, nVal, 0, 0, 1,
+                     aXColors + n1, &n2,
+                     False, True, False );
+    *ncolorsP = n1 + n2;
+  }
 }
 
 
-void Initialize( Display *pDisplay, Window Win,
-                 GC *pGC, XImage *pXImage, XColor *aXColors )
+static void Initialize( Display *pDisplay, Window Win,
+                        GC *pGC, XImage *pXImage,
+                        int *ncolorsP, XColor *aXColors )
 {
   XGCValues gcValues;
   XWindowAttributes XWinAttribs;
-  char *sColor;
   int bpp;
 
   /* Create the Image for drawing */
@@ -252,8 +290,10 @@ void Initialize( Display *pDisplay, Window Win,
   pXImage->data = calloc(pXImage->bytes_per_line, pXImage->height);
 
   /*  These are precalculations used in Execute(). */
-  nMaxWidth = ( XWinAttribs.width / 2 ) - 20;
-  nMaxHeight = ( XWinAttribs.height / 2 ) - 20;
+  nMaxExtentX = ( XWinAttribs.width / 2 ) - 20;
+  nMaxExtentY = ( XWinAttribs.height / 2 ) - 20;
+  nMinExtentX = nMaxExtentX / 3;
+  nMinExtentY = nMaxExtentY / 3;
   nHalfWidth = ( XWinAttribs.width / 2 ) - 16;
   nHalfHeight = ( XWinAttribs.height / 2 ) - 16;
 
@@ -266,16 +306,17 @@ void Initialize( Display *pDisplay, Window Win,
   /*  Get the colors. */
   sColor = get_string_resource( "color", "Color" );
   if( sColor == NULL)
-    SetPalette( pDisplay, Win, "random", aXColors );
+    SetPalette( pDisplay, Win, "random", ncolorsP, aXColors );
   else
-    SetPalette( pDisplay, Win, sColor, aXColors );
+    SetPalette( pDisplay, Win, sColor, ncolorsP, aXColors );
 }
 
 
 void screenhack(Display *pDisplay, Window Win )
 {
   GC gc;
-  XColor aXColors[ 64 ];
+  int ncolors = 0;
+  XColor aXColors[ 256 ];
   XImage Image;
   unsigned char nShadeBobCount, iShadeBob;
   SShadeBob *aShadeBobs;
@@ -298,7 +339,10 @@ void screenhack(Display *pDisplay, Window Win )
   printf( "Allocated %d ShadeBobs\n", nShadeBobCount );
 #endif  /*  VERBOSE */
 
-  Initialize( pDisplay, Win, &gc, &Image, aXColors );
+  Initialize( pDisplay, Win, &gc, &Image, &ncolors, aXColors );
+
+  for( iShadeBob=0; iShadeBob<nShadeBobCount; iShadeBob++ )
+    InitShadeBob( &aShadeBobs[ iShadeBob ], iShadeBob % 2 );
 
   delay = get_integer_resource( "delay", "Integer" );
   cycles = get_integer_resource( "cycles", "Integer" ) * (nDegreeCount / 3);
@@ -306,19 +350,24 @@ void screenhack(Display *pDisplay, Window Win )
 
   while (1)
   {
+    screenhack_handle_events( pDisplay );
 
     if (i++ >= cycles)
-      {
-        i = 0;
-        XClearWindow (pDisplay, Win);
-        memset (Image.data, 0, Image.bytes_per_line * Image.height);
-        for( iShadeBob=0; iShadeBob<nShadeBobCount; iShadeBob++ )
-          InitShadeBob( &aShadeBobs[ iShadeBob ], iShadeBob % 2 );
-      }
+    {
+      i = 0;
+      XClearWindow (pDisplay, Win);
+      memset (Image.data, 0, Image.bytes_per_line * Image.height);
+      for( iShadeBob=0; iShadeBob<nShadeBobCount; iShadeBob++ )
+        ResetShadeBob( &aShadeBobs[ iShadeBob ] );
+      SetPalette( pDisplay, Win, sColor, &ncolors, aXColors );
+    }
 
     for( iShadeBob=0; iShadeBob<nShadeBobCount; iShadeBob++ )
       Execute( &aShadeBobs[ iShadeBob ], pDisplay, Win, &gc,
-               &Image, aXColors );
+               &Image, ncolors, aXColors );
+
+    if( delay && !(i % 4) )
+		usleep(delay);
 
 #ifdef VERBOSE
     iFrame++;
@@ -329,10 +378,6 @@ void screenhack(Display *pDisplay, Window Win )
       iFrame = 0;
     }
 #endif  /*  VERBOSE */
-
-    if (delay) usleep(delay);
-
-      screenhack_handle_events( pDisplay );
   }
 
   free( anSinTable );

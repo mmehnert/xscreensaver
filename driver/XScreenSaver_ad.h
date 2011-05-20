@@ -128,8 +128,8 @@
 		   -minorchan 0 -anychan 0.3				\\n\
 		shadebobs -root						\\n\
     default-n:  webcollage -root					\\n\
- -  default-n	webcollage -root -filter 'vidwhacker -stdin -stdout'    \\n\
- -  default-n	vidwhacker -root					\\n\
+ -  default-n:	webcollage -root -filter 'vidwhacker -stdin -stdout'    \\n\
+ -  default-n:	vidwhacker -root					\\n\
 									  \
 	 mono:	rocks -root						\\n\
 	color:	rocks -root -fg darksalmon				\\n\

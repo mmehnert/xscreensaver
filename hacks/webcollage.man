@@ -21,20 +21,19 @@ webcollage - decorate the screen with random images from the web
 [\-filter \fIcommand\fP] [\-filter2 \fIcommand\fP]
 .SH DESCRIPTION
 The \fIwebcollage\fP program pulls random image off of the World Wide Web
-and scatters them on the root window.  It finds these images by doing
-random web searches, and extracting images from the returned pages.
-It places the images on the root window by using the 
+and scatters them on the root window.  One satisfied customer described it
+as "a nonstop pop culture brainbath."  This program finds its images by
+doing random web searches, and extracting images from the returned pages.
+It places the images on the root window by using the
 .BR xv (1),
 .BR giftopnm (1),
 and
 .BR djpeg (1)
 tools.
 
-\fIwebcollage\fP also works as a CGI program: simply make a symbolic
-link to the \fIwebcollage\fP executable called \fInph-webcollage.cgi\fP.
-If this program sees that it is being run as a CGI, then it will behave
-appropriately.  (The generated web page will list the images one after
-another, rather than tiling them together.)
+\fIwebcollage\fP also works as a CGI program, that will add images to the
+collage on a web page each time the page is loaded.  See the comments at 
+the top of the source code for installation instructions.
 
 \fIwebcollage\fP is written in
 .BR perl (1)
@@ -108,14 +107,23 @@ Only the GIF and JPEG image formats are supported.
 Transparent and animating GIFs are not supported.
 
 It's slow.
+
+Too many of the images that it finds are text, not pictures.  This is 
+because most of the web is pictures of text.  Which is pretty sad.
 .SH SEE ALSO
 .BR X (1),
 .BR xscreensaver (1),
 .BR xv (1),
+.BR ppmmake (1),
 .BR giftopnm (1),
+.BR pnmpaste (1),
+.BR pnmscale (1),
 .BR djpeg (1),
+.BR cjpeg (1),
+.BR xdpyinfo (1),
+.BR perl (1),
 .BR vidwhacker (1),
-.BR perl (1)
+.BR dadadodo (1)
 .SH COPYRIGHT
 Copyright \(co 1998, 1999 by Jamie Zawinski.  Permission to use, copy, modify, 
 distribute, and sell this software and its documentation for any purpose is 

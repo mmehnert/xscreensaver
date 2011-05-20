@@ -20,7 +20,10 @@
 # another system, add a new clause to the grab() procedure.
 
 
-# Process command-line args...
+# need perl to generate random numbers -- I don't know another way to do
+# that from a shell script.
+perl=perl
+
 
 onroot=false
 verbose=false
@@ -39,6 +42,7 @@ tmp_ppm4=$tmp-4.ppm
 tmp_ppmS=$tmp-S.ppm
 
 
+# Process command-line args
 getargs() {
 
   while [ $# != 0 ]; do
@@ -133,17 +137,11 @@ grab() {
 
     qcam > $tmp_ppm1
 
-    # Friedrich Delgado Friedrichs says the following works with a
-    # Brooktree 848 or 878 tuner card:
+    # Friedrich Delgado Friedrichs says the following works if you have
+    # XawTV installed:
     #
-    #   bttvgrab -Q -d q -l 1 -F /dev/null -o gif -f ${tmp}.gif -N PAL
-    #   giftopnm ${tmp}.gif > $tmp_ppm1
-    #   rm ${tmp}.gif
+    #   streamer -o $tmp_ppm1
     #
-    # He notes that you might need to run a TV application (e.g., xawtv)
-    # before the first time you run vidwhacker in order to initialize the
-    # tuner card and kernel modules.
-
 
   else
     echo "$0: don't know how to grab video on this OS." >&2
@@ -156,15 +154,21 @@ grab() {
 # Use perl to pick a random foreground/background color in pbm's syntax.
 #
 randcolor() {
-  perl -e 'srand; 
-	   printf("#%02x%02x%02x-#%02x%02x%02x",
-		  int(rand()*60),
-		  int(rand()*60),
-		  int(rand()*60),
-		  120+int(rand()*135),
-		  120+int(rand()*135),
-		  120+int(rand()*135))'
+  $perl -e 'srand(time ^ $$);
+            printf("#%02x%02x%02x-#%02x%02x%02x",
+                   int(rand()*60),
+                   int(rand()*60),
+                   int(rand()*60),
+                   120+int(rand()*135),
+                   120+int(rand()*135),
+                   120+int(rand()*135))'
 }
+
+rand() {
+  $perl -e "srand(time ^ $$); print int(rand() * $1)"
+}
+
+
 
 # Frobnicate the image in some random way.
 #
@@ -174,7 +178,7 @@ frob() {
   width=`echo $w_h | awk '{print $1}'`
   height=`echo $w_h | awk '{print $2}'`
 
-  N=`perl -e 'srand; print int(rand() * 17)'`
+  N=`rand 17`
 
   if [ "$verbose" = true ]; then
     echo "mode $N..." >&2
@@ -206,7 +210,7 @@ frob() {
     pnmarith -multiply $tmp_ppm1 $tmp_ppm2
 
   elif [ $N = 6 ]; then
-    N2=`perl -e 'srand; print int(rand() * 3)'`
+    N2=`rand 3`
     if [ $N2 = 0 ]; then
       pnmflip -lr $tmp_ppm1 > $tmp_ppm2
     elif [ $N2 = 1 ]; then

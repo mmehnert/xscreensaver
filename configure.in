@@ -170,6 +170,30 @@ AC_DEFUN(AC_GETTIMEOFDAY_ARGS,
 
 ###############################################################################
 #
+#       Function to find perl5 (defines PERL and PERL_VERSION.)
+#
+###############################################################################
+
+# M4 sucks!!  perl sucks too!!
+changequote(X,Y)
+perl_version_cmd='print $]'
+changequote([,])
+
+AC_DEFUN(AC_PROG_PERL,
+ [PERL=''
+  AC_PATH_PROGS(PERL, [perl5 perl],,)
+  if test -z "$PERL" ; then
+    PERL_VERSION=0
+  else
+    AC_CACHE_CHECK([perl version], ac_cv_perl_version,
+                   [ac_cv_perl_version=`$PERL -e "$perl_version_cmd"`])
+    PERL_VERSION=$ac_cv_perl_version
+  fi
+ ])
+
+
+###############################################################################
+#
 #       Functions to check how to do ICMP PING requests.
 #
 ###############################################################################
@@ -650,11 +674,17 @@ AC_HEADER_SYS_WAIT
 AC_HEADER_DIRENT
 AC_GETTIMEOFDAY_ARGS
 AC_CHECK_FUNCS(select fcntl uname nice setpriority getcwd getwd putenv)
+
 AC_CHECK_FUNCS(sigaction syslog realpath)
 AC_CHECK_ICMP
 AC_CHECK_ICMPHDR
 AC_CHECK_HEADERS(crypt.h sys/select.h)
+AC_PROG_PERL
 
+if test -z "$PERL" ; then
+  # don't let it be blank...
+  PERL=/usr/local/bin/perl5
+fi
 
 AC_PATH_XTRA
 
@@ -2364,6 +2394,7 @@ AC_SUBST(APPDEFAULTS)
 AC_SUBST(DEPEND)
 AC_SUBST(DEPEND_FLAGS)
 AC_SUBST(DEPEND_DEFINES)
+AC_SUBST(PERL)
 
 AC_OUTPUT(Makefile
           utils/Makefile
