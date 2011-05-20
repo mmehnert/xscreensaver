@@ -73,7 +73,7 @@ SRCS		= attraction.c blitspin.c bouboule.c braid.c bubbles.c \
 		  slip.c sphere.c spiral.c strange.c swirl.c xlockmore.c \
 		  xroger-hack.c goop.c starfish.c munch.c fadeplot.c \
 		  rd-bomb.c coral.c mountain.c triangle.c lissie.c worm.c \
-		  rotor.c ant.c xjack.c xlyap.c puzzle.c
+		  rotor.c ant.c xjack.c xlyap.c puzzle.c xscreensaver-sgigl.c
 
 OBJS		= attraction.o blitspin.o bouboule.o braid.o bubbles.o \
 		  bubbles_default.o decayscreen.o deco.o drift.o flag.o \
@@ -85,7 +85,7 @@ OBJS		= attraction.o blitspin.o bouboule.o braid.o bubbles.o \
 		  slip.o sphere.o spiral.o strange.o swirl.o xlockmore.o \
 		  xroger-hack.o goop.o starfish.o munch.o fadeplot.o \
 		  rd-bomb.o coral.o mountain.o triangle.o lissie.o worm.o \
-		  rotor.o ant.o xjack.o xlyap.o puzzle.o
+		  rotor.o ant.o xjack.o xlyap.o puzzle.o xscreensaver-sgigl.o
 
 EXES		= attraction blitspin bouboule braid bubbles decayscreen deco \
 		  drift flag flame forest vines galaxy grav greynetic halo \
@@ -304,6 +304,9 @@ ERASE		= $(UTILS_BIN)/erase.o
 COL		= $(COLOR_OBJS)
 
 CC_HACK		= $(CC) $(LDFLAGS)
+
+xscreensaver-sgigl: xscreensaver-sgigl.c
+	$(CC) $(LDFLAGS) -o $@ $< $(HACK_PRE) -lX11 -lXext $(X_EXTRA_LIBS) -lm
 
 
 # The rules for those hacks which follow the `screenhack.c' API.

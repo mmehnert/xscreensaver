@@ -348,8 +348,11 @@ get_screenhacks (saver_info *si)
 	      for (s2 = s+j+1; *s2 == ' ' || *s2 == '\t'; s2++)
 		k++;
 	      if (k > 0)
-		for (s2 = s + j + 1; *s2; s2++)
-		  s2 [0] = s2 [k];
+		{
+		  for (s2 = s+j+1; s2[k]; s2++)
+		    *s2 = s2[k];
+		  *s2 = 0;
+		}
 	      break;
 	    }
 	}

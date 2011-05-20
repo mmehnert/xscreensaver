@@ -329,7 +329,8 @@ install_video_frame(unsigned long *image, int width, int height,
   XGetGeometry(dpy, dest, &root, &x, &y, &w, &h, &b, &d);
   
   gcv.function = GXcopy;
-  gc = XCreateGC (dpy, dest, GCFunction, &gcv);
+  gcv.foreground = BlackPixelOfScreen(screen);
+  gc = XCreateGC (dpy, dest, GCFunction|GCForeground, &gcv);
 
   ximage = XCreateImage (dpy, visual, 32, ZPixmap, 0, (char *) image,
 			 width, height, 8, 0);
@@ -440,6 +441,7 @@ install_video_frame(unsigned long *image, int width, int height,
       vblank_kludge *= d;
     }
 
+  XFillRectangle(dpy, dest, gc, 0, 0, w, h);
   XPutImage(dpy, dest, gc, ximage, 0, vblank_kludge,
 	    (w - width) / 2,
 	    (h - height) / 2,

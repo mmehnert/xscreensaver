@@ -299,6 +299,11 @@ extern void format_into_label (Widget label, const char *arg);
 extern void steal_focus_and_colormap (Widget dialog);
 #endif
 
+#ifdef HAVE_MOTIF
+extern void disable_motif_drag_and_drop(Widget w);
+#endif
+
+
 /* =======================================================================
    timers
    ======================================================================= */

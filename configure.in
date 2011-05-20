@@ -763,7 +763,7 @@ fi
 # If that doesn't work, look in /usr/games, and if it's there, use
 # the full pathname.
 #
-with_zippy=""
+with_zippy_req=""
 AC_ARG_WITH(zippy,
 [  --with-zippy=PROGRAM    Some demos are able to run an external program and
                           display its text; this names the program to use by
@@ -771,19 +771,42 @@ AC_ARG_WITH(zippy,
                           resources.)  If you don't specify this, the default
                           is to use \"yow\" from the Emacs distribution (if you
                           have it) or else to use \"fortune\".],
-  [with_zippy="$withval"])
+  [ with_zippy_req="$withval"; with_zippy="$withval" ],
+  [ with_zippy_req="$withval"; with_zippy="$withval" ])
 
 if test "$with_zippy" = no || test "$with_zippy" = yes ; then
-  $with_zippy=""
+  with_zippy=""
+  with_zippy_req=""
 fi
 
-if test -n "$with_zippy" ; then
+if test -n "$with_zippy_req" ; then
+  ac_cv_zippy_program=""
+  case "$with_zippy_req" in
+    /*)
+      AC_MSG_CHECKING([for $with_zippy_req])
+      if test -x "$with_zippy_req" ; then
+        AC_MSG_RESULT(yes)
+      else
+        AC_MSG_RESULT(no)
+        with_zippy=""
+      fi
+    ;;
+    *)
+      # don't cache
+      unset ac_cv_path_zip2
+      AC_PATH_PROG(zip2, $with_zippy_req, [])
+      if test "$zip2" = ""; then
+        with_zippy=""
+      fi
+    ;;
+  esac
   ac_cv_zippy_program="$with_zippy"
 
 elif test -n "$ac_cv_zippy_program"; then
   AC_MSG_RESULT([checking for zippy... (cached) $ac_cv_zippy_program])
+fi
 
-else
+if test ! -n "$ac_cv_zippy_program"; then
 
   AC_CHECK_PROGS(emacs_exe, emacs)
   AC_CHECK_PROGS(xemacs_exe, xemacs)
@@ -1239,6 +1262,13 @@ fi
 
 if test $with_shadow_req = yes -a $have_shadow = no ; then
   warn 'Use of shadow passwords was requested, but they were not found.'
+fi
+
+if test -n "$with_zippy_req"; then
+  if test "$with_zippy_req" != "$ac_cv_zippy_program" ; then
+    warn "$with_zippy_req was requested as the Zippy program,"
+    warn2 "but was not found.  The default will be used instead."
+  fi
 fi
 
 if test $warning = yes; then

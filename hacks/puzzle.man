@@ -6,7 +6,7 @@ puzzle - permute the screen image like a jigsaw puzzle
 [\-display \fIhost:display.screen\fP] [\-background \fIcolor\fP] [\-delay \fIusecs\fP] [\-window] [\-root] [\-install] [\-visual \fIvisual\fP]
 .SH DESCRIPTION
 The \fIpuzzle\fP program takes an image of the screen, carves it up into
-a crossword puzzle, and then randomly shuffles the pieces.
+a crossword puzzle, shuffles it, and then solves it.
 .SH OPTIONS
 .I puzzle
 accepts the following options:

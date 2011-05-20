@@ -16,9 +16,7 @@
 "*overlayStderr:		True",
 "*font:			*-medium-r-*-140-*-m-*",
 "*installColormap:	True",
-"*programs:	qix -root						\\n\
-		qix -root -solid -delay 0 -segments 100			\\n\
-		qix -root -linear -count 10 -size 100 -segments 200	\\n\
+"*programs:	qix -root -solid -delay 0 -segments 100			\\n\
 		attraction -root -mode balls				\\n\
 		attraction -root -mode lines -points 3 -segments 200	\\n\
 		attraction -root -mode splines -segments 300		\\n\
@@ -36,6 +34,7 @@
 		decayscreen -root					\\n\
 		puzzle -root						\\n\
 		blitspin -root -grab					\\n\
+		slip -root						\\n\
 		hypercube -root						\\n\
 		halo -root						\\n\
 		maze -root						\\n\
@@ -44,10 +43,8 @@
 		lmorph -root						\\n\
 		deco -root						\\n\
 		moire -root						\\n\
-		kaleidescope -root					\\n\
 		lightning -root						\\n\
 		strange -root						\\n\
-		vines -root						\\n\
 		spiral -root						\\n\
 		laser -root						\\n\
 		grav -root						\\n\
@@ -59,7 +56,6 @@
 		sierpinski -root					\\n\
 		braid -root						\\n\
 		galaxy -root						\\n\
-		slip -root						\\n\
 		bouboule -root						\\n\
 		swirl -root						\\n\
 		flag -root						\\n\
@@ -78,6 +74,8 @@
 		worm -root						\\n\
 		rotor -root						\\n\
 		ant -root						\\n\
+		vines -root						\\n\
+		kaleidescope -root					\\n\
 		xjack -root						\\n\
 		xlyap -root -random					\\n\
 									  \

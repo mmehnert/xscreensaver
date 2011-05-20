@@ -3,7 +3,7 @@
 decayscreen - make a screen meltdown.
 .SH SYNOPSIS
 .B decayscreen
-[\-display \fIhost:display.screen\fP] [\-window] [\-root] [\-mono] [\-install] [\-visual \fIvisual\fP] [\-delay \fIusecs\fP]
+[\-display \fIhost:display.screen\fP] [\-window] [\-root] [\-mono] [\-install] [\-visual \fIvisual\fP] [\-delay \fIusecs\fP] [\-mode \fImode\fP]
 .SH DESCRIPTION
 The \fIdecayscreen\fP program creates a melting effect by randomly
 shifting rectangles around the screen.
@@ -29,6 +29,14 @@ or the id number (decimal or hex) of a specific visual.
 .TP 8
 .B \-delay \fImicroseconds\fP
 Slow it down.
+.TP 8
+.B \-mode \fImode\fP
+The direction in which the image should tend to slide.  Legal values are
+\fIrandom\fP (meaning pick one), \fIup\fP, \fIleft\fP, \fIright\fP, 
+\fIdown\fP, \fIupleft\fP, \fIdownleft\fP, \fIupright\fP, \fIdownright\fP, 
+\fIshuffle\fP (meaning perfer no particular direction), \fIin\fP (meaning
+move things toward the center), and \fIout\fP (meaing move things away
+from the center).
 .SH RESOURCES
 On some systems (currently, only SGIs), this program can, instead of grabbing
 a desktop image, grab a frame of video from an external camera and manipulate
@@ -75,3 +83,4 @@ of this software for any purpose.  It is provided "as is" without express or
 implied warranty.
 .SH AUTHOR
 Vivek Khera <khera@cs.duke.edu>, 05-Aug-93; based on code by David Wald, 1988.
+Modified by jwz, 28-Nov-97.

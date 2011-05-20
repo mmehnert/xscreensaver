@@ -16,9 +16,15 @@
 
 #include <X11/Intrinsic.h>
 
+#ifdef DEBUG
+# include <X11/IntrinsicP.h>
+# include <X11/ShellP.h>
+#endif
+
 #ifdef HAVE_MOTIF
 # include <Xm/Xm.h>
 # include <Xm/Text.h>
+# include <Xm/TextF.h>
 # include <Xm/List.h>
 # include <Xm/ToggleB.h>
 
@@ -451,6 +457,56 @@ restart_cb (Widget button, XtPointer client_data, XtPointer call_data)
   demo_mode_restart_process (si);
 }
 
+
+#ifdef HAVE_MOTIF
+/* This is the DND_KLUDGE I wrote for Lucid Emacs's lwlib back in 1991...
+   Old bugs never die.
+
+   This is a kludge to disable drag-and-drop in dialog boxes.  The symptom
+   was a segv down in libXm somewhere if you used the middle button on a
+   dialog box to begin a drag; when you released the button to make a drop
+   things would lose if you were not over the button where you started the
+   drag (canceling the operation).  This was probably due to the fact that
+   the dialog boxes were not set up to handle a drag but were trying to do so
+   anyway for some reason.  This doesn't happen with the version of Motif
+   1.2.4 shipped by SGI with Irix 6.2, but not everyone is so lucky...  I
+   don't know if this was fixed by SGI, or if all versions of 1.2.4 work now.
+   So, better safe than sorry.
+
+   We disable drag-and-drop in dialog boxes by turning off the binding for
+   Btn2Down which, by default, initiates a drag.  Clearly this is a shitty
+   solution as it only works in default configurations, but I don't know how
+   else to do it.
+ */
+static void
+install_translation_table(Widget widget, XtTranslations table)
+{
+  Widget *kids = 0;
+  Cardinal nkids = 0;
+
+  if (!XmIsGadget(widget) &&
+      !XtIsSubclass(widget, shellWidgetClass) &&
+      !XmIsText(widget) &&
+      !XmIsTextField(widget))
+    XtOverrideTranslations (widget, table);
+
+  XtVaGetValues(widget, XmNchildren, &kids, XmNnumChildren, &nkids, 0);
+  while (nkids-- > 0)
+    install_translation_table(kids[nkids], table);
+}
+
+void
+disable_motif_drag_and_drop(Widget w)
+{
+  static char disable_dnd_trans[] = "<Btn2Down>:";
+  XtTranslations dnd_override = XtParseTranslationTable (disable_dnd_trans);
+  install_translation_table(w, dnd_override);
+  XtFree ((char *) dnd_override);
+}
+#endif /* HAVE_MOTIF */
+
+
+
 void
 pop_up_dialog_box (Widget dialog, Widget form, int where)
 {
@@ -523,6 +579,7 @@ pop_up_dialog_box (Widget dialog, Widget form, int where)
 #ifdef HAVE_ATHENA
   XtPopup (dialog, XtGrabNone);
 #else  /* HAVE_MOTIF */
+  disable_motif_drag_and_drop (dialog);
   XtManageChild (form);
 #endif /* HAVE_MOTIF */
 

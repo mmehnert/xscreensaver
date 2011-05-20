@@ -1,4 +1,11 @@
-! app-defaults file for XScreenSaver by Jamie Zawinski.
+!
+!                              XScreenSaver
+!
+!            a screen saver and locker for the X window system
+!                            by Jamie Zawinski
+!
+!                              version 2.13
+!
 ! See "man xscreensaver" for more info.  The latest version is always
 ! available at http://people.netscape.com/jwz/xscreensaver/
 
@@ -51,9 +58,12 @@
 ! metacharacters are used, they must be understandable to `sh', not `csh'
 ! (the $SHELL variable is not consulted, for unfortunate but good reasons.)
 !
-*programs:	qix -root						\n\
-		qix -root -solid -delay 0 -segments 100			\n\
-		qix -root -linear -count 10 -size 100 -segments 200	\n\
+! Be sure to check out Demo Mode: run the command `xscreensaver-command -demo'
+! and it will cause the running XScreenSaver program to pop up a dialog box
+! that lets you try out the following programs interactively.  See the man
+! pages for details.
+!
+*programs:	qix -root -solid -delay 0 -segments 100			\n\
 		attraction -root -mode balls				\n\
 		attraction -root -mode lines -points 3 -segments 200	\n\
 		attraction -root -mode splines -segments 300		\n\
@@ -71,6 +81,7 @@
 		decayscreen -root					\n\
 		puzzle -root						\n\
 		blitspin -root -grab					\n\
+		slip -root						\n\
 		hypercube -root						\n\
 		halo -root						\n\
 		maze -root						\n\
@@ -79,10 +90,8 @@
 		lmorph -root						\n\
 		deco -root						\n\
 		moire -root						\n\
-		kaleidescope -root					\n\
 		lightning -root						\n\
 		strange -root						\n\
-		vines -root						\n\
 		spiral -root						\n\
 		laser -root						\n\
 		grav -root						\n\
@@ -94,7 +103,6 @@
 		sierpinski -root					\n\
 		braid -root						\n\
 		galaxy -root						\n\
-		slip -root						\n\
 		bouboule -root						\n\
 		swirl -root						\n\
 		flag -root						\n\
@@ -113,6 +121,8 @@
 		worm -root						\n\
 		rotor -root						\n\
 		ant -root						\n\
+		vines -root						\n\
+		kaleidescope -root					\n\
 		xjack -root						\n\
 		xlyap -root -random					\n\
 									  \
@@ -193,25 +203,19 @@
 !
 !
 ! Some of the GL demos that SGI ships work with XScreenSaver; most don't.
+! XScreenSaver includes a program (not built or installed by default)
+! called "xscreensaver-sgigl".  To use the SGI demos with XScreenSaver,
+! build that program, and use it to launch the SGI demos.  For example:
 !
-! Bongo works fine:
+!	        xscreensaver-sgigl /usr/demos/bin/ep -S
+!	        xscreensaver-sgigl /usr/demos/bin/bongo
 !
-!	/usr/demos/bin/bongo -wbongo
-!
-! ElectroPaint sort-of works; XScreenSaver will launch it, and it will run
-! properly, but when it's time to turn off the screensaver, you need to hit
-! the Escape key, rather than just moving the mouse.  Apparently GL programs
-! are able to intercept the keyboard even when X has the keyboard grabbed!
-!
-!	/usr/demos/bin/ep
-!
-! None of the other SGI GL demos I've tried worked, because none of them seem
-! to have command-line options that will make them take up the whole screen;
-! so all you get is a miniscule 100x100 image, which is worthless.  This is a
-! shame, since many of those demos would make fine screensavers.
-!
-! If anyone who understands how "haven" works would like to send me the code
-! necessary to do what it does, I would be much obliged.
+! Unfortunately, since these actually end up mapping their own windows
+! instead of drawing on the XScreenSaver-provided root, when they are
+! being run from demo-mode, you can't pop up the demo-mode dialog just by
+! clicking the mouse: you must first type ESC to make the SGI programs
+! exit.  This sucks.  Things should work properly when they are being run
+! by xscreensaver in non-demo-mode, however.
 
 
 

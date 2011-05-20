@@ -8,7 +8,9 @@
     It's hard to imagine, but sometimes, xscreensaver has bugs.  This
     document gives some hints for isolating them; the more information
     you can give me about the problem, the better the odds that I'll be
-    able to fix it.
+    able to fix it.  But, if you don't have time to go through these
+    steps, report the bug anyway -- even vague bug reports can be 
+    better than no bug report at all.
                                 --------
 
 STEP ZERO:
@@ -64,7 +66,13 @@ RUNNING:
 
         *  Compile with `make CFLAGS=-g'.
 
+        *  What platform are you running on?  What does the included
+           `./config.guess' shell script print?
+
         *  Is the problem in the driver, or in the graphics hacks?
+
+        *  If the problem is in the driver, was the driver built using
+           Motif, or Athena?  Which version?
 
         *  If the problem is in one (or more) of the hacks, which ones?
            If you're not sure, try
@@ -93,6 +101,7 @@ RUNNING:
 
         *  If it dumps core, what does the core file say?  Run the
            program under a debugger, and show me the stack trace.
+           (If you don't know how to do that, that's ok.)
 
         *  If it gets an X error, where did it come from?  Run the
            program under a debugger; set a breakpoint on `exit';

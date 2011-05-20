@@ -492,7 +492,7 @@ screenhack (Display *d, Window window)
 
       if (ff) {
 	char *ch;
-	int bindex;
+	int bindex = 0;
 	maxindex = strlen(ff);
 	if (maxindex > MAXINDEX)
 	  usage();

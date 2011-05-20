@@ -149,17 +149,13 @@ read_screen (Display *dpy, Window window, int *widthP, int *heightP)
   *widthP = xgwa.width;
   *heightP = xgwa.height;
 
+  XClearWindow(dpy, window);
   grab_screen_image(xgwa.screen, window);
   p = XCreatePixmap(dpy, window, *widthP, *heightP, xgwa.depth);
   gcv.function = GXcopy;
   gc = XCreateGC (dpy, window, GCFunction, &gcv);
   XCopyArea (dpy, window, p, gc, 0, 0, *widthP, *heightP, 0, 0);
 
-  /* Reset the window's background color... */
-  XSetWindowBackground (dpy, window,
-			get_pixel_resource ("background", "Background",
-					    dpy, xgwa.colormap));
-  XClearWindow(dpy, window);
   XFreeGC (dpy, gc);
 
   return p;
@@ -172,9 +168,7 @@ static Pixmap source;
 static GC gc;
 static Bool tweak;
 static int fg, bg;
-static XPoint *state;
-
-static void draw_piece(Display *dpy, Window window, int x, int y, Bool erase);
+static XPoint *state = 0;
 
 static void
 puzzle_init(Display *dpy, Window window)
@@ -187,7 +181,6 @@ puzzle_init(Display *dpy, Window window)
 
   tweak = random()&1;
 
-  init_images(dpy, window);
   source = read_screen (dpy, window, &source_w, &source_h);
 
   XGetWindowAttributes (dpy, window, &xgwa);
@@ -197,7 +190,8 @@ puzzle_init(Display *dpy, Window window)
   x_border = (xgwa.width  - (width  * GRID_WIDTH)) / 2;
   y_border = (xgwa.height - (height * GRID_WIDTH)) / 2;
 
-  state = (XPoint *) malloc(width * height * sizeof(XPoint));
+  if (!state)
+    state = (XPoint *) malloc(width * height * sizeof(XPoint));
   gc = XCreateGC (dpy, window, 0, &gcv);
 
   {
@@ -289,16 +283,16 @@ puzzle_init(Display *dpy, Window window)
       }
   }
 
+  /* Reset the window's background color... */
+  XSetWindowBackground (dpy, window, bg);
+  XClearWindow(dpy, window);
+
   for (y = 0; y < height; y++)
     for (x = 0; x < width; x++)
       {
 	state[y * width + x].x = x;
 	state[y * width + x].y = y;
       }
-
-  for (y = 0; y < height; y++)
-    for (x = 0; x < width; x++)
-      draw_piece(dpy, window, x, y, False);
 }
 
 
@@ -331,7 +325,7 @@ get_piece(int x, int y, struct piece **hollow, struct piece **filled)
 
 
 static void
-draw_piece(Display *dpy, Window window, int x, int y, Bool clear_p)
+draw_piece(Display *dpy, Window window, int x, int y, int clear_p)
 {
   struct piece *hollow, *filled;
   int from_x = state[y * width + x].x;
@@ -359,6 +353,9 @@ draw_piece(Display *dpy, Window window, int x, int y, Bool clear_p)
 	      GRID_WIDTH*2, GRID_HEIGHT*2,
 	      x_border + (x * GRID_WIDTH)  - GRID_WIDTH/2,
 	      y_border + (y * GRID_HEIGHT) - GRID_HEIGHT/2);
+
+  if (clear_p > 1)
+    return;
 
   XSetForeground(dpy, gc, fg);
   XSetClipMask(dpy, gc, hollow->pixmap);
@@ -404,9 +401,41 @@ draw_piece(Display *dpy, Window window, int x, int y, Bool clear_p)
 
 
 static void
-shuffle(Display *dpy, Window window)
+swap_pieces(Display *dpy, Window window,
+	    int src_x, int src_y, int dst_x, int dst_y,
+	    Bool draw_p)
 {
+  XPoint swap;
   int i;
+  if (draw_p)
+    for (i = 0; i < 3; i++)
+      {
+	draw_piece(dpy, window, src_x, src_y, 1);
+	draw_piece(dpy, window, dst_x, dst_y, 1);
+	XSync(dpy, False);
+	usleep(50000);
+	draw_piece(dpy, window, src_x, src_y, 0);
+	draw_piece(dpy, window, dst_x, dst_y, 0);
+	XSync(dpy, False);
+	usleep(50000);
+      }
+
+  swap = state[src_y * width + src_x];
+  state[src_y * width + src_x] = state[dst_y * width + dst_x];
+  state[dst_y * width + dst_x] = swap;
+
+  if (draw_p)
+    {
+      draw_piece(dpy, window, src_x, src_y, 0);
+      draw_piece(dpy, window, dst_x, dst_y, 0);
+      XSync(dpy, False);
+    }
+}
+
+
+static void
+shuffle(Display *dpy, Window window, Bool draw_p)
+{
   struct piece *p1, *p2;
   int src_x, src_y, dst_x = -1, dst_y = -1;
 
@@ -432,28 +461,73 @@ shuffle(Display *dpy, Window window)
   if (src_x == dst_x && src_y == dst_y)
     goto AGAIN;
 
-  for (i = 0; i < 3; i++)
-    {
-      draw_piece(dpy, window, src_x, src_y, True);
-      draw_piece(dpy, window, dst_x, dst_y, True);
-      XSync(dpy, False);
-      usleep(50000);
-      draw_piece(dpy, window, src_x, src_y, False);
-      draw_piece(dpy, window, dst_x, dst_y, False);
-      XSync(dpy, False);
-      usleep(50000);
-    }
-
-  {
-    XPoint swap = state[src_y * width + src_x];
-    state[src_y * width + src_x] = state[dst_y * width + dst_x];
-    state[dst_y * width + dst_x] = swap;
-  }
-
-  draw_piece(dpy, window, src_x, src_y, False);
-  draw_piece(dpy, window, dst_x, dst_y, False);
-  XSync(dpy, False);
+  swap_pieces(dpy, window, src_x, src_y, dst_x, dst_y, draw_p);
 }
+
+
+static void
+shuffle_all(Display *dpy, Window window)
+{
+  int i = (width * height * 10);
+  while (i > 0)
+    {
+      shuffle(dpy, window, False);
+      i--;
+    }
+}
+
+static void
+unshuffle(Display *dpy, Window window)
+{
+  int i;
+  for (i = 0; i < width * height * 4; i++)
+    {
+      int x = random() % width;
+      int y = random() % height;
+      int x2 = state[y * width + x].x;
+      int y2 = state[y * width + x].y;
+      if (x != x2 || y != y2)
+	{
+	  swap_pieces(dpy, window, x, y, x2, y2, True);
+	  break;
+	}
+    }
+}
+
+static void
+clear_all(Display *dpy, Window window)
+{
+  int n = width * height;
+  while (n > 0)
+    {
+      int x = random() % width;
+      int y = random() % height;
+      XPoint *p = &state[y * width + x];
+      if (p->x == -1)
+	continue;
+      draw_piece(dpy, window, p->x, p->y, 2);
+      XSync(dpy, False);
+      usleep(1000);
+      p->x = p->y = -1;
+      n--;
+    }
+}
+
+static Bool
+done(void)
+{
+  int x, y;
+  for (y = 0; y < height; y++)
+    for (x = 0; x < width; x++)
+      {
+	int x2 = state[y * width + x].x;
+	int y2 = state[y * width + x].y;
+	if (x != x2 || y != y2)
+	  return False;
+      }
+  return True;
+}
+
 
 
 char *progclass = "Puzzle";
@@ -461,12 +535,14 @@ char *progclass = "Puzzle";
 char *defaults [] = {
   "Puzzle.background:	Black",		/* to placate SGI */
   "Puzzle.foreground:	Gray40",
-  "*delay:		700000",
+  "*delay:		70000",
+  "*delay2:		5",
   0
 };
 
 XrmOptionDescRec options [] = {
   { "-delay",		".delay",		XrmoptionSepArg, 0 },
+  { "-delay2",		".delay2",		XrmoptionSepArg, 0 },
   { 0, 0, 0, 0 }
 };
 
@@ -474,11 +550,30 @@ void
 screenhack (Display *dpy, Window window)
 {
   int delay = get_integer_resource("delay", "Integer");
-  puzzle_init (dpy, window);
+  int delay2 = get_integer_resource("delay2", "Integer");
+
+  init_images(dpy, window);
+
   while (1)
     {
-      shuffle(dpy, window);
-      XSync (dpy, True);
-      if (delay) usleep (delay);
+      int x, y;
+      puzzle_init (dpy, window);
+      shuffle_all(dpy, window);
+
+      for (y = 0; y < height; y++)
+	for (x = 0; x < width; x++)
+	  draw_piece(dpy, window, x, y, 0);
+
+      while (!done())
+	{
+	  unshuffle(dpy, window);
+	  XSync (dpy, True);
+	  if (delay) usleep (delay);
+	}
+
+      if (delay2)
+	usleep (delay2 * 1000000);
+
+      clear_all(dpy, window);
     }
 }
