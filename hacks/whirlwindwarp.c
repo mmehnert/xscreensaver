@@ -463,6 +463,9 @@ static void
 whirlwindwarp_reshape (Display *dpy, Window window, void *closure, 
                  unsigned int w, unsigned int h)
 {
+  struct state *st = (struct state *) closure;
+  st->scrwid = w;
+  st->scrhei = h;
 }
 
 static Bool
@@ -486,6 +489,9 @@ static const char *whirlwindwarp_defaults [] = {
   "*points:	400",
   "*tails:	8",
   "*meters:	false",
+#ifdef USE_IPHONE
+  "*ignoreRotation: True",
+#endif
   0
 };
 

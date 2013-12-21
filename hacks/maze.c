@@ -1477,7 +1477,7 @@ maze_init (Display *dpy_arg, Window window_arg)
     st->logo_map = xscreensaver_logo (xgwa.screen, xgwa.visual, st->window,
                                       xgwa.colormap, bg,
                                       &pixels, &npixels, &logo_mask,
-                                      xgwa.width > 800);
+                                      xgwa.width > 800 || xgwa.height > 800);
     if (logo_mask) {
       XSetClipMask (st->dpy, st->logo_gc, logo_mask);
       XFreePixmap (st->dpy, logo_mask);
@@ -1587,6 +1587,9 @@ maze_draw (Display *dpy, Window window, void *closure)
         st->restart = 0;
         st->stop = 0;
         st->state = 1;
+
+        if (st->solve_state && st->solve_state->running)
+          st->solve_state->running = 0;
 
         st->sync_p = ((random() % 4) != 0);
 

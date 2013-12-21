@@ -39,12 +39,14 @@
             _label="Magic lighting effect" low="0" high="8" default="4"/>
     <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
 
+    <xscreensaver-updater />
+
    </vgroup>
   </hgroup>
 
   <_description>
-This draws rippling interference patterns like splashing water,
-overlayed on the desktop or an image.
+Rippling interference patterns reminiscent of splashing water
+distort a loaded image.
 
 Written by Tom Hammersley; 1999.
   </_description>

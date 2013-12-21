@@ -1,4 +1,4 @@
-/* gltext, Copyright (c) 2001-2008 Jamie Zawinski <jwz@jwz.org>
+/* gltext, Copyright (c) 2001-2012 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -12,9 +12,9 @@
 #define DEFAULTS	"*delay:	20000        \n" \
 			"*showFPS:      False        \n" \
 			"*wireframe:    False        \n" \
+			"*usePty:       False        \n" \
 
 # define refresh_text 0
-# define release_text 0
 #define SMOOTH_TUBE       /* whether to have smooth or faceted tubes */
 
 #ifdef SMOOTH_TUBE
@@ -30,8 +30,10 @@
 #include "xlockmore.h"
 #include "colors.h"
 #include "tube.h"
+#include "sphere.h"
 #include "rotator.h"
 #include "gltrackball.h"
+#include "textclient.h"
 
 #include <ctype.h>
 
@@ -69,6 +71,7 @@ typedef struct {
   int reload;
 
   time_t last_update;
+  text_data *tc;
 
 } text_configuration;
 
@@ -180,41 +183,35 @@ parse_text (ModeInfo *mi)
   text_configuration *tp = &tps[MI_SCREEN(mi)];
 
   if (tp->text) free (tp->text);
+  tp->text = 0;
 
   if (program_str && *program_str && !!strcmp(program_str, "(default)"))
     {
-      FILE *p;
-      int i;
+      int max_lines = 20;
       char buf[1024];
-      sprintf (buf, "( %.900s ) 2>&1", program_str);
-      p = popen (buf, "r");
-      if (! p)
-        sprintf (buf, "error running '%.900s'", program_str);
-      else
-        {
-          char *out = buf;
-          char *end = out + sizeof(buf) - 1;
-          int n;
-          do {
-            n = fread (out, 1, end - out, p);
-            if (n > 0)
-              out += n;
-            *out = 0;
-          } while (n > 0);
-          fclose (p);
-        }
+      char *p = buf;
+      int lines = 0;
 
-      /* Truncate it to 10 lines */
-      {
-        char *s = buf;
-        for (i = 0; i < 10; i++)
-          if (s && (s = strchr (s, '\n')))
-            s++;
-        if (s) *s = 0;
-      }
+      if (! tp->tc)
+        tp->tc = textclient_open (mi->dpy);
+
+      while (p < buf + sizeof(buf) - 1 &&
+             lines < max_lines)
+        {
+          char c = textclient_getc (tp->tc);
+          if (c == '\n')
+            lines++;
+          if (c > 0)
+            *p++ = c;
+          else
+            break;
+        }
+      *p = 0;
+      if (lines == 0 && buf[0])
+        lines++;
 
       tp->text = strdup (buf);
-      tp->reload = 5;
+      tp->reload = 1;
     }
   else if (!text_fmt || !*text_fmt || !strcmp(text_fmt, "(default)"))
     {
@@ -237,6 +234,10 @@ parse_text (ModeInfo *mi)
 #  if defined(_AIX)
           sprintf(tp->text, "%s\n%s %s.%s",
                   uts.nodename, uts.sysname, uts.version, uts.release);
+#  elif defined(USE_IPHONE)
+          /* "My iPhone\n iPhone4,1\n Darwin 11.0.0" */
+          sprintf(tp->text, "%s\n%s\n%s %s",
+                  uts.nodename, uts.machine, uts.sysname, uts.release);
 #  elif defined(__APPLE__)  /* MacOS X + XDarwin */
           {
             const char *file = 
@@ -448,14 +449,26 @@ fill_character (GLUTstrokeFont font, int c, Bool wire, int *polysP)
 # else
             int smooth = False;
 # endif
+
             if (j != stroke->num_coords)
               *polysP += tube (lx,       ly,       0,
                                coord->x, coord->y, 0,
                                tube_width,
                                tube_width * 0.15,
-                               TUBE_FACES, smooth, True, wire);
+                               TUBE_FACES, smooth, False, wire);
             lx = coord->x;
             ly = coord->y;
+
+            /* Put a sphere at the endpoint of every line segment.  Wasteful
+               on curves like "0" but necessary on corners like "4". */
+            if (! wire)
+              {
+                glPushMatrix();
+                glTranslatef (lx, ly, 0);
+                glScalef (tube_width, tube_width, tube_width);
+                *polysP += unit_sphere (TUBE_FACES, TUBE_FACES, wire);
+                glPopMatrix();
+              }
           }
       }
       return (int) (ch->right + tube_width);
@@ -589,8 +602,8 @@ draw_text (ModeInfo *mi)
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glPushMatrix ();
-
   glScalef(1.1, 1.1, 1.1);
+  glRotatef(current_device_rotation(), 0, 0, 1);
 
   {
     double x, y, z;
@@ -640,6 +653,25 @@ draw_text (ModeInfo *mi)
 
   glXSwapBuffers(dpy, window);
 }
+
+ENTRYPOINT void
+release_text(ModeInfo * mi)
+{
+  if (tps)
+    {
+    int screen;
+    for (screen = 0; screen < MI_NUM_SCREENS(mi); screen++)
+      {
+        text_configuration *tp = &tps[MI_SCREEN(mi)];
+        if (tp->tc)
+          textclient_close (tp->tc);
+      }
+    }
+  (void) free(tps);
+  tps = 0;
+  FreeAllGL(mi);
+}
+
 
 XSCREENSAVER_MODULE_2 ("GLText", gltext, text)
 

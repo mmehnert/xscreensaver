@@ -196,7 +196,7 @@ static void Init(ModeInfo * mi)
 		LoadTexture(mi, texture5,5);
 		glEnable(GL_TEXTURE_2D);
 	}
-	sa->ts = InitTunnel();
+	sa->ts = atunnel_InitTunnel();
 	
 	/* Set lighting parameters */
 	if (do_light)
@@ -212,6 +212,11 @@ static void Init(ModeInfo * mi)
 	
 		glEnable(GL_LIGHTING);
 	}
+
+# ifdef HAVE_JWZGLES /* #### glPolygonMode other than GL_FILL unimplemented */
+    do_wire = 0;
+# endif
+
   	if (do_wire) {
 		glDisable(GL_NORMALIZE);
 		glDisable(GL_CULL_FACE);
@@ -270,8 +275,8 @@ ENTRYPOINT void draw_atunnel(ModeInfo * mi)
 
 	glLoadIdentity();
 
-	DrawTunnel(sa->ts, do_texture, do_light, sa->texture);
-	SplashScreen(sa->ts, do_wire, do_texture, do_light);
+	atunnel_DrawTunnel(sa->ts, do_texture, do_light, sa->texture);
+	atunnel_SplashScreen(sa->ts, do_wire, do_texture, do_light);
 
 	glFlush();  
 	/* manage framerate display */

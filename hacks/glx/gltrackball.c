@@ -1,4 +1,4 @@
-/* gltrackball, Copyright (c) 2002-2008 Jamie Zawinski <jwz@jwz.org>
+/* gltrackball, Copyright (c) 2002-2012 Jamie Zawinski <jwz@jwz.org>
  * GL-flavored wrapper for trackball.c
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -18,14 +18,18 @@
 # include "config.h"
 #endif
 
-#ifdef HAVE_COCOA
-# include <OpenGL/gl.h>
-#else
+#ifndef HAVE_COCOA
 # include <GL/gl.h>
 #endif
 
+#ifdef HAVE_JWZGLES
+# include "jwzgles.h"
+#endif /* HAVE_JWZGLES */
+
 #include "trackball.h"
 #include "gltrackball.h"
+
+extern double current_device_rotation (void);  /* Bah, it's in fps.h */
 
 struct trackball_state {
   int x, y;
@@ -52,6 +56,7 @@ gltrackball_reset (trackball_state *ts)
   memset (ts, 0, sizeof(*ts));
   trackball (ts->q, 0, 0, 0, 0);
 }
+
 
 /* Begin tracking the mouse: Call this when the mouse button goes down.
    x and y are the mouse position relative to the window.
@@ -111,8 +116,8 @@ gltrackball_mousewheel (trackball_state *ts,
                         int button, int percent, int flip_p)
 {
   int up_p;
-  double move;
   int horizontal_p;
+  int mx, my, move, scale;
 
 #ifdef HAVE_COCOA
   flip_p = 0;      /* MacOS has already handled this. */
@@ -132,15 +137,14 @@ gltrackball_mousewheel (trackball_state *ts,
       up_p = !up_p;
     }
 
+  scale = mx = my = 1000;
   move = (up_p
-          ? 1.0 - (percent / 100.0)
-          : 1.0 + (percent / 100.0));
-
-  gltrackball_start (ts, 50, 50, 100, 100);
-  if (horizontal_p)
-    gltrackball_track (ts, 50*move, 50, 100, 100);
-  else
-    gltrackball_track (ts, 50, 50*move, 100, 100);
+          ? floor (scale * (1.0 - (percent / 100.0)))
+          : ceil  (scale * (1.0 + (percent / 100.0))));
+  if (horizontal_p) mx = move;
+  else              my = move;
+  gltrackball_start (ts, scale, scale, scale*2, scale*2);
+  gltrackball_track (ts, mx, my, scale*2, scale*2);
 }
 
 void

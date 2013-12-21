@@ -224,8 +224,8 @@ draw_glowpoint(struct state *st, Drawable drawable,
     float a;
     unsigned long c;
 
-    for (i =- 2; i < 3; i++) {
-        for (j =- 2; j < 3; j++) {
+    for (i = -2; i < 3; i++) {
+        for (j = -2; j < 3; j++) {
             a = 0.8 - i * i * 0.1 - j * j * 0.1;
 
             c = trans_point(st, px+i, py+j, 255, a, f);
@@ -419,7 +419,7 @@ intermomentary_init (Display *dpy, Window window)
       bgs = fgs;
       bgv = fgv / 10.0;
 #endif
-      make_color_ramp (st->dpy, st->xgwa.colormap,
+      make_color_ramp (st->xgwa.screen, st->xgwa.visual, st->xgwa.colormap,
                        bgh, bgs, bgv,
                        fgh, fgs, fgv,
                        st->colors, &st->ncolors,
@@ -554,6 +554,9 @@ static const char *intermomentary_defaults[] = {
     "*maxRiders: 40",
     "*maxRadius: 100",
     "*colors: 256",
+#ifdef USE_IPHONE
+    "*ignoreRotation: True",
+#endif
     0
 };
 

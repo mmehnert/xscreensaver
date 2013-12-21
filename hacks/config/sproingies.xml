@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="sproingies" _label="Sproingies">
+<screensaver name="sproingies" _label="Sproingies" gl="yes">
 
   <command arg="-root"/>
 
@@ -18,6 +18,8 @@
    <boolean id="wire" _label="Wireframe" arg-set="-wireframe"/>
    <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
   </hgroup>
+
+  <xscreensaver-updater />
 
   <_description>
 Slinky-like creatures walk down an infinite staircase and 

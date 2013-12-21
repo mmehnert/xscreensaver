@@ -74,7 +74,6 @@ static const char sccsid[] = "@(#)apollonian.c	5.02 2001/07/01 xlockmore";
 					"*fpsSolid: true   \n" \
 
 # define refresh_apollonian 0
-# define reshape_apollonian 0
 # define apollonian_handle_event 0
 # include "xlockmore.h"		/* in xscreensaver distribution */
 # include "erase.h"
@@ -613,11 +612,13 @@ p(ModeInfo *mi, circle c)
 
 #define BIG 7
 static void
-f(ModeInfo *mi, circle c1, circle c2, circle c3, circle c4)
+f(ModeInfo *mi, circle c1, circle c2, circle c3, circle c4, int depth)
 {
 	apollonianstruct *cp = &apollonians[MI_SCREEN(mi)];
 	int e = (int) ((cp->c1.e >= 0.0) ? 1.0 : -cp->c1.e);
         circle c;
+
+	if (depth > mi->recursion_depth) mi->recursion_depth = depth;
 
         c.e = 2*(c1.e+c2.e+c3.e) - c4.e;
         c.s = 2*(c1.s+c2.s+c3.s) - c4.s;
@@ -629,9 +630,9 @@ f(ModeInfo *mi, circle c1, circle c2, circle c3, circle c4)
             c.x / c.e < -BIG || c.y / c.e < -BIG)
                 return;
         p(mi, c);
-        f(mi, c2, c3, c, c1);
-        f(mi, c1, c3, c, c2);
-        f(mi, c1, c2, c, c3);
+        f(mi, c2, c3, c, c1, depth+1);
+        f(mi, c1, c3, c, c2, depth+1);
+        f(mi, c1, c2, c, c3, depth+1);
 }
 
 ENTRYPOINT void
@@ -768,6 +769,8 @@ init_apollonian (ModeInfo * mi)
 	randomize_c(i, &(cp->c3));
 	randomize_c(i, &(cp->c4));
 #endif 
+
+    mi->recursion_depth = -1;
 }
 
 ENTRYPOINT void
@@ -797,16 +800,16 @@ draw_apollonian (ModeInfo * mi)
 			p(mi, cp->c4);
 			break;
 		case 1:
-			f(mi, cp->c1, cp->c2, cp->c3, cp->c4);
+			f(mi, cp->c1, cp->c2, cp->c3, cp->c4, 0);
 			break;
 		case 2:
-			f(mi, cp->c1, cp->c2, cp->c4, cp->c3);
+			f(mi, cp->c1, cp->c2, cp->c4, cp->c3, 0);
 			break;
 		case 3:
-			f(mi, cp->c1, cp->c3, cp->c4, cp->c2);
+			f(mi, cp->c1, cp->c3, cp->c4, cp->c2, 0);
 			break;
 		case 4:
-			f(mi, cp->c2, cp->c3, cp->c4, cp->c1);
+			f(mi, cp->c2, cp->c3, cp->c4, cp->c1, 0);
 		}
 	}
 	if (++cp->time > MI_CYCLES(mi))
@@ -816,6 +819,13 @@ draw_apollonian (ModeInfo * mi)
 #endif /* STANDALONE */
 		init_apollonian(mi);
       }
+}
+
+ENTRYPOINT void
+reshape_apollonian(ModeInfo * mi, int width, int height)
+{
+  XClearWindow (MI_DISPLAY (mi), MI_WINDOW(mi));
+  init_apollonian (mi);
 }
 
 ENTRYPOINT void

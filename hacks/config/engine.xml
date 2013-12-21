@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="engine" _label="Engine">
+<screensaver name="engine" _label="Engine" gl="yes">
 
   <command arg="-root"/>
 
@@ -29,6 +29,8 @@
     <boolean id="spin" _label="Spin" arg-unset="-no-spin"/>
   </hgroup>
   <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
+
+  <xscreensaver-updater />
 
   <_description>
 Draws a simple model of an engine that floats around the screen.

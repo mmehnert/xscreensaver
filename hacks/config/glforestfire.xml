@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="glforestfire" _label="GLForestFire">
+<screensaver name="glforestfire" _label="GLForestFire" gl="yes">
 
   <command arg="-root"/>
 
@@ -29,6 +29,8 @@
     <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
    </vgroup>
   </hgroup>
+
+  <xscreensaver-updater />
 
   <_description>
 This screen saver was removed from the XScreenSaver distribution as of

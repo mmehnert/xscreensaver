@@ -13,11 +13,17 @@
 #ifndef __STONERVIEW_H__
 # define __STONERVIEW_H__
 
-#ifdef HAVE_COCOA
-# include <OpenGL/gl.h>
-#else
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif /* HAVE_CONFIG_H */
+
+#ifndef HAVE_COCOA
 # include <GL/gl.h>
 #endif
+
+#ifdef HAVE_JWZGLES
+# include "jwzgles.h"
+#endif /* HAVE_JWZGLES */
 
 typedef struct stonerview_state stonerview_state;
 
@@ -32,7 +38,7 @@ struct stonerview_state {
   /* The list of polygons. This is filled in by move_increment(), and rendered
      by perform_render(). */
   int num_els;
-  elem_t *elist;
+  stonerview_elem_t *elist;
 
   /* A linked list of all osc_t objects created. New objects are added
      to the end of the list, not the beginning. */

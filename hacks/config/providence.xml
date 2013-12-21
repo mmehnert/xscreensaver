@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="providence" _label="Providence">
+<screensaver name="providence" _label="Providence" gl="yes">
 
   <command arg="-root"/>
 
@@ -13,6 +13,8 @@
 
   <boolean id="wire"    _label="Wireframe"              arg-set="-wireframe"/>
   <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
+
+  <xscreensaver-updater />
 
   <_description>
 "A pyramid unfinished. In the zenith an eye in a triangle, surrounded

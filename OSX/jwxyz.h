@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1991-2010 Jamie Zawinski <jwz@jwz.org>
+/* xscreensaver, Copyright (c) 1991-2012 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -18,6 +18,9 @@
 
 #ifndef __JWXYZ_H__
 #define __JWXYZ_H__
+
+extern void jwxyz_abort(const char *fmt, ...) __dead2;
+#define abort() jwxyz_abort("abort in %s:%d", __FUNCTION__, __LINE__)
 
 typedef int Bool;
 typedef int Status;
@@ -67,9 +70,15 @@ typedef struct jwxyz_XtAppContext *	XtAppContext;
 typedef struct jwxyz_XtIntervalId *	XtIntervalId;
 typedef struct jwxyz_XtInputId *	XtInputId;
 typedef void *				XtPointer;
+typedef unsigned long			XtInputMask;
 #define XtInputReadMask			(1L<<0)
 #define XtInputWriteMask		(1L<<1)
 #define XtInputExceptMask		(1L<<2)
+#define XtIMXEvent			1
+#define XtIMTimer			2
+#define XtIMAlternateInput		4
+#define XtIMSignal			8
+#define XtIMAll (XtIMXEvent | XtIMTimer | XtIMAlternateInput | XtIMSignal)
 
 #define True 1
 #define TRUE 1
@@ -195,6 +204,33 @@ typedef void *				XtPointer;
 #define Button4Mask		(1<<11)
 #define Button5Mask		(1<<12)
 
+#define XK_Shift_L		0xFFE1
+#define XK_Shift_R		0xFFE2
+#define XK_Control_L		0xFFE3
+#define XK_Control_R		0xFFE4
+#define XK_Caps_Lock		0xFFE5
+#define XK_Shift_Lock		0xFFE6
+#define XK_Meta_L		0xFFE7
+#define XK_Meta_R		0xFFE8
+#define XK_Alt_L		0xFFE9
+#define XK_Alt_R		0xFFEA
+#define XK_Super_L		0xFFEB
+#define XK_Super_R		0xFFEC
+#define XK_Hyper_L		0xFFED
+#define XK_Hyper_R		0xFFEE
+
+#define XK_Home			0xFF50
+#define XK_Left			0xFF51
+#define XK_Up			0xFF52
+#define XK_Right		0xFF53
+#define XK_Down			0xFF54
+#define XK_Prior		0xFF55
+#define XK_Page_Up		0xFF55
+#define XK_Next			0xFF56
+#define XK_Page_Down		0xFF56
+#define XK_End			0xFF57
+#define XK_Begin		0xFF58
+
 #define GXclear			0x0		/* 0 */
 #define GXand			0x1		/* src AND dst */
 // #define GXandReverse		0x2		/* src AND NOT dst */
@@ -233,10 +269,14 @@ typedef void *				XtPointer;
 #define DisplayHeight XDisplayHeight
 #define XMaxRequestSize(dpy) (65535)
 
-extern Display *jwxyz_make_display (void *nsview);
+extern Display *jwxyz_make_display (void *nsview, void *cgc);
 extern void jwxyz_free_display (Display *);
 extern void *jwxyz_window_view (Window);
-extern void jwxyz_window_resized (Display *, Window w);
+extern void jwxyz_window_resized (Display *, Window,
+                                  int, int, int, int,
+                                  void *cgc);
+extern void jwxyz_mouse_moved (Display *, Window, int x, int y);
+extern void jwxyz_flush_context (Display *);
 
 extern Window XRootWindow (Display *, int screen);
 extern Screen *XDefaultScreenOfDisplay (Display *);
@@ -395,6 +435,8 @@ extern void XtRemoveTimeOut (XtIntervalId);
 extern XtInputId XtAppAddInput (XtAppContext, int fd, XtPointer flags,
                                XtInputCallbackProc, XtPointer closure);
 extern void XtRemoveInput (XtInputId);
+extern XtInputMask XtAppPending (XtAppContext);
+extern void XtAppProcessEvent (XtAppContext, XtInputMask);
 extern struct jwxyz_sources_data *display_sources_data (Display *);
 
 // Some GLX stuff that also doesn't technically belong here...
@@ -410,6 +452,7 @@ extern int visual_class (Screen *, Visual *);
 
 // also declared in utils/grabclient.h
 extern Bool use_subwindow_mode_p (Screen *, Window);
+
 
 struct jwxyz_Visual {
   VisualID visualid;	/* visual id of this visual */

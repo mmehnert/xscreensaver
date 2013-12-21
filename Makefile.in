@@ -19,8 +19,8 @@ TARFILES	= README README.hacking README.VMS INSTALL \
 
 TAR		= tar
 
-MAKE_SUBDIR  = for dir in $(SUBDIRS); do (cd $$dir; $(MAKE) $@) || exit 5; done
-MAKE_SUBDIR2 = for dir in $(SUBDIRS2);do (cd $$dir; $(MAKE) $@) || exit 5; done
+MAKE_SUBDIR  = for dir in $(SUBDIRS); do $(MAKE) -C $$dir $@ || exit 5; done
+MAKE_SUBDIR2 = for dir in $(SUBDIRS2); do $(MAKE) -C $$dir $@ || exit 5; done
 
 default::
 	@$(MAKE_SUBDIR)
@@ -45,7 +45,7 @@ depend::
 distdepend::
 	@$(MAKE) update_spec_version
 	@$(MAKE_SUBDIR2)
-	@cd po ; $(MAKE) update-po
+	@$(MAKE) -C po update-po
 
 TAGS:: tags
 tags::
@@ -81,7 +81,8 @@ tar::
       ` ";								    \
     cd $$d ; done ;							    \
   echo creating tar file $$ADIR$$NAME.tar.gz... ;			    \
-  GZIP="-9v" $(TAR) -vchzf $$ADIR$$NAME.tar.gz			            \
+  export COPYFILE_DISABLE=true ;					    \
+  GZIP="-9v" $(TAR) -vczf $$ADIR$$NAME.tar.gz			            \
     `echo $(TARFILES) $$FILES | sed "s|^|$$NAME/|g; s| | $$NAME/|g" ` ;	    \
   rm $$NAME
 
@@ -93,14 +94,9 @@ tar::
 # out options we don't use.  Odds are good that this will fail with any version
 # of autoconf other than the ones I've tried (2.12 and 2.13.)
 #
-# NOTE: we now require autoconf 2.63 or earlier, because later versions have
-# the "Expanded-Before-Required" change and I can't make any sense of it.
-# If someone wants to send me a patch to make configure.in work with 2.64
-# or later, feel free.  Personally, I can't be bothered.
-#
 configure::
-	autoconf263
-	autoheader263
+	autoconf
+	autoheader
 	@TMP=configure.$$$$ ;						     \
 	echo "munging configure's --help message..." ;			     \
 	( perl -e '							     \
@@ -283,7 +279,7 @@ test-tar::
   chmod -R u+w .
 
 dmg::
-	cd OSX ; $(MAKE) release dmg
+	$(MAKE) -C OSX release dmg
 
 www::
 	@								    \
@@ -333,7 +329,9 @@ www::
   echo '' ;								    \
 									    \
   for EXT in tar.gz dmg ; do						    \
-    OLDEST=`ls xscreensaver*.$$EXT | head -n 1` ;			    \
+    OLDEST=`ls xscreensaver*.$$EXT | 					    \
+      fgrep -v 5.14 |							    \
+      head -n 1` ;							    \
     /bin/echo -n "Delete $$DEST/$$OLDEST? ";				    \
     read line;								    \
     if [ "x$$line" = "xyes" -o "x$$line" = "xy" ]; then			    \
@@ -348,8 +346,7 @@ www::
   cat $$TMP > download.html ;						    \
   rm -f $$TMP ;								    \
 									    \
-  (cd ..; $(MAKE) xscreensaver/changelog.html				    \
-		  xscreensaver/screenshots/index.html );		    \
+  $(MAKE) -C ../ xscreensaver/changelog.html xscreensaver/screenshots/index.html; \
   cvs diff -U0 changelog.html ;						    \
   set +x ;								    \
 									    \

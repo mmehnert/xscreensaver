@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="flipflop" _label="FlipFlop">
+<screensaver name="flipflop" _label="FlipFlop" gl="yes">
 
   <command arg="-root"/>
 
@@ -39,6 +39,8 @@
     <xscreensaver-image />
    </vgroup>
   </hgroup>
+
+  <xscreensaver-updater />
 
   <_description>
 Draws a grid of 3D colored tiles that change positions with each other.  

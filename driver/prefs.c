@@ -1,5 +1,5 @@
 /* dotfile.c --- management of the ~/.xscreensaver file.
- * xscreensaver, Copyright (c) 1998-2011 Jamie Zawinski <jwz@jwz.org>
+ * xscreensaver, Copyright (c) 1998-2013 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -64,6 +64,7 @@
 #endif
 
 
+#include "version.h"
 #include "prefs.h"
 #include "resources.h"
 
@@ -276,6 +277,7 @@ static const char * const prefs[] = {
   "ignoreUninstalledPrograms",
   "font",
   "dpmsEnabled",
+  "dpmsQuickOff",
   "dpmsStandby",
   "dpmsSuspend",
   "dpmsOff",
@@ -817,6 +819,7 @@ write_init_file (Display *dpy,
       CHECK("font")		type = pref_str,  s =    stderr_font;
 
       CHECK("dpmsEnabled")	type = pref_bool, b = p->dpms_enabled_p;
+      CHECK("dpmsQuickOff")	type = pref_bool, b = p->dpms_quickoff_p;
       CHECK("dpmsStandby")	type = pref_time, t = p->dpms_standby;
       CHECK("dpmsSuspend")	type = pref_time, t = p->dpms_suspend;
       CHECK("dpmsOff")		type = pref_time, t = p->dpms_off;
@@ -1073,6 +1076,7 @@ load_init_file (Display *dpy, saver_preferences *p)
 						       "Time");
 
   p->dpms_enabled_p  = get_boolean_resource (dpy, "dpmsEnabled", "Boolean");
+  p->dpms_quickoff_p = get_boolean_resource (dpy, "dpmsQuickOff", "Boolean");
   p->dpms_standby    = 1000 * get_minutes_resource (dpy, "dpmsStandby", "Time");
   p->dpms_suspend    = 1000 * get_minutes_resource (dpy, "dpmsSuspend", "Time");
   p->dpms_off        = 1000 * get_minutes_resource (dpy, "dpmsOff",     "Time");
@@ -1123,7 +1127,7 @@ load_init_file (Display *dpy, saver_preferences *p)
                                                      "sgiSaverExtension",
 						     "Boolean");
 #endif
-#if 0 /* obsolete. */
+#ifdef HAVE_XINPUT
   p->use_xinput_extension = get_boolean_resource (dpy, "xinputExtensionDev",
                                                   "Boolean");
 #endif
@@ -1644,4 +1648,44 @@ stop_the_insanity (saver_preferences *p)
 
   if (p->pointer_hysteresis < 0)   p->pointer_hysteresis = 0;
   if (p->pointer_hysteresis > 100) p->pointer_hysteresis = 100;
+}
+
+
+/* Getting very tired of bug reports of already-fixed bugs due to
+   Linux distros shipping multi-year-old versions.
+ */
+Bool
+senescent_p (void)
+{
+  time_t now = time ((time_t *) 0);
+  struct tm *tm = localtime (&now);
+  const char *s = screensaver_id;
+  char mon[4], year[5];
+  int m, y, months;
+  s = strchr (s, ' '); if (!s) abort(); s++;
+  s = strchr (s, '('); if (!s) abort(); s++;
+  s = strchr (s, '-'); if (!s) abort(); s++;
+  strncpy (mon, s, 3);
+  mon[3] = 0;
+  s = strchr (s, '-'); if (!s) abort(); s++;
+  strncpy (year, s, 4);
+  year[4] = 0;
+  y = atoi (year);
+  if      (!strcmp(mon, "Jan")) m = 0;
+  else if (!strcmp(mon, "Feb")) m = 1;
+  else if (!strcmp(mon, "Mar")) m = 2;
+  else if (!strcmp(mon, "Apr")) m = 3;
+  else if (!strcmp(mon, "May")) m = 4;
+  else if (!strcmp(mon, "Jun")) m = 5;
+  else if (!strcmp(mon, "Jul")) m = 6;
+  else if (!strcmp(mon, "Aug")) m = 7;
+  else if (!strcmp(mon, "Sep")) m = 8;
+  else if (!strcmp(mon, "Oct")) m = 9;
+  else if (!strcmp(mon, "Nov")) m = 10;
+  else if (!strcmp(mon, "Dec")) m = 11;
+  else abort();
+  months = ((((tm->tm_year + 1900) * 12) + tm->tm_mon) -
+            (y * 12 + m));
+
+  return (months > 12);
 }

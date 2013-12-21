@@ -307,6 +307,7 @@ static int preen(int current, int max) {
     return(current);
 }
 
+#if 0
 static void
 smoothen(struct state *st, int x, int lastx, int y, int lasty, int size, int last_color, XColor *colors, Display *dpy, Window window, GC bgc, int screen, struct info *info)
 {
@@ -327,6 +328,7 @@ smoothen(struct state *st, int x, int lastx, int y, int lasty, int size, int las
         smoothen(st, newx, x, newy, y, size, last_color, st->colors, st->dpy, st->window, st->bgc, st->screen, st->info);
     }
 }
+#endif
 
 
 static void *
@@ -387,7 +389,9 @@ whirlygig_init (Display *dpy, Window window)
 
     {
       Bool writable_p = False;
-    make_uniform_colormap (st->dpy, st->xgwa.visual, st->xgwa.colormap, st->colors, &st->ncolors, True, &writable_p, True);
+    make_uniform_colormap (st->xgwa.screen, st->xgwa.visual,
+                           st->xgwa.colormap, st->colors, &st->ncolors,
+                           True, &writable_p, True);
     }
 
     if (st->ba) XFillRectangle (st->dpy, st->ba, st->bgc, 0, 0, st->xgwa.width, st->xgwa.height);

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="glknots" _label="GLKnots">
+<screensaver name="glknots" _label="GLKnots" gl="yes">
 
   <command arg="-root"/>
 
@@ -48,6 +48,8 @@
 
    </vgroup>
   </hgroup>
+
+  <xscreensaver-updater />
 
   <_description>
 Generates some twisting 3d knot patterns.  Spins 'em around.

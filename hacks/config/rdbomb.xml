@@ -27,6 +27,11 @@
     <number id="ncolors" type="slider" arg="-ncolors %"
               _label="Number of colors" _low-label="Two" _high-label="Many"
               low="1" high="255" default="255"/>
+
+    <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
+
+    <xscreensaver-updater />
+
    </vgroup>
   </hgroup>
 
@@ -49,14 +54,11 @@
 
    </vgroup>
 
-  <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
-
   </hgroup>
 
   <_description>
-Draws a grid of growing square-like shapes that, once they overtake
-each other, react in unpredictable ways.  "RD" stands for
-reaction-diffusion.
+Reaction-diffusion: draws a grid of growing square-like shapes that,
+once they overtake each other, react in unpredictable ways.
 
 Written by Scott Draves; 1997.
   </_description>

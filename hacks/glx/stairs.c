@@ -68,7 +68,13 @@ static const char sccsid[] = "@(#)stairs.c	4.07 97/11/24 xlockmore";
 
 #ifdef USE_GL
 
+#if 0
 #include "e_textures.h"
+#else
+#include "xpm-ximage.h"
+#include "../images/wood.xpm"
+#endif
+
 #include "sphere.h"
 #include "gltrackball.h"
 
@@ -387,9 +393,9 @@ stairs_handle_event (ModeInfo *mi, XEvent *event)
 
 
 static void
-pinit(void)
+pinit(ModeInfo *mi)
 {
-    int status;
+  /* int status; */
 	glClearDepth(1.0);
 	glLightfv(GL_LIGHT0, GL_AMBIENT, ambient);
 	glLightfv(GL_LIGHT0, GL_DIFFUSE, diffuse);
@@ -413,6 +419,7 @@ pinit(void)
 
 	glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
 
+#if 0
     clear_gl_error();
     status = gluBuild2DMipmaps(GL_TEXTURE_2D, 3,
                                WoodTextureWidth, WoodTextureHeight,
@@ -426,6 +433,22 @@ pinit(void)
         exit (1);
       }
     check_gl_error("mipmapping");
+#else
+    {
+      XImage *img = xpm_to_ximage (mi->dpy,
+                                   mi->xgwa.visual,
+                                   mi->xgwa.colormap,
+                                   wood_texture);
+	  glTexImage2D (GL_TEXTURE_2D, 0, GL_RGBA,
+                    img->width, img->height, 0,
+                    GL_RGBA,
+                    /* GL_UNSIGNED_BYTE, */
+                    GL_UNSIGNED_INT_8_8_8_8_REV,
+                    img->data);
+      check_gl_error("texture");
+      XDestroyImage (img);
+    }
+#endif
 
 	glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_MODULATE);
 	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
@@ -461,7 +484,7 @@ init_stairs (ModeInfo * mi)
 		glDrawBuffer(GL_BACK);
 		if (!glIsList(sp->objects))
 			sp->objects = glGenLists(1);
-		pinit();
+		pinit(mi);
 	} else {
 		MI_CLEARWINDOW(mi);
 	}
@@ -473,6 +496,7 @@ ENTRYPOINT void
 draw_stairs (ModeInfo * mi)
 {
 	stairsstruct *sp = &stairs[MI_SCREEN(mi)];
+    GLfloat rot = current_device_rotation();
 
 	Display    *display = MI_DISPLAY(mi);
 	Window      window = MI_WINDOW(mi);
@@ -485,6 +509,14 @@ draw_stairs (ModeInfo * mi)
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	glPushMatrix();
+
+    glRotatef(rot, 0, 0, 1);
+    if ((rot >  45 && rot <  135) ||
+        (rot < -45 && rot > -135))
+      {
+        GLfloat s = MI_WIDTH(mi) / (GLfloat) MI_HEIGHT(mi);
+        glScalef (s, 1/s, 1);
+      }
 
 	glTranslatef(0.0, 0.0, -10.0);
 

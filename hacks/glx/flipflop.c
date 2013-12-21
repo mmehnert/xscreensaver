@@ -265,6 +265,8 @@ display(Flipflopcreen *c)
     glLightfv(GL_LIGHT0, GL_AMBIENT, amb);
 
 
+    glRotatef(current_device_rotation(), 0, 0, 1);
+
     /** setup perspectif */
     glTranslatef(0.0, 0.0, -c->reldist*board_avg_size);
     glRotatef(22.5, 1.0, 0.0, 0.0);  

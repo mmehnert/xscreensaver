@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1991-2011 Jamie Zawinski <jwz@jwz.org>
+/* xscreensaver, Copyright (c) 1991-2013 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -271,17 +271,24 @@ ERROR!  You must not include vroot.h in this file.
 static void
 do_help (saver_info *si)
 {
+  char *s, year[5];
+  s = strchr (screensaver_id, '-');
+  s = strrchr (s, '-');
+  s++;
+  strncpy (year, s, 4);
+  year[4] = 0;
+
   fflush (stdout);
   fflush (stderr);
   fprintf (stdout, "\
-xscreensaver %s, copyright (c) 1991-2008 by Jamie Zawinski <jwz@jwz.org>\n\
+xscreensaver %s, copyright (c) 1991-%s by Jamie Zawinski <jwz@jwz.org>\n\
 \n\
   All xscreensaver configuration is via the `~/.xscreensaver' file.\n\
   Rather than editing that file by hand, just run `xscreensaver-demo':\n\
   that program lets you configure the screen saver graphically,\n\
   including timeouts, locking, and display modes.\n\
 \n",
-	  si->version);
+	  si->version, year);
   fprintf (stdout, "\
   Just getting started?  Try this:\n\
 \n\
@@ -299,14 +306,28 @@ xscreensaver %s, copyright (c) 1991-2008 by Jamie Zawinski <jwz@jwz.org>\n\
 }
 
 
+Bool in_signal_handler_p = 0;	/* I hate C so much... */
+
 char *
 timestring (void)
 {
-  time_t now = time ((time_t *) 0);
-  char *str = (char *) ctime (&now);
-  char *nl = (char *) strchr (str, '\n');
-  if (nl) *nl = 0; /* take off that dang newline */
-  return str;
+  if (in_signal_handler_p)
+    {
+      /* Turns out that ctime() and even localtime_r() call malloc() on Linux!
+         So we can't call them from inside SIGCHLD.  WTF.
+       */
+      static char buf[30];
+      strcpy (buf, "... ... ..   signal ....");
+      return buf;
+    }
+  else
+    {
+      time_t now = time ((time_t *) 0);
+      char *str = (char *) ctime (&now);
+      char *nl = (char *) strchr (str, '\n');
+      if (nl) *nl = 0; /* take off that dang newline */
+      return str;
+    }
 }
 
 static Bool blurb_timestamp_p = True;   /* kludge */
@@ -726,6 +747,13 @@ print_banner (saver_info *si)
 {
   saver_preferences *p = &si->prefs;
 
+  char *s, year[5];
+  s = strchr (screensaver_id, '-');
+  s = strrchr (s, '-');
+  s++;
+  strncpy (year, s, 4);
+  year[4] = 0;
+
   /* This resource gets set some time before the others, so that we know
      whether to print the banner (and so that the banner gets printed before
      any resource-database-related error messages.)
@@ -738,9 +766,9 @@ print_banner (saver_info *si)
 
   if (p->verbose_p)
     fprintf (stderr,
-	     "%s %s, copyright (c) 1991-2008 "
+	     "%s %s, copyright (c) 1991-%s "
 	     "by Jamie Zawinski <jwz@jwz.org>.\n",
-	     progname, si->version);
+	     progname, si->version, year);
 
   if (p->debug_p)
     fprintf (stderr, "\n"
@@ -755,6 +783,17 @@ print_banner (saver_info *si)
 	     "\tuntrusted environments.\n"
 	     "\n",
 	     blurb());
+
+  if (p->verbose_p && senescent_p ())
+    fprintf (stderr, "\n"
+             "*************************************"
+             "**************************************\n"
+	     "%s: Warning: this version of xscreensaver is VERY OLD!\n"
+	     "%s: Please upgrade!  http://www.jwz.org/xscreensaver/\n"
+             "*************************************"
+             "**************************************\n"
+	     "\n",
+             blurb(), blurb());
 
   if (p->verbose_p)
     {
@@ -1191,6 +1230,10 @@ main_loop (saver_info *si)
              we would never be able to un-blank it!  We would never
              see any events, and the display would be wedged.
 
+             In particular, without that keyboard grab, we will be
+             unable to ever read keypresses on the unlock dialog.
+             You can't unlock if you can't type your password.
+
              So, just go around the loop again and wait for the
              next bout of idleness.  (If the user remains idle, we
              will next try to blank the screen again in no more than
@@ -1227,10 +1270,22 @@ main_loop (saver_info *si)
         for (i = 0; i < si->nscreens; i++)
           spawn_screenhack (&si->screens[i]);
 
-      /* If we are blanking only, we might as well power down the monitor
-         right now, regardless of what the DPMS settings are. */
-      if (p->mode == BLANK_ONLY)
-        monitor_power_on (si, False);
+      /* If we are blanking only, optionally power down monitor right now.
+         To do this, we might need to temporarily re-enable DPMS first.
+       */
+      if (p->mode == BLANK_ONLY &&
+          p->dpms_enabled_p && 
+          p->dpms_quickoff_p)
+        {
+          sync_server_dpms_settings (si->dpy, True,
+                                     p->dpms_standby / 1000,
+                                     p->dpms_suspend / 1000,
+                                     (p->dpms_off
+                                      ? (p->dpms_off / 1000)
+                                      : 0xFFFF),
+                                     False);
+          monitor_power_on (si, False);
+        }
 
       /* Don't start the cycle timer in demo mode. */
       if (!si->demoing_p && p->cycle)
@@ -1387,18 +1442,28 @@ main (int argc, char **argv)
   struct passwd *spasswd;
   int i;
 
-  /* It turns out that if we do NLS stuff here, people running in Japanese
-     locales get font craziness on the password dialog, presumably because
-     it is displaying Japanese characters in a non-Japanese font.  I don't
-     understand how to automatically make all this crap work properly by
-     default, so until someone sends me a better patch, just leave it off
-     and run the daemon in English.  -- jwz, 29-Sep-2010
-   */
-#undef ENABLE_NLS
+  /* It turns out that if we do setlocale (LC_ALL, "") here, people
+     running in Japanese locales get font craziness on the password
+     dialog, presumably because it is displaying Japanese characters
+     in a non-Japanese font.  However, if we don't call setlocale()
+     at all, then XLookupString() never returns multi-byte UTF-8
+     characters when people type non-Latin1 characters on the
+     keyboard.
 
+     The current theory (and at this point, I'm really guessing!) is
+     that using LC_CTYPE instead of LC_ALL will make XLookupString()
+     behave usefully, without having the side-effect of screwing up
+     the fonts on the unlock dialog.
+
+     See https://bugs.launchpad.net/ubuntu/+source/xscreensaver/+bug/671923
+     from comment #20 onward.
+
+       -- jwz, 24-Sep-2011
+   */
 #ifdef ENABLE_NLS
-  if (!setlocale (LC_ALL, ""))
-    fprintf (stderr, "locale not supported by C library\n");
+  if (!setlocale (LC_CTYPE, ""))
+    fprintf (stderr, "%s: warning: could not set default locale\n",
+             progname);
 
   bindtextdomain (GETTEXT_PACKAGE, LOCALEDIR);
   textdomain (GETTEXT_PACKAGE);
@@ -1737,29 +1802,47 @@ handle_clientmessage (saver_info *si, XEvent *event, Bool until_idle_p)
     }
   else if (type == XA_DEACTIVATE)
     {
-      if (! until_idle_p)
-	{
-          if (si->throttled_p && p->verbose_p)
-            fprintf (stderr, "%s: unthrottled.\n", blurb());
-	  si->throttled_p = False;
+# if 0
+      /* When -deactivate is received while locked, pop up the dialog box
+         instead of just ignoring it.  Some people depend on this behavior
+         to be able to unlock by using e.g. a fingerprint reader without
+         also having to click the mouse first.
+       */
+      if (si->locked_p) 
+        {
+          clientmessage_response(si, window, False,
+              "DEACTIVATE ClientMessage received while locked: ignored.",
+              "screen is locked.");
+        }
+      else
+# endif /* 0 */
+        {
+          if (! until_idle_p)
+            {
+              if (si->throttled_p && p->verbose_p)
+                fprintf (stderr, "%s: unthrottled.\n", blurb());
+              si->throttled_p = False;
 
-	  clientmessage_response(si, window, False,
-				 "DEACTIVATE ClientMessage received.",
-				 "deactivating.");
-	  if (si->using_mit_saver_extension || si->using_sgi_saver_extension)
-	    {
-	      XForceScreenSaver (si->dpy, ScreenSaverReset);
-	      return False;
-	    }
-	  else
-	    {
-	      return True;
-	    }
-	}
-      clientmessage_response(si, window, False,
-     "ClientMessage DEACTIVATE received while inactive: resetting idle timer.",
-			     "not active: idle timer reset.");
-      reset_timers (si);
+              clientmessage_response(si, window, False,
+                                     "DEACTIVATE ClientMessage received.",
+                                     "deactivating.");
+              if (si->using_mit_saver_extension ||
+                  si->using_sgi_saver_extension)
+                {
+                  XForceScreenSaver (si->dpy, ScreenSaverReset);
+                  return False;
+                }
+              else
+                {
+                  return True;
+                }
+            }
+          clientmessage_response(si, window, False,
+                          "ClientMessage DEACTIVATE received while inactive: "
+                          "resetting idle timer.",
+                                 "not active: idle timer reset.");
+          reset_timers (si);
+        }
     }
   else if (type == XA_CYCLE)
     {

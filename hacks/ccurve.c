@@ -701,7 +701,8 @@ ccurve_init (Display *dpy, Window window)
     st->context = XCreateGC (st->dpy, st->window, GCForeground | GCBackground,
 			 &values);
     st->color_count = MAXIMUM_COLOR_COUNT;
-    make_color_loop (st->dpy, st->color_map,
+    make_color_loop (hack_attributes.screen, hack_attributes.visual,
+                     st->color_map,
 		     0,   1, 1,
 		     120, 1, 1,
 		     240, 1, 1,
@@ -796,6 +797,7 @@ ccurve_draw (Display *dpy, Window window, void *closure)
 		       0, 0);
 	}
         st->draw_index++;
+        /* #### mi->recursion_depth = st->draw_index; */
 
         if (st->draw_index >= st->draw_iterations)
           {
@@ -812,6 +814,14 @@ static void
 ccurve_reshape (Display *dpy, Window window, void *closure, 
                  unsigned int w, unsigned int h)
 {
+  struct state *st = (struct state *) closure;
+  XWindowAttributes xgwa;
+  st->width = w;
+  st->height = h;
+  XGetWindowAttributes (st->dpy, st->window, &xgwa);
+  XFreePixmap (dpy, st->pixmap);
+  st->pixmap = XCreatePixmap (st->dpy, st->window, st->width, st->height,
+                              xgwa.depth);
 }
 
 static Bool
@@ -833,6 +843,9 @@ static const char *ccurve_defaults [] =
     ".delay:      3",
     ".pause:      0.4",
     ".limit: 200000",
+#ifdef USE_IPHONE
+    "*ignoreRotation: True",
+#endif
     0
 };
 

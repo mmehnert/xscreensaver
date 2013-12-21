@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="moebius" _label="Moebius">
+<screensaver name="moebius" _label="Moebius" gl="yes">
 
   <command arg="-root"/>
 
@@ -12,6 +12,8 @@
   <boolean id="solid" _label="Solid floor" arg-set="-solidmoebius"/>
   <boolean id="ants" _label="Draw ants" arg-unset="-no-ants"/>
   <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
+
+  <xscreensaver-updater />
 
   <_description>
 This animates a 3D rendition M.C. Escher's "Moebius Strip II",

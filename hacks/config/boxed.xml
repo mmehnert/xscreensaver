@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="boxed" _label="Boxed">
+<screensaver name="boxed" _label="Boxed" gl="yes">
 
   <command arg="-root"/>
 
@@ -45,6 +45,8 @@
    </vgroup>
   </hgroup>
 
+
+  <xscreensaver-updater />
 
   <_description>
 Draws a box full of 3D bouncing balls that explode.

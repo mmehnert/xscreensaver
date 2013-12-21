@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="circuit" _label="Circuit">
+<screensaver name="circuit" _label="Circuit" gl="yes">
 
   <command arg="-root"/>
 
@@ -24,6 +24,8 @@
   </select>
 
   <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
+
+  <xscreensaver-updater />
 
   <_description>
 Animates a number of 3D electronic components.

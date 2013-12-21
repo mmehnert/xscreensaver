@@ -45,9 +45,9 @@ static const char sccsid[] = "@(#)galaxy.c 4.04 97/07/28 xlockmore";
 					"*cycles:  250   \n"   \
 					"*ncolors:  64   \n" \
 					"*fpsSolid:  true   \n" \
+					"*ignoreRotation: True \n" \
 
 # define UNIFORM_COLORS
-# define reshape_galaxy 0
 # define galaxy_handle_event 0
 # include "xlockmore.h"    /* from the xscreensaver distribution */
 #else  /* !STANDALONE */
@@ -438,6 +438,13 @@ draw_galaxy(ModeInfo * mi)
   gp->step++;
   if (gp->step > gp->f_hititerations * 4)
     startover(mi);
+}
+
+ENTRYPOINT void
+reshape_galaxy(ModeInfo * mi, int width, int height)
+{
+  XClearWindow (MI_DISPLAY (mi), MI_WINDOW(mi));
+  init_galaxy (mi);
 }
 
 ENTRYPOINT void

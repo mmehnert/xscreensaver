@@ -425,6 +425,16 @@ static void
 slidescreen_reshape (Display *dpy, Window window, void *closure, 
                  unsigned int w, unsigned int h)
 {
+  struct state *st = (struct state *) closure;
+  st->max_width = w;
+  st->max_height = h;
+  if (! st->img_loader) {
+    XWindowAttributes xgwa;
+    XGetWindowAttributes (st->dpy, st->window, &xgwa);
+    st->img_loader = load_image_async_simple (0, xgwa.screen, st->window,
+                                              st->window, 0, 0);
+    st->start_time = time ((time_t) 0);
+  }
 }
 
 static Bool
@@ -459,6 +469,9 @@ static const char *slidescreen_defaults [] = {
   "*delay:			50000",
   "*delay2:			1000000",
   "*duration:			120",
+#ifdef USE_IPHONE
+  "*ignoreRotation:             True",
+#endif
   0
 };
 

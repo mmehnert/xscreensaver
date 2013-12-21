@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1998-2004 Jamie Zawinski <jwz@jwz.org>
+/* xscreensaver, Copyright (c) 1998-2012 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -17,32 +17,25 @@
         "gold" to me.
 
      *  For some reason, the interior surfaces are shinier than the exterior
-        surfaces.  I don't understand why, but this should be remedied.
+        surfaces.  Not sure why.
 
-     *  Perhaps use a slightly-bumpy or oily texture for the interior surfaces?
+     *  Should use a dark wood-grain texture for the interior surfaces.
 
-     *  Some of the edges don't line up perfectly (since the images are not
-        perfectly symetrical.)  Something should be done about this; either
-        making the edges overlap slightly (instead of leaving gaps) or fixing
-        the images so that the edges may be symmetrical.
+     *  Building a face out of multiple adjacent triangles was a terrible
+        idea and leads to visible seams.  Should re-do the face generation
+        to make all of them out of a single triangle strip instead.
+
+     *  The coordinates are slightly off from the image.  lament512.gif is the
+        "right" one, and "lament512b.gif" is the image corrected to line up
+        with what the code is actually doing.
+
+     *  The "star" slices really don't line up well.
 
      *  I want the gold leaf to seem to be raised up from the surface, but I
         think this isn't possible with OpenGL.  Supposedly, OpenGL only 
         supports Gouraud shading (interpolating edge normals from face normals,
         and shading smoothly) but bump-maps only work with Phong shading
         (computing a normal for each rendered pixel.)
-
-     *  As far as I can tell, OpenGL doesn't do shadows.  As a result, the
-        forward-facing interior walls are drawn bright, not dark.  If it was
-        casting shadows properly, it wouldn't matter so much that the edges
-        don't quite line up, because the lines would be black, and thus not
-        visible.  But the edges don't match up, and so the bright interior
-        faces show through, and that sucks.
-
-	But apparently there are tricky ways around this:
-	http://reality.sgi.com/opengl/tips/rts/
-	I think these techniques require GLUT, however, which isn't 
-	(currently) required by any other xscreensaver hacks.
 
      *  There should be strange lighting effects playing across the surface:
         electric sparks, or little glittery blobs of light.  
@@ -61,9 +54,6 @@
         hand, since I don't have any 3d-object-editing tools that I know how
         to use (or that look like they would take any less than several months
         to become even marginally proficient with...)
-
-     *  Perhaps there should be a table top, on which it casts a shadow?
-        And then multiple light sources (for multiple shadows)?
 
      *  Needs music.  ("Hellraiser Themes" by Coil: TORSO CD161; also
         duplicated on the "Unnatural History 2" compilation, WORLN M04699.)
@@ -100,7 +90,11 @@ ENTRYPOINT ModeSpecOpt lament_opts = {countof(opts), opts, countof(vars), vars, 
 #include "xpm-ximage.h"
 #include "rotator.h"
 #include "gltrackball.h"
-#include "../images/lament.xpm"
+#if 0
+# include "../images/lament128.xpm"
+#else
+# include "../images/lament512.xpm"
+#endif
 
 #define RAND(n) ((long) ((random() & 0x7fffffff) % ((long) (n))))
 #define RANDSIGN() ((random() & 1) ? 1 : -1)
@@ -164,6 +158,7 @@ typedef struct {
 
   int anim_pause;		   /* countdown before animating again */
   GLfloat anim_r, anim_y, anim_z;  /* relative position during anims */
+  Bool facing_p;
 
   int state, nstates;
   lament_type *states;
@@ -329,8 +324,8 @@ star(ModeInfo *mi, Bool top, Bool wire)
   int i;
 
   int points[][2] = {
-    {  77,  74 }, {  60,  98 }, {   0,  71 }, {   0,   0 },    /* L1 */
-    {  60,  98 }, {  55, 127 }, {   0, 127 }, {   0,  71 },    /* L2 */
+    {  77,  74 }, {  60,  99 }, {   0,  74 }, {   0,   0 },    /* L1 */
+    {  60,  99 }, {  55, 127 }, {   0, 127 }, {   0,  74 },    /* L2 */
     {  55, 127 }, {  60, 154 }, {   0, 179 }, {   0, 127 },    /* L3 */
     {  60, 154 }, {  76, 176 }, {   0, 255 }, {   0, 179 },    /* L4 */
     {  76, 176 }, { 100, 193 }, {  74, 255 }, {   0, 255 },    /* B1 */
@@ -1356,6 +1351,69 @@ lament_handle_event (ModeInfo *mi, XEvent *event)
 
 
 static void
+check_facing(ModeInfo *mi)
+{
+  lament_configuration *lc = &lcs[MI_SCREEN(mi)];
+
+  GLdouble m[16], p[16], x, y, z;
+  GLint v[4];
+  glGetDoublev (GL_MODELVIEW_MATRIX, m);
+  glGetDoublev (GL_PROJECTION_MATRIX, p);
+  glGetIntegerv (GL_VIEWPORT, v);
+	
+  /* See if a coordinate 5 units in front of the door is near the
+     center of the screen. */
+
+  gluProject (-5, 0, 0, m, p, v, &x, &y, &z);
+  x = (x / MI_WIDTH(mi))  - 0.5;
+  y = (y / MI_HEIGHT(mi)) - 0.5;
+  lc->facing_p = (z < 0.9 &&
+                  x > -0.02 && x < 0.02 &&
+                  y > -0.02 && y < 0.02);
+}
+
+
+
+static void
+scale_for_window(ModeInfo *mi)
+{
+  lament_configuration *lc = &lcs[MI_SCREEN(mi)];
+
+  /* No texture created in -wireframe or -no-texture, so guess. */
+  int target_size = (lc->texture
+                     ? lc->texture->width * 1.4
+                     : 340);
+  int win_size = (MI_WIDTH(mi) > MI_HEIGHT(mi) ? MI_HEIGHT(mi) : MI_WIDTH(mi));
+
+  /* This scale makes the box take up most of the window */
+  glScalef(8, 8, 8);
+
+  /* But if the window is more than a little larger than our target size,
+     scale the object back down, so that the bits drawn on the screen end
+     up rougly target_size across (actually it ends up a little larger.)
+     Note that the image-map bits we have are 128x128.  Therefore, if the
+     image is magnified a lot, it looks pretty blocky.  So it's better to
+     have a 128x128 animation on a 1280x1024 screen that looks good, than
+     a 1024x1024 animation that looks really pixelated.
+   */
+
+  {
+    int max = 340;		  /* Let's not go larger than life-sized. */
+    if (target_size > max)
+      target_size = max;
+  }
+
+  if (win_size > 640 &&
+      win_size > target_size * 1.5)
+    {
+      GLfloat ratio = ((GLfloat) target_size / (GLfloat) win_size);
+      ratio *= 2.0;
+      glScalef(ratio, ratio, ratio);
+    }
+}
+
+
+static void
 draw(ModeInfo *mi)
 {
   lament_configuration *lc = &lcs[MI_SCREEN(mi)];
@@ -1368,15 +1426,17 @@ draw(ModeInfo *mi)
 
   glPushMatrix();
 
+  /* Do it twice because we don't track the device's orientation. */
+  glRotatef( current_device_rotation(), 0, 0, 1);
   gltrackball_rotate (lc->trackball);
+  glRotatef(-current_device_rotation(), 0, 0, 1);
 
   /* Make into the screen be +Y right be +X, and up be +Z. */
   glRotatef(-90.0, 1.0, 0.0, 0.0);
 
-  /* Scale it up. */
-  glScalef(4.0, 4.0, 4.0);
+  scale_for_window (mi);
 
-#ifdef DEBUG
+#if 0
     glPushMatrix();
     {
       /* Shift to the upper left, and draw the vanilla box. */
@@ -1394,7 +1454,7 @@ draw(ModeInfo *mi)
 
     /* Shift to the lower right, and draw the animated object. */
     glTranslatef(0.6, 0.0, -0.6);
-#endif /* DEBUG */
+#endif /* 0 */
 
 
     glPushMatrix();
@@ -1406,6 +1466,8 @@ draw(ModeInfo *mi)
       glRotatef (lc->rotx * 360, 1.0, 0.0, 0.0);
       glRotatef (lc->roty * 360, 0.0, 1.0, 0.0);
       glRotatef (lc->rotz * 360, 0.0, 0.0, 1.0);
+
+      check_facing(mi);
 
       switch (lc->type)
 	{
@@ -1662,28 +1724,11 @@ animate(ModeInfo *mi)
 
       if (lc->anim_r >= 112.0)
 	{
-	  GLfloat hysteresis = 0.05;
-
 	  lc->anim_r = 112.0;
 	  lc->anim_z = 0.0;
 	  lc->anim_pause = pause3;
-
-	  if (lc->rotx >= -hysteresis &&
-	      lc->rotx <=  hysteresis &&
-	      ((lc->rotz >=  (0.25 - hysteresis) &&
-		lc->rotz <=  (0.25 + hysteresis)) ||
-	       (lc->rotz >= (-0.25 - hysteresis) &&
-		lc->rotz <= (-0.25 + hysteresis))))
-	    {
-	      lc->type = LAMENT_LID_ZOOM;
-	      lc->rotx = 0.00;
-	      lc->rotz = (lc->rotz < 0 ? -0.25 : 0.25);
-	    }
-	  else
-	    {
-	      lc->type = LAMENT_LID_CLOSE;
-	    }
-	}
+          lc->type = (lc->facing_p ? LAMENT_LID_ZOOM : LAMENT_LID_CLOSE);
+        }
       break;
 
     case LAMENT_LID_CLOSE:
@@ -1762,13 +1807,8 @@ animate(ModeInfo *mi)
 ENTRYPOINT void
 reshape_lament(ModeInfo *mi, int width, int height)
 {
-  int target_size = 180;
-  int win_size = (width > height ? height : width);
   GLfloat h = (GLfloat) height / (GLfloat) width;
-
   glViewport(0, 0, (GLint) width, (GLint) height);
-
-/*  glViewport(-600, -600, 1800, 1800); */
 
   glMatrixMode(GL_PROJECTION);
   glLoadIdentity();
@@ -1776,28 +1816,6 @@ reshape_lament(ModeInfo *mi, int width, int height)
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
   glTranslatef(0.0, 0.0, -40.0);
-
-  /* This scale makes the box take up most of the window */
-  glScalef(2.0, 2.0, 2.0);
-
-  /* But if the window is more than a little larger than our target size,
-     scale the object back down, so that the bits drawn on the screen end
-     up rougly target_size across (actually it ends up a little larger.)
-     Note that the image-map bits we have are 128x128.  Therefore, if the
-     image is magnified a lot, it looks pretty blocky.  So it's better to
-     have a 128x128 animation on a 1280x1024 screen that looks good, than
-     a 1024x1024 animation that looks really pixelated.
-   */
-  if (win_size > target_size * 1.5)
-    {
-      GLfloat ratio = ((GLfloat) target_size / (GLfloat) win_size);
-      ratio *= 2.0;
-      glScalef(ratio, ratio, ratio);
-    }
-
-  /* The depth buffer will be cleared, if needed, before the
-   * next frame.  Right now we just want to black the screen.
-   */
   glClear(GL_COLOR_BUFFER_BIT);
 }
 
@@ -1850,7 +1868,8 @@ gl_init(ModeInfo *mi)
       parse_image_data(mi);
 
       glPixelStorei(GL_UNPACK_ALIGNMENT, 4);
-      glPixelStorei(GL_UNPACK_ROW_LENGTH, lc->texture->width);
+      /* messes up -fps */
+      /* glPixelStorei(GL_UNPACK_ROW_LENGTH, lc->texture->width); */
 
       for (i = 0; i < 6; i++)
 	{
@@ -1872,8 +1891,6 @@ gl_init(ModeInfo *mi)
 	  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 	  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
 	  glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-	  glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
-	  glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_OBJECT_LINEAR);
 	}
 
 #else  /* !HAVE_GLBINDTEXTURE */

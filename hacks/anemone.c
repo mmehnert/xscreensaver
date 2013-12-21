@@ -211,7 +211,8 @@ anemone_init (Display *disp, Window window)
   st->ncolors = get_integer_resource (st->dpy, "colors", "Colors");
   st->ncolors += 3;
   st->colors = (XColor *) malloc(sizeof(*st->colors) * (st->ncolors+1));
-  make_smooth_colormap (st->dpy, wa.visual, st->cmap, st->colors, &st->ncolors,
+  make_smooth_colormap (wa.screen, wa.visual, st->cmap,
+                        st->colors, &st->ncolors,
                         True, 0, True);
 
   st->gcDraw = XCreateGC(st->dpy, window, 0, &st->gcv);
@@ -380,11 +381,20 @@ static void
 anemone_reshape (Display *dpy, Window window, void *closure, 
                  unsigned int w, unsigned int h)
 {
-  /* need to re-make pixmaps too...
   struct state *st = (struct state *) closure;
   st->scrWidth = w;
   st->scrHeight = h;
-  */
+#if 0
+  if (st->dbuf) {
+    XWindowAttributes wa;
+    XGetWindowAttributes(dpy, window, &wa);
+    if (st->ba) XFreePixmap (dpy, st->ba);
+    if (st->bb) XFreePixmap (dpy, st->bb);
+    st->ba = XCreatePixmap (dpy, window, st->scrWidth, st->scrHeight, wa.depth);
+    st->bb = XCreatePixmap (dpy, window, st->scrWidth, st->scrHeight, wa.depth);
+    st->b = st->ba;
+  }
+#endif
 }
 
 static Bool

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="cube21" _label="Cube21">
+<screensaver name="cube21" _label="Cube21" gl="yes">
 
   <command arg="-root"/>
 
@@ -60,6 +60,8 @@
 
    </vgroup>
   </hgroup>
+
+  <xscreensaver-updater />
 
   <_description>
 Animates a Rubik-like puzzle known as Cube 21 or Square-1.

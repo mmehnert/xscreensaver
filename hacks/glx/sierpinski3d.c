@@ -327,7 +327,10 @@ draw(ModeInfo *mi)
                  (y - 0.5) * 10,
                  (z - 0.5) * 20);
 
+    /* Do it twice because we don't track the device's orientation. */
+    glRotatef( current_device_rotation(), 0, 0, 1);
     gltrackball_rotate (gp->trackball);
+    glRotatef(-current_device_rotation(), 0, 0, 1);
 
     get_rotation (gp->rot, &x, &y, &z, !gp->button_down_p);
     glRotatef (x * 360, 1.0, 0.0, 0.0);
@@ -372,6 +375,9 @@ draw(ModeInfo *mi)
       glNewList (gp->gasket2, GL_COMPILE); compile_gasket (mi, 2); glEndList();
       glNewList (gp->gasket3, GL_COMPILE); compile_gasket (mi, 3); glEndList();
 
+      mi->recursion_depth = (gp->current_depth > 0
+                             ? gp->current_depth
+                             : -gp->current_depth);
     }
 }
 

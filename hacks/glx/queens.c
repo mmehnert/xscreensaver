@@ -29,9 +29,22 @@
 # include "xlock.h"
 #endif
 
+#ifdef HAVE_COCOA
+# include "jwxyz.h"
+#else
+# include <X11/Xlib.h>
+# include <GL/gl.h>
+# include <GL/glu.h>
+#endif
+
+#ifdef HAVE_JWZGLES
+# include "jwzgles.h"
+#endif /* HAVE_JWZGLES */
+
 #ifdef USE_GL
 
 #include "gltrackball.h"
+#include "chessmodels.h"
 
 #undef countof
 #define countof(x) (sizeof((x))/sizeof((*x)))
@@ -62,7 +75,6 @@ ModStruct   queens_description =
 #endif
 
 #define NONE 0
-#define QUEEN 1
 #define MINBOARD 5
 #define MAXBOARD 10
 #define COLORSETS 5
@@ -73,6 +85,7 @@ typedef struct {
   trackball_state *trackball;
   Bool button_down_p;
   GLfloat position[4];
+  int queen_list;
 
   int board[MAXBOARD][MAXBOARD];
   int steps, colorset, BOARDSIZE;
@@ -254,7 +267,7 @@ static int drawPieces(Queenscreen *qs)
     for(j = 0; j < qs->BOARDSIZE; ++j) {
       if(qs->board[i][j]) {
     	glColor3fv(colors[qs->colorset][i%2]);
-	glCallList(QUEEN);
+	glCallList(qs->queen_list);
         polys += qs->queen_polys;
       }
       
@@ -339,18 +352,103 @@ static int drawBoard(Queenscreen *qs)
     }
 
   glEnd();
+
+  {
+    GLfloat off = 0.01;
+    GLfloat w = qs->BOARDSIZE;
+    GLfloat h = 0.1;
+
+    /* Give the board a slight lip. */
+    /* #### oops, normals are wrong here, but you can't tell */
+
+    glColor3f(0.3, 0.3, 0.3);
+    glBegin (GL_QUADS);
+    glVertex3f (0,  0, 0);
+    glVertex3f (0, -h, 0);
+    glVertex3f (0, -h, w);
+    glVertex3f (0,  0, w);
+
+    glVertex3f (0,  0, w);
+    glVertex3f (0, -h, w);
+    glVertex3f (w, -h, w);
+    glVertex3f (w,  0, w);
+
+    glVertex3f (w,  0, w);
+    glVertex3f (w, -h, w);
+    glVertex3f (w, -h, 0);
+    glVertex3f (w,  0, 0);
+
+    glVertex3f (w,  0, 0);
+    glVertex3f (w, -h, 0);
+    glVertex3f (0, -h, 0);
+    glVertex3f (0,  0, 0);
+
+    glVertex3f (0, -h, 0);
+    glVertex3f (w, -h, 0);
+    glVertex3f (w, -h, w);
+    glVertex3f (0, -h, w);
+    glEnd();
+    polys += 4;
+
+    /* Fill in the underside of the board with an invisible black box
+       to hide the reflections that are not on tiles.  Probably there's
+       a way to do this with stencils instead.
+     */
+    w -= off*2;
+    h = 5;
+
+    glPushMatrix();
+    glTranslatef (off, 0, off);
+    glDisable(GL_LIGHTING);
+    glColor3f(0,0,0);
+    glBegin (GL_QUADS);
+    glVertex3f (0,  0, 0);
+    glVertex3f (0, -h, 0);
+    glVertex3f (0, -h, w);
+    glVertex3f (0,  0, w);
+
+    glVertex3f (0,  0, w);
+    glVertex3f (0, -h, w);
+    glVertex3f (w, -h, w);
+    glVertex3f (w,  0, w);
+
+    glVertex3f (w,  0, w);
+    glVertex3f (w, -h, w);
+    glVertex3f (w, -h, 0);
+    glVertex3f (w,  0, 0);
+
+    glVertex3f (w,  0, 0);
+    glVertex3f (w, -h, 0);
+    glVertex3f (0, -h, 0);
+    glVertex3f (0,  0, 0);
+
+    glVertex3f (0, -h, 0);
+    glVertex3f (w, -h, 0);
+    glVertex3f (w, -h, w);
+    glVertex3f (0, -h, w);
+    glEnd();
+    polys += 4;
+    glPopMatrix();
+    if (!wire)
+      glEnable(GL_LIGHTING);
+  }
+
   return polys;
 }
 
 static int display(Queenscreen *qs) 
 {
+  int max = 1024;
   int polys = 0;
   glClear(clearbits);
   
   glMatrixMode(GL_MODELVIEW);
   glLoadIdentity();
 
+  glRotatef(current_device_rotation(), 0, 0, 1);
+
   /* setup light attenuation */
+  /* #### apparently this does nothing */
   glEnable(GL_COLOR_MATERIAL);
   glLightf(GL_LIGHT0, GL_CONSTANT_ATTENUATION, 0.8/(0.01+findAlpha(qs)));
   glLightf(GL_LIGHT0, GL_LINEAR_ATTENUATION, 0.06);
@@ -373,6 +471,18 @@ static int display(Queenscreen *qs)
     glEnable(GL_LIGHT0);
   }
 
+  /* Since the lighting attenuation trick up there doesn't seem to be working,
+     let's drop the old board down and drop the new board in. */
+  if (qs->steps < (max/8.0)) {
+    GLfloat y = qs->steps / (max/8.0);
+    y = sin (M_PI/2 * y);
+    glTranslatef (0, 10 - (y * 10), 0);
+  } else if (qs->steps > max-(max/8.0)) {
+    GLfloat y = (qs->steps - (max-(max/8.0))) / (GLfloat) (max/8.0);
+    y = 1 - sin (M_PI/2 * (1-y));
+    glTranslatef (0, -y * 15, 0);
+  }
+
   /* draw reflections */
   if(!wire) {
     polys += draw_reflections(qs);
@@ -392,7 +502,7 @@ static int display(Queenscreen *qs)
     qs->theta += .002;
 
   /* zero out board, find new solution of size MINBOARD <= i <= MAXBOARD */
-  if(++qs->steps == 1024) {
+  if(++qs->steps == max) {
     qs->steps = 0;
     blank(qs);
     qs->BOARDSIZE = MINBOARD + (random() % (MAXBOARD - MINBOARD + 1));
@@ -424,19 +534,23 @@ static const GLfloat spidermodel[][3] =
 
 #define EPSILON 0.001
 
+#if 0
 /** draws cylindermodel */
 static int draw_model(int chunks, const GLfloat model[][3], int r) 
 {
   int i = 0;
   int polys = 0;
-  GLUquadricObj *quadric = gluNewQuadric();
   glPushMatrix();
   glRotatef(-90.0, 1.0, 0.0, 0.0);
   
   for(i = 0; i < chunks; ++i) {
     if(model[i][0] > EPSILON || model[i][1] > EPSILON) {
-      gluCylinder(quadric, model[i][0], model[i][1], model[i][2], r, 1);
-      polys += r;
+      polys += tube (0, 0, 0,
+                     0, 0, model[i][1],
+                     model[i][0], 0,
+                     r, False, False, False);
+/*      gluCylinder(quadric, model[i][0], model[i][1], model[i][2], r, 1);
+      polys += r;*/
     }
     glTranslatef(0.0, 0.0, model[i][2]);
   }
@@ -444,6 +558,7 @@ static int draw_model(int chunks, const GLfloat model[][3], int r)
   glPopMatrix();
   return polys;
 }
+#endif
 
 ENTRYPOINT void reshape_queens(ModeInfo *mi, int width, int height) 
 {
@@ -459,7 +574,12 @@ ENTRYPOINT void init_queens(ModeInfo *mi)
 {
   int screen = MI_SCREEN(mi);
   Queenscreen *qs;
+  int poly_counts[PIECES];
   wire = MI_IS_WIREFRAME(mi);
+
+# ifdef HAVE_JWZGLES /* #### glPolygonMode other than GL_FILL unimplemented */
+  wire = 0;
+# endif
 
   if(!qss && 
      !(qss = (Queenscreen *) calloc(MI_NUM_SCREENS(mi), sizeof(Queenscreen))))
@@ -467,18 +587,34 @@ ENTRYPOINT void init_queens(ModeInfo *mi)
   
   qs = &qss[screen];
   qs->window = MI_WINDOW(mi);
-  qs->trackball = gltrackball_init ();
-
-  qs->BOARDSIZE = 8; /* 8 cuz its classic */
   
   if((qs->glx_context = init_GL(mi)))
     reshape_queens(mi, MI_WIDTH(mi), MI_HEIGHT(mi));
   else
     MI_CLEARWINDOW(mi);
 
-  glNewList(QUEEN, GL_COMPILE);
-  qs->queen_polys = draw_model(countof(spidermodel), spidermodel, 24);
-  glEndList();
+  qs->trackball = gltrackball_init ();
+
+  qs->BOARDSIZE = 8; /* 8 cuz its classic */
+
+  chessmodels_gen_lists(-1, poly_counts);
+  qs->queen_list = QUEEN;
+  qs->queen_polys = poly_counts[QUEEN];
+
+  /* find a solution */
+  go(qs);
+}
+
+ENTRYPOINT void draw_queens(ModeInfo *mi) 
+{
+  Queenscreen *qs = &qss[MI_SCREEN(mi)];
+  Window w = MI_WINDOW(mi);
+  Display *disp = MI_DISPLAY(mi);
+
+  if(!qs->glx_context)
+    return;
+
+  glXMakeCurrent(disp, w, *(qs->glx_context));
 
   if(flat)
     glShadeModel(GL_FLAT);
@@ -499,22 +635,8 @@ ENTRYPOINT void init_queens(ModeInfo *mi)
   else
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
 
-  /* find a solution */
-  go(qs);
-}
-
-ENTRYPOINT void draw_queens(ModeInfo *mi) 
-{
-  Queenscreen *qs = &qss[MI_SCREEN(mi)];
-  Window w = MI_WINDOW(mi);
-  Display *disp = MI_DISPLAY(mi);
-
-  if(!qs->glx_context)
-    return;
-
-  glXMakeCurrent(disp, w, *(qs->glx_context));
-
   mi->polygon_count = display(qs);
+  mi->recursion_depth = qs->BOARDSIZE;
 
   if(mi->fps_p) do_fps(mi);
   glFinish(); 

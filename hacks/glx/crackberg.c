@@ -131,6 +131,10 @@ struct _cberg_state {
 
     double vs0r,vs0g,vs0b, vs1r, vs1g, vs1b,
            vf0r,vf0g,vf0b, vf1r, vf1g, vf1b;
+
+    Bool button_down_p;
+    int mouse_x, mouse_y;
+    struct timeval paused;
 };
 
 
@@ -1207,7 +1211,9 @@ ENTRYPOINT void init_crackberg (ModeInfo *mi)
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glShadeModel((flat) ? GL_FLAT : GL_SMOOTH);
+# ifndef HAVE_JWZGLES /* #### glPolygonMode other than GL_FILL unimplemented */
     glPolygonMode(GL_FRONT_AND_BACK, (MI_IS_WIREFRAME(mi)) ? GL_LINE : GL_FILL);
+# endif
 
     if (lit) {
         glEnable(GL_LIGHTING);
@@ -1246,13 +1252,17 @@ ENTRYPOINT void reshape_crackberg (ModeInfo *mi, int w, int h)
 ENTRYPOINT Bool crackberg_handle_event (ModeInfo *mi, XEvent *ev)
 {
     cberg_state *cberg = &cbergs[MI_SCREEN(mi)];
+    KeySym keysym = 0;
+    char c = 0;
+    if (ev->xany.type == KeyPress || ev->xany.type == KeyRelease)
+      XLookupString (&ev->xkey, &c, 1, &keysym, 0);
 
     if (ev->xany.type == KeyPress) {
-        switch (XKeycodeToKeysym(mi->dpy, ev->xkey.keycode, 0)) {
-# ifndef HAVE_COCOA
+        switch (keysym) {
             case XK_Left:   cberg->motion_state |= MOTION_LROT;  break;
             case XK_Right:  cberg->motion_state |= MOTION_RROT;  break;
-# endif
+            case XK_Down:   cberg->motion_state |= MOTION_BACK;  break;
+            case XK_Up:     cberg->motion_state |= MOTION_FORW;  break;
             case '1':       cberg->motion_state |= MOTION_DEC;   break; 
             case '2':       cberg->motion_state |= MOTION_INC;   break;
             case 'a':       cberg->motion_state |= MOTION_LEFT;  break;
@@ -1276,11 +1286,11 @@ ENTRYPOINT Bool crackberg_handle_event (ModeInfo *mi, XEvent *ev)
         }
 #endif
 
-        switch (XKeycodeToKeysym(mi->dpy, ev->xkey.keycode, 0)) {
-# ifndef HAVE_COCOA
+        switch (keysym) {
             case XK_Left:   cberg->motion_state &= ~MOTION_LROT;  break;
             case XK_Right:  cberg->motion_state &= ~MOTION_RROT;  break;
-# endif
+            case XK_Down:   cberg->motion_state &= ~MOTION_BACK;  break;
+            case XK_Up:     cberg->motion_state &= ~MOTION_FORW;  break;
             case '1':       cberg->motion_state &= ~MOTION_DEC;   break; 
             case '2':       cberg->motion_state &= ~MOTION_INC;   break;
             case 'a':       cberg->motion_state &= ~MOTION_LEFT;  break;
@@ -1293,6 +1303,38 @@ ENTRYPOINT Bool crackberg_handle_event (ModeInfo *mi, XEvent *ev)
                 break;
             default:            return False;
         }
+    } else if (ev->xany.type == ButtonPress &&
+               ev->xbutton.button == Button1) {
+      cberg->button_down_p = True;
+      cberg->mouse_x = ev->xbutton.x;
+      cberg->mouse_y = ev->xbutton.y;
+      cberg->motion_state = MOTION_MANUAL;
+      cberg->paused.tv_sec = 0;
+    } else if (ev->xany.type == ButtonRelease &&
+               ev->xbutton.button == Button1) {
+      cberg->button_down_p = False;
+      cberg->motion_state = MOTION_AUTO;
+      /* After mouse-up, don't go back into auto-motion mode for a second, so
+         that repeated click-and-drag gestures don't fight with auto-motion. */
+      gettimeofday(&cberg->paused, NULL);
+    } else if (ev->xany.type == MotionNotify &&
+               cberg->button_down_p) {
+      int dx = ev->xmotion.x - cberg->mouse_x;
+      int dy = ev->xmotion.y - cberg->mouse_y;
+      cberg->mouse_x = ev->xmotion.x;
+      cberg->mouse_y = ev->xmotion.y;
+      cberg->motion_state = MOTION_MANUAL;
+
+      /* Take the larger dimension, since motion_state doesn't scale */
+      if (dx > 0 && dx > dy) dy = 0;
+      if (dx < 0 && dx < dy) dy = 0;
+      if (dy > 0 && dy > dx) dx = 0;
+      if (dy < 0 && dy < dx) dx = 0;
+
+      if      (dx > 0) cberg->motion_state |= MOTION_LEFT;
+      else if (dx < 0) cberg->motion_state |= MOTION_RIGHT;
+      else if (dy > 0) cberg->motion_state |= MOTION_FORW;
+      else if (dy < 0) cberg->motion_state |= MOTION_BACK;
     } else
         return False;
     return True;
@@ -1316,7 +1358,8 @@ ENTRYPOINT void draw_crackberg (ModeInfo *mi)
 
         cberg->elapsed = cur_frame - cberg->prev_frame;
 
-        if (cberg->motion_state == MOTION_AUTO) {
+        if (cberg->motion_state == MOTION_AUTO &&
+            cberg->paused.tv_sec < cur_frame_t.tv_sec) {
             cberg->x += cberg->dx * cberg->elapsed;
             cberg->y += cberg->dy * cberg->elapsed;
             /* cberg->z */
@@ -1373,6 +1416,7 @@ ENTRYPOINT void draw_crackberg (ModeInfo *mi)
         
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glLoadIdentity();
+    glRotatef(current_device_rotation(), 0, 0, 1);
     gluLookAt(0,0,0, 1,0,0, 0,0,1);
     glLightfv(GL_LIGHT0, GL_POSITION, lpos);
     /*glRotated(cberg->roll, 1,0,0); / * XXX blah broken and unused for now..* /

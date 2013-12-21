@@ -35,10 +35,10 @@ static const char sccsid[] = "@(#)swirl.c	4.00 97/01/01 xlockmore";
 					"*ncolors:		200     \n"			\
 					"*useSHM:		True    \n" \
 					"*fpsSolid:		true    \n" \
+					"*ignoreRotation: True \n" \
 
 # define SMOOTH_COLORS
 # define WRITABLE_COLORS
-# define reshape_swirl 0
 # define swirl_handle_event 0
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 # ifdef HAVE_XSHM_EXTENSION
@@ -1353,7 +1353,7 @@ draw_swirl(ModeInfo * mi)
 		if (swirl->drawing) {
 #ifdef STANDALONE
 		  if (mi->writable_p)
-			rotate_colors(MI_DISPLAY(mi), MI_COLORMAP(mi),
+			rotate_colors(mi->xgwa.screen, MI_COLORMAP(mi),
 						  swirl->rgb_values, swirl->colours, 1);
 #else  /* !STANDALONE */
 			/* rotate the colours */
@@ -1375,7 +1375,7 @@ draw_swirl(ModeInfo * mi)
 		} else {
 #ifdef STANDALONE
 		  if (mi->writable_p)
-			rotate_colors(MI_DISPLAY(mi), MI_COLORMAP(mi),
+			rotate_colors(mi->xgwa.screen, MI_COLORMAP(mi),
 						  swirl->rgb_values, swirl->colours, 1);
 #else  /* !STANDALONE */
 			/* rotate the colours */
@@ -1413,10 +1413,9 @@ draw_swirl(ModeInfo * mi)
 #ifdef STANDALONE
 					/* Pick a new colormap! */
 					XClearWindow (MI_DISPLAY(mi), MI_WINDOW(mi));
-					free_colors (MI_DISPLAY(mi), MI_COLORMAP(mi),
+					free_colors (mi->xgwa.screen, MI_COLORMAP(mi),
 								 mi->colors, mi->npixels);
-					make_smooth_colormap (MI_DISPLAY(mi),
-										  MI_VISUAL(mi),
+					make_smooth_colormap (mi->xgwa.screen, MI_VISUAL(mi),
 										  MI_COLORMAP(mi),
 										  mi->colors, &mi->npixels, True,
 										  &mi->writable_p, True);
@@ -1431,6 +1430,13 @@ draw_swirl(ModeInfo * mi)
 			}
 		}
 	}
+}
+
+ENTRYPOINT void
+reshape_swirl(ModeInfo * mi, int width, int height)
+{
+  XClearWindow (MI_DISPLAY (mi), MI_WINDOW(mi));
+  init_swirl (mi);
 }
 
 /****************************************************************/

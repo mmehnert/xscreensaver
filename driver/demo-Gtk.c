@@ -1,5 +1,5 @@
 /* demo-Gtk.c --- implements the interactive demo-mode and options dialogs.
- * xscreensaver, Copyright (c) 1993-2008 Jamie Zawinski <jwz@jwz.org>
+ * xscreensaver, Copyright (c) 1993-2013 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -802,13 +802,20 @@ about_menu_cb (GtkMenuItem *menuitem, gpointer user_data)
 {
   char msg [2048];
   char *vers = strdup (screensaver_id + 4);
-  char *s;
+  char *s, *s2;
   char copy[1024];
+  char year[5];
   char *desc = _("For updates, check http://www.jwz.org/xscreensaver/");
 
   s = strchr (vers, ',');
   *s = 0;
   s += 2;
+
+  s2 = vers;
+  s2 = strrchr (vers, '-');
+  s2++;
+  strncpy (year, s2, 4);
+  year[4] = 0;
 
   /* Ole Laursen <olau@hardworking.dk> says "don't use _() here because
      non-ASCII characters aren't allowed in localizable string keys."
@@ -816,9 +823,9 @@ about_menu_cb (GtkMenuItem *menuitem, gpointer user_data)
      look as good in the plain-old default Latin1 "C" locale.)
    */
 #ifdef HAVE_GTK2
-  sprintf(copy, ("Copyright \xC2\xA9 1991-2008 %s"), s);
+  sprintf(copy, ("Copyright \xC2\xA9 1991-%s %s"), year, s);
 #else  /* !HAVE_GTK2 */
-  sprintf(copy, ("Copyright \251 1991-2008 %s"), s);
+  sprintf(copy, ("Copyright \251 1991-%s %s"), year, s);
 #endif /* !HAVE_GTK2 */
 
   sprintf (msg, "%s\n\n%s", copy, desc);
@@ -1412,19 +1419,32 @@ normalize_directory (const char *path)
             {
               s0--;
               s += 3;
-              strcpy (s0, s);
+              /* strcpy (s0, s); */
+              memmove(s0, s, strlen(s) + 1);
               s = s0-1;
             }
         }
-      else if (*s == '/' && !strncmp (s, "/./", 3))	/* delete "/./" */
-        strcpy (s, s+2), s--;
+      else if (*s == '/' && !strncmp (s, "/./", 3)) {	/* delete "/./" */
+        /* strcpy (s, s+2), s--; */
+        memmove(s, s+2, strlen(s+2) + 1);
+        s--;
+       }
       else if (*s == '/' && !strncmp (s, "/.\000", 3))	/* delete "/.$" */
         *s = 0, s--;
     }
 
-  for (s = p2; s && *s; s++)		/* normalize consecutive slashes */
-    while (s[0] == '/' && s[1] == '/')
-      strcpy (s, s+1);
+  /*
+    Normalize consecutive slashes.
+    Ignore doubled slashes after ":" to avoid mangling URLs.
+  */
+
+  for (s = p2; s && *s; s++){
+    if (*s == ':') continue;
+    if (!s[1] || !s[2]) continue;
+    while (s[1] == '/' && s[2] == '/')
+      /* strcpy (s+1, s+2); */
+      memmove (s+1, s+2, strlen(s+2) + 1);
+  }
 
   /* and strip trailing whitespace for good measure. */
   L = strlen(p2);
@@ -1548,7 +1568,8 @@ flush_dialog_changes_and_save (state *s)
   CHECKBOX (p2->lock_p,           "lock_button");
   MINUTES  (&p2->lock_timeout,    "lock_spinbutton");
 
-  CHECKBOX (p2->dpms_enabled_p,  "dpms_button");
+  CHECKBOX (p2->dpms_enabled_p,   "dpms_button");
+  CHECKBOX (p2->dpms_quickoff_p,  "dpms_quickoff_button");
   MINUTES  (&p2->dpms_standby,    "dpms_standby_spinbutton");
   MINUTES  (&p2->dpms_suspend,    "dpms_suspend_spinbutton");
   MINUTES  (&p2->dpms_off,        "dpms_off_spinbutton");
@@ -1592,10 +1613,12 @@ flush_dialog_changes_and_save (state *s)
   /* Warn if the image directory doesn't exist, when:
      - not being warned before
      - image directory is changed and the directory doesn't exist
+     - image directory does not begin with http://
    */
   if (p2->image_directory &&
       *p2->image_directory &&
       !directory_p (p2->image_directory) &&
+       strncmp(p2->image_directory, "http://", 6) &&
         ( !already_warned_about_missing_image_directory ||
           ( p->image_directory &&
             *p->image_directory &&
@@ -1647,10 +1670,11 @@ flush_dialog_changes_and_save (state *s)
   COPY(lock_p,         "lock_p");
   COPY(lock_timeout,   "lock_timeout");
 
-  COPY(dpms_enabled_p, "dpms_enabled_p");
-  COPY(dpms_standby,   "dpms_standby");
-  COPY(dpms_suspend,   "dpms_suspend");
-  COPY(dpms_off,       "dpms_off");
+  COPY(dpms_enabled_p,  "dpms_enabled_p");
+  COPY(dpms_quickoff_p, "dpms_quickoff_enabled_p");
+  COPY(dpms_standby,    "dpms_standby");
+  COPY(dpms_suspend,    "dpms_suspend");
+  COPY(dpms_off,        "dpms_off");
 
 #if 0
   COPY(verbose_p,        "verbose_p");
@@ -2064,7 +2088,8 @@ store_image_directory (GtkWidget *button, gpointer user_data)
   if (p->image_directory && !strcmp(p->image_directory, path))
     return;  /* no change */
 
-  if (!directory_p (path))
+  /* No warning for URLs. */
+  if ((!directory_p (path)) && strncmp(path, "http://", 6))
     {
       char b[255];
       sprintf (b, _("Error:\n\n" "Directory does not exist: \"%s\"\n"), path);
@@ -2795,6 +2820,7 @@ populate_prefs_page (state *s)
   TOGGLE_ACTIVE ("splash_button",     p->splash_p);
 #endif
   TOGGLE_ACTIVE ("dpms_button",       p->dpms_enabled_p);
+  TOGGLE_ACTIVE ("dpms_quickoff_button", p->dpms_quickoff_p);
   TOGGLE_ACTIVE ("grab_desk_button",  p->grab_desktop_p);
   TOGGLE_ACTIVE ("grab_video_button", p->grab_video_p);
   TOGGLE_ACTIVE ("grab_image_button", p->random_image_p);
@@ -2898,8 +2924,11 @@ populate_prefs_page (state *s)
 
     /* DPMS
      */
+dpms_supported=1;
     SENSITIZE ("dpms_frame",              dpms_supported);
     SENSITIZE ("dpms_button",             dpms_supported);
+    SENSITIZE ("dpms_quickoff_button",    dpms_supported);
+
     SENSITIZE ("dpms_standby_label",      dpms_supported && p->dpms_enabled_p);
     SENSITIZE ("dpms_standby_mlabel",     dpms_supported && p->dpms_enabled_p);
     SENSITIZE ("dpms_standby_spinbutton", dpms_supported && p->dpms_enabled_p);
@@ -5266,6 +5295,20 @@ main (int argc, char **argv)
   /* Issue any warnings about the running xscreensaver daemon. */
   if (! s->debug_p)
     the_network_is_not_the_computer (s);
+
+
+  if (senescent_p())
+    warning_dialog (s->toplevel_widget,
+      _("Warning:\n\n"
+        "This version of xscreensaver is VERY OLD!\n"
+        "Please upgrade!\n"
+        "\n"
+        "http://www.jwz.org/xscreensaver/\n"
+        "\n"
+        "(If this is the latest version that your distro ships, then\n"
+        "your distro is doing you a disservice. Build from source.)\n"
+        ),
+      D_NONE, 7);
 
 
   /* Run the Gtk event loop, and not the Xt event loop.  This means that

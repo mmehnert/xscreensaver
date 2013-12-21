@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="atlantis" _label="Atlantis">
+<screensaver name="atlantis" _label="Atlantis" gl="yes">
 
   <command arg="-root"/>
 
@@ -37,6 +37,8 @@
    <boolean id="wire"    _label="Wireframe"              arg-set="-wireframe"/>
    <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
   </hgroup>
+
+  <xscreensaver-updater />
 
   <_description>
 A 3D animation of a number of sharks, dolphins, and whales.

@@ -1,4 +1,4 @@
-# Auto-generated: Mon Apr 18 13:47:55 PDT 2011
+# Auto-generated: Mon Dec  9 03:01:47 PST 2013
 driver/demo-Gtk-conf.c
 driver/demo-Gtk-support.c
 driver/demo-Gtk-widgets.c
@@ -38,6 +38,7 @@ hacks/config/ccurve.xml
 hacks/config/celtic.xml
 hacks/config/circuit.xml
 hacks/config/cloudlife.xml
+hacks/config/companioncube.xml
 hacks/config/compass.xml
 hacks/config/coral.xml
 hacks/config/crackberg.xml
@@ -81,6 +82,7 @@ hacks/config/forest.xml
 hacks/config/fuzzyflakes.xml
 hacks/config/galaxy.xml
 hacks/config/gears.xml
+hacks/config/geodesic.xml
 hacks/config/gflux.xml
 hacks/config/glblur.xml
 hacks/config/glcells.xml
@@ -100,6 +102,8 @@ hacks/config/greynetic.xml
 hacks/config/halftone.xml
 hacks/config/halo.xml
 hacks/config/helix.xml
+hacks/config/hexadrop.xml
+hacks/config/hilbert.xml
 hacks/config/hopalong.xml
 hacks/config/hyperball.xml
 hacks/config/hypercube.xml
@@ -116,6 +120,7 @@ hacks/config/juggle.xml
 hacks/config/juggler3d.xml
 hacks/config/julia.xml
 hacks/config/kaleidescope.xml
+hacks/config/kaleidocycle.xml
 hacks/config/klein.xml
 hacks/config/kumppa.xml
 hacks/config/lament.xml
@@ -165,6 +170,7 @@ hacks/config/providence.xml
 hacks/config/pulsar.xml
 hacks/config/pyro.xml
 hacks/config/qix.xml
+hacks/config/quasicrystal.xml
 hacks/config/queens.xml
 hacks/config/rd-bomb.xml
 hacks/config/rdbomb.xml
@@ -205,8 +211,10 @@ hacks/config/thornbird.xml
 hacks/config/timetunnel.xml
 hacks/config/topblock.xml
 hacks/config/triangle.xml
+hacks/config/tronbit.xml
 hacks/config/truchet.xml
 hacks/config/twang.xml
+hacks/config/unknownpleasures.xml
 hacks/config/vermiculate.xml
 hacks/config/vidwhacker.xml
 hacks/config/vines.xml

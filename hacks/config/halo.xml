@@ -28,8 +28,10 @@
   <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
   </hgroup>
 
+  <xscreensaver-updater />
+
   <_description>
-Draws trippy psychedelic circular patterns that hurt to look at.
+Draws circular interference patterns that hurt to look at.
 
 http://en.wikipedia.org/wiki/Moire_pattern
 

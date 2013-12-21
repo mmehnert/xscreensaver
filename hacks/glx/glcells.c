@@ -58,7 +58,9 @@
 #undef countof
 #define countof(x) (sizeof((x))/sizeof((*x)))
 
-#define USE_VERTEX_ARRAY
+#ifndef HAVE_JWZGLES /* glDrawElements unimplemented... */
+# define USE_VERTEX_ARRAY
+#endif
 
 #define TEX_SIZE 64
 
@@ -184,7 +186,7 @@ static argtype vars[] = {
   {&s_maxfood,   "maxfood",   "Max Food",       DEF_MAXFOOD,  t_Int},
   {&s_pause,   "pause",     "Pause at end",   DEF_PAUSE,  t_Int},
   {&s_divideage, "divideage", "Age for duplication (Ticks)",       DEF_DIVIDEAGE,  t_Int},
-  {&s_min_dist,  "mindist",   "Minimum prefered distance to other cells",       DEF_MINDIST,  t_Float},
+  {&s_min_dist,  "mindist",   "Minimum preferred distance to other cells",       DEF_MINDIST,  t_Float},
   {&s_keepold,   "keepold",   "Keep old cells", DEF_KEEPOLD,  t_Bool}
 };
 
@@ -242,7 +244,9 @@ static Object *create_sphere( State *st, int divisions );
 static Object *clone_Object( Object * );
 /* return 1 if cell is capable to divide */
 static int can_divide( State *st, Cell *cell );
+#ifdef USE_VERTEX_ARRAY
 static VertexArray *array_from_ObjectSmooth( ObjectSmooth * );
+#endif
 static void create_nucleus_texture( State *st );
 
 ENTRYPOINT ModeSpecOpt glcells_opts = { countof(opts), opts,                                                   countof(vars), vars, 
@@ -422,6 +426,7 @@ static Object *clone_Object( Object *obj )
   return ret;
 }
 
+#ifdef USE_VERTEX_ARRAY
 static VertexArray *array_from_ObjectSmooth( ObjectSmooth *obj )
 {
   int i, j;
@@ -449,6 +454,8 @@ static VertexArray *array_from_ObjectSmooth( ObjectSmooth *obj )
   
   return array;
 }
+#endif /* USE_VERTEX_ARRAY */
+
 
 /* create a smoothed version of the given Object
    by computing average normal vectors for the vertexes 
@@ -849,6 +856,8 @@ static int create_list( State *st, double fac )
   ObjectSmooth *smooth;
 #ifdef USE_VERTEX_ARRAY
   VertexArray *vertex_array;
+#else
+  int t, i;
 #endif
   int list = glGenLists(1);  
   
@@ -1188,8 +1197,7 @@ reshape_glcells( ModeInfo *mi, int width, int height )
   
   if (st->food) free( st->food );
   st->food = (int *)malloc( ((width*height)/16)*sizeof(int) );
-  
-  create_cells( st );
+  /* create_cells( st );*/
 }
 
 ENTRYPOINT void 
@@ -1213,6 +1221,10 @@ init_glcells( ModeInfo *mi )
   st->num_cells = 0;
   st->wire = MI_IS_WIREFRAME(mi);
   
+# ifdef HAVE_JWZGLES /* #### glPolygonMode other than GL_FILL unimplemented */
+  st->wire = 0;
+# endif
+
   /* get settings */
   st->max_cells = s_maxcells;;
   if (st->max_cells < 50) st->max_cells = 50;

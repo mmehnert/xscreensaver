@@ -1,4 +1,4 @@
-/* sonar, Copyright (c) 1998-2009 Jamie Zawinski and Stephen Martin
+/* sonar, Copyright (c) 1998-2012 Jamie Zawinski and Stephen Martin
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -16,6 +16,32 @@
 #include "version.h"
 
 #undef usleep /* conflicts with unistd.h on OSX */
+
+#ifdef USE_IPHONE
+  /* Note: to get this to compile for iPhone, you need to fix Xcode!
+     The icmp headers exist for the simulator build environment, but
+     not for the real-device build environment.  This appears to 
+     just be an Apple bug, not intentional.
+
+     xc=/Applications/Xcode.app/Contents
+     for path in    /Developer/Platforms/iPhone*?/Developer/SDKs/?* \
+                 $xc/Developer/Platforms/iPhone*?/Developer/SDKs/?* ; do
+       for file in \
+         /usr/include/netinet/ip.h \
+         /usr/include/netinet/in_systm.h \
+         /usr/include/netinet/ip_icmp.h \
+         /usr/include/netinet/ip_var.h \
+         /usr/include/netinet/udp.h
+       do
+         ln -s "$file" "$path$file"
+       done
+     done
+  */
+#endif
+
+#ifndef USE_IPHONE
+# define READ_FILES
+#endif
 
 #if defined(HAVE_ICMP) || defined(HAVE_ICMPHDR)
 # include <unistd.h>
@@ -35,6 +61,9 @@
 # include <netinet/udp.h>
 # include <arpa/inet.h>
 # include <netdb.h>
+# ifdef HAVE_GETIFADDRS
+#  include <ifaddrs.h>
+# endif
 #endif /* HAVE_ICMP || HAVE_ICMPHDR */
 
 #if defined(HAVE_ICMP)
@@ -57,11 +86,16 @@
 # undef HAVE_PING
 #endif
 
+#ifndef USE_IPHONE
+# define LOAD_FILES
+#endif
+
 #ifndef HAVE_PING
 
 sonar_sensor_data *
-init_ping (Display *dpy, char **error_ret, const char *subnet, int timeout,
-           Bool resolve_p, Bool times_p, Bool debug_p)
+sonar_init_ping (Display *dpy, char **error_ret, char **desc_ret, 
+                 const char *subnet, int timeout,
+                 Bool resolve_p, Bool times_p, Bool debug_p)
 {
   if (! (!subnet || !*subnet || !strcmp(subnet, "default")))
     fprintf (stderr, "%s: not compiled with support for pinging hosts.\n",
@@ -147,7 +181,7 @@ unpack_addr (unsigned long addr,
 
 
 
-/* If resolves the bogie's name (either a hostname or ip address string)
+/* Resolves the bogie's name (either a hostname or ip address string)
    to a hostent.  Returns 1 if successful, 0 if it failed to resolve.
  */
 static int
@@ -260,7 +294,7 @@ print_host (FILE *out, unsigned long ip, const char *name)
 }
 
 
-/* Create a sonar_bogie a host name or ip address string.
+/* Create a sonar_bogie from a host name or ip address string.
    Returns NULL if the name could not be resolved.
  */
 static sonar_bogie *
@@ -308,10 +342,12 @@ bogie_for_host (sonar_sensor_data *ssd, const char *name, Bool resolve_p)
   return b;
 
  FAIL:
-  if (b) free_bogie (ssd, b);
+  if (b) sonar_free_bogie (ssd, b);
   return 0;
 }
 
+
+#ifdef READ_FILES
 
 /* Return a list of bogies read from a file.
    The file can be like /etc/hosts or .ssh/known_hosts or probably
@@ -420,6 +456,7 @@ read_hosts_file (sonar_sensor_data *ssd, const char *filename)
   fclose(fp);
   return list;
 }
+#endif /* READ_FILES */
 
 
 static sonar_bogie *
@@ -462,22 +499,41 @@ delete_duplicate_hosts (sonar_sensor_data *ssd, sonar_bogie *list)
 }
 
 
+static unsigned int
+width_mask (int width)
+{
+  unsigned int m = 0;
+  int i;
+  for (i = 0; i < width; i++)
+    m |= (1L << (31-i));
+  return m;
+}
+
+
+#ifdef HAVE_GETIFADDRS
+static int
+mask_width (unsigned int mask)
+{
+  int i;
+  for (i = 0; i < 32; i++)
+    if (mask & (1 << i))
+      break;
+  return 32-i;
+}
+#endif
+
+
 /* Generate a list of bogies consisting of all of the entries on
   the same subnet.  'base' ip is in network order; 0 means localhost.
  */
 static sonar_bogie *
-subnet_hosts (sonar_sensor_data *ssd, char **error_ret,
+subnet_hosts (sonar_sensor_data *ssd, char **error_ret, char **desc_ret,
               unsigned long n_base, int subnet_width)
 {
   ping_data *pd = (ping_data *) ssd->closure;
   unsigned long h_mask;   /* host order */
   unsigned long h_base;   /* host order */
-
-  /* Local Variables */
-
-  char hostname[BUFSIZ];
   char address[BUFSIZ];
-  struct hostent *hent;
   char *p;
   int i;
   sonar_bogie *new;
@@ -510,67 +566,182 @@ subnet_hosts (sonar_sensor_data *ssd, char **error_ret,
   if (pd->debug_p)
     fprintf (stderr, "%s:   adding %d-bit subnet\n", progname, subnet_width);
 
-  /* Get our hostname */
 
-  if (gethostname(hostname, BUFSIZ)) 
+  if (! n_base)
     {
-      *error_ret = strdup ("Unable to determine\n"
-                           "local host name!");
-      return 0;
+# ifdef HAVE_GETIFADDRS
+
+      /* To determine the local subnet, we need to know the local IP address.
+         Do this by looking at the IPs of every network interface.
+      */
+      struct in_addr in = { 0, };
+      struct ifaddrs *all = 0, *ifa;
+
+      if (pd->debug_p)
+        fprintf (stderr, "%s:   listing network interfaces\n", progname);
+
+      getifaddrs (&all);
+      for (ifa = all; ifa; ifa = ifa->ifa_next)
+        {
+          struct in_addr in2;
+          unsigned long mask;
+          if (ifa->ifa_addr->sa_family != AF_INET)
+            {
+              if (pd->debug_p)
+                fprintf (stderr, "%s:     if: %4s: %s\n", progname,
+                         ifa->ifa_name,
+                         (
+# ifdef AF_UNIX
+                          ifa->ifa_addr->sa_family == AF_UNIX  ? "local" :
+# endif
+# ifdef AF_LINK
+                          ifa->ifa_addr->sa_family == AF_LINK  ? "link"  :
+# endif
+# ifdef AF_INET6
+                          ifa->ifa_addr->sa_family == AF_INET6 ? "ipv6"  :
+# endif
+                          "other"));
+              continue;
+            }
+          in2 = ((struct sockaddr_in *) ifa->ifa_addr)->sin_addr;
+          mask = ntohl (((struct sockaddr_in *) ifa->ifa_netmask)
+                        ->sin_addr.s_addr);
+          if (pd->debug_p)
+            fprintf (stderr, "%s:     if: %4s: inet = %s /%d 0x%08lx\n",
+                     progname,
+                     ifa->ifa_name,
+                     inet_ntoa (in2),
+                     mask_width (mask),
+                     mask);
+          if (in2.s_addr == 0x0100007f ||   /* 127.0.0.1 in network order */
+              mask == 0)
+            continue;
+
+          /* At least on the AT&T 3G network, pinging either of the two
+             hosts on a /31 network doesn't work, so don't try.
+           */
+          if (mask_width (mask) == 31)
+            {
+              sprintf (buf,
+                       "Can't ping subnet:\n"
+                       "local network is\n"
+                       "%.100s/%d,\n"
+                       "a p2p bridge\n"
+                       "on if %.100s.",
+                       inet_ntoa (in2), mask_width (mask), ifa->ifa_name);
+              if (*error_ret) free (*error_ret);
+              *error_ret = strdup (buf);
+              continue;
+            }
+
+          in = in2;
+          subnet_width = mask_width (mask);
+        }
+
+      if (in.s_addr)
+        {
+          if (*error_ret) free (*error_ret);
+          *error_ret = 0;
+          n_base = in.s_addr;  /* already in network order, I think? */
+        }
+      else if (!*error_ret)
+        *error_ret = strdup ("Unable to determine\nlocal IP address\n");
+
+      if (all) 
+        freeifaddrs (all);
+
+      if (*error_ret)
+        return 0;
+
+# else /* !HAVE_GETIFADDRS */
+
+      /* If we can't walk the list of network interfaces to figure out
+         our local IP address, try to do it by finding the local host
+         name, then resolving that.
+      */
+      char hostname[BUFSIZ];
+      struct hostent *hent = 0;
+
+      if (gethostname(hostname, BUFSIZ)) 
+        {
+          *error_ret = strdup ("Unable to determine\n"
+                               "local host name!");
+          return 0;
+        }
+
+      /* Get our IP address and convert it to a string */
+
+      hent = gethostbyname(hostname);
+      if (! hent)
+        {
+          strcat (hostname, ".local");	/* Necessary on iphone */
+          hent = gethostbyname(hostname);
+        }
+
+      if (! hent)
+        {
+          sprintf(buf, 
+                  "Unable to resolve\n"
+                  "local host \"%.100s\"", 
+                  hostname);
+          *error_ret = strdup(buf);
+          return 0;
+        }
+
+      strcpy (address, inet_ntoa(*((struct in_addr *)hent->h_addr_list[0])));
+      n_base = pack_addr (hent->h_addr_list[0][0],
+                          hent->h_addr_list[0][1],
+                          hent->h_addr_list[0][2],
+                          hent->h_addr_list[0][3]);
+
+      if (n_base == 0x0100007f)   /* 127.0.0.1 in network order */
+        {
+          unsigned int a, b, c, d;
+          unpack_addr (n_base, &a, &b, &c, &d);
+          sprintf (buf,
+                   "Unable to determine\n"
+                   "local subnet address:\n"
+                   "\"%.100s\"\n"
+                   "resolves to\n"
+                   "loopback address\n"
+                   "%u.%u.%u.%u.",
+                   hostname, a, b, c, d);
+          *error_ret = strdup(buf);
+          return 0;
+        }
+
+# endif /* !HAVE_GETIFADDRS */
     }
 
-  /* Get our IP address and convert it to a string */
-
-  if (! (hent = gethostbyname(hostname)))
-    {
-      sprintf(buf, 
-              "Unable to resolve\n"
-              "local host \"%s\"", 
-              hostname);
-      *error_ret = strdup(buf);
-      return 0;
-    }
-  strcpy (address, inet_ntoa(*((struct in_addr *)hent->h_addr_list[0])));
 
   /* Construct targets for all addresses in this subnet */
 
-  h_mask = 0;
-  for (i = 0; i < subnet_width; i++)
-    h_mask |= (1L << (31-i));
-
-  /* If no base IP specified, assume localhost. */
-  if (n_base == 0)
-    n_base = pack_addr (hent->h_addr_list[0][0],
-                        hent->h_addr_list[0][1],
-                        hent->h_addr_list[0][2],
-                        hent->h_addr_list[0][3]);
+  h_mask = width_mask (subnet_width);
   h_base = ntohl (n_base);
 
-  if (h_base == 0x7F000001L)   /* 127.0.0.1 in host order */
-    {
-      unsigned int a, b, c, d;
-      unpack_addr (n_base, &a, &b, &c, &d);
-      sprintf (buf,
-               "Unable to determine\n"
-               "local subnet address:\n"
-               "\"%s\"\n"
-               "resolves to\n"
-               "loopback address\n"
-               "%u.%u.%u.%u.",
-               hostname, a, b, c, d);
-      *error_ret = strdup(buf);
-      return 0;
-    }
+  if (desc_ret && !*desc_ret) {
+    char buf[255];
+    unsigned int a, b, c, d;
+    unsigned long bb = n_base & htonl(h_mask);
+    unpack_addr (bb, &a, &b, &c, &d);
+    if (subnet_width > 24)
+      sprintf (buf, "%u.%u.%u.%u/%d", a, b, c, d, subnet_width);
+    else
+      sprintf (buf, "%u.%u.%u/%d", a, b, c, subnet_width);
+    *desc_ret = strdup (buf);
+  }
 
   for (i = 255; i >= 0; i--) {
     unsigned int a, b, c, d;
     int ip = (h_base & 0xFFFFFF00L) | i;     /* host order */
       
-    if ((ip & h_mask) != (h_base & h_mask))  /* not in mask range at all */
+    if ((ip & h_mask) != (h_base & h_mask))  /* skip out-of-subnet host */
       continue;
-    if ((ip & ~h_mask) == 0)                 /* broadcast address */
+    else if (subnet_width == 31)	     /* 1-bit bridge: 2 hosts */
+      ;
+    else if ((ip & ~h_mask) == 0)	     /* skip network address */
       continue;
-    if ((ip & ~h_mask) == ~h_mask)           /* broadcast address */
+    else if ((ip & ~h_mask) == ~h_mask)	     /* skip broadcast address */
       continue;
 
     unpack_addr (htonl (ip), &a, &b, &c, &d);
@@ -644,7 +815,7 @@ send_ping (ping_data *pd, const sonar_bogie *b)
      just to give a clue to anyone sniffing and wondering what's up.
    */
   sprintf ((char *) &packet[sizeof(struct ICMP) + sizeof(struct timeval)],
-           "%s%c%s %s",
+           "%.100s%c%.20s %.20s",
            b->name, 0, token, pd->version);
 
   ICMP_CHECKSUM(icmph) = checksum((u_short *)packet, pcktsiz);
@@ -657,7 +828,7 @@ send_ping (ping_data *pd, const sonar_bogie *b)
     {
 #if 0
       char buf[BUFSIZ];
-      sprintf(buf, "%s: pinging %s", progname, b->name);
+      sprintf(buf, "%s: pinging %.100s", progname, b->name);
       perror(buf);
 #endif
     }
@@ -715,7 +886,7 @@ checksum (u_short *packet, int size)
 static sonar_bogie *
 copy_ping_bogie (sonar_sensor_data *ssd, const sonar_bogie *b)
 {
-  sonar_bogie *b2 = copy_bogie (ssd, b);
+  sonar_bogie *b2 = sonar_copy_bogie (ssd, b);
   if (b->closure)
     {
       ping_bogie *pb  = (ping_bogie *) b->closure;
@@ -828,6 +999,11 @@ get_ping (sonar_sensor_data *ssd)
                                                 sizeof(struct ICMP) +
                                                 sizeof(struct timeval)];
             sonar_bogie *b;
+
+            /* Ensure that a maliciously-crafted return packet can't
+               make us overflow in strcmp. */
+            packet[sizeof(packet)-1] = 0;
+
             for (b = pd->targets; b; b = b->next)
               if (!strcmp (name, b->name))
                 {
@@ -915,7 +1091,7 @@ ping_free_data (sonar_sensor_data *ssd, void *closure)
   while (b)
     {
       sonar_bogie *b2 = b->next;
-      free_bogie (ssd, b);
+      sonar_free_bogie (ssd, b);
       b = b2;
     }
   free (pd);
@@ -945,8 +1121,8 @@ double_time (void)
 }
 
 
-/* If a bogie is provided, pings it.
-   Then, returns all outstanding ping replies.
+/* Pings the next bogie, if it's time.
+   Returns all outstanding ping replies.
  */
 static sonar_bogie *
 ping_scan (sonar_sensor_data *ssd)
@@ -973,25 +1149,32 @@ ping_scan (sonar_sensor_data *ssd)
 /* Returns a list of hosts to ping based on the "-ping" argument.
  */
 static sonar_bogie *
-parse_mode (sonar_sensor_data *ssd, char **error_ret,
+parse_mode (sonar_sensor_data *ssd, char **error_ret, char **desc_ret,
             const char *ping_arg, Bool ping_works_p)
 {
   ping_data *pd = (ping_data *) ssd->closure;
   char *source, *token, *end, dummy;
   sonar_bogie *hostlist = 0;
+  const char *fallback = "subnet";
 
-  if (!ping_arg || !*ping_arg || !strcmp (ping_arg, "default"))
-    source = strdup("subnet/28");
-  else
+ AGAIN:
+
+  if (fallback && (!ping_arg || !*ping_arg || !strcmp (ping_arg, "default")))
+    source = strdup(fallback);
+  else if (ping_arg)
     source = strdup(ping_arg);
+  else
+    return 0;
 
   token = source;
   end = source + strlen(source);
   while (token < end)
     {
       char *next;
-      sonar_bogie *new;
+      sonar_bogie *new = 0;
+# ifdef READ_FILES
       struct stat st;
+# endif
       unsigned int n0=0, n1=0, n2=0, n3=0, m=0;
       char d;
 
@@ -1020,7 +1203,7 @@ parse_mode (sonar_sensor_data *ssd, char **error_ret,
              subnet: A.B.C/M
            */
           unsigned long ip = pack_addr (n0, n1, n2, n3);
-          new = subnet_hosts (ssd, error_ret, ip, m);
+          new = subnet_hosts (ssd, error_ret, desc_ret, ip, m);
         }
       else if (4 == sscanf (token, "%u.%u.%u.%u %c", &n0, &n1, &n2, &n3, &d))
         {
@@ -1030,20 +1213,27 @@ parse_mode (sonar_sensor_data *ssd, char **error_ret,
         }
       else if (!strcmp (token, "subnet"))
         {
-          new = subnet_hosts (ssd, error_ret, 0, 24);
+          new = subnet_hosts (ssd, error_ret, desc_ret, 0, 24);
         }
       else if (1 == sscanf (token, "subnet/%u %c", &m, &dummy))
         {
-          new = subnet_hosts (ssd, error_ret, 0, m);
+          new = subnet_hosts (ssd, error_ret, desc_ret, 0, m);
         }
       else if (*token == '.' || *token == '/' || 
-               *token == '$' || *token == '~' ||
-               !stat (token, &st))
+               *token == '$' || *token == '~')
         {
-          /* file name
-           */
+# ifdef READ_FILES
+          new = read_hosts_file (ssd, token);
+# else
+          if (pd->debug_p) fprintf (stderr, "%s:  skipping file\n", progname);
+# endif
+        }
+# ifdef READ_FILES
+      else if (!stat (token, &st))
+        {
           new = read_hosts_file (ssd, token);
         }
+# endif /* READ_FILES */
       else
         {
           /* not an existant file - must be a host name
@@ -1068,20 +1258,34 @@ parse_mode (sonar_sensor_data *ssd, char **error_ret,
     }
 
   free (source);
+
+  /* If the arg was completely unparsable, fall back to the local subnet.
+     This happens if the default is "/etc/hosts" but READ_FILES is off.
+     Or if we're on a /31 network, in which case we try twice then fail.
+   */
+  if (!hostlist && fallback)
+    {
+      if (pd->debug_p)
+        fprintf (stderr, "%s: no hosts parsed! Trying %s\n", 
+                 progname, fallback);
+      ping_arg = fallback;
+      fallback = 0;
+      goto AGAIN;
+    }
+
   return hostlist;
 }
 
 
 sonar_sensor_data *
-init_ping (Display *dpy, char **error_ret, 
-           const char *subnet, int timeout,
-           Bool resolve_p, Bool times_p, Bool debug_p)
+sonar_init_ping (Display *dpy, char **error_ret, char **desc_ret,
+                 const char *subnet, int timeout,
+                 Bool resolve_p, Bool times_p, Bool debug_p)
 {
   sonar_sensor_data *ssd = (sonar_sensor_data *) calloc (1, sizeof(*ssd));
   ping_data *pd = (ping_data *) calloc (1, sizeof(*pd));
   sonar_bogie *b;
   char *s;
-  int i, div;
 
   Bool socket_initted_p = False;
   Bool socket_raw_p     = False;
@@ -1154,7 +1358,8 @@ init_ping (Display *dpy, char **error_ret,
 
   /* Generate a list of targets */
 
-  pd->targets = parse_mode (ssd, error_ret, subnet, socket_initted_p);
+  pd->targets = parse_mode (ssd, error_ret, desc_ret, subnet,
+                            socket_initted_p);
   pd->targets = delete_duplicate_hosts (ssd, pd->targets);
 
   if (debug_p)
@@ -1186,12 +1391,25 @@ init_ping (Display *dpy, char **error_ret,
       return 0;
     }
 
-  /* Distribute them evenly around the display field.
+  /* Distribute them evenly around the display field, clockwise.
+     Even on a /24, allocated IPs tend to cluster together, so
+     don't put any two hosts closer together than N degrees to
+     avoid unnecessary overlap when we have plenty of space due
+     to addresses that probably won't respond.  And don't spread
+     them out too far apart, because that looks too symmetrical
+     when there are a small number of hosts.
    */
-  div = pd->target_count;
-  if (div > 90) div = 90;  /* no closer together than 4 degrees */
-  for (i = 0, b = pd->targets; b; b = b->next, i++)
-    b->th = M_PI * 2 * ((div - i) % div) / div;
+  {
+    double th = frand(M_PI);
+    double sep = 360.0 / pd->target_count;
+    if (sep < 23) sep = 23;
+    if (sep > 43) sep = 43;
+    sep /= 180/M_PI;
+    for (b = pd->targets; b; b = b->next) {
+      b->th = th;
+      th += sep;
+    }
+  }
 
   return ssd;
 }

@@ -11,27 +11,37 @@
 #ifndef __GLSCHOOL_GL_H__
 #define __GLSCHOOL_GL_H__
 
+#ifdef HAVE_CONFIG_H
+# include "config.h"
+#endif /* HAVE_CONFIG_H */
+
 #ifdef HAVE_COCOA
 # include "jwxyz.h"
-# include <OpenGL/gl.h>
-# include <OpenGL/glu.h>
+# ifndef HAVE_JWZGLES
+#  include <OpenGL/glu.h>
+# endif
 #else
 # include <X11/Xlib.h>
 # include <GL/gl.h>
 # include <GL/glu.h>
 #endif
 
+#ifdef HAVE_JWZGLES
+# include "jwzgles.h"
+#endif /* HAVE_JWZGLES */
+
 #include "glschool_alg.h"
 
-extern void initFog(void);
-extern void initGLEnv(Bool);
-extern void initLights(void);
-extern void reshape(int, int);
-extern void drawGoal(double *, GLuint);
-extern void getColorVect(XColor *, int, double *);
-extern void drawBoundingBox(BBox *, Bool);
-extern void createBBoxList(BBox *, GLuint *, int);
-extern void createDrawLists(BBox *, GLuint *, GLuint *, GLuint *, Bool);
-extern void drawSchool(XColor *, School *, GLuint, GLuint, GLuint, int, Bool, Bool);
+extern void glschool_initFog(void);
+extern void glschool_initGLEnv(Bool);
+extern void glschool_initLights(void);
+extern void glschool_reshape(int, int);
+extern void glschool_drawGoal(double *, GLuint);
+extern void glschool_getColorVect(XColor *, int, double *);
+extern int glschool_drawBoundingBox(BBox *, Bool);
+extern int glschool_createBBoxList(BBox *, GLuint *, int);
+extern void glschool_createDrawLists(BBox *, GLuint *, GLuint *, GLuint *, int *, int *, Bool);
+extern void glschool_drawSchool(XColor *, School *, GLuint, GLuint, GLuint, int, Bool, Bool, 
+                       int, int, unsigned long *);
 
 #endif /* __GLSCHOOL_GL_H__ */

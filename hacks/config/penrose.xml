@@ -26,6 +26,8 @@
    </hgroup>
   
 
+  <xscreensaver-updater />
+
   <_description>
 Draws quasiperiodic tilings; think of the implications on modern
 formica technology.
@@ -45,6 +47,7 @@ stand must be taken."
 As reported by News of the Weird #491, 4-Jul-1997.
 
 http://en.wikipedia.org/wiki/Penrose_tiling
+http://en.wikipedia.org/wiki/Tessellation
 
 Written by Timo Korvola; 1997.
   </_description>

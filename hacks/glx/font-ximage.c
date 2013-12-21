@@ -1,5 +1,5 @@
 /* font-ximage.c --- renders text to an XImage for use with OpenGL.
- * xscreensaver, Copyright (c) 2001, 2003 Jamie Zawinski <jwz@jwz.org>
+ * xscreensaver, Copyright (c) 2001-2013 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -20,12 +20,15 @@
 
 #ifdef HAVE_COCOA
 # include "jwxyz.h"
-# include <OpenGL/gl.h>
 #else  /* !HAVE_COCOA */
 # include <X11/Xlib.h>
 # include <X11/Xutil.h>
 # include <GL/gl.h>	/* only for GLfloat */
 #endif /* !HAVE_COCOA */
+
+#ifdef HAVE_JWZGLES
+# include "jwzgles.h"
+#endif /* HAVE_JWZGLES */
 
 extern char *progname;
 
@@ -65,7 +68,7 @@ to_pow2 (int i)
    This XImage will be 32 bits per pixel, 8 each per R, G, and B, with the
    extra byte set to 0xFF.
 
-   Foregroune and background are GL-style color specifiers: 4 floats from
+   Foreground and background are GL-style color specifiers: 4 floats from
    0.0-1.0.
  */
 XImage *
@@ -131,6 +134,8 @@ text_to_ximage (Screen *screen, Visual *visual,
         overall.rbearing = MAX(overall.rbearing, o2.rbearing);
         lines++;
       }
+    free (text);
+    text = 0;
 
     width = overall.lbearing + overall.rbearing + margin + margin + 1;
     height = ((f->ascent + f->descent) * lines) + margin + margin;

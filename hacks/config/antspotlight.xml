@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="antspotlight" _label="AntSpotlight">
+<screensaver name="antspotlight" _label="AntSpotlight" gl="yes">
 
   <command arg="-root"/>
 
@@ -13,9 +13,10 @@
 
   <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
 
+  <xscreensaver-updater />
+
   <_description>
-Draws an ant (with a headlight) who walks on top of an
-image of your desktop or other image.  
+Draws an ant (with a headlight) who walks around on top of a loaded image.
 
 Written by Blair Tennessy; 2003.
   </_description>

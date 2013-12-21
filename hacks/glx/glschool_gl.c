@@ -1,4 +1,4 @@
-/* glschool_gl.c, Copyright (c) 2005-2006 David C. Lambert <dcl@panix.com>
+/* glschool_gl.c, Copyright (c) 2005-2012 David C. Lambert <dcl@panix.com>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -11,12 +11,11 @@
 
 #include "sphere.h"
 #include "glschool_gl.h"
+#include "sphere.h"
 #include "tube.h"
 
-static GLUquadricObj	*Quadratic;
-
 void
-drawGoal(double *goal, GLuint goalList)
+glschool_drawGoal(double *goal, GLuint goalList)
 {
 	glColor3f(1.0, 0.0, 0.0);
 	glPushMatrix();
@@ -28,9 +27,10 @@ drawGoal(double *goal, GLuint goalList)
 	glPopMatrix();
 }
 
-void
-drawBoundingBox(BBox *bbox, Bool wire)
+int
+glschool_drawBoundingBox(BBox *bbox, Bool wire)
 {
+  int polys = 0;
 	double		xMin = BBOX_XMIN(bbox);
 	double		yMin = BBOX_YMIN(bbox);
 	double		zMin = BBOX_ZMIN(bbox);
@@ -49,6 +49,7 @@ drawBoundingBox(BBox *bbox, Bool wire)
 	glVertex3f(xMax, yMin, zMin);
 	glVertex3f(xMax, yMax, zMin);
 	glVertex3f(xMin, yMax, zMin);
+        polys++;
 	glEnd();
 
 	/* left */
@@ -58,6 +59,7 @@ drawBoundingBox(BBox *bbox, Bool wire)
 	glVertex3f(xMin, yMin, zMin);
 	glVertex3f(xMin, yMax, zMin);
 	glVertex3f(xMin, yMax, zMax);
+        polys++;
 	glEnd();
 
 	/* right */
@@ -67,6 +69,7 @@ drawBoundingBox(BBox *bbox, Bool wire)
 	glVertex3f(xMax, yMin, zMax);
 	glVertex3f(xMax, yMax, zMax);
 	glVertex3f(xMax, yMax, zMin);
+        polys++;
 	glEnd();
 
 	/* top */
@@ -76,6 +79,7 @@ drawBoundingBox(BBox *bbox, Bool wire)
 	glVertex3f(xMin, yMax, zMax);
 	glVertex3f(xMin, yMax, zMin);
 	glVertex3f(xMax, yMax, zMin);
+        polys++;
 	glEnd();
 
 	/* bottom */
@@ -85,74 +89,63 @@ drawBoundingBox(BBox *bbox, Bool wire)
 	glVertex3f(xMax, yMin, zMax);
 	glVertex3f(xMax, yMin, zMin);
 	glVertex3f(xMin, yMin, zMin);
+        polys++;
 	glEnd();
 
 	if (wire) glLineWidth(1.0);
+
+        return polys;
 }
 
-void
-createBBoxList(BBox *bbox, GLuint *bboxList, int wire)
+int
+glschool_createBBoxList(BBox *bbox, GLuint *bboxList, int wire)
 {
+  int polys = 0;
 	*bboxList = glGenLists(1);
 	glNewList(*bboxList, GL_COMPILE);
-	drawBoundingBox(bbox, wire);
+	polys = glschool_drawBoundingBox(bbox, wire);
 	glEndList();
+        return polys;
 }
 
-#if 1
 void
-createDrawLists(BBox *bbox, GLuint *bboxList, GLuint *goalList, GLuint *fishList, int wire)
+glschool_createDrawLists(BBox *bbox, GLuint *bboxList, GLuint *goalList, GLuint *fishList, int *fish_polys, int *box_polys, int wire)
 {
-	if (Quadratic == (GLUquadricObj *)0) return;
 
-	gluQuadricDrawStyle(Quadratic, (wire ? GLU_LINE : GLU_FILL));
+        int faces = 16;
 
-	createBBoxList(bbox, bboxList, wire);
+        *box_polys = 0;
+        *fish_polys = 0;
+
+        *box_polys += glschool_createBBoxList(bbox, bboxList, wire);
+
+        *box_polys = 0;
+        *fish_polys = 0;
 
 	*goalList = glGenLists(1);
 	glNewList(*goalList, GL_COMPILE);
-	gluSphere(Quadratic, 5.0, 10, 10);
+        glScalef (5, 5, 5);
+        *box_polys += unit_sphere (10, 10, wire);
 	glEndList();
 
 	*fishList = glGenLists(1);
 	glNewList(*fishList, GL_COMPILE);
-#if 0
-	gluSphere(Quadratic, 2.0, 10, 5);
-	gluCylinder(Quadratic, 2.0, 0.0, 10.0, 10, 5);
-#else
-        gluSphere(Quadratic, 2.0, 3, 2);
-        gluCylinder(Quadratic, 2.0, 0.0, 10.0, 3, 2);
-#endif
+        *fish_polys += cone (0, 0, 0,
+                             0, 0, 10,
+                             2, 0,
+                             faces, True, (faces <= 3), /* cap */
+                             wire);
+        glTranslatef (0, 0, -0.3);
+        glScalef (2, 2, 2);
+        glRotatef (90, 1, 0, 0);
+        if (faces > 3)
+          *fish_polys += unit_sphere (faces, faces, wire);
 	glEndList();
 }
 
-#else
-void
-createDrawLists(BBox *bbox, GLuint *bboxList, GLuint *goalList, GLuint *fishList, Bool wire)
-{
-	createBBoxList(bbox, bboxList, wire);
-
-	*goalList = glGenLists(1);
-	glNewList(*goalList, GL_COMPILE);
-	glScalef(10.0, 10.0, 10.0);
-	unit_sphere(10, 10, wire);
-	glEndList();
-
-	*fishList = glGenLists(1);
-	glNewList(*fishList, GL_COMPILE);
-	glScalef(2.0, 2.0, 2.0);
-	unit_sphere(10, 10, wire);
-	cone(0, 0, 0,
-		 0, 0, 5,
-		 1, 0, 10,
-		 True, False, wire);
-	glEndList();
-}
-
-#endif
 
 void
-initLights(void)
+glschool_initLights(void)
 {
 	GLfloat		amb[4] = {0.1, 0.1, 0.1, 1.0};
 	GLfloat		dif[4] = {1.0, 1.0, 1.0, 1.0};
@@ -172,7 +165,7 @@ initLights(void)
 }
 
 void
-initFog()
+glschool_initFog(void)
 {
 	GLfloat		fog[4] = {0.0, 0.0, 0.15, 1.0};
 
@@ -184,7 +177,7 @@ initFog()
 }
 
 void
-initGLEnv(Bool doFog)
+glschool_initGLEnv(Bool doFog)
 {
 	GLfloat spc[4] = {1.0, 1.0, 1.0, 1.0};
 
@@ -201,14 +194,12 @@ initGLEnv(Bool doFog)
 	glShadeModel(GL_SMOOTH);
 	glEnable(GL_CULL_FACE);
 
-	initLights();
-	if (doFog) initFog();
-
-	Quadratic = gluNewQuadric();
+	glschool_initLights();
+	if (doFog) glschool_initFog();
 }
 
 void
-reshape(int width, int height)
+glschool_reshape(int width, int height)
 {
 	GLfloat h = (GLfloat) width / (GLfloat) height;
 
@@ -223,7 +214,7 @@ reshape(int width, int height)
 }
 
 void
-getColorVect(XColor *colors, int index, double *colorVect)
+glschool_getColorVect(XColor *colors, int index, double *colorVect)
 {
 	colorVect[0] = colors[index].red / 65535.0;
 	colorVect[1] = colors[index].green / 65535.0;
@@ -231,9 +222,10 @@ getColorVect(XColor *colors, int index, double *colorVect)
 }
 
 void
-drawSchool(XColor *colors, School *s,
+glschool_drawSchool(XColor *colors, School *s,
 		   GLuint bboxList, GLuint goalList, GLuint fishList,
-		   int rotCounter, Bool drawGoal_p, Bool drawBBox_p)
+		   int rotCounter, Bool drawGoal_p, Bool drawBBox_p,
+           int fish_polys, int box_polys, unsigned long *polys)
 {
 	double			xVect[3];
 	double			colorVect[3];
@@ -253,18 +245,19 @@ drawSchool(XColor *colors, School *s,
 		glDisable(GL_LIGHTING);
 		glCallList(bboxList);
 		glEnable(GL_LIGHTING);
+                *polys += box_polys;
 	}
 
-	if (drawGoal_p)	drawGoal(SCHOOL_GOAL(s), goalList);
+	if (drawGoal_p)	glschool_drawGoal(SCHOOL_GOAL(s), goalList);
 
 	for(i = 0, f = theFishes; i < nFish; i++, f++) {
-		colTheta = computeNormalAndThetaToPlusZ(FISH_AVGVEL(f), xVect);
-		rotTheta = computeNormalAndThetaToPlusZ(FISH_VEL(f), xVect);
+		colTheta = glschool_computeNormalAndThetaToPlusZ(FISH_AVGVEL(f), xVect);
+		rotTheta = glschool_computeNormalAndThetaToPlusZ(FISH_VEL(f), xVect);
 
 		if (FISH_IAVGVEL(f,2) < 0.0) colTheta = 180.0 - colTheta;
 		if (FISH_VZ(f) < 0.0) rotTheta = 180.0 - rotTheta;
 
-		getColorVect(colors, (int)(colTheta+240)%360, colorVect);
+		glschool_getColorVect(colors, (int)(colTheta+240)%360, colorVect);
 		glColor3f(colorVect[0], colorVect[1], colorVect[2]);
 
 		glPushMatrix();
@@ -272,6 +265,7 @@ drawSchool(XColor *colors, School *s,
 			glTranslatef(FISH_X(f), FISH_Y(f), FISH_Z(f));
 			glRotatef(180.0+rotTheta, xVect[0], xVect[1], xVect[2]);
 			glCallList(fishList);
+                        *polys += fish_polys;
 		}
 		glPopMatrix();
 	}

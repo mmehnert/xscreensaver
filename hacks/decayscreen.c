@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992-2008 Jamie Zawinski <jwz@jwz.org>
+/* xscreensaver, Copyright (c) 1992-2013 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -40,6 +40,9 @@
 struct state {
   Display *dpy;
   Window window;
+  XWindowAttributes xgwa;
+  Pixmap saved;
+  int saved_w, saved_h;
 
   int sizex, sizey;
   int delay;
@@ -79,6 +82,7 @@ decayscreen_load_image (struct state *st)
   st->sizex = xgwa.width;
   st->sizey = xgwa.height;
   if (st->img_loader) abort();
+
   st->img_loader = load_image_async_simple (0, xgwa.screen, st->window,
                                             st->window, 0, 0);
 }
@@ -88,7 +92,6 @@ decayscreen_init (Display *dpy, Window window)
 {
   struct state *st = (struct state *) calloc (1, sizeof(*st));
   XGCValues gcv;
-  XWindowAttributes xgwa;
   long gcflags;
   unsigned long bg;
   char *s;
@@ -125,15 +128,15 @@ decayscreen_init (Display *dpy, Window window)
   st->duration = get_integer_resource (st->dpy, "duration", "Seconds");
   if (st->duration < 1) st->duration = 1;
 
-  XGetWindowAttributes (st->dpy, st->window, &xgwa);
+  XGetWindowAttributes (st->dpy, st->window, &st->xgwa);
 
   gcv.function = GXcopy;
   gcv.subwindow_mode = IncludeInferiors;
-  bg = get_pixel_resource (st->dpy, xgwa.colormap, "background", "Background");
+  bg = get_pixel_resource (st->dpy, st->xgwa.colormap, "background", "Background");
   gcv.foreground = bg;
 
   gcflags = GCForeground | GCFunction;
-  if (use_subwindow_mode_p(xgwa.screen, st->window)) /* see grabscreen.c */
+  if (use_subwindow_mode_p(st->xgwa.screen, st->window)) /* see grabscreen.c */
     gcflags |= GCSubwindowMode;
   st->gc = XCreateGC (st->dpy, st->window, gcflags, &gcv);
 
@@ -181,6 +184,16 @@ decayscreen_draw (Display *dpy, Window window, void *closure)
           if (st->mode == MELT || st->mode == STRETCH)
             /* make sure screen eventually turns background color */
             XDrawLine (st->dpy, st->window, st->gc, 0, 0, st->sizex, 0); 
+
+          if (!st->saved) {
+            st->saved = XCreatePixmap (st->dpy, st->window,
+                                       st->sizex, st->sizey,
+                                       st->xgwa.depth);
+            st->saved_w = st->sizex;
+            st->saved_h = st->sizey;
+          }
+          XCopyArea (st->dpy, st->window, st->saved, st->gc, 0, 0,
+                     st->sizex, st->sizey, 0, 0);
         }
       return st->delay;
     }
@@ -316,6 +329,11 @@ decayscreen_reshape (Display *dpy, Window window, void *closure,
                  unsigned int w, unsigned int h)
 {
   struct state *st = (struct state *) closure;
+  XClearWindow (st->dpy, st->window);
+  XCopyArea (st->dpy, st->saved, st->window, st->gc,
+             0, 0, st->saved_w, st->saved_h,
+             ((int)w - st->saved_w) / 2,
+             ((int)h - st->saved_h) / 2);
   st->sizex = w;
   st->sizey = h;
 }
@@ -348,6 +366,9 @@ static const char *decayscreen_defaults [] = {
   "*delay:			10000",
   "*mode:			random",
   "*duration:			120",
+#ifdef USE_IPHONE
+  "*ignoreRotation:             True",
+#endif
   0
 };
 

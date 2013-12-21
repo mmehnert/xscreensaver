@@ -22,8 +22,11 @@
 
   <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
 
+  <xscreensaver-updater />
+
   <_description>
-Generates loop-shaped colonies that spawn, age, and eventually die.
+A cellular automaton that generates loop-shaped colonies that spawn,
+age, and eventually die.
 
 http://en.wikipedia.org/wiki/Langton%27s_loops
 

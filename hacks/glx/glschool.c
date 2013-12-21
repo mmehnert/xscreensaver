@@ -109,6 +109,7 @@ typedef struct {
 	GLuint		bboxList;
 	GLuint		goalList;
 	GLuint		fishList;
+        int		fish_polys, box_polys;
 	XColor		*colors;
 	School		*school;
 	GLXContext	*context;
@@ -125,11 +126,12 @@ reshape_glschool(ModeInfo *mi, int width, int height)
 
 	glXMakeCurrent(MI_DISPLAY(mi), MI_WINDOW(mi), *(sc->context));
 	if (sc->school != (School *)0) {
-		setBBox(sc->school, -aspect*160, aspect*160, -130, 130, -450, -50.0);
+		glschool_setBBox(sc->school, -aspect*160, aspect*160, -130, 130, -450, -50.0);
 		glDeleteLists(sc->bboxList, 1);
-		createBBoxList(&SCHOOL_BBOX(sc->school), &sc->bboxList, wire);
+                glschool_createBBoxList(&SCHOOL_BBOX(sc->school),
+                                        &sc->bboxList, wire);
 	}
-	reshape(width, height);
+	glschool_reshape(width, height);
 }
 
 ENTRYPOINT void
@@ -155,13 +157,13 @@ init_glschool(ModeInfo *mi)
 	sc->nColors = 360;
 	sc->context = init_GL(mi);
 	sc->colors = (XColor *)calloc(sc->nColors, sizeof(XColor));
-	make_color_ramp(0, 0,
+	make_color_ramp(0, 0, 0,
 					0.0, 1.0, 1.0,
 					359.0, 1.0, 1.0,
 					sc->colors, &sc->nColors,
 					False, 0, False);
 
-	sc->school = initSchool(NFish, AccLimit, MaxVel, MinVel, DistExp, Momentum,
+	sc->school = glschool_initSchool(NFish, AccLimit, MaxVel, MinVel, DistExp, Momentum,
 							MinRadius, AvoidFact, MatchFact, CenterFact, TargetFact,
 							DistComp);
 	if (sc->school == (School *)0) {
@@ -171,10 +173,12 @@ init_glschool(ModeInfo *mi)
 
 	reshape_glschool(mi, width, height);
 
-	initGLEnv(DoFog);
-	initFishes(sc->school);
-	createDrawLists(&SCHOOL_BBOX(sc->school), &sc->bboxList, &sc->goalList, &sc->fishList, wire);
-	computeAccelerations(sc->school);
+	glschool_initGLEnv(DoFog);
+	glschool_initFishes(sc->school);
+	glschool_createDrawLists(&SCHOOL_BBOX(sc->school), 
+                                 &sc->bboxList, &sc->goalList, &sc->fishList,
+                                 &sc->fish_polys, &sc->box_polys, wire);
+	glschool_computeAccelerations(sc->school);
 }
 
 ENTRYPOINT void
@@ -191,16 +195,22 @@ draw_glschool(ModeInfo *mi)
 
 	glXMakeCurrent(MI_DISPLAY(mi), MI_WINDOW(mi), *(sc->context));
 
+        mi->polygon_count = 0;
+
 	if ((sc->goalCounter % GoalChgFreq) == 0)
-		newGoal(sc->school);
+		glschool_newGoal(sc->school);
 	sc->goalCounter++;
 
 	sc->rotCounter++;
 	sc->rotCounter = (sc->rotCounter%360);
 
-	applyMovements(sc->school);
-	drawSchool(sc->colors, sc->school, sc->bboxList, sc->goalList, sc->fishList, sc->rotCounter, sc->drawGoal, sc->drawBBox);
-	computeAccelerations(sc->school);
+	glschool_applyMovements(sc->school);
+	glschool_drawSchool(sc->colors, sc->school, sc->bboxList, 
+                            sc->goalList, sc->fishList, sc->rotCounter, 
+                              sc->drawGoal, sc->drawBBox, 
+                            sc->fish_polys, sc->box_polys,
+                            &mi->polygon_count);
+	glschool_computeAccelerations(sc->school);
 
 	if (mi->fps_p)
 		do_fps(mi);

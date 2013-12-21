@@ -38,9 +38,9 @@ static const char sccsid[] = "@(#)discrete.c	5.00 2000/11/01 xlockmore";
 					"*cycles: 2500 \n" \
 					"*ncolors: 100 \n" \
 					"*fpsSolid: true \n" \
+				    "*ignoreRotation: True \n" \
 
 # define SMOOTH_COLORS
-# define reshape_discrete 0
 # define discrete_handle_event 0
 # include "xlockmore.h"		/* in xscreensaver distribution */
 # include "erase.h"
@@ -422,6 +422,15 @@ draw_discrete (ModeInfo * mi)
   }
 }
 
+
+ENTRYPOINT void
+reshape_discrete(ModeInfo * mi, int width, int height)
+{
+  discretestruct *hp = &discretes[MI_SCREEN(mi)];
+  hp->maxx = width;
+  hp->maxy = height;
+  XClearWindow (MI_DISPLAY (mi), MI_WINDOW(mi));
+}
 
 ENTRYPOINT void
 release_discrete(ModeInfo * mi)

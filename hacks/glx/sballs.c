@@ -564,14 +564,26 @@ static void Draw(ModeInfo * mi)
        glColor3f(0, 0, 0);
     }
     glBegin(GL_QUAD_STRIP);
+#ifndef USE_IPHONE
+    /* Letterbox the background image */
     glNormal3f(0, 0, 1); glTexCoord2f(0,0); glVertex3f(8, 4.1, -4);
     glNormal3f(0, 0, 1); glTexCoord2f(0,1); glVertex3f(8, -4.1, -4);
     glNormal3f(0, 0, 1); glTexCoord2f(1,0); glVertex3f(-8, 4.1, -4);
     glNormal3f(0, 0, 1); glTexCoord2f(1,1); glVertex3f(-8, -4.1, -4);
+#else
+    /* Fill the iPhone screen. Letterboxing looks dumb there. */
+    glNormal3f(0, 0, 1); glTexCoord2f(0,0); glVertex3f(4, 5.2, -4);
+    glNormal3f(0, 0, 1); glTexCoord2f(0,1); glVertex3f(4, -5.2, -4);
+    glNormal3f(0, 0, 1); glTexCoord2f(1,0); glVertex3f(-4, 5.2, -4);
+    glNormal3f(0, 0, 1); glTexCoord2f(1,1); glVertex3f(-4, -5.2, -4);
+#endif
     glEnd();
     mi->polygon_count++;
 
+    /* Do it twice because we don't track the device's orientation. */
+    glRotatef( current_device_rotation(), 0, 0, 1);
     gltrackball_rotate (sb->trackball);
+    glRotatef(-current_device_rotation(), 0, 0, 1);
 
     /* rotate the balls */
     glRotatef(sb->rotm[0], 1.0f, 0.0f, 0.0f);

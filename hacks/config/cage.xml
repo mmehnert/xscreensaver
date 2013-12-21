@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="cage" _label="Cage">
+<screensaver name="cage" _label="Cage" gl="yes">
 
   <command arg="-root"/>
 
@@ -11,6 +11,8 @@
 
   <boolean id="wire"    _label="Wireframe"   arg-set="-wireframe"/>
   <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
+
+  <xscreensaver-updater />
 
   <_description>
 This draws Escher's "Impossible Cage", a 3d analog of a moebius

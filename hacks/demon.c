@@ -58,8 +58,8 @@ static const char sccsid[] = "@(#)demon.c	5.00 2000/11/01 xlockmore";
 					"*size:    -7    \n" \
 					"*ncolors: 64    \n" \
 					"*fpsSolid: true    \n" \
+				    "*ignoreRotation: True  \n" \
 
-# define reshape_demon 0
 # define demon_handle_event 0
 # define UNIFORM_COLORS
 # include "xlockmore.h"		/* in xscreensaver distribution */
@@ -166,7 +166,6 @@ drawcell(ModeInfo * mi, int col, int row, unsigned char state)
 		gc = MI_GC(mi);
 	} else {
 		XGCValues   gcv;
-
 #ifdef DO_STIPPLE
 		gcv.stipple = dp->pixmaps[(state - 1) % (NUMSTIPPLES - 1)];
 #endif /* DO_STIPPLE */
@@ -466,6 +465,10 @@ init_demon (ModeInfo * mi)
 	}
 #endif /* DO_STIPPLE */
 	free_struct(dp);
+
+#ifdef HAVE_COCOA
+    jwxyz_XSetAntiAliasing (MI_DISPLAY(mi), MI_GC(mi), False);
+#endif
 
 	for (nk = 0; nk < NEIGHBORKINDS; nk++) {
 		if (neighbors == plots[0][nk]) {
@@ -944,6 +947,14 @@ draw_demon (ModeInfo * mi)
 			}
 		}
 	}
+}
+
+
+ENTRYPOINT void
+reshape_demon(ModeInfo * mi, int width, int height)
+{
+  XClearWindow (MI_DISPLAY (mi), MI_WINDOW(mi));
+  init_demon (mi);
 }
 
 

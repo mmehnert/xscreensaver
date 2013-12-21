@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="antinspect" _label="AntInspect">
+<screensaver name="antinspect" _label="AntInspect" gl="yes">
 
   <command arg="-root"/>
 
@@ -12,6 +12,8 @@
   <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
 
   <boolean id="shadows" _label="Draw shadows" arg-set="-shadows"/>
+
+  <xscreensaver-updater />
 
   <_description>
 Draws a trio of ants moving their spheres around a circle.

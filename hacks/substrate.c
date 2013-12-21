@@ -685,6 +685,7 @@ substrate_draw (Display *dpy, Window window, void *closure)
     XSetForeground(st->dpy, st->fgc, st->gcv.foreground);
   }
 
+  /* #### mi->recursion_depth = st->f->cycles; */
   return st->growth_delay;
 }
 
@@ -719,6 +720,9 @@ static const char *substrate_defaults[] = {
     "*maxCracks: 100",
     "*sandGrains: 64",
     "*circlePercent: 33",
+#ifdef USE_IPHONE
+  "*ignoreRotation: True",
+#endif
     0
 };
 

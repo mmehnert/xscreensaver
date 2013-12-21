@@ -1,5 +1,5 @@
 /* xlockmore.h --- xscreensaver compatibility layer for xlockmore modules.
- * xscreensaver, Copyright (c) 1997-2008 Jamie Zawinski <jwz@jwz.org>
+ * xscreensaver, Copyright (c) 1997-2012 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -41,13 +41,23 @@ typedef struct ModeInfo ModeInfo;
 # endif /* !HAVE_MESA_GL */
 
 # ifdef HAVE_COCOA
-#  include <OpenGL/gl.h>
+#  ifndef USE_IPHONE
+#   include <OpenGL/gl.h>
+#   include <OpenGL/glu.h>
+#  endif
 # else
 #  include <GL/gl.h>
+#  include <GL/glu.h>
 #  include <GL/glx.h>
 # endif
 
+# ifdef HAVE_JWZGLES
+#  include "jwzgles.h"
+# endif /* HAVE_JWZGLES */
+
+
   extern GLXContext *init_GL (ModeInfo *);
+  extern void xlockmore_reset_gl_state(void);
   extern void clear_gl_error (void);
   extern void check_gl_error (const char *type);
 
@@ -65,6 +75,7 @@ extern void xlockmore_gl_draw_fps (ModeInfo *);
 
 
 extern void xlockmore_setup (struct xscreensaver_function_table *, void *);
+extern void xlockmore_do_fps (Display *, Window, fps_state *, void *);
 
 
 /* Compatibility with the xlockmore RNG API
@@ -108,7 +119,8 @@ struct ModeInfo {
   /* Used only by OpenGL programs, since FPS is tricky there. */
   fps_state *fpst;
   Bool fps_p;
-  unsigned long polygon_count;
+  unsigned long polygon_count;  /* These values are for -fps display only */
+  double recursion_depth;
 
 #ifdef HAVE_XSHM_EXTENSION
   Bool use_shm;

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="pinion" _label="Pinion">
+<screensaver name="pinion" _label="Pinion" gl="yes">
 
   <command arg="-root"/>
 
@@ -33,6 +33,8 @@
     <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
    </vgroup>
   </hgroup>
+
+  <xscreensaver-updater />
 
   <_description>
 Draws an interconnected set of gears moving across the screen.

@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="tangram" _label="Tangram">
+<screensaver name="tangram" _label="Tangram" gl="yes">
 
   <command arg="-root"/>
 
@@ -30,6 +30,8 @@
    <boolean id="rotate"    _label="Rotate"      arg-unset="-no-rotate"/>
    <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
   </hgroup>
+
+  <xscreensaver-updater />
 
   <_description>
 Solves tangram puzzles.

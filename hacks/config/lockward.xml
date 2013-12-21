@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="lockward" _label="Lockward">
+<screensaver name="lockward" _label="Lockward" gl="yes">
 
   <command arg="-root" />
 
@@ -52,6 +52,8 @@
             low="50" high="1500" default="600" arg="-blinkdwell-max %" />
    </vgroup>
   </hgroup>
+
+  <xscreensaver-updater />
 
   <_description> 
 A translucent spinning, blinking thing.  Sort of a cross between the wards

@@ -209,9 +209,8 @@ static void
 randpal (struct state *st)
 {
   int ncolors = tailmax - 1;
-  make_random_colormap (st->dpy,
-			st->xgwa.visual,
-			st->mycmap, &st->mycolors[1], &ncolors, True, True, 0, True);
+  make_random_colormap (st->xgwa.screen, st->xgwa.visual, st->mycmap,
+                        &st->mycolors[1], &ncolors, True, True, 0, True);
   if (ncolors < tailmax - 1)
     {
       int c;
@@ -807,6 +806,11 @@ static void
 vermiculate_reshape (Display *dpy, Window window, void *closure, 
                  unsigned int w, unsigned int h)
 {
+  struct state *st = (struct state *) closure;
+  st->wid = w;
+  st->hei = h;
+  free (st->point);
+  st->point = (unsigned char *) calloc (1, st->wid * st->hei);
 }
 
 static Bool
@@ -1201,6 +1205,9 @@ static const char *vermiculate_defaults[] = {
   "*fpsSolid:	true",
   "*speed: 0",
   "*instring: ",
+#ifdef USE_IPHONE
+  "*ignoreRotation: True",
+#endif
   0
 };
 

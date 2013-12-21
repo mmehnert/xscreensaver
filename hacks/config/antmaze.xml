@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="antmaze" _label="AntMaze">
+<screensaver name="antmaze" _label="AntMaze" gl="yes">
 
   <command arg="-root"/>
 
@@ -10,6 +10,8 @@
           convert="invert"/>
 
   <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
+
+  <xscreensaver-updater />
 
   <_description>
 Draws a few views of a few ants walking around in a simple maze. 

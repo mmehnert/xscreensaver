@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1992-2011 Jamie Zawinski <jwz@jwz.org>
+/* xscreensaver, Copyright (c) 1992-2013 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -510,7 +510,7 @@ usleep_and_process_events (Display *dpy,
 static void
 screenhack_do_fps (Display *dpy, Window w, fps_state *fpst, void *closure)
 {
-  fps_compute (fpst, 0);
+  fps_compute (fpst, 0, -1);
   fps_draw (fpst);
 }
 
@@ -575,7 +575,7 @@ run_screenhack_table (Display *dpy,
 
 #ifdef DEBUG_PAIR
   if (window2) ft->free_cb (dpy, window2, closure2);
-  if (window2) fps_free (fpst2);
+  if (fpst2) fps_free (fpst2);
 #endif
 }
 
@@ -727,13 +727,17 @@ main (int argc, char **argv)
   {
     char *v = (char *) strdup(strchr(screensaver_id, ' '));
     char *s1, *s2, *s3, *s4;
+    const char *ot = get_string_resource (dpy, "title", "Title");
     s1 = (char *) strchr(v,  ' '); s1++;
     s2 = (char *) strchr(s1, ' ');
     s3 = (char *) strchr(v,  '('); s3++;
     s4 = (char *) strchr(s3, ')');
     *s2 = 0;
     *s4 = 0;
-    sprintf (version, "%s: from the XScreenSaver %s distribution (%s.)",
+    if (ot && !*ot) ot = 0;
+    sprintf (version, "%.50s%s%s: from the XScreenSaver %s distribution (%s)",
+             (ot ? ot : ""),
+             (ot ? ": " : ""),
 	     progclass, s1, s3);
     free(v);
   }

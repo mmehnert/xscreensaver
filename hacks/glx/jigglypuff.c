@@ -838,10 +838,12 @@ static int parse_color(jigglystruct *js)
 	js->color_style = COLOR_STYLE_FLOWERBOX;
 	return 1;
     }
+# ifndef HAVE_JWZGLES  /* SPHERE_MAP unimplemented */
     else if(!strcmp(color, "chrome")) {
 	js->color_style = COLOR_STYLE_CHROME;
 	return 1;
     }
+# endif
     else if(!strcmp(color, "cycle")) {
 	js->color_style = COLOR_STYLE_CYCLE;
 	js->jiggly_color[0] = ((float)random()) / REAL_RAND_MAX * 0.7 + 0.3;
@@ -870,8 +872,14 @@ static int parse_color(jigglystruct *js)
 
 static void randomize_parameters(jigglystruct *js) {
     do_tetrahedron = random() & 1;
+# ifndef HAVE_JWZGLES /* #### glPolygonMode other than GL_FILL unimplemented */
     js->do_wireframe = !(random() & 3);
+# endif
     js->color_style = random() % 5;
+# ifdef HAVE_JWZGLES  /* #### SPHERE_MAP unimplemented */
+    while (js->color_style == COLOR_STYLE_CHROME)
+      js->color_style = random() % 5;;
+# endif
     if(js->color_style == COLOR_STYLE_NORMAL
 	|| js->color_style == COLOR_STYLE_CYCLE) {
 	js->jiggly_color[0] = ((float)random()) / REAL_RAND_MAX * 0.5 + 0.5;
@@ -982,7 +990,11 @@ ENTRYPOINT void draw_jigglypuff(ModeInfo *mi)
 	    js->axis -= 2*M_PI;
 	}
     }
+
+    /* Do it twice because we don't track the device's orientation. */
+    glRotatef( current_device_rotation(), 0, 0, 1);
     gltrackball_rotate(js->trackball);
+    glRotatef(-current_device_rotation(), 0, 0, 1);
 
     if(js->color_style == COLOR_STYLE_CYCLE) {
 	int i;
@@ -1022,6 +1034,9 @@ ENTRYPOINT void init_jigglypuff(ModeInfo *mi)
     js = &jss[MI_SCREEN(mi)];
 
     js->do_wireframe = MI_IS_WIREFRAME(mi);
+# ifdef HAVE_JWZGLES
+    js->do_wireframe = 0; /* GL_LINE unimplemented */
+# endif
 
     js->shininess = shininess;
 

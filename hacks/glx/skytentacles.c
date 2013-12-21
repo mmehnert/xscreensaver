@@ -1,4 +1,4 @@
-/* Sky Tentacles, Copyright (c) 2008 Jamie Zawinski <jwz@jwz.org>
+/* Sky Tentacles, Copyright (c) 2008-2012 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -902,6 +902,10 @@ init_tentacles (ModeInfo *mi)
   for (i = 0; i < MI_COUNT(mi); i++)
     move_tentacle (make_tentacle (mi, i, MI_COUNT(mi)));
 
+# ifdef HAVE_JWZGLES /* #### glPolygonMode other than GL_FILL unimplemented */
+  cel_p = 0;
+# endif
+
   if (wire) texture_p = cel_p = False;
   if (cel_p) texture_p = False;
 
@@ -993,7 +997,7 @@ draw_tentacles (ModeInfo *mi)
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glPushMatrix ();
-
+  glRotatef(current_device_rotation(), 0, 0, 1);
 
 # if 1
   glScalef (3, 3, 3);

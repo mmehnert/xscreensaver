@@ -1,4 +1,4 @@
-/* molecule, Copyright (c) 2001-2006 Jamie Zawinski <jwz@jwz.org>
+/* molecule, Copyright (c) 2001-2012 Jamie Zawinski <jwz@jwz.org>
  * Draws molecules, based on coordinates from PDB (Protein Data Base) files.
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
@@ -24,10 +24,16 @@
    http://www.wwpdb.org/docs.html
  */
 
+#ifdef HAVE_GLBITMAP
+# define ATOM_FONT "-*-helvetica-medium-r-normal-*-180-*"
+#else
+# define ATOM_FONT "-*-helvetica-medium-r-normal-*-240-*"
+#endif
+
 #define DEFAULTS	"*delay:	10000         \n" \
 			"*showFPS:      False         \n" \
 			"*wireframe:    False         \n" \
-			"*atomFont:   -*-helvetica-medium-r-normal-*-180-*\n" \
+			"*atomFont:   " ATOM_FONT "\n" \
 			"*atomFont2:  -*-helvetica-bold-r-normal-*-80-*\n" \
 			"*titleFont:  -*-helvetica-medium-r-normal-*-180-*\n" \
 			"*noLabelThreshold:    30     \n" \
@@ -87,9 +93,14 @@
                     ISO C89 compilers are required to support" when includng
                     the following data file... */
 # endif
-const char * const builtin_pdb_data[] = {
+static const char * const builtin_pdb_data[] = {
 # include "molecules.h"
 };
+
+
+#ifndef USE_IPHONE
+# define LOAD_FILES
+#endif
 
 
 typedef struct {
@@ -160,8 +171,14 @@ typedef struct {
   GLuint molecule_dlist;
   GLuint shell_dlist;
 
+# ifdef HAVE_GLBITMAP
   XFontStruct *xfont1, *xfont2, *xfont3;
   GLuint font1_dlist, font2_dlist, font3_dlist;
+# else
+  texture_font_data *font1_data, *font2_data, *font3_data;
+# endif
+
+
   int polygon_count;
 
   time_t draw_time;
@@ -258,9 +275,15 @@ static void
 load_fonts (ModeInfo *mi)
 {
   molecule_configuration *mc = &mcs[MI_SCREEN(mi)];
+# ifdef HAVE_GLBITMAP
   load_font (mi->dpy, "atomFont",  &mc->xfont1, &mc->font1_dlist);
   load_font (mi->dpy, "atomFont2", &mc->xfont2, &mc->font2_dlist);
   load_font (mi->dpy, "titleFont", &mc->xfont3, &mc->font3_dlist);
+# else
+  mc->font1_data = load_texture_font (mi->dpy, "atomFont");
+  mc->font2_data = load_texture_font (mi->dpy, "atomFont2");
+  mc->font3_data = load_texture_font (mi->dpy, "titleFont");
+# endif
 }
 
 
@@ -470,7 +493,6 @@ draw_bounding_box (ModeInfo *mi)
   glVertex3f(x2, y2, z2); glVertex3f(x2, y2, z1);
   glEnd();
 
-  glPushAttrib (GL_LIGHTING);
   glDisable (GL_LIGHTING);
 
   glColor3f (c2[0], c2[1], c2[2]);
@@ -483,7 +505,8 @@ draw_bounding_box (ModeInfo *mi)
   glVertex3f(0,  0,  z1); glVertex3f(0,  0,  z2); 
   glEnd();
 
-  glPopAttrib();
+  if (!wire)
+    glEnable (GL_LIGHTING);
 }
 
 
@@ -866,6 +889,7 @@ parse_pdb_data (molecule *m, const char *data, const char *filename, int line)
 }
 
 
+#ifdef LOAD_FILES
 static int
 parse_pdb_file (molecule *m, const char *name)
 {
@@ -912,6 +936,7 @@ parse_pdb_file (molecule *m, const char *name)
 
   return 0;
 }
+#endif /* LOAD_FILES */
 
 
 typedef struct { char *atom; int count; } atom_and_count;
@@ -1029,16 +1054,17 @@ static void
 load_molecules (ModeInfo *mi)
 {
   molecule_configuration *mc = &mcs[MI_SCREEN(mi)];
-  int wire = MI_IS_WIREFRAME(mi);
   int i;
 
   mc->nmolecules = 0;
+# ifdef LOAD_FILES
   if (molecule_str && *molecule_str && 
       strcmp(molecule_str, "(default)"))	/* try external PDB files */
     {
       /* The -molecule option can point to a .pdb file, or to
          a directory of them.
       */
+      int wire = MI_IS_WIREFRAME(mi);
       struct stat st;
       int nfiles = 0;
       int list_size = 0;
@@ -1142,6 +1168,7 @@ load_molecules (ModeInfo *mi)
       files = 0;
       mc->nmolecules = molecule_ctr;
     }
+# endif /* LOAD_FILES */
 
   if (mc->nmolecules == 0)	/* do the builtins if no files */
     {
@@ -1207,7 +1234,12 @@ startup_blurb (ModeInfo *mi)
 {
   molecule_configuration *mc = &mcs[MI_SCREEN(mi)];
   const char *s = "Constructing molecules...";
-  print_gl_string (mi->dpy, mc->xfont3, mc->font3_dlist,
+  print_gl_string (mi->dpy,
+# ifdef HAVE_GLBITMAP
+                   mc->xfont3, mc->font3_dlist,
+# else
+                   mc->font3_data,
+# endif
                    mi->xgwa.width, mi->xgwa.height,
                    10, mi->xgwa.height - 10,
                    s, False);
@@ -1365,9 +1397,13 @@ draw_labels (ModeInfo *mi)
   molecule_configuration *mc = &mcs[MI_SCREEN(mi)];
   int wire = MI_IS_WIREFRAME(mi);
   molecule *m = &mc->molecules[mc->which];
+# ifdef HAVE_GLBITMAP
   XFontStruct *xfont = (mc->scale_down ? mc->xfont2 : mc->xfont1);
   GLuint font_dlist  = (mc->scale_down ? mc->font2_dlist : mc->font1_dlist);
-  int i, j;
+# else
+  texture_font_data *font_data = mc->font1_data;  /* don't scale down */
+# endif
+  int i;
 
   if (!do_labels)
     return;
@@ -1421,6 +1457,9 @@ draw_labels (ModeInfo *mi)
 
       glTranslatef (0, 0, (size * 1.1));           /* move toward camera */
 
+      glRotatef (current_device_rotation(), 0, 0, 1);  /* right side up */
+
+# ifdef HAVE_GLBITMAP
       glRasterPos3f (0, 0, 0);                     /* draw text here */
 
       /* Before drawing the string, shift the origin to center
@@ -1429,10 +1468,30 @@ draw_labels (ModeInfo *mi)
                 -string_width (xfont, a->label, 0) / 2,
                 -xfont->descent,
                 NULL);
-
-      for (j = 0; j < strlen(a->label); j++)
-
-        glCallList (font_dlist + (int)(a->label[j]));
+      {
+        int j;
+        for (j = 0; j < strlen(a->label); j++)
+          glCallList (font_dlist + (int)(a->label[j]));
+      }
+# else
+      {
+        int h;
+        int w = texture_string_width (font_data, a->label, &h);
+        GLfloat s = 1.0 / h;
+        GLfloat max = 18;   /* max point size to avoid pixellated text */
+        if (h > max) s *= max/h;
+        glScalef (s, s, 1);
+        glTranslatef (-w/2, h*2/3, 0);
+        print_gl_string (mi->dpy,
+# ifdef HAVE_GLBITMAP
+                         xfont, font_dlist,
+# else
+                         font_data,
+# endif
+                         0, 0, 0, 0,
+                         a->label, False);
+      }
+# endif
 
       glPopMatrix();
     }
@@ -1595,7 +1654,10 @@ draw_molecule (ModeInfo *mi)
                  (y - 0.5) * 9,
                  (z - 0.5) * 9);
 
+    /* Do it twice because we don't track the device's orientation. */
+    glRotatef( current_device_rotation(), 0, 0, 1);
     gltrackball_rotate (mc->trackball);
+    glRotatef(-current_device_rotation(), 0, 0, 1);
 
     get_rotation (mc->rot, &x, &y, &z, !mc->button_down_p);
     glRotatef (x * 360, 1.0, 0.0, 0.0);
@@ -1627,7 +1689,12 @@ draw_molecule (ModeInfo *mi)
       if (do_titles && m->label && *m->label)
         {
           set_atom_color (mi, 0, True, 1);
-          print_gl_string (mi->dpy, mc->xfont3, mc->font3_dlist,
+          print_gl_string (mi->dpy,
+# ifdef HAVE_GLBITMAP
+                           mc->xfont3, mc->font3_dlist,
+# else
+                           mc->font3_data,
+# endif
                            mi->xgwa.width, mi->xgwa.height,
                            10, mi->xgwa.height - 10,
                            m->label, False);

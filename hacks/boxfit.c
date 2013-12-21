@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 2005-2008 Jamie Zawinski <jwz@jwz.org>
+/* xscreensaver, Copyright (c) 2005-2013 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -39,6 +39,7 @@ typedef struct {
   int spacing;
   int inc;
 
+  int mode;
   Bool circles_p;
   Bool growing_p;
   Bool color_horiz_p;
@@ -64,24 +65,22 @@ typedef struct {
 static void
 reset_boxes (state *st)
 {
-  int mode = -1;
-
   st->nboxes = 0;
   st->growing_p = True;
   st->color_horiz_p = random() & 1;
 
   if (st->done_once && st->colors)
-    free_colors (st->dpy, st->xgwa.colormap, st->colors, st->ncolors);
+    free_colors (st->xgwa.screen, st->xgwa.colormap, st->colors, st->ncolors);
 
   if (!st->done_once)
     {
       char *s = get_string_resource (st->dpy, "mode", "Mode");
       if (!s || !*s || !strcasecmp (s, "random"))
-        mode = -1;
+        st->mode = -1;
       else if (!strcasecmp (s, "squares") || !strcasecmp (s, "square"))
-        mode = 0;
+        st->mode = 0;
       else if (!strcasecmp (s, "circles") || !strcasecmp (s, "circle"))
-        mode = 1;
+        st->mode = 1;
       else
         {
           fprintf (stderr,
@@ -91,10 +90,10 @@ reset_boxes (state *st)
         }
     }
 
-  if (mode == -1)
+  if (st->mode == -1)
     st->circles_p = random() & 1;
   else
-    st->circles_p = (mode == 1);
+    st->circles_p = (st->mode == 1);
 
   st->done_once = True;
 
@@ -122,7 +121,7 @@ reset_boxes (state *st)
     {
       st->ncolors = get_integer_resource (st->dpy, "colors", "Colors");  /* re-get */
       if (st->ncolors < 1) st->ncolors = 1;
-      make_smooth_colormap (st->dpy, st->xgwa.visual, st->xgwa.colormap,
+      make_smooth_colormap (st->xgwa.screen, st->xgwa.visual, st->xgwa.colormap,
                             st->colors, &st->ncolors, True, 0, False);
       if (st->ncolors < 1) abort();
       XClearWindow (st->dpy, st->window);
@@ -532,6 +531,9 @@ static const char *boxfit_defaults [] = {
   "*peek:		   False",
   "*grabDesktopImages:     False",   /* HAVE_COCOA */
   "*chooseRandomImages:    True",    /* HAVE_COCOA */
+#ifdef USE_IPHONE
+  "*ignoreRotation:	   True",
+#endif
   0
 };
 

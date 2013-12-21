@@ -1,5 +1,5 @@
 /* -*- mode: C; tab-width: 4 -*-
- * xscreensaver, Copyright (c) 1992-2008 Jamie Zawinski <jwz@jwz.org>
+ * xscreensaver, Copyright (c) 1992-2013 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -781,6 +781,13 @@ static void
 distort_reshape (Display *dpy, Window window, void *closure, 
                  unsigned int w, unsigned int h)
 {
+  struct state *st = (struct state *) closure;
+  XGetWindowAttributes (st->dpy, st->window, &st->xgwa);
+  /* XClearWindow (dpy, window); */
+  /* Why doesn't this work? */
+  if (st->orig_map)  /* created in distort_finish_loading, might be early */
+    XPutImage (st->dpy, st->window, st->gc, st->orig_map,
+               0, 0, st->orig_map->width, st->orig_map->height, 0, 0);
 }
 
 static Bool
@@ -827,6 +834,9 @@ static const char *distort_defaults [] = {
 #ifdef HAVE_XSHM_EXTENSION
 	"*useSHM:			False",		/* xshm turns out not to help. */
 #endif /* HAVE_XSHM_EXTENSION */
+#ifdef USE_IPHONE
+  "*ignoreRotation:     True",
+#endif
 	0
 };
 

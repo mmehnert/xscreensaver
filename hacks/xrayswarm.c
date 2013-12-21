@@ -63,6 +63,9 @@ static const char *xrayswarm_defaults [] ={
 	".background:		black",
 	"*delay:		20000",
 	"*fpsSolid:		true",
+#ifdef USE_IPHONE
+        "*ignoreRotation:       True",
+#endif
 	0
 };
 
@@ -1196,6 +1199,12 @@ static void
 xrayswarm_reshape (Display *dpy, Window window, void *closure, 
                  unsigned int w, unsigned int h)
 {
+  struct state *st = (struct state *) closure;
+  st->xsize = w;
+  st->ysize = h;
+  st->xc = st->xsize >> 1;
+  st->yc = st->ysize >> 1;
+  st->maxy = st->ysize/(float)st->xsize;
 }
 
 static Bool

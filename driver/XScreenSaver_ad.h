@@ -7,6 +7,7 @@
 "*lockTimeout:		0:00:00",
 "*passwdTimeout:		0:00:30",
 "*dpmsEnabled:		False",
+"*dpmsQuickoffEnabled:	False",
 "*dpmsStandby:		2:00:00",
 "*dpmsSuspend:		2:00:00",
 "*dpmsOff:		4:00:00",
@@ -32,7 +33,7 @@
 "*textLiteral:		XScreenSaver",
 "*textFile:		",
 "*textProgram:		fortune",
-"*textURL:		http://www.livejournal.com/stats/latest-rss.bml",
+"*textURL:		http://en.wikipedia.org/w/index.php?title=Special:NewPages&feed=rss",
 "*overlayTextForeground:	#FFFF00",
 "*overlayTextBackground:	#000000",
 "*overlayStderr:		True",
@@ -40,14 +41,14 @@
 "*sgiSaverExtension:	True",
 "*xidleExtension:	True",
 "*procInterrupts:	True",
-"*xinputExtensionDev:	True",
+"*xinputExtensionDev:	False",
 "GetViewPortIsFullOfLies: False",
 "*demoCommand: xscreensaver-demo",
 "*prefsCommand: xscreensaver-demo -prefs",
 "*helpURL: http://www.jwz.org/xscreensaver/man.html",
-"*loadURL: firefox '%s' || mozilla '%s' || netscape '%s'",
-"*manualCommand: xterm -sb -fg black -bg gray75 -T '%s manual' \
-		    -e /bin/sh -c 'man \"%s\" ; read foo'",
+"*loadURL: gnome-open '%s'",
+"*manualCommand: gnome-terminal --title '%s manual' \
+		--command '/bin/sh -c \"man %s; read foo\"'",
 "*dateFormat:		%d-%b-%y (%a); %I:%M %p",
 "*installColormap:	True",
 "*programs:								      \
@@ -247,7 +248,15 @@
 -				lcdscrub -root				    \\n\
   GL: 				photopile -root				    \\n\
   GL: 				skytentacles -root			    \\n\
-  GL: 				rubikblocks -root			    \\n",
+  GL: 				rubikblocks -root			    \\n\
+  GL: 				companioncube -root			    \\n\
+  GL: 				hilbert -root				    \\n\
+  GL: 				tronbit -root				    \\n\
+  GL: 				geodesic -root				    \\n\
+				hexadrop -root				    \\n\
+  GL: 				kaleidocycle -root			    \\n\
+  GL: 				quasicrystal -root			    \\n\
+  GL: 				unknownpleasures -root			    \\n",
 "XScreenSaver.pointerPollTime:		0:00:05",
 "XScreenSaver.pointerHysteresis:		10",
 "XScreenSaver.initialDelay:		0:00:00",
@@ -284,7 +293,7 @@
 "*passwd.asterisks:              True",
 "*passwd.uname:                  True",
 "*splash.heading.label:		XScreenSaver %s",
-"*splash.body.label:		Copyright © 1991-2010 by",
+"*splash.body.label:		Copyright © 1991-2013 by",
 "*splash.body2.label:		Jamie Zawinski <jwz@jwz.org>",
 "*splash.demo.label:		Settings",
 "*splash.help.label:		Help",
@@ -300,6 +309,7 @@
 "*hacks.bubble3d.name:       Bubble3D",
 "*hacks.ccurve.name:         CCurve",
 "*hacks.cloudlife.name:      CloudLife",
+"*hacks.companioncube.name:  CompanionCube",
 "*hacks.cubestorm.name:      CubeStorm",
 "*hacks.cubicgrid.name:      CubicGrid",
 "*hacks.cwaves.name:         CWaves",
@@ -335,6 +345,7 @@
 "*hacks.nerverot.name:       NerveRot",
 "*hacks.noseguy.name:        NoseGuy",
 "*hacks.popsquares.name:     PopSquares",
+"*hacks.quasicrystal.name:   QuasiCrystal",
 "*hacks.rd-bomb.name:        RDbomb",
 "*hacks.rdbomb.name:         RDbomb",
 "*hacks.rotzoomer.name:      RotZoomer",
@@ -350,6 +361,8 @@
 "*hacks.t3d.name:            T3D",
 "*hacks.timetunnel.name:     TimeTunnel",
 "*hacks.topblock.name:       TopBlock",
+"*hacks.tronbit.name:        TronBit",
+"*hacks.unknownpleasures.name:UnknownPleasures",
 "*hacks.vidwhacker.name:     VidWhacker",
 "*hacks.webcollage.name:     WebCollage",
 "*hacks.whirlwindwarp.name:  WhirlWindWarp",

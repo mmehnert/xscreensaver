@@ -39,7 +39,6 @@ static const char sccsid[] = "@(#)polyominoes.c 5.01 2000/12/18 xlockmore";
 					"*ncolors: 64 \n" \
 					"*fpsSolid: true \n" \
 
-# define reshape_polyominoes 0
 # define polyominoes_handle_event 0
 # define SMOOTH_COLORS
 # include "xlockmore.h"		/* in xscreensaver distribution */
@@ -54,6 +53,9 @@ static const char sccsid[] = "@(#)polyominoes.c 5.01 2000/12/18 xlockmore";
 
 static Bool identical;
 static Bool plain;
+
+#undef countof
+#define countof(x) (sizeof((x))/sizeof((*x)))
 
 static XrmOptionDescRec opts[] =
 {
@@ -792,7 +794,7 @@ static void create_bitmaps(ModeInfo * mi, polyominoesstruct *sp)
   int x,y,n;
   char *data;
 
-  for (n=0;n<256;n++) {
+  for (n=0;n<countof(sp->bitmaps);n++) {
 
 /* Avoid duplication of identical bitmaps. */
     if (IS_LEFT_UP(n) && (IS_LEFT(n) || IS_UP(n)))
@@ -1031,7 +1033,7 @@ static void free_bitmaps(polyominoesstruct *sp)
 {
   int n;
   
-  for (n=0;n<256;n++)
+  for (n=0;n<countof(sp->bitmaps);n++)
 /* Don't bother to free duplicates */
     if (IS_LEFT_UP(n) && (IS_LEFT(n) || IS_UP(n)))
       sp->bitmaps[n] = None;
@@ -1501,7 +1503,7 @@ static void make_one_sided_pentomino(void)
   int i,j,t,u;
 
   j=0;
-  for (i=0;i<18;i++) {
+  for (i=0;i<countof(pentomino);i++) {
     one_sided_pentomino[j] = pentomino[i];
     for (t=0;t<8;t++)
       if (one_sided_pentomino[j].transform_list[t]>=4) {
@@ -1523,7 +1525,7 @@ static void make_one_sided_hexomino(void)
   int i,j,t,u;
 
   j=0;
-  for (i=0;i<35;i++) {
+  for (i=0;i<countof(hexomino);i++) {
     one_sided_hexomino[j] = hexomino[i];
     for (t=0;t<8;t++)
       if (one_sided_hexomino[j].transform_list[t]>=4) {
@@ -1568,9 +1570,10 @@ int set_pentomino_puzzle(polyominoesstruct *sp)
   }
 
   sp->nr_polyominoes = 12;
-  set_allocate(sp->polyomino,polyomino_type,12*sizeof(polyomino_type));
-  random_permutation(12,perm_poly);
-  for (p=0;p<12;p++) {
+  set_allocate(sp->polyomino,polyomino_type,
+               sp->nr_polyominoes*sizeof(polyomino_type));
+  random_permutation(sp->nr_polyominoes,perm_poly);
+  for (p=0;p<sp->nr_polyominoes;p++) {
     copy_polyomino(sp->polyomino[p],pentomino[perm_poly[p]],1);
   }
 
@@ -1616,9 +1619,10 @@ int set_one_sided_pentomino_puzzle(polyominoesstruct *sp)
   }
 
   sp->nr_polyominoes = 18;
-  set_allocate(sp->polyomino,polyomino_type,18*sizeof(polyomino_type));
-  random_permutation(18,perm_poly);
-  for (p=0;p<18;p++) {
+  set_allocate(sp->polyomino,polyomino_type,
+               sp->nr_polyominoes*sizeof(polyomino_type));
+  random_permutation(sp->nr_polyominoes,perm_poly);
+  for (p=0;p<sp->nr_polyominoes;p++) {
     copy_polyomino(sp->polyomino[p],one_sided_pentomino[perm_poly[p]],1);
   }
 
@@ -1675,9 +1679,10 @@ int set_one_sided_hexomino_puzzle(polyominoesstruct *sp)
   }
 
   sp->nr_polyominoes = 60;
-  set_allocate(sp->polyomino,polyomino_type,60*sizeof(polyomino_type));
-  random_permutation(60,perm_poly);
-  for (p=0;p<60;p++) {
+  set_allocate(sp->polyomino,polyomino_type,
+               sp->nr_polyominoes*sizeof(polyomino_type));
+  random_permutation(sp->nr_polyominoes,perm_poly);
+  for (p=0;p<sp->nr_polyominoes;p++) {
     copy_polyomino(sp->polyomino[p],one_sided_hexomino[perm_poly[p]],1);
   }
 
@@ -1712,12 +1717,13 @@ int set_tetr_pentomino_puzzle(polyominoesstruct *sp)
   }
 
   sp->nr_polyominoes = 17;
-  set_allocate(sp->polyomino,polyomino_type,17*sizeof(polyomino_type));
-  random_permutation(17,perm_poly);
-  for (p=0;p<5;p++) {
+  set_allocate(sp->polyomino,polyomino_type,
+               sp->nr_polyominoes*sizeof(polyomino_type));
+  random_permutation(sp->nr_polyominoes,perm_poly);
+  for (p=0;p<countof(tetromino);p++) {
     copy_polyomino(sp->polyomino[perm_poly[p]],tetromino[p],1);
   }
-  for (p=0;p<12;p++) {
+  for (p=0;p<countof(pentomino);p++) {
     copy_polyomino(sp->polyomino[perm_poly[p+5]],pentomino[p],1);
   }
 
@@ -1761,10 +1767,10 @@ int set_pent_hexomino_puzzle(polyominoesstruct *sp)
   sp->nr_polyominoes = 47;
   set_allocate(sp->polyomino,polyomino_type,47*sizeof(polyomino_type));
   random_permutation(47,perm_poly);
-  for (p=0;p<12;p++) {
+  for (p=0;p<countof(pentomino);p++) {
     copy_polyomino(sp->polyomino[perm_poly[p]],pentomino[p],1);
   }
-  for (p=0;p<35;p++) {
+  for (p=0;p<countof(hexomino);p++) {
     copy_polyomino(sp->polyomino[perm_poly[p+12]],hexomino[p],1);
   }
 
@@ -1801,8 +1807,9 @@ int set_pentomino_puzzle1(polyominoesstruct *sp)
   sp->height =5;
 
   sp->nr_polyominoes = 10;
-  set_allocate(sp->polyomino,polyomino_type,10*sizeof(polyomino_type));
-  for (p=0;p<10;p++) {
+  set_allocate(sp->polyomino,polyomino_type,
+               sp->nr_polyominoes*sizeof(polyomino_type));
+  for (p=0;p<sp->nr_polyominoes;p++) {
     copy_polyomino(sp->polyomino[p],pentomino1,1);
   }
 
@@ -1832,8 +1839,9 @@ int set_hexomino_puzzle1(polyominoesstruct *sp)
   sp->height =23;
 
   sp->nr_polyominoes = 92;
-  set_allocate(sp->polyomino,polyomino_type,92*sizeof(polyomino_type));
-  for (p=0;p<92;p++) {
+  set_allocate(sp->polyomino,polyomino_type,
+               sp->nr_polyominoes*sizeof(polyomino_type));
+  for (p=0;p<sp->nr_polyominoes;p++) {
     copy_polyomino(sp->polyomino[p],hexomino1,1);
   }
 
@@ -1867,8 +1875,9 @@ int set_heptomino_puzzle1(polyominoesstruct *sp)
   sp->height =21;
 
   sp->nr_polyominoes = 78;
-  set_allocate(sp->polyomino,polyomino_type,78*sizeof(polyomino_type));
-  for (p=0;p<78;p+=2) {
+  set_allocate(sp->polyomino,polyomino_type,
+               sp->nr_polyominoes*sizeof(polyomino_type));
+  for (p=0;p<sp->nr_polyominoes;p+=2) {
     copy_polyomino(sp->polyomino[p],heptomino1,1);
     copy_polyomino(sp->polyomino[p+1],heptomino1,0);
   }
@@ -1898,8 +1907,9 @@ int set_heptomino_puzzle2(polyominoesstruct *sp)
   sp->height =19;
 
   sp->nr_polyominoes = 76;
-  set_allocate(sp->polyomino,polyomino_type,76*sizeof(polyomino_type));
-  for (p=0;p<76;p++) {
+  set_allocate(sp->polyomino,polyomino_type,
+               sp->nr_polyominoes*sizeof(polyomino_type));
+  for (p=0;p<sp->nr_polyominoes;p++) {
     copy_polyomino(sp->polyomino[p],heptomino1,1);
   }
 
@@ -1934,8 +1944,9 @@ int set_elevenomino_puzzle1(polyominoesstruct *sp)
   sp->height =22;
 
   sp->nr_polyominoes = 50;
-  set_allocate(sp->polyomino,polyomino_type,50*sizeof(polyomino_type));
-  for (p=0;p<50;p+=2) {
+  set_allocate(sp->polyomino,polyomino_type,
+               sp->nr_polyominoes*sizeof(polyomino_type));
+  for (p=0;p<sp->nr_polyominoes;p+=2) {
     copy_polyomino(sp->polyomino[p],elevenomino1,1);
     copy_polyomino(sp->polyomino[p+1],elevenomino1,0);
   }
@@ -1971,8 +1982,9 @@ int set_dekomino_puzzle1(polyominoesstruct *sp)
   sp->height =30;
 
   sp->nr_polyominoes = 96;
-  set_allocate(sp->polyomino,polyomino_type,96*sizeof(polyomino_type));
-  for (p=0;p<96;p++) {
+  set_allocate(sp->polyomino,polyomino_type,
+               sp->nr_polyominoes*sizeof(polyomino_type));
+  for (p=0;p<sp->nr_polyominoes;p++) {
     copy_polyomino(sp->polyomino[p],dekomino1,1);
   }
 
@@ -2005,8 +2017,9 @@ int set_octomino_puzzle1(polyominoesstruct *sp)
   sp->height =26;
 
   sp->nr_polyominoes = 312;
-  set_allocate(sp->polyomino,polyomino_type,312*sizeof(polyomino_type));
-  for (p=0;p<312;p++) {
+  set_allocate(sp->polyomino,polyomino_type,
+               sp->nr_polyominoes*sizeof(polyomino_type));
+  for (p=0;p<sp->nr_polyominoes;p++) {
     copy_polyomino(sp->polyomino[p],octomino1,1);
   }
 
@@ -2031,8 +2044,9 @@ int set_pentomino_puzzle2(polyominoesstruct *sp)
   sp->height =15;
 
   sp->nr_polyominoes = 45;
-  set_allocate(sp->polyomino,polyomino_type,45*sizeof(polyomino_type));
-  for (p=0;p<45;p++) {
+  set_allocate(sp->polyomino,polyomino_type,
+               sp->nr_polyominoes*sizeof(polyomino_type));
+  for (p=0;p<sp->nr_polyominoes;p++) {
     copy_polyomino(sp->polyomino[p],pentomino1,1);
   }
 
@@ -2058,8 +2072,9 @@ int set_elevenomino_puzzle2(polyominoesstruct *sp)
   sp->height =33;
 
   sp->nr_polyominoes = 141;
-  set_allocate(sp->polyomino,polyomino_type,141*sizeof(polyomino_type));
-  for (p=0;p<141;p++) {
+  set_allocate(sp->polyomino,polyomino_type,
+               sp->nr_polyominoes*sizeof(polyomino_type));
+  for (p=0;p<sp->nr_polyominoes;p++) {
     copy_polyomino(sp->polyomino[p],elevenomino1,1);
   }
 
@@ -2349,6 +2364,13 @@ draw_polyominoes (ModeInfo * mi)
     sp->wait = 100;
   else
     sp->wait = 0;
+}
+
+ENTRYPOINT void
+reshape_polyominoes(ModeInfo * mi, int width, int height)
+{
+  XClearWindow (MI_DISPLAY (mi), MI_WINDOW(mi));
+  init_polyominoes (mi);
 }
 
 ENTRYPOINT void

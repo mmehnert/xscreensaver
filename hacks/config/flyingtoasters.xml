@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="flyingtoasters" _label="FlyingToasters">
+<screensaver name="flyingtoasters" _label="FlyingToasters" gl="yes">
 
   <command arg="-root"/>
 
@@ -26,6 +26,8 @@
    <boolean id="wire"    _label="Wireframe"   arg-set="-wireframe"/>
    <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
   </hgroup>
+
+  <xscreensaver-updater />
 
   <_description>
 A fleet of 3d space-age jet-powered flying toasters (and toast!)

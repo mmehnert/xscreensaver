@@ -1,4 +1,4 @@
-/* polyhedra, Copyright (c) 2004-2011 Jamie Zawinski <jwz@jwz.org>
+/* polyhedra, Copyright (c) 2004-2012 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -30,6 +30,17 @@
 
 #include "xlockmore.h"
 
+#ifdef HAVE_COCOA
+# include "jwxyz.h"
+#else
+# include <X11/Xlib.h>
+# include <GL/gl.h>
+# include <GL/glu.h>
+#endif
+
+#ifdef HAVE_JWZGLES
+# include "jwzgles.h"
+#endif /* HAVE_JWZGLES */
 
 #define DEF_SPIN        "True"
 #define DEF_WANDER      "True"
@@ -50,6 +61,11 @@
 # define XK_MISCELLANY
 # include <X11/keysymdef.h>
 #endif
+
+#ifndef HAVE_JWZGLES
+# define HAVE_TESS
+#endif
+
 
 #ifdef USE_GL /* whole file */
 
@@ -73,8 +89,12 @@ typedef struct {
   int ncolors;
   XColor *colors;
 
+# ifdef HAVE_GLBITMAP
   XFontStruct *xfont1, *xfont2, *xfont3;
   GLuint font1_dlist, font2_dlist, font3_dlist;
+# else
+  texture_font_data *font1_data, *font2_data, *font3_data;
+# endif
 
   time_t last_change_time;
   int change_tick;
@@ -156,9 +176,15 @@ static void
 load_fonts (ModeInfo *mi)
 {
   polyhedra_configuration *bp = &bps[MI_SCREEN(mi)];
+# ifdef HAVE_GLBITMAP
   load_font (mi->dpy, "titleFont",  &bp->xfont1, &bp->font1_dlist);
   load_font (mi->dpy, "titleFont2", &bp->xfont2, &bp->font2_dlist);
   load_font (mi->dpy, "titleFont3", &bp->xfont3, &bp->font3_dlist);
+# else /* !HAVE_GLBITMAP */
+  bp->font1_data = load_texture_font (mi->dpy, "titleFont");
+  bp->font2_data = load_texture_font (mi->dpy, "titleFont2");
+  bp->font3_data = load_texture_font (mi->dpy, "titleFont3");
+# endif /* !HAVE_GLBITMAP */
 }
 
 
@@ -168,10 +194,27 @@ startup_blurb (ModeInfo *mi)
 {
   polyhedra_configuration *bp = &bps[MI_SCREEN(mi)];
   const char *s = "Computing polyhedra...";
+# ifdef HAVE_GLBITMAP
+  XFontStruct *f = bp->xfont1;
+# else /* !HAVE_GLBITMAP */
+  texture_font_data *f = bp->font1_data;
+# endif /* !HAVE_GLBITMAP */
+
   glColor3f (0.8, 0.8, 0);
-  print_gl_string (mi->dpy, bp->xfont1, bp->font1_dlist,
+  print_gl_string (mi->dpy, 
+# ifdef HAVE_GLBITMAP
+                   bp->xfont1, bp->font1_dlist,
+# else /* !HAVE_GLBITMAP */
+                   bp->font1_data,
+# endif /* !HAVE_GLBITMAP */
                    mi->xgwa.width, mi->xgwa.height,
-                   mi->xgwa.width - (string_width (bp->xfont1, s, 0) + 40),
+                   mi->xgwa.width - (
+# ifdef HAVE_GLBITMAP
+                                     string_width (f, s, 0)
+# else /* !HAVE_GLBITMAP */
+                                     texture_string_width (f, s, 0)
+# endif /* !HAVE_GLBITMAP */
+                                     + 40),
                    mi->xgwa.height - 10,
                    s, False);
   glFinish();
@@ -244,12 +287,6 @@ polyhedra_handle_event (ModeInfo *mi, XEvent *event)
       char c = 0;
       XLookupString (&event->xkey, &c, 1, &keysym, 0);
 
-# ifdef HAVE_COCOA
-#  define XK_Right -1
-#  define XK_Left -1
-#  define XK_Up -1
-#  define XK_Down -1
-# endif
       bp->change_to = -1;
       if (c == ' ' || c == '\t' || c == '\r' || c == '\n')
         bp->change_to = random() % bp->npolyhedra;
@@ -310,17 +347,36 @@ new_label (ModeInfo *mi)
                p->density, (p->chi < 0 ? "" : "  "), p->chi);
 
       {
+# ifdef HAVE_GLBITMAP
         XFontStruct *f;
         GLuint fl;
+# else /* !HAVE_GLBITMAP */
+        texture_font_data *f;
+# endif /* !HAVE_GLBITMAP */
         if (MI_WIDTH(mi) >= 500 && MI_HEIGHT(mi) >= 375)
+# ifdef HAVE_GLBITMAP
           f = bp->xfont1, fl = bp->font1_dlist;		       /* big font */
+# else /* !HAVE_GLBITMAP */
+          f = bp->font1_data;
+# endif /* !HAVE_GLBITMAP */
         else if (MI_WIDTH(mi) >= 350 && MI_HEIGHT(mi) >= 260)
+# ifdef HAVE_GLBITMAP
           f = bp->xfont2, fl = bp->font2_dlist;		       /* small font */
+# else /* !HAVE_GLBITMAP */
+          f = bp->font2_data;				       /* small font */
+# endif /* !HAVE_GLBITMAP */
         else
+# ifdef HAVE_GLBITMAP
           f = bp->xfont3, fl = bp->font3_dlist;		       /* tiny font */
+# else /* !HAVE_GLBITMAP */
+          f = bp->font3_data;				       /* tiny font */
+# endif /* !HAVE_GLBITMAP */
 
         glColor3f (0.8, 0.8, 0);
-        print_gl_string (mi->dpy, f, fl,
+        print_gl_string (mi->dpy, f,
+# ifdef HAVE_GLBITMAP
+                         fl,
+# endif /* HAVE_GLBITMAP */
                          mi->xgwa.width, mi->xgwa.height,
                          10, mi->xgwa.height - 10,
                          label, False);
@@ -330,13 +386,16 @@ new_label (ModeInfo *mi)
 }
 
 
+#ifdef HAVE_TESS
 static void
 tess_error (GLenum errorCode)
 {
   fprintf (stderr, "%s: tesselation error: %s\n",
            progname, gluErrorString(errorCode));
-  exit (0);
+  abort();
 }
+#endif /* HAVE_TESS */
+
 
 static void
 new_polyhedron (ModeInfo *mi)
@@ -349,11 +408,13 @@ new_polyhedron (ModeInfo *mi)
   /* Use the GLU polygon tesselator so that nonconvex faces are displayed
      correctly (e.g., for the "pentagrammic concave deltohedron").
    */
+# ifdef HAVE_TESS
   GLUtesselator *tobj = gluNewTess();
   gluTessCallback (tobj, GLU_TESS_BEGIN,  (void (*) (void)) &glBegin);
   gluTessCallback (tobj, GLU_TESS_END,    (void (*) (void)) &glEnd);
   gluTessCallback (tobj, GLU_TESS_VERTEX, (void (*) (void)) &glVertex3dv);
   gluTessCallback (tobj, GLU_TESS_ERROR,  (void (*) (void)) &tess_error);
+# endif /* HAVE_TESS */
 
   mi->polygon_count = 0;
 
@@ -380,10 +441,20 @@ new_polyhedron (ModeInfo *mi)
   glNewList (bp->object_list, GL_COMPILE);
   if (bp->which == bp->npolyhedra-1)
     {
+      GLfloat bcolor[4];
+      bcolor[0] = bp->colors[0].red   / 65536.0;
+      bcolor[1] = bp->colors[0].green / 65536.0;
+      bcolor[2] = bp->colors[0].blue  / 65536.0;
+      bcolor[3] = 1.0;
+      if (wire)
+        glColor3f (0, 1, 0);
+      else
+        glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, bcolor);
+
       glScalef (0.8, 0.8, 0.8);
       p->nfaces = unit_teapot (6, wire);
-      p->nedges = p->nfaces * 2;           /* #### is this right? */
-      p->npoints = p->nfaces / 3;          /* #### is this right? */
+      p->nedges = p->nfaces * 3 / 2;
+      p->npoints = p->nfaces * 3;
       p->logical_faces = p->nfaces;
       p->logical_vertices = p->npoints;
     }
@@ -404,12 +475,13 @@ new_polyhedron (ModeInfo *mi)
               bcolor[0] = bp->colors[f->color].red   / 65536.0;
               bcolor[1] = bp->colors[f->color].green / 65536.0;
               bcolor[2] = bp->colors[f->color].blue  / 65536.0;
-              bcolor[2] = 1.0;
+              bcolor[3] = 1.0;
               glMaterialfv (GL_FRONT_AND_BACK, GL_AMBIENT_AND_DIFFUSE, bcolor);
             }
 
           kludge_normal (f->npoints, f->points, p->points);
       
+# ifdef HAVE_TESS
           gluTessBeginPolygon (tobj, 0);
           gluTessBeginContour (tobj);
           for (j = 0; j < f->npoints; j++)
@@ -419,12 +491,26 @@ new_polyhedron (ModeInfo *mi)
             }
           gluTessEndContour (tobj);
           gluTessEndPolygon (tobj);
+# else  /* !HAVE_TESS */
+          glBegin (wire ? GL_LINE_LOOP :
+                   f->npoints == 3 ? GL_TRIANGLES :
+                   f->npoints == 4 ? GL_QUADS :
+                   GL_POLYGON);
+          for (j = 0; j < f->npoints; j++)
+            {
+              point *pp = &p->points[f->points[j]];
+              glVertex3f (pp->x, pp->y, pp->z);
+            }
+          glEnd();
+# endif /* !HAVE_TESS */
         }
     }
   glEndList ();
 
   mi->polygon_count += p->nfaces;
+# ifdef HAVE_TESS
   gluDeleteTess (tobj);
+# endif
 }
 
 
@@ -450,6 +536,11 @@ init_polyhedra (ModeInfo *mi)
 {
   polyhedra_configuration *bp;
   int wire = MI_IS_WIREFRAME(mi);
+
+# ifdef HAVE_JWZGLES /* #### glPolygonMode other than GL_FILL unimplemented */
+  MI_IS_WIREFRAME(mi) = 0;
+  wire = 0;
+# endif
 
   if (!bps) {
     bps = (polyhedra_configuration *)
@@ -625,7 +716,10 @@ draw_polyhedra (ModeInfo *mi)
                  (y - 0.5) * 8,
                  (z - 0.5) * 15);
 
+    /* Do it twice because we don't track the device's orientation. */
+    glRotatef( current_device_rotation(), 0, 0, 1);
     gltrackball_rotate (bp->trackball);
+    glRotatef(-current_device_rotation(), 0, 0, 1);
 
     get_rotation (bp->rot, &x, &y, &z, !bp->button_down_p);
     glRotatef (x * 360, 1.0, 0.0, 0.0);

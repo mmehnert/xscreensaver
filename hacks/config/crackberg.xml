@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="crackberg" _label="Crackberg">
+<screensaver name="crackberg" _label="Crackberg" gl="yes">
 
   <command arg="-root"/>
 
@@ -38,6 +38,8 @@
     <option id="magma" _label="Swampy coloration" arg-set="-color magma"/>
     <option id="vomit" _label="Vomitous coloration" arg-set="-color vomit"/>
   </select>  
+
+  <xscreensaver-updater />
 
   <_description>
 Flies through height maps, optionally animating the creation and

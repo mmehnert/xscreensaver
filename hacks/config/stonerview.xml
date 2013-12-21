@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="stonerview" _label="StonerView">
+<screensaver name="stonerview" _label="StonerView" gl="yes">
 
   <command arg="-root"/>
 
@@ -12,6 +12,8 @@
   <boolean id="wire"    _label="Wireframe"         arg-set="-wireframe"/>
   <boolean id="trans"   _label="Translucent"     arg-unset="-no-transparent"/>
   <boolean id="showfps" _label="Show frame rate"   arg-set="-fps"/>
+
+  <xscreensaver-updater />
 
   <_description>
 Chains of colorful squares dance around each other in complex spiral

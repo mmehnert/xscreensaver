@@ -61,6 +61,9 @@ static const char *truchet_defaults [] = {
   "*anim-delay:               100",
   "*anim-step-size:           3",
   "*randomize:		      true",
+#ifdef USE_IPHONE
+  "*ignoreRotation:           True",
+#endif
    0
 };
 
@@ -375,6 +378,9 @@ truchet_init (Display *dpy, Window window)
   
   
   st->frame = XCreatePixmap(st->dpy,st->window, st->xgwa.width+st->overlap, st->xgwa.height+st->overlap, st->xgwa.depth); 
+  XFillRectangle(st->dpy, st->frame, st->bgc, 0, 0, 
+                 st->xgwa.width + st->overlap, 
+                 st->xgwa.height + st->overlap);
   
   return st;
 }
@@ -508,6 +514,10 @@ static void
 truchet_reshape (Display *dpy, Window window, void *closure, 
                  unsigned int w, unsigned int h)
 {
+  struct state *st = (struct state *) closure;
+  st->width = w;
+  st->height = h;
+  XGetWindowAttributes (st->dpy, st->window, &st->xgwa);
 }
 
 static Bool

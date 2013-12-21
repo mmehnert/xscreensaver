@@ -109,8 +109,12 @@ typedef struct {
   rotator *rot;
   trackball_state *trackball;
   Bool button_down_p;
+# ifdef HAVE_GLBITMAP
   XFontStruct *xfont;
   GLuint font_dlist;
+# else
+  texture_font_data *font_data;
+# endif
   char *engine_name;
   int engineType;
   int movepaused;
@@ -280,13 +284,13 @@ static void make_tables(Engine *e)
   float f;
 
   f = ONEREV / (M_PI * 2);
-  for (i = 0 ; i <= TWOREV ; i++) {
+  for (i = 0 ; i < TWOREV ; i++) {
     e->sin_table[i] = sin(i/f);
   }
-  for (i = 0 ; i <= TWOREV ; i++) {
+  for (i = 0 ; i < TWOREV ; i++) {
     e->cos_table[i] = cos(i/f);
   }
-  for (i = 0 ; i <= TWOREV ; i++) {
+  for (i = 0 ; i < TWOREV ; i++) {
     e->tan_table[i] = tan(i/f);
   }
 }
@@ -583,7 +587,7 @@ static int boom(Engine *e, GLfloat x, GLfloat y, int s)
   glLightfv(GL_LIGHT1, GL_POSITION, e->boom_lpos);
   glLightfv(GL_LIGHT1, GL_DIFFUSE, e->boom_red);
   glLightfv(GL_LIGHT1, GL_SPECULAR, e->boom_red);
-  glLighti(GL_LIGHT1, GL_LINEAR_ATTENUATION, 1.3);
+  glLightf(GL_LIGHT1, GL_LINEAR_ATTENUATION, 1.3);
   glLighti(GL_LIGHT1, GL_CONSTANT_ATTENUATION, 0);
 
   glMaterialfv(GL_FRONT, GL_AMBIENT_AND_DIFFUSE, e->boom_red);
@@ -614,6 +618,7 @@ static int display(Engine *e)
             e->lookat[0], e->lookat[1], e->lookat[2], 
             0.0, 1.0, 0.0);
   glPushMatrix();
+
   glLightfv(GL_LIGHT0, GL_POSITION, lightpos);
   glLightfv(GL_LIGHT0, GL_SPECULAR, light_sp);
   glLightfv(GL_LIGHT0, GL_DIFFUSE, light_sp);
@@ -623,9 +628,15 @@ static int display(Engine *e)
     get_position (e->rot, &x, &y, &z, !e->button_down_p);
     glTranslatef(x*16-9, y*14-7, z*16-10);
   }
+
   if (spin) {
     double x, y, z;
+
+    /* Do it twice because we don't track the device's orientation. */
+    glRotatef( current_device_rotation(), 0, 0, 1);
     gltrackball_rotate (e->trackball);
+    glRotatef(-current_device_rotation(), 0, 0, 1);
+
     get_rotation(e->rot, &x, &y, &z, !e->button_down_p);
     glRotatef(x*ONEREV, 1.0, 0.0, 0.0);
     glRotatef(y*ONEREV, 0.0, 1.0, 0.0);
@@ -916,7 +927,12 @@ ENTRYPOINT void init_engine(ModeInfo *mi)
 
  e->shaft_polys = makeshaft(e);
  e->piston_polys = makepiston(e);
+
+#ifdef HAVE_GLBITMAP
  load_font (mi->dpy, "titleFont", &e->xfont, &e->font_dlist);
+#else
+ e->font_data = load_texture_font (mi->dpy, "Font");
+#endif
 }
 
 ENTRYPOINT Bool
@@ -974,8 +990,14 @@ ENTRYPOINT void draw_engine(ModeInfo *mi)
 
   mi->polygon_count = display(e);
 
+  glColor3f (1, 1, 0);
   if (do_titles)
-      print_gl_string (mi->dpy, e->xfont, e->font_dlist,
+      print_gl_string (mi->dpy, 
+# ifdef HAVE_GLBITMAP
+                       e->xfont, e->font_dlist,
+# else
+                       e->font_data,
+# endif
                        mi->xgwa.width, mi->xgwa.height,
                        10, mi->xgwa.height - 10,
                        e->engine_name, False);

@@ -84,10 +84,10 @@ static const char sccsid[] = "@(#)bouboule.c	4.00 97/01/01 xlockmore";
 					"*left3d:		blue	\n"			\
 					"*both3d:		magenta	\n"			\
 					"*none3d:		black	\n"			\
-					"*fpsSolid:		true	\n"
+					"*fpsSolid:		true	\n"			\
+					"*ignoreRotation: True  \n"
 
 # define SMOOTH_COLORS
-# define reshape_bouboule 0
 # define bouboule_handle_event 0
 # include "xlockmore.h"				/* from the xscreensaver distribution */
 #else  /* !STANDALONE */
@@ -836,6 +836,24 @@ release_bouboule(ModeInfo * mi)
 		(void) free((void *) starfield);
 		starfield = NULL;
 	}
+}
+
+ENTRYPOINT void
+reshape_bouboule(ModeInfo * mi, int width, int height)
+{
+	StarField  *sp = &starfield[MI_SCREEN(mi)];
+	sp->width  = width;
+	sp->height = height;
+    sininit(&sp->x,
+        sp->x.alpha, sp->x.step,
+        ((double) sp->width) / 4.0,
+        3.0 * ((double) sp->width) / 4.0,
+        POSCANRAND);
+    sininit(&sp->y,
+        sp->y.alpha, sp->y.step,
+        ((double) sp->height) / 4.0,
+        3.0 * ((double) sp->height) / 4.0,
+        POSCANRAND);
 }
 
 ENTRYPOINT void

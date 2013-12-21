@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="cubestorm" _label="CubeStorm">
+<screensaver name="cubestorm" _label="CubeStorm" gl="yes">
 
   <command arg="-root"/>
 
@@ -28,6 +28,8 @@
   </hgroup>
 
   <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
+
+  <xscreensaver-updater />
 
   <_description>
 Draws a series of rotating 3D boxes that intersect each other and

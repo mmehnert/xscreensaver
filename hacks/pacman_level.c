@@ -223,7 +223,7 @@ createjail (lev_t * level, const unsigned width, const unsigned height)
 }
 
 void
-get_jail_opening ( int *x, int *y)
+pacman_get_jail_opening ( int *x, int *y)
 {
     int xstart = LEVWIDTH / 2  - JAILWIDTH / 2;
     int ystart = LEVHEIGHT / 2 - JAILHEIGHT / 2;
@@ -535,11 +535,11 @@ init_bonus_dots (pacmangamestruct *pp, lev_t * level)
 }
 
 int
-is_bonus_dot (pacmangamestruct *pp, int x, int y, int *idx)
+pacman_is_bonus_dot (pacmangamestruct *pp, int x, int y, int *idx)
 {
     int ret = False;
     int i;
-    for (i = 0; i <= NUM_BONUS_DOTS; i++) {
+    for (i = 0; i < NUM_BONUS_DOTS; i++) {
 /*     fprintf(stderr,"is bonus: passed x (%d, %d) bonus (%d, %d)\n",x,y,bonus_dots[i].x, bonus_dots[i].y); */
         if (x == pp->bonus_dots[i].x && y == pp->bonus_dots[i].y) {
             ret = True;
@@ -553,25 +553,25 @@ is_bonus_dot (pacmangamestruct *pp, int x, int y, int *idx)
 static void
 check_bonus_idx (int idx)
 {
-    assert (0 <= idx && idx <= NUM_BONUS_DOTS);
+    assert (0 <= idx && idx < NUM_BONUS_DOTS);
 }
 
 int
-bonus_dot_eaten (pacmangamestruct *pp, int idx)
+pacman_bonus_dot_eaten (pacmangamestruct *pp, int idx)
 {
     check_bonus_idx (idx);
     return pp->bonus_dots[idx].eaten;
 }
 
 void
-eat_bonus_dot (pacmangamestruct *pp, int idx)
+pacman_eat_bonus_dot (pacmangamestruct *pp, int idx)
 {
     check_bonus_idx (idx);
     pp->bonus_dots[idx].eaten = True;
 }
 
 void
-bonus_dot_pos (pacmangamestruct *pp, int idx, int *x, int *y)
+pacman_bonus_dot_pos (pacmangamestruct *pp, int idx, int *x, int *y)
 {
     check_bonus_idx (idx);
     *x = pp->bonus_dots[idx].x;
@@ -595,7 +595,7 @@ frmtlevel (pacmangamestruct *pp, lev_t * level)
         for (x = 0; x < LEVWIDTH; x++) {
 
             if (checkset (level, x, y) == 0) {
-                if (is_bonus_dot (pp, x, y, &idx)) {
+                if (pacman_is_bonus_dot (pp, x, y, &idx)) {
                     frmtlev[y][x] = BLOCK_DOT_BONUS;
                 }
                 else {
@@ -709,7 +709,7 @@ countdots (pacmangamestruct *pp)
 
 /* Creates a new level, and places that in the pacmangamestruct. */
 int
-createnewlevel (pacmangamestruct *pp)
+pacman_createnewlevel (pacmangamestruct *pp)
 {
     lev_t *level;
     unsigned dirvec[1] = { GO_UP };
@@ -749,7 +749,7 @@ createnewlevel (pacmangamestruct *pp)
 
 /* Checks if a position is allowable for ghosts/pacs to enter. */
 int
-check_pos (pacmangamestruct * pp, int y, int x, int ghostpass)
+pacman_check_pos (pacmangamestruct * pp, int y, int x, int ghostpass)
 {
     if ((pp->level[y * LEVWIDTH + x] == BLOCK_DOT_2) ||
         (pp->level[y * LEVWIDTH + x] == BLOCK_EMPTY) ||
@@ -762,7 +762,7 @@ check_pos (pacmangamestruct * pp, int y, int x, int ghostpass)
 
 /* Checks if there is a dot on the specified position in the level. */
 int
-check_dot (pacmangamestruct * pp, unsigned int x, unsigned int y)
+pacman_check_dot (pacmangamestruct * pp, unsigned int x, unsigned int y)
 {
     if (x >= LEVWIDTH || y >= LEVHEIGHT)
         return 0;

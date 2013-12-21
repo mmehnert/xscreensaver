@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="flurry" _label="Flurry">
+<screensaver name="flurry" _label="Flurry" gl="yes">
 
   <command arg="-root"/>
 
@@ -16,6 +16,8 @@
     <option id="insane"  _label="Insane"      arg-set="-preset insane"/>
     <option id="random"  _label="Random"/>
   </select>
+
+  <xscreensaver-updater />
 
   <_description>
 This X11 port of the OSX screensaver of the same name draws a colourful

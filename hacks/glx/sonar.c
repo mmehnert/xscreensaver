@@ -1,4 +1,4 @@
-/* sonar, Copyright (c) 1998-2011 Jamie Zawinski and Stephen Martin
+/* sonar, Copyright (c) 1998-2012 Jamie Zawinski and Stephen Martin
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -43,11 +43,12 @@
  *
  * It should be easy to extend this code to support other sorts of sensors.
  * Some ideas:
+ *
  *   - search the output of "netstat" for the list of hosts to ping;
  *   - plot the contents of /proc/interrupts;
  *   - plot the process table, by process size, cpu usage, or total time;
  *   - plot the logged on users by idle time or cpu usage.
- *
+ *   - plot IM contacts or Facebook friends and their last-activity times.
  */
 
 #define DEF_FONT "-*-lucidatypewriter-bold-r-normal-*-*-480-*-*-*-*-iso8859-1"
@@ -108,8 +109,10 @@ typedef struct {
 
   texture_font_data *texfont;
 
+  enum { MSG, RESOLVE, RUN } state;
   sonar_sensor_data *ssd;
   char *error;
+  char *desc;
 
   sonar_bogie *displayed;	/* on screen and fading */
   sonar_bogie *pending;		/* returned by sensor, not yet on screen */
@@ -191,7 +194,6 @@ draw_screen (ModeInfo *mi, Bool mesh_p, Bool sweep_p)
 
   if (wire && !(mesh_p || sweep_p)) return 0;
 
-  glPushAttrib (GL_ENABLE_BIT);
   glDisable (GL_TEXTURE_2D);
 
   glFrontFace (GL_CCW);
@@ -314,7 +316,6 @@ draw_screen (ModeInfo *mi, Bool mesh_p, Bool sweep_p)
       glEnd();
     }
 
-  glPopAttrib();
   free (ring);
 
   return polys;
@@ -333,10 +334,10 @@ draw_text (ModeInfo *mi, const char *string, GLfloat r, GLfloat th,
   char *string2 = strdup (string);
   char *token = string2;
   char *line;
-  GLfloat color[4];
 
   if (size <= 0)   /* if size not specified, draw in yellow with alpha */
     {
+      GLfloat color[4];
       color[0] = 1;
       color[1] = 1;
       color[2] = 0;
@@ -435,7 +436,6 @@ draw_table (ModeInfo *mi)
 
   if (wire) return 0;
 
-  glPushAttrib (GL_ENABLE_BIT);
   glDisable (GL_TEXTURE_2D);
 
   glMaterialfv (GL_FRONT, GL_SPECULAR,  spec);
@@ -455,7 +455,6 @@ draw_table (ModeInfo *mi)
       polys++;
     }
   glEnd();
-  glPopAttrib();
 
   glMaterialfv (GL_FRONT, GL_AMBIENT_AND_DIFFUSE, text);
   glTranslatef (0, 0, 0.01);
@@ -503,7 +502,7 @@ draw_bogies (ModeInfo *mi)
 
 /* called from sonar-sim.c and sonar-icmp.c */
 sonar_bogie *
-copy_bogie (sonar_sensor_data *ssd, const sonar_bogie *b)
+sonar_copy_bogie (sonar_sensor_data *ssd, const sonar_bogie *b)
 {
   sonar_bogie *b2 = (sonar_bogie *) calloc (1, sizeof(*b2));
   b2->name = strdup (b->name);
@@ -523,7 +522,7 @@ copy_bogie (sonar_sensor_data *ssd, const sonar_bogie *b)
 
 /* called from sonar-icmp.c */
 void
-free_bogie (sonar_sensor_data *ssd, sonar_bogie *b)
+sonar_free_bogie (sonar_sensor_data *ssd, sonar_bogie *b)
 {
   if (b->closure)
     ssd->free_bogie_cb (ssd, b->closure);
@@ -546,7 +545,7 @@ delete_bogie (sonar_sensor_data *ssd, sonar_bogie *b,
           prev->next = b->next;
         else
           (*from_list) = b->next;
-        free_bogie (ssd, b);
+        sonar_free_bogie (ssd, b);
         break;
       }
 }
@@ -573,7 +572,7 @@ copy_and_insert_bogie (sonar_sensor_data *ssd, sonar_bogie *b,
         }
     }
 
-  b = copy_bogie (ssd, b);
+  b = sonar_copy_bogie (ssd, b);
   b->next = *to_list;
   *to_list = b;
 }
@@ -731,7 +730,7 @@ draw_startup_blurb (ModeInfo *mi)
 
   /* only leave error message up for N seconds */
   if (sp->error &&
-      sp->start_time + 4 < double_time())
+      sp->start_time + 6 < double_time())
     {
       free (sp->error);
       sp->error = 0;
@@ -812,7 +811,6 @@ ENTRYPOINT void
 init_sonar (ModeInfo *mi)
 {
   sonar_configuration *sp;
-  int wire = MI_IS_WIREFRAME(mi);
 
   if (!sps) {
     sps = (sonar_configuration *)
@@ -827,31 +825,6 @@ init_sonar (ModeInfo *mi)
 
   reshape_sonar (mi, MI_WIDTH(mi), MI_HEIGHT(mi));
   clear_gl_error(); /* WTF? sometimes "invalid op" from glViewport! */
-
-  if (!wire)
-    {
-      GLfloat pos[4] = {0.05, 0.07, 1.00, 0.0};
-      GLfloat amb[4] = {0.2, 0.2, 0.2, 1.0};
-      GLfloat dif[4] = {1.0, 1.0, 1.0, 1.0};
-      GLfloat spc[4] = {0.0, 1.0, 1.0, 1.0};
-
-      glEnable(GL_TEXTURE_2D);
-      glEnable(GL_LIGHTING);
-      glEnable(GL_LIGHT0);
-      glEnable(GL_CULL_FACE);
-      glEnable(GL_DEPTH_TEST);
-      glEnable(GL_NORMALIZE);
-      glEnable(GL_LINE_SMOOTH);
-      glEnable(GL_BLEND);
-      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-      glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
-      glShadeModel(GL_SMOOTH);
-
-      glLightfv(GL_LIGHT0, GL_POSITION, pos);
-      glLightfv(GL_LIGHT0, GL_AMBIENT,  amb);
-      glLightfv(GL_LIGHT0, GL_DIFFUSE,  dif);
-      glLightfv(GL_LIGHT0, GL_SPECULAR, spc);
-    }
 
   sp->trackball = gltrackball_init ();
   sp->rot = make_rotator (0, 0, 0, 0, speed * 0.003, True);
@@ -882,6 +855,7 @@ init_sonar (ModeInfo *mi)
   sp->start_time = double_time ();
   sp->sweep_offset = random() % 60;
   sp->sweep_th = -1;
+  sp->state = MSG;
 }
 
 
@@ -895,18 +869,21 @@ init_sensor (ModeInfo *mi)
   if (!ping_arg || !*ping_arg ||
       !strcmp(ping_arg, "default") ||
       !!strcmp (ping_arg, "simulation"))
-    sp->ssd = init_ping (MI_DISPLAY (mi), &sp->error, ping_arg,
-                         ping_timeout, resolve_p, times_p, debug_p);
+    sp->ssd = sonar_init_ping (MI_DISPLAY (mi), &sp->error, &sp->desc,
+                               ping_arg, ping_timeout, resolve_p, times_p,
+                               debug_p);
+
+  sp->start_time = double_time ();  /* for error message timing */
 
   /* Disavow privs.  This was already done in init_ping(), but
      we might not have called that at all, so do it again. */
   setuid(getuid());
 
   if (!sp->ssd)
-    sp->ssd = init_simulation (MI_DISPLAY (mi), &sp->error,
-                               team_a_name, team_b_name,
-                               team_a_count, team_b_count,
-                               debug_p);
+    sp->ssd = sonar_init_simulation (MI_DISPLAY (mi), &sp->error, &sp->desc,
+                                     team_a_name, team_b_name,
+                                     team_a_count, team_b_count,
+                                     debug_p);
   if (!sp->ssd)
     abort();
 }
@@ -918,6 +895,7 @@ draw_sonar (ModeInfo *mi)
   sonar_configuration *sp = &sps[MI_SCREEN(mi)];
   Display *dpy = MI_DISPLAY(mi);
   Window window = MI_WINDOW(mi);
+  int wire = MI_IS_WIREFRAME(mi);
 
   if (!sp->glx_context)
     return;
@@ -926,8 +904,40 @@ draw_sonar (ModeInfo *mi)
 
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
+  if (!wire)
+    {
+      GLfloat pos[4] = {0.05, 0.07, 1.00, 0.0};
+      GLfloat amb[4] = {0.2, 0.2, 0.2, 1.0};
+      GLfloat dif[4] = {1.0, 1.0, 1.0, 1.0};
+      GLfloat spc[4] = {0.0, 1.0, 1.0, 1.0};
+
+      glEnable(GL_TEXTURE_2D);
+      glEnable(GL_LIGHTING);
+      glEnable(GL_LIGHT0);
+      glEnable(GL_CULL_FACE);
+      glEnable(GL_DEPTH_TEST);
+      glEnable(GL_NORMALIZE);
+      glEnable(GL_LINE_SMOOTH);
+      glEnable(GL_BLEND);
+      glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+      glHint(GL_LINE_SMOOTH_HINT, GL_NICEST);
+      glShadeModel(GL_SMOOTH);
+
+      glLightfv(GL_LIGHT0, GL_POSITION, pos);
+      glLightfv(GL_LIGHT0, GL_AMBIENT,  amb);
+      glLightfv(GL_LIGHT0, GL_DIFFUSE,  dif);
+      glLightfv(GL_LIGHT0, GL_SPECULAR, spc);
+    }
+
   glPushMatrix ();
-  { GLfloat s = 7; glScalef (s,s,s); }
+  glRotatef(current_device_rotation(), 0, 0, 1);
+
+  {
+    GLfloat s = 7;
+    if (MI_WIDTH(mi) < MI_HEIGHT(mi))
+      s *= (MI_WIDTH(mi) / (float) MI_HEIGHT(mi));
+    glScalef (s,s,s);
+  }
 
   gltrackball_rotate (sp->trackball);
 
@@ -967,8 +977,33 @@ draw_sonar (ModeInfo *mi)
   glCallList (sp->grid_list);
   mi->polygon_count += sp->screen_polys;
 
-  if (! sp->ssd || sp->error)
+  if (sp->desc)						/* local subnet */
+    {
+      glPushMatrix();
+      glTranslatef (0, 0, 0.00002);
+      mi->polygon_count += draw_text (mi, sp->desc, 1.35, M_PI * 0.75, 0, 10);
+      /* glRotatef (45, 0, 0, 1); */
+      /* mi->polygon_count += draw_text (mi, sp->desc, 1.2, M_PI/2, 0, 10); */
+      glPopMatrix();
+    }
+
+  if (sp->error)
+    sp->state = MSG;
+
+  switch (sp->state) {
+  case MSG:			/* Frame 1: get "Resolving Hosts" on screen. */
     draw_startup_blurb(mi);
+    sp->state++;
+    break;
+  case RESOLVE:			/* Frame 2: gethostbyaddr may take a while. */
+    if (! sp->ssd)
+      init_sensor (mi);
+    sp->state++;
+    break;
+  case RUN:			/* Frame N: ping away */
+    sweep (sp);
+    break;
+  }
 
   glPopMatrix ();
 
@@ -976,12 +1011,6 @@ draw_sonar (ModeInfo *mi)
   glFinish();
 
   glXSwapBuffers(dpy, window);
-
-  if (! sp->ssd)
-    /* Just starting up.  "Resolving hosts" text printed.  Go stall. */
-    init_sensor (mi);
-  else
-    sweep (sp);
 }
 
 ENTRYPOINT void

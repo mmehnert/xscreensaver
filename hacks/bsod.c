@@ -1,4 +1,4 @@
-/* xscreensaver, Copyright (c) 1998-2010 Jamie Zawinski <jwz@jwz.org>
+/* xscreensaver, Copyright (c) 1998-2013 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -58,6 +58,7 @@
 # include "images/hmac.xpm"
 # include "images/osx_10_2.xpm"
 # include "images/osx_10_3.xpm"
+# include "images/android.xpm"
 #endif
 #include "images/atari.xbm"
 #include "images/mac.xbm"
@@ -74,7 +75,7 @@ typedef enum { EOF=0,
                COLOR, INVERT, MOVETO, MARGINS,
                CURSOR_BLOCK, CURSOR_LINE, RECT, COPY, PIXMAP, IMG,
                PAUSE, CHAR_DELAY, LINE_DELAY,
-               LOOP
+               LOOP, RESET
 } bsod_event_type;
 
 struct bsod_event {
@@ -266,6 +267,14 @@ struct bsod_state {
   (bst)->pos++; \
   } while (0)
 
+/* Restart the whole thing from the beginning.
+ */
+#define BSOD_RESET(bst) do { \
+  ensure_queue (bst); \
+  (bst)->queue[(bst)->pos].type = RESET; \
+  (bst)->pos++; \
+  } while (0)
+
 
 static void
 ensure_queue (struct bsod_state *bst)
@@ -442,6 +451,7 @@ bsod_pop (struct bsod_state *bst)
       if (! bst->queue[bst->pos].arg3)    /* "done once" */
         {
           position_for_text (bst, s);
+          bst->queue[bst->pos].arg4 = (void *) bst->queue[bst->pos].type;
           bst->queue[bst->pos].type = LEFT;
 
           if (type == CENTER_FULL ||
@@ -596,6 +606,23 @@ bsod_pop (struct bsod_state *bst)
         abort();
       return 0;
     }
+  case RESET:
+    {
+      int i;
+      for (i = 0; i < bst->queue_size; i++)
+        switch (bst->queue[i].type) {
+        case LEFT:   case LEFT_FULL:
+        case CENTER: case CENTER_FULL:
+        case RIGHT:  case RIGHT_FULL:
+          bst->queue[i].arg2 = bst->queue[i].arg1;
+          bst->queue[i].arg3 = 0;
+          bst->queue[i].type = (bsod_event_type) bst->queue[i].arg4;
+          break;
+        default: break;
+        }
+      bst->pos = 0;
+      return 0;
+    }
   case EOF:
     {
       bst->pos = -1;
@@ -632,7 +659,13 @@ make_bsod_state (Display *dpy, Window window,
      If the window is big:
        use ".bigFont" if it is loadable, else use ".bigFont2".
    */
-  if (bst->xgwa.height < 640)
+  if (
+# ifdef USE_IPHONE
+      1
+# else
+      bst->xgwa.height < 640
+# endif
+      )
     {
       sprintf (buf1, "%.100s.font", name);
       sprintf (buf2, "%.100s.font", class);
@@ -991,6 +1024,52 @@ windows_other (Display *dpy, Window window)
   default: abort(); break;
   }
 }
+
+
+/* As seen in Portal 2.  By jwz.
+ */
+static struct bsod_state *
+glados (Display *dpy, Window window)
+{
+  struct bsod_state *bst = make_bsod_state (dpy, window, "glaDOS", "GlaDOS");
+  const char * panicstr[] = {
+    "\n",
+    "MOLTEN CORE WARNING\n",
+    "\n",
+    "An operator error exception has occurred at FISSREAC0020093:09\n",
+    "FISSREAC0020077:14 FISSREAC0020023:17 FISSREAC0020088:22\n",
+    "neutron multiplication rate at spikevalue 99999999\n",
+    "\n",
+    "* Press any key to vent radiological emissions into atmosphere.\n",
+    "* Consult reactor core manual for instructions on proper reactor core\n",
+    "maintenance and repair.\n",
+    "\n",
+    "Press any key to continue\n",
+  };
+
+  int i;
+
+  bst->y = ((bst->xgwa.height -
+             ((bst->font->ascent + bst->font->descent) * countof(panicstr)))
+            / 2);
+
+  BSOD_MOVETO (bst, 0, bst->y);
+  BSOD_INVERT (bst);
+  BSOD_TEXT   (bst,  CENTER, "OPERATOR ERROR\n");
+  BSOD_INVERT (bst);
+  for (i = 0; i < countof(panicstr); i++)
+    BSOD_TEXT (bst, CENTER, panicstr[i]);
+  BSOD_PAUSE (bst, 1000000);
+  BSOD_INVERT (bst);
+  BSOD_RECT (bst, True, 0, 0, bst->xgwa.width, bst->xgwa.height);
+  BSOD_INVERT (bst);
+  BSOD_PAUSE (bst, 250000);
+  BSOD_RESET (bst);
+
+  XClearWindow (dpy, window);
+  return bst;
+}
+
 
 
 /* SCO OpenServer 5 panic, by Tom Kelly <tom@ancilla.toronto.on.ca>
@@ -1526,6 +1605,18 @@ macx_10_0 (Display *dpy, Window window)
     pixmap = xpm_data_to_pixmap (dpy, window, (char **) happy_mac,
                                  &pix_w, &pix_h, &mask);
 
+# ifdef USE_IPHONE
+    if (pixmap)
+      {
+        pixmap = double_pixmap (dpy, bst->gc, bst->xgwa.visual,
+                                bst->xgwa.depth, pixmap, pix_w, pix_h);
+        mask = double_pixmap (dpy, bst->gc, bst->xgwa.visual,
+                              1, mask, pix_w, pix_h);
+        pix_w *= 2;
+        pix_h *= 2;
+      }
+# endif
+
     x = (bst->xgwa.width - pix_w) / 2;
     y = (bst->xgwa.height - pix_h) / 2;
     if (y < 0) y = 0;
@@ -1615,18 +1706,193 @@ macx_10_2 (Display *dpy, Window window, Bool v10_3_p)
 # endif /* DO_XPM */
 
 
+/* 2006 Mac Mini with MacOS 10.6 failing with a bad boot drive. By jwz.
+ */
+static struct bsod_state *
+mac_diskfail (Display *dpy, Window window)
+{
+  struct bsod_state *bst = make_bsod_state (dpy, window, "macdisk", "Mac");
+  int cw = (bst->font->per_char
+            ? bst->font->per_char['n'-bst->font->min_char_or_byte2].width
+            : bst->font->min_bounds.width);
+  int h = bst->font->ascent + bst->font->descent;
+  int L = (bst->xgwa.width - (cw * 80)) / 2;
+  int T = (bst->xgwa.height - (h  * 10)) / 2;
+
+  unsigned long fg = bst->fg;
+  unsigned long bg = bst->bg;
+  unsigned long bg2 = get_pixel_resource (dpy, bst->xgwa.colormap,
+                                          "macx.background",
+                                          "Mac.Background");
+  if (L < 0) L = 0;
+  if (T < 0) T = 0;
+
+  bst->wrap_p = True;
+  bst->scroll_p = True;
+
+  BSOD_COLOR(bst, bg2, bg);
+  BSOD_RECT (bst, True, 0, 0, bst->xgwa.width, bst->xgwa.height);
+  BSOD_PAUSE (bst, 3000000);
+
+  BSOD_COLOR(bst, bg, fg);
+  BSOD_RECT (bst, True, 0, 0, bst->xgwa.width, bst->xgwa.height);
+  BSOD_COLOR(bst, fg, bg);
+
+  BSOD_MARGINS (bst, L, L);
+  BSOD_MOVETO (bst, L, T);
+
+  BSOD_TEXT (bst, LEFT,
+             "efiboot loaded from device: Acpi(PNP0A03,0)/Pci*1F|2)/Ata"
+             "(Primary,Slave)/HD(Part\n"
+             "2,Sig8997E427-064E-4FE7-8CB9-F27A784B232C)\n"
+             "boot file path: \\System\\Library\\CoreServices\\boot.efi\n"
+             ".Loading kernel cache file 'System\\Library\\Caches\\"
+             "com.apple.kext.caches\\Startup\\\n"
+             "kernelcache_i386.2A14EC2C'\n"
+             "Loading 'mach_kernel'...\n"
+             );
+  BSOD_CHAR_DELAY (bst, 7000);
+  BSOD_TEXT (bst, LEFT,
+             ".....................\n"
+             );
+  BSOD_CHAR_DELAY (bst, 0);
+  BSOD_TEXT (bst, LEFT,
+             "root device uuid is 'B62181B4-6755-3C27-BFA1-49A0E053DBD6\n"
+             "Loading drivers...\n"
+             "Loading System\\Library\\Caches\\com.apple.kext.caches\\"
+             "Startup\\Extensions.mkext....\n"
+             );
+  BSOD_CHAR_DELAY (bst, 7000);
+  BSOD_TEXT (bst, LEFT,
+             "..............................................................."
+             ".................\n"
+             "..............................................................."
+             ".................\n"
+             "..............\n"
+             );
+  BSOD_INVERT (bst);
+  BSOD_RECT (bst, True, 0, 0, bst->xgwa.width, bst->xgwa.height);
+  BSOD_INVERT (bst);
+
+  BSOD_MARGINS (bst, 0, 0);
+  BSOD_MOVETO (bst, 0, h);
+
+  BSOD_CHAR_DELAY (bst, 0);
+  BSOD_LINE_DELAY (bst, 5000);
+  BSOD_TEXT (bst, LEFT,
+             "npvhash=4095\n"
+             "PRE enabled\n"
+             "Darwin Kernel Version 10.8.9: Tue Jun  7 16:33:36 PDT 2011;"
+             " root:xnu-1504.15.3~1/RELEASE_I386\n"
+             "vm_page_bootstrap: 508036 free pages and 16252 wired pages\n"
+             "standard timeslicing quantum is 10000 us\n"
+             "mig_table_max_displ = 73\n"
+             "AppleACPICPU: ProcessorId=0 LocalApicId=0 Enabled\n"
+             "AppleACPICPU: ProcessorId=1 LocalApicId=1 Enabled\n"
+             "calling npo_policy_init for Quarantine\n"
+             "Security policy loaded: Quaantine policy (Quarantine)\n"
+             "calling npo_policy_init for Sandbox\n"
+             "Security policy loaded: Seatbelt sandbox policy (Sandbox)\n"
+             "calling npo_policy_init for TMSafetyNet\n"
+             "Security policy loaded: Safety net for Time Machine "
+             "(TMSafetyNet)\n"
+             "Copyright (c) 1982, 1986, 1989, 1991, 1993\n"
+             "The Regents of the University of California. All rights "
+             "reserved.\n"
+             "\n"
+             "MAC Framework successfully initialized\n"
+             "using 10485 buffer headers and 4096 cluster IO buffer headers\n"
+             "IOAPIC: Version 0x20 Vectors 64:87\n"
+             "ACPI: System State [S0 S3 S4 S5] (S3)\n"
+             "PFM64 0x10000000, 0xf0000000\n"
+             "[ PCI configuration begin ]\n"
+             "PCI configuration changed (bridge=1 device=1 cardbus=0)\n"
+             "[ PCI configuration end, bridges 4 devices 17 ]\n"
+             "nbinit: done (64 MB memory set for nbuf pool)\n"
+             "rooting via boot-uuid from /chosen: "
+             "B62181B4-6755-3C27-BFA1-49A0E053DBD6\n"
+             "Waiting on <dict ID=\"0\"><key>IOProviderClass</key>"
+             "<string ID=\"1\">IOResources</string><key>IOResourceMatch</key>"
+             "<string ID=\"2\">boot-uuid-nedia</string></dict>\n"
+             "com.apple.AppleFSCCompressionTypeZlib kmod start\n"
+             "com.apple.AppleFSCCompressionTypeZlib kmod succeeded\n"
+             "AppleIntelCPUPowerManagementClient: ready\n"
+             "FireWire (OHCI) Lucent ID 5811  built-in now active, GUID "
+             "0019e3fffe97f8b4; max speed s400.\n"
+             "Got boot device = IOService:/AppleACPIPlatformExpert/PCI000/"
+             "AppleACPIPCI/SATA@1F,2/AppleAHCI/PRI202/IOAHCIDevice@0/"
+             "AppleAHCIDiskDriver/IOAHCIBlockStorageDevice/"
+             "IOBlockStorageDriver/ST96812AS Media/IOGUIDPartitionScheme/"
+             "Customer02\n"
+             );
+  BSOD_PAUSE (bst, 1000000);
+  BSOD_TEXT (bst, LEFT,
+             "BSD root: Disk0s, major 14, minor 2\n"
+             "[Bluetooth::CSRHIDTransition] switchtoHCIMode (legacy)\n"
+             "[Bluetooth::CSRHIDTransition] transition complete.\n"
+             "CSRUSBBluetoothHCIController::setupHardware super returned 0\n"
+             );
+  BSOD_PAUSE (bst, 3000000);
+  BSOD_TEXT (bst, LEFT,
+             "disk0s2: I/O error.\n"
+             "0 [Level 3] [ReadUID 0] [Facility com.apple.system.fs] "
+             "[ErrType IO] [ErrNo 5] [IOType Read] [PBlkNum 48424] "
+             "[LBlkNum 1362] [FSLogMsgID 2009724291] [FSLogMsgOrder First]\n"
+             "0 [Level 3] [ReadUID 0] [Facility com.apple.system.fs] "
+             "[DevNode root_device] [MountPt /] [FSLogMsgID 2009724291] "
+             "[FSLogMsgOrder Last]\n"
+             "panic(cpu 0 caller 0x47f5ad): \"Process 1 exec of /sbin/launchd"
+             " failed, errno 5\\n\"0/SourceCache/xnu/xnu-1504.15.3/bsd/kern/"
+             "kern_exec.c:3145\n"
+             "Debugger called: <panic>\n"
+             "Backtrace (CPU 0), Frame : Return Address (4 potential args "
+             "on stack)\n"
+             "0x34bf3e48 : 0x21b837 (0x5dd7fc 0x34bf3e7c 0x223ce1 0x0)\n"
+             "0x34bf3e98 : 0x47f5ad (0x5cf950 0x831c08 0x5 0x0)\n"
+             "0x34bf3ef8 : 0x4696d2 (0x4800d20 0x1fe 0x45a69a0 0x80000001)\n"
+             "0x34bf3f38 : 0x48fee5 (0x46077a8 0x84baa0 0x34bf3f88 "
+             "0x34bf3f94)\n"
+             "0x34bf3f68 : 0x219432 (0x46077a8 0xffffff7f 0x0 0x227c4b)\n"
+             "0x34bf3fa8 : 0x2aacb4 (0xffffffff 0x1 0x22f8f5 0x227c4b)\n"
+             "0x34bf3fc8 : 0x2a1976 (0x0 0x0 0x2a17ab 0x4023ef0)\n"
+             "\n"
+             "BSD process name corresponding to current thread: init\n"
+             "\n"
+             "Mac OS version:\n"
+             "Not yet set\n"
+             "\n"
+             "Kernel version:\n"
+             "Darwin Kernel version 10.8.0: Tue Jun  7 16:33:36 PDT 2011; "
+             "root:xnu-1504.15-3~1/RELEASE_I386\n"
+             "System model name: Macmini1,1 (Mac-F4208EC0)\n"
+             "\n"
+             "System uptime in nanoseconds: 13239332027\n"
+             );
+  BSOD_CURSOR (bst, CURSOR_BLOCK, 500000, 999999);
+
+  XClearWindow (dpy, window);
+
+  return bst;
+}
+
+
+
 static struct bsod_state *
 macx (Display *dpy, Window window)
 {
 # ifdef DO_XPM
-  switch (random() % 3) {
+  switch (random() % 4) {
   case 0: return macx_10_0 (dpy, window);        break;
   case 1: return macx_10_2 (dpy, window, False); break;
   case 2: return macx_10_2 (dpy, window, True);  break;
+  case 3: return mac_diskfail (dpy, window); break;
   default: abort();
   }
 # else  /* !DO_XPM */
-  return macx_10_0 (dpy, window);
+  switch (random() % 2) {
+  case 0:  return macx_10_0 (dpy, window);    break;
+  default: return mac_diskfail (dpy, window); break;
+  }
 # endif /* !DO_XPM */
 }
 
@@ -2362,7 +2628,7 @@ hppa_linux (Display *dpy, Window window)
      { -1, "Soft power switch enabled, polling @ 0xf0400804.\n" },
      { -1, "pty: 256 Unix98 ptys configured\n" },
      { -1, "Generic RTC Driver v1.07\n" },
-     { -1, "Serial: 8250/16550 driver $Revision: 1.93 $ 13 ports, "
+     { -1, "Serial: 8250/16550 driver $Revision: 1.100 $ 13 ports, "
            "IRQ sharing disabled\n" },
      { -1, "ttyS0 at I/O 0x3f8 (irq = 0) is a 16550A\n" },
      { -1, "ttyS1 at I/O 0x2f8 (irq = 0) is a 16550A\n" },
@@ -3574,6 +3840,226 @@ atm (Display *dpy, Window window)
 }
 
 
+/* An Android phone boot loader, by jwz.
+ */
+static struct bsod_state *
+android (Display *dpy, Window window)
+{
+  struct bsod_state *bst = make_bsod_state (dpy, window, "android", "Android");
+
+  unsigned long bg = get_pixel_resource (dpy, bst->xgwa.colormap,
+                                         "android.background",
+                                         "Android.Background");
+  unsigned long fg = get_pixel_resource (dpy, bst->xgwa.colormap,
+                                         "android.foreground",
+                                         "Android.Foreground");
+  unsigned long c1 = get_pixel_resource (dpy, bst->xgwa.colormap,
+                                         "android.color1",
+                                         "Android.Foreground");
+  unsigned long c2 = get_pixel_resource (dpy, bst->xgwa.colormap,
+                                         "android.color2",
+                                         "Android.Foreground");
+  unsigned long c3 = get_pixel_resource (dpy, bst->xgwa.colormap,
+                                         "android.color3",
+                                         "Android.Foreground");
+  unsigned long c4 = get_pixel_resource (dpy, bst->xgwa.colormap,
+                                         "android.color4",
+                                         "Android.Foreground");
+  unsigned long c5 = get_pixel_resource (dpy, bst->xgwa.colormap,
+                                         "android.color5",
+                                         "Android.Foreground");
+  unsigned long c6 = get_pixel_resource (dpy, bst->xgwa.colormap,
+                                         "android.color6",
+                                         "Android.Foreground");
+  unsigned long c7 = get_pixel_resource (dpy, bst->xgwa.colormap,
+                                         "android.color7",
+                                         "Android.Foreground");
+
+  const char *lines0[] = {
+    "Calculating... please wait\n",
+    "osbl:     0x499DF907\n",
+    "amss:     0x73162409\n",
+    "hboot:    0xE46C3327\n",
+    "boot:     0xBA570E7A\n",
+    "recovery: 0xC8BBA213\n",
+    "system:   0x87C3B1F0\n",
+    "\n",
+    "Press power key to go back.\n",
+  };
+
+  const char *lines1[] = {
+    "Checking SD card update...\n",
+    "",
+    "  SD Checking...\n",
+    "  Failed to open zipfile\n",
+    "  loading preload_content...\n",
+    "  [Caution] Preload Content Not Found\n",
+    "  loading HTCUpdateZipName image...\n",
+    "",
+    "  Checking...[PG46IMG.zip]\n",
+    "Please plug off USB\n",
+  };
+
+  const char *lines2[] = {
+    "  SD Checking...\n",
+    "  Loading...[PK76DIAG.zip]\n",
+    "  No image!\n",
+    "  Loading...[PK76DIAG.nbh]\n",
+    "  No image or wrong image!\n",
+    "  Loading...[PK76IMG.zip]\n",
+    "  No image!\n",
+    "  Loading...[PK76IMG.nbh]\n",
+    "  No image or wrong image!\n",
+    "  Loading...[PK76IMG.tar]\n",
+    "  No image!\n",
+    "  Loading...[PK76IMG.aes]\n",
+    "  No image!\n",
+    "  Loading...[PK76IMG.enc]\n",
+    "  No image!\n",
+  };
+
+  int cw = (bst->font->per_char
+            ? bst->font->per_char['n'-bst->font->min_char_or_byte2].width
+            : bst->font->min_bounds.width);
+  int line_height = bst->font->ascent + bst->font->descent;
+
+  int state = 0;
+
+  Pixmap pixmap = 0;
+  int pix_w = 0, pix_h = 0;
+
+# ifdef DO_XPM
+  pixmap = xpm_data_to_pixmap (dpy, window, (char **) android_skate,
+                               &pix_w, &pix_h, 0);
+  if (! pixmap) abort();
+  bst->pixmap = pixmap;
+# endif /* DO_XPM */
+
+  bst->left_margin = (bst->xgwa.width - (cw * 40)) / 2;
+  if (bst->left_margin < 0) bst->left_margin = 0;
+
+  while (1) {
+    unsigned long delay =
+      ((state == 0 || 
+        state == countof(lines0) ||
+        state == countof(lines0) + countof(lines1) ||
+        state == countof(lines0) + countof(lines1) + countof(lines2))
+                           ? 10000 : 0);
+    BSOD_LINE_DELAY (bst, delay);
+
+    if (state <= countof(lines0) + countof(lines1) + countof(lines2))
+      {
+        BSOD_COLOR (bst, bg, bg);
+        BSOD_RECT (bst, True, 0, 0, bst->xgwa.width, bst->xgwa.height);
+        BSOD_COLOR (bst, bg, c1);
+        BSOD_MOVETO (bst, bst->left_margin, bst->top_margin + line_height);
+        BSOD_TEXT (bst, LEFT, "*** UNLOCKED ***\n");
+        BSOD_COLOR (bst, c2, bg);
+        BSOD_TEXT (bst, LEFT, 
+                   "PRIMOU PVT SHIP S-OFF RL\n"
+                   "HBOOT-1.17.0000\n"
+                   "CPLD-None\n"
+                   "MICROP-None\n"
+                   "RADIO-3831.17.00.23_2\n"
+                   "eMMC-bootmode: disabled\n"
+                   "CPU-bootmode : disabled\n"
+                   "HW Secure boot: enabled\n"
+                   "MODEM PATH : OFF\n"
+                   "May 15 2012, 10:28:15\n"
+                   "\n");
+        BSOD_COLOR (bst, bg, c3);
+
+        if (pixmap)
+          {
+            int x = (bst->xgwa.width - pix_w) / 2;
+            int y = bst->xgwa.height - pix_h;
+            BSOD_PIXMAP (bst, 0, 0, pix_w, pix_h, x, y);
+          }
+      }
+
+    if (state == countof(lines0) ||
+        state == countof(lines0) + countof(lines1) ||
+        state == countof(lines0) + countof(lines1) + countof(lines2))
+      {
+        BSOD_TEXT (bst, LEFT, "HBOOT USB\n");
+        BSOD_COLOR (bst, c4, bg);
+        BSOD_TEXT (bst, LEFT,
+                   "\n"
+                   "<VOL UP> to previous item\n"
+                   "<VOL DOWN> to next item\n"
+                   "<POWER> to select item\n"
+                   "\n");
+        BSOD_COLOR (bst, c5, bg); BSOD_TEXT (bst, LEFT, "FASTBOOT\n");
+        BSOD_COLOR (bst, c6, bg); BSOD_TEXT (bst, LEFT, "RECOVERY\n");
+        BSOD_COLOR (bst, c7, bg); BSOD_TEXT (bst, LEFT, "FACTORY RESET\n");
+        BSOD_COLOR (bst, c3, bg); BSOD_TEXT (bst, LEFT, "SIMLOCK\n");
+        BSOD_COLOR (bst, bg, c3); BSOD_TEXT (bst, LEFT, "HBOOT USB\n");
+        BSOD_COLOR (bst, fg, bg); BSOD_TEXT (bst, LEFT, "IMAGE CRC\n");
+        BSOD_COLOR (bst, c3, bg); BSOD_TEXT (bst, LEFT, "SHOW BARCODE\n");
+        BSOD_PAUSE (bst, 3000000);
+      }
+    else if (state < countof(lines0))
+      {
+        BSOD_TEXT (bst, LEFT, "IMAGE CRC\n\n");
+        BSOD_COLOR (bst, c5, bg);
+        {
+          int i;
+          for (i = 0; i <= state; i++) {
+            const char *s = lines0[i];
+            BSOD_COLOR (bst, (strchr(s, ':') ? c7 : c3), bg);
+            BSOD_TEXT (bst, LEFT, s);
+          }
+        }
+        BSOD_PAUSE (bst, 500000);
+        if (state == countof(lines0)-1)
+          BSOD_PAUSE (bst, 2000000);
+      }
+    else if (state < countof(lines0) + countof(lines1))
+      {
+        BSOD_TEXT (bst, LEFT, "HBOOT\n\n");
+        BSOD_COLOR (bst, c5, bg);
+        {
+          int i;
+          for (i = countof(lines0); i <= state; i++) {
+            const char *s = lines1[i - countof(lines0)];
+            BSOD_COLOR (bst, (*s == ' ' ? c6 : c3), bg);
+            BSOD_TEXT (bst, LEFT, s);
+          }
+        }
+        BSOD_PAUSE (bst, 500000);
+        if (state == countof(lines0) + countof(lines1) - 1)
+          BSOD_PAUSE (bst, 2000000);
+      }
+    else if (state < countof(lines0) + countof(lines1) + countof(lines2))
+      {
+        BSOD_TEXT (bst, LEFT, "HBOOT USB\n\n");
+        BSOD_COLOR (bst, c5, bg);
+        {
+          int i;
+          for (i = countof(lines0) + countof(lines1); i <= state; i++) {
+            const char *s = lines2[i - countof(lines0) - countof(lines1)];
+            BSOD_COLOR (bst, (*s == ' ' ? c6 : c3), bg);
+            BSOD_TEXT (bst, LEFT, s);
+          }
+        }
+        BSOD_PAUSE (bst, 500000);
+        if (state == countof(lines0) + countof(lines1) + countof(lines2)-1)
+          BSOD_PAUSE (bst, 2000000);
+      }
+    else
+      break;
+
+    state++;
+  }
+
+  XClearWindow (dpy, window);
+
+  return bst;
+}
+
+
+
+
 /*****************************************************************************
  *****************************************************************************/
 
@@ -3610,6 +4096,8 @@ static const struct {
   { "Nvidia",		nvidia },
   { "Apple2",		apple2crash },
   { "ATM",		atm },
+  { "GLaDOS",		glados },
+  { "Android",		android },
 };
 
 
@@ -3831,6 +4319,8 @@ bsod_event (Display *dpy, Window window, void *closure, XEvent *event)
   /* pick a new mode and restart when mouse clicked, or certain keys typed. */
 
   if (event->type == ButtonPress)
+    return True;
+  else if (event->type == ButtonRelease)
     reset_p = True;
   else if (event->type == KeyPress)
     {
@@ -3869,7 +4359,7 @@ bsod_free (Display *dpy, Window window, void *closure)
 
 
 static const char *bsod_defaults [] = {
-  "*delay:		   30",
+  "*delay:		   45",
   "*debug:		   False",
 
   "*doOnly:		   ",
@@ -3899,6 +4389,8 @@ static const char *bsod_defaults [] = {
   "*doOS2:		   True",
   "*doNvidia:		   True",
   "*doATM:		   True",
+  "*doGLaDOS:		   True",
+  "*doAndroid:		   True",
 
   "*font:		   9x15bold",
   "*font2:		   -*-courier-bold-r-*-*-*-120-*-*-m-*-*-*",
@@ -3914,6 +4406,9 @@ static const char *bsod_defaults [] = {
   ".windowslh.foreground:  White",
   ".windowslh.background:  #AA0000",    /* EGA color 0x04. */
   ".windowslh.background2: #AAAAAA",    /* EGA color 0x07. */
+
+  ".glaDOS.foreground:	   White",
+  ".glaDOS.background:	   #0000AA",    /* EGA color 0x01. */
 
   ".amiga.foreground:	   #FF0000",
   ".amiga.background:	   Black",
@@ -3938,6 +4433,9 @@ static const char *bsod_defaults [] = {
   ".macx.textForeground:   White",
   ".macx.textBackground:   Black",
   ".macx.background:	   #888888",
+
+  ".macdisk.font:	   -*-courier-bold-r-*-*-*-80-*-*-m-*-*-*",
+  ".macdisk.bigFont:	   -*-courier-bold-r-*-*-*-100-*-*-m-*-*-*",
 
   ".sco.font:		   -*-courier-bold-r-*-*-*-140-*-*-m-*-*-*",
   ".sco.foreground:	   White",
@@ -3994,19 +4492,35 @@ static const char *bsod_defaults [] = {
   ".atm.foreground:	   Black",
   ".atm.background:	   #FF6600",
 
-  "*dontClearRoot:         True",
+  ".android.foreground:	   Black",
+  ".android.background:	   White",
+  ".android.color1:	   #AA00AA", /* violet */
+  ".android.color2:	   #336633", /* green1 */
+  ".android.color3:	   #0000FF", /* blue */
+  ".android.color4:	   #CC7744", /* orange */
+  ".android.color5:	   #99AA55", /* green2 */
+  ".android.color6:	   #66AA33", /* green3 */
+  ".android.color7:	   #FF0000", /* red */
 
-  "*apple2TVColor:         50",
-  "*apple2TVTint:          5",
-  "*apple2TVBrightness:    10",
-  "*apple2TVContrast:      90",
-  "*apple2SimulateUser:    True",
+  "*dontClearRoot:         True",
 
   ANALOGTV_DEFAULTS
 
 #ifdef HAVE_XSHM_EXTENSION
   "*useSHM:                True",
 #endif
+
+# ifdef USE_IPHONE
+  "*font:		   Courier-Bold 9",
+  ".amiga.font:	           Courier-Bold 12",
+  ".macsbug.font:	   Courier-Bold 5",
+  ".sco.font:		   Courier-Bold 9",
+  ".hvx.font:		   Courier-Bold 9",
+  ".bsd.font:		   Courier-Bold 9",
+  ".solaris.font:          Courier-Bold 6",
+  ".macdisk.font:          Courier-Bold 6",
+# endif
+
   0
 };
 
@@ -4066,6 +4580,10 @@ static const XrmOptionDescRec bsod_options [] = {
   { "-no-os2",		".doOS2",		XrmoptionNoArg,  "False" },
   { "-atm",		".doATM",		XrmoptionNoArg,  "True"  },
   { "-no-atm",		".doATM",		XrmoptionNoArg,  "False" },
+  { "-glados",		".doGLaDOS",		XrmoptionNoArg,  "True"  },
+  { "-no-glados",	".doGLaDOS",		XrmoptionNoArg,  "False" },
+  { "-android",		".doAndroid",		XrmoptionNoArg,  "True"  },
+  { "-no-android",	".doAndroid",		XrmoptionNoArg,  "False" },
   ANALOGTV_OPTIONS
   { 0, 0, 0, 0 }
 };

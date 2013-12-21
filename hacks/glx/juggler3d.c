@@ -580,8 +580,12 @@ typedef struct {
   Object       *objects;
   struct patternindex patternindex;
 
+# ifdef HAVE_GLBITMAP
   XFontStruct *mode_font;
   GLuint font_dlist;
+# else
+  texture_font_data *font_data;
+# endif
 } jugglestruct;
 
 static jugglestruct *juggles = (jugglestruct *) NULL;
@@ -658,10 +662,12 @@ free_juggle(jugglestruct *sp) {
 	free(sp->pattern);
 	sp->pattern = NULL;
   }
+# ifdef HAVE_GLBITMAP
   if (sp->mode_font!=None) {
 	XFreeFontInfo(NULL,sp->mode_font,1);
 	sp->mode_font = None;
   }
+# endif /* HAVE_GLBITMAP */
 }
 
 static Bool
@@ -1696,6 +1702,8 @@ show_arms(ModeInfo * mi)
   int soffx = 10;
   int soffy = 11;
 
+  glFrontFace(GL_CCW);
+
   j = 1;
   for(side = LEFT; side <= RIGHT; side = (Hand)((int)side + 1)) {
 	/* Translate into device coords */
@@ -1798,6 +1806,8 @@ show_figure(ModeInfo * mi, Bool init)
   }
 
   glMaterialfv (GL_FRONT, GL_AMBIENT_AND_DIFFUSE, gcolor);
+
+  glFrontFace(GL_CCW);
 
   {
     GLfloat scale = ((GLfloat) a[10].x - a[9].x) / 2;
@@ -2065,6 +2075,8 @@ show_ball(ModeInfo *mi, unsigned long color, Trace *s)
   gcolor2[1] = gcolor1[1] / 3;
   gcolor2[2] = gcolor1[2] / 3;
 
+  glFrontFace(GL_CCW);
+
   {
     GLfloat scale = BALLRADIUS;
     glPushMatrix();
@@ -2119,6 +2131,8 @@ show_europeanclub(ModeInfo *mi, unsigned long color, Trace *s)
   gcolor1[0] = mi->colors[color].red   / 65536.0;
   gcolor1[1] = mi->colors[color].green / 65536.0;
   gcolor1[2] = mi->colors[color].blue  / 65536.0;
+
+  glFrontFace(GL_CCW);
 
   {
     GLfloat scale = radius;
@@ -2241,6 +2255,8 @@ show_knife(ModeInfo *mi, unsigned long color, Trace *s)
   gcolor1[1] = mi->colors[color].green / 65536.0;
   gcolor1[2] = mi->colors[color].blue  / 65536.0;
 
+  glFrontFace(GL_CCW);
+
   glPushMatrix();
   glTranslatef(x, y, 0);
   glScalef (2, 2, 2);
@@ -2298,6 +2314,8 @@ show_ring(ModeInfo *mi, unsigned long color, Trace *s)
   gcolor2[0] = gcolor1[0] / 3;
   gcolor2[1] = gcolor1[1] / 3;
   gcolor2[2] = gcolor1[2] / 3;
+
+  glFrontFace(GL_CCW);
 
   glPushMatrix();
   glTranslatef(0, 0, 12);  /* back of ring in hand */
@@ -2387,6 +2405,8 @@ show_bball(ModeInfo *mi, unsigned long color, Trace *s)
   gcolor1[0] = mi->colors[color].red   / 65536.0;
   gcolor1[1] = mi->colors[color].green / 65536.0;
   gcolor1[2] = mi->colors[color].blue  / 65536.0;
+
+  glFrontFace(GL_CCW);
 
   {
     GLfloat scale = radius;
@@ -2651,7 +2671,11 @@ init_juggle (ModeInfo * mi)
 
   sp->glx_context = init_GL(mi);
 
+# ifdef HAVE_GLBITMAP
   load_font (mi->dpy, "titleFont",  &sp->mode_font, &sp->font_dlist);
+# else /* !HAVE_GLBITMAP */
+  sp->font_data = load_texture_font (mi->dpy, "titleFont");
+# endif /* !HAVE_GLBITMAP */
 
   reshape_juggle (mi, MI_WIDTH(mi), MI_HEIGHT(mi));
   clear_gl_error(); /* WTF? sometimes "invalid op" from glViewport! */
@@ -2884,6 +2908,7 @@ draw_juggle (ModeInfo *mi)
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
   glPushMatrix ();
+  glRotatef(current_device_rotation(), 0, 0, 1);
 
   glTranslatef(0,-3,0);
 
@@ -3037,12 +3062,15 @@ draw_juggle (ModeInfo *mi)
 	}
   }
 
-  if(sp->mode_font != None) {
-    print_gl_string (mi->dpy, sp->mode_font, sp->font_dlist,
-                     mi->xgwa.width, mi->xgwa.height,
-                     10, mi->xgwa.height - 10,
-                     sp->pattern, False);
-  }
+  print_gl_string (mi->dpy, 
+# ifdef HAVE_GLBITMAP
+                   sp->mode_font, sp->font_dlist,
+# else /* !HAVE_GLBITMAP */
+                   sp->font_data,
+# endif /* !HAVE_GLBITMAP */
+                   mi->xgwa.width, mi->xgwa.height,
+                   10, mi->xgwa.height - 10,
+                   sp->pattern, False);
 
 #ifdef MEMTEST
   if((int)(sp->time/10) % 1000 == 0)

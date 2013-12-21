@@ -1,5 +1,5 @@
 /* xlockmore.h --- xscreensaver compatibility layer for xlockmore modules.
- * xscreensaver, Copyright (c) 1997-2008 Jamie Zawinski <jwz@jwz.org>
+ * xscreensaver, Copyright (c) 1997-2012 Jamie Zawinski <jwz@jwz.org>
  *
  * Permission to use, copy, modify, distribute, and sell this software and its
  * documentation for any purpose is hereby granted without fee, provided that
@@ -28,19 +28,6 @@ ERROR!  Sorry, xlockmore.h requires ANSI C (gcc, for example.)
 
 #include "screenhackI.h"
 #include "xlockmoreI.h"
-
-#ifdef USE_GL
-
-# ifdef HAVE_COCOA
-#  include <OpenGL/gl.h>
-#  include <OpenGL/glu.h>
-# else  /* !HAVE_COCOA -- real Xlib */
-#  include <GL/glx.h>
-#  include <GL/glu.h>
-# endif /* !HAVE_COCOA */
-
-# define FreeAllGL(dpy) /* */
-#endif /* USE_GL */
 
 # define ENTRYPOINT static
 
@@ -102,6 +89,8 @@ ERROR!  Sorry, xlockmore.h requires ANSI C (gcc, for example.)
 
 #define MI_CLEARWINDOW(mi) XClearWindow(MI_DISPLAY(mi), MI_WINDOW(mi))
 
+#define FreeAllGL(dpy)		/* */
+
 /* Some other utility macros.
  */
 #define SINF(n)			((float)sin((double)(n)))
@@ -139,9 +128,11 @@ ERROR!  Sorry, xlockmore.h requires ANSI C (gcc, for example.)
 #  define xlockmore_validate_gl_visual 0
 # endif  /* !USE_GL || HAVE_COCOA */
 
-# ifndef USE_GL
-#  define xlockmore_gl_compute_fps 0
-# endif /* !USE_GL */
+# ifdef USE_GL
+#  define XLOCKMORE_FPS xlockmore_gl_compute_fps
+# else
+#  define XLOCKMORE_FPS xlockmore_do_fps
+# endif
 
 #ifdef WRITABLE_COLORS
 # undef WRITABLE_COLORS
@@ -197,7 +188,7 @@ ERROR!  Sorry, xlockmore.h requires ANSI C (gcc, for example.)
 	   xlockmore_setup,						\
 	   & NAME ## _xlockmore_function_table,				\
 	   0, 0, 0, 0, 0,						\
-           xlockmore_gl_compute_fps,					\
+           XLOCKMORE_FPS,						\
            xlockmore_pick_gl_visual,					\
 	   xlockmore_validate_gl_visual };				\
 									\

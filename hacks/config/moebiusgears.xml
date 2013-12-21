@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 
-<screensaver name="moebiusgears" _label="MoebiusGears">
+<screensaver name="moebiusgears" _label="MoebiusGears" gl="yes">
 
   <command arg="-root"/>
 
@@ -29,6 +29,8 @@
   </hgroup>
 
   <boolean id="showfps" _label="Show frame rate" arg-set="-fps"/>
+
+  <xscreensaver-updater />
 
   <_description>
 Draws a closed, interlinked chain of rotating gears.  The layout of

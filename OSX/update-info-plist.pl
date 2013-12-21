@@ -1,5 +1,5 @@
 #!/usr/bin/perl -w
-# Copyright © 2006-2011 Jamie Zawinski <jwz@jwz.org>
+# Copyright Â© 2006-2013 Jamie Zawinski <jwz@jwz.org>
 #
 # Permission to use, copy, modify, distribute, and sell this software and its
 # documentation for any purpose is hereby granted without fee, provided that
@@ -21,24 +21,58 @@
 require 5;
 #use diagnostics;	# Fails on some MacOS 10.5 systems
 use strict;
+use IPC::Open3;
+use IO::Uncompress::Gunzip qw(gunzip $GunzipError);
+use IO::Compress::Gzip qw(gzip $GzipError);
 
-my $progname = $0; $progname =~ s@.*/@@g;
-my $version = q{ $Revision: 1.15 $ }; $version =~ s/^[^0-9]+([0-9.]+).*$/$1/;
+my ($exec_dir, $progname) = ($0 =~ m@^(.*?)/([^/]+)$@);
+
+my $version = q{ $Revision: 1.28 $ }; $version =~ s/^[^0-9]+([0-9.]+).*$/$1/;
 
 $ENV{PATH} = "/usr/local/bin:$ENV{PATH}";   # for seticon
+
+my $thumbdir = $ENV{HOME} . '/www/xscreensaver/screenshots/';
+
 
 
 my $verbose = 1;
 
+sub convert_plist($$) {
+  my ($data, $to_binary_p) = @_;
+  my $is_binary_p = ($data =~ m/^bplist/s);
+  if ($data && (!$is_binary_p) != (!$to_binary_p)) {
+    print STDERR "$progname: converting plist\n" if ($verbose > 2);
+    my $which = ($to_binary_p ? 'binary1' : 'xml1');
+    my $cmd = "plutil -convert $which -s -o - -";
+    my $pid = open3 (my $in, my $out, undef, $cmd) || error ("pipe: $cmd: $!");
+    print $in $data;
+    close $in;
+    local $/ = undef;  # read entire file
+    $data = <$out>;
+    close $out;
+  }
+  return $data;
+}
+
+
 sub read_info_plist($) {
   my ($app_dir) = @_;
-  my $file = "$app_dir/Contents/Info.plist";
+  my $file  = "$app_dir/Contents/Info.plist";
+  my $file2 = "$app_dir/Info.plist";
   $file =~ s@/+@/@g;
-  local *IN;
-  my $body = '';
-  error ("$file: $!") unless open (IN, "<$file");
-  while (<IN>) { $body .= $_; }
-  close IN;
+  my $in;
+  if (open ($in, '<', $file)) {
+  } elsif (open ($in, '<', $file2)) {
+    $file = $file2;
+  } else {
+    error ("$file: $!");
+  }
+  print STDERR "$progname: read $file\n" if ($verbose > 2);
+  local $/ = undef;  # read entire file
+  my $body = <$in>;
+  close $in;
+
+  $body = convert_plist ($body, 0);  # convert to xml plist
   return ($file, $body);
 }
 
@@ -47,22 +81,43 @@ sub read_saver_xml($) {
   my ($app_dir) = @_;
   error ("$app_dir: no name") 
     unless ($app_dir =~ m@/([^/.]+).(app|saver)/?$@x);
-  my $name = lc($1);
-  my $file = "$app_dir/Contents/Resources/$name.xml";
+  my $name  = $1;
+
+  return () if ($name eq 'XScreenSaver');
+  return () if ($name eq 'SaverTester');
+  return () if ($name eq 'XScreenSaverUpdater');
+
+  my $file  = "$app_dir/Contents/Resources/" . lc($name) . ".xml";
+  my $file2 = "$app_dir/" . lc($name) . ".xml";
+  my $file3 = "$app_dir/Contents/PlugIns/$name.saver/Contents/Resources/" .
+              lc($name) . ".xml";
   $file =~ s@/+@/@g;
-  local *IN;
-  my $body = '';
-  error ("$file: $!") unless open (IN, "<$file");
-  while (<IN>) { $body .= $_; }
-  close IN;
-  return ($file, $body);
+  my $in;
+  if (open ($in, '<', $file)) {
+  } elsif (open ($in, '<', $file2)) { $file = $file2;
+  } elsif (open ($in, '<', $file3)) { $file = $file3;
+  } else {
+    error ("$file: $!");
+  }
+  print STDERR "$progname: read $file\n" if ($verbose > 2);
+  local $/ = undef;  # read entire file
+  my $body = <$in>;
+  close $in;
+
+  # Uncompress the XML if it is compressed.
+  my $body2 = '';
+  gunzip (\$body, \$body2) || error ("$app_dir: xml gunzip: $GunzipError");
+  my $was_compressed_p = ($body ne $body2);
+  return ($file, $body2, $was_compressed_p);
 }
 
 
 sub update_saver_xml($$) {
   my ($app_dir, $vers) = @_;
-  my ($filename, $body) = read_saver_xml ($app_dir);
+  my ($filename, $body, $was_compressed_p) = read_saver_xml ($app_dir);
   my $obody = $body;
+
+  return () unless defined ($filename);
 
   $body =~ m@<screensaver[^<>]*?[ \t]_label=\"([^\"]+)\"@m ||
     error ("$filename: no name label");
@@ -124,7 +179,7 @@ sub update_saver_xml($$) {
                "\n" . 
                "From the XScreenSaver collection: " .
                "http://www.jwz.org/xscreensaver/\n" .
-               "Copyright \251 $year by $authors.\n");
+               "Copyright \302\251 $year by $authors.\n");
 
   my $desc2 = ("$name $vers,\n" .			# Info.plist
                "\302\251 $year $authors.\n" .
@@ -143,13 +198,23 @@ sub update_saver_xml($$) {
 
   $body =~ s@(<_description>)(.*?)(</_description>)@$1$desc1$3@s;
 
-  if ($obody eq $body) {
+  # NSXMLParser doesn't seem to work properly on Latin1 XML documents,
+  # so we convert these to UTF8 when embedding them in the .saver bundle.
+  $body =~ s@encoding="ISO-8859-1"@encoding="UTF-8"@gsi;
+
+  if ($obody eq $body && $was_compressed_p) {
     print STDERR "$progname: $filename: unchanged\n" if ($verbose > 1);
   } else {
+
+    # Gzip the XML.
+    my $body2 = '';
+    gzip (\$body, \$body2) || error ("$app_dir: xml gzip: $GzipError");
+    $body = $body2;
+
     my $file_tmp = "$filename.tmp";
-    open(OUT, ">$file_tmp") || error ("$file_tmp: $!");
-    print OUT $body || error ("$file_tmp: $!");
-    close OUT || error ("$file_tmp: $!");
+    open (my $out, '>:raw', $file_tmp) || error ("$file_tmp: $!");
+    print $out $body || error ("$file_tmp: $!");
+    close $out || error ("$file_tmp: $!");
 
     if (!rename ("$file_tmp", "$filename")) {
       unlink "$file_tmp";
@@ -161,6 +226,40 @@ sub update_saver_xml($$) {
   return ($desc1, $desc2);
 }
 
+
+sub compress_all_xml_files($) {
+  my ($dir) = @_;
+  opendir (my $dirp, $dir) || error ("$dir: $!");
+  my @files = readdir ($dirp);
+  closedir $dirp;
+  foreach my $f (sort @files) {
+    next unless ($f =~ m/\.xml$/si);
+    my $filename = "$dir/$f";
+    open (my $in, '<', $filename) || error ("$filename: $!");
+    print STDERR "$progname: read $filename\n" if ($verbose > 2);
+    local $/ = undef;  # read entire file
+    my $body = <$in>;
+    close $in;
+
+    if ($body =~ m/^<\?xml/s) {
+      my $body2 = '';
+      gzip (\$body, \$body2) || error ("$filename: xml gzip: $GzipError");
+      $body = $body2;
+      my $file_tmp = "$filename.tmp";
+      open (my $out, '>:raw', $file_tmp) || error ("$file_tmp: $!");
+      print $out $body || error ("$file_tmp: $!");
+      close $out || error ("$file_tmp: $!");
+
+      if (!rename ("$file_tmp", "$filename")) {
+        unlink "$file_tmp";
+        error ("mv \"$file_tmp\" \"$filename\": $!");
+      }
+      print STDERR "$progname: compressed $filename\n" if ($verbose);
+    } elsif ($verbose > 2) {
+      print STDERR "$filename: already compressed\n";
+    }
+  }
+}
 
 
 sub set_plist_key($$$$) {
@@ -191,11 +290,27 @@ sub set_icon($) {
 
   # "seticon" is from osxutils, http://osxutils.sourceforge.net/
 
-  my $icon = "$app_dir/../../../XScreenSaver.icns";
+  my $icon = ($app_dir =~ m/\.saver$/ ? 'XScreenSaver' : 'SaverRunner');
+  $icon = "$app_dir/../../../$icon.icns";
   my @cmd = ("seticon", "-d", $icon, $app_dir);
   print STDERR "$progname: exec: " . join(' ', @cmd) . "\n"
     if ($verbose > 1);
   system (@cmd);
+}
+
+
+sub set_thumb($) {
+  my ($app_dir) = @_;
+
+  return unless ($app_dir =~ m@\.saver/?$@s);
+
+  my @cmd = ("$exec_dir/update-thumbnail.pl", $thumbdir, $app_dir);
+  push @cmd, "-" . ("v" x $verbose) if ($verbose);
+  print STDERR "$progname: exec: " . join(' ', @cmd) . "\n"
+    if ($verbose > 1);
+  system (@cmd);
+  my $exit  = $? >> 8;
+  exit ($exit) if $exit;
 }
 
 
@@ -215,39 +330,51 @@ sub update($) {
   my $vers = $1;
   my ($ignore, $info_str) = update_saver_xml ($app_dir, $vers);
 
-  $info_str =~ m@^([^\n]+)\n@s ||
-    error ("$filename: unparsable copyright");
-  my $copyright = "$1";
-  $copyright =~ s/\b\d{4}-(\d{4})\b/$1/;
+  # No, don't do this -- the iOS version reads the XML file in a few
+  # different places, and most of those places don't understand gzip.
 
-  # Lose the Wikipedia URLs.
-  $info_str =~ s@http:.*?\b(wikipedia|mathworld)\b[^\s]+[ \t]*\n?@@gm;
-
-  $info_str =~ s/(\n\n)\n+/$1/gs;
-  $info_str =~ s/(^\s+|\s+$)//gs;
-  $plist = set_plist_key ($filename, $plist, 
-                          "NSHumanReadableCopyright", $copyright);
-  $plist = set_plist_key ($filename, $plist,
-                          "CFBundleLongVersionString",$copyright);
-  $plist = set_plist_key ($filename, $plist,
-                          "CFBundleGetInfoString",    $info_str);
-
-  if ($oplist eq $plist) {
-    print STDERR "$progname: $filename: unchanged\n" if ($verbose > 1);
+  if ($app_name eq 'XScreenSaver') {
+    compress_all_xml_files ($app_dir);
+  } elsif (! defined($info_str)) {
+    print STDERR "$progname: $filename: no XML file\n" if ($verbose > 1);
   } else {
-    my $file_tmp = "$filename.tmp";
-    open(OUT, ">$file_tmp") || error ("$file_tmp: $!");
-    print OUT $plist || error ("$file_tmp: $!");
-    close OUT || error ("$file_tmp: $!");
 
-    if (!rename ("$file_tmp", "$filename")) {
-      unlink "$file_tmp";
-      error ("mv \"$file_tmp\" \"$filename\": $!");
+    $info_str =~ m@^([^\n]+)\n@s ||
+      error ("$filename: unparsable copyright");
+    my $copyright = "$1";
+    $copyright =~ s/\b\d{4}-(\d{4})\b/$1/;
+
+    # Lose the Wikipedia URLs.
+    $info_str =~ s@http:.*?\b(wikipedia|mathworld)\b[^\s]+[ \t]*\n?@@gm;
+
+    $info_str =~ s/(\n\n)\n+/$1/gs;
+    $info_str =~ s/(^\s+|\s+$)//gs;
+    $plist = set_plist_key ($filename, $plist, 
+                            "NSHumanReadableCopyright", $copyright);
+    $plist = set_plist_key ($filename, $plist,
+                            "CFBundleLongVersionString",$copyright);
+    $plist = set_plist_key ($filename, $plist,
+                            "CFBundleGetInfoString",    $info_str);
+
+    if ($oplist eq $plist) {
+      print STDERR "$progname: $filename: unchanged\n" if ($verbose > 1);
+    } else {
+      $plist = convert_plist ($plist, 1);  # convert to binary plist
+      my $file_tmp = "$filename.tmp";
+      open (my $out, '>:raw', $file_tmp) || error ("$file_tmp: $!");
+      print $out $plist || error ("$file_tmp: $!");
+      close $out || error ("$file_tmp: $!");
+
+      if (!rename ("$file_tmp", "$filename")) {
+        unlink "$file_tmp";
+        error ("mv \"$file_tmp\" \"$filename\": $!");
+      }
+      print STDERR "$progname: wrote $filename\n" if ($verbose);
     }
-    print STDERR "$progname: wrote $filename\n" if ($verbose);
   }
 
   set_icon ($app_dir);
+  set_thumb ($app_dir);
 }
 
 
@@ -263,12 +390,14 @@ sub usage() {
 }
 
 sub main() {
+
   my @files = ();
   while ($_ = $ARGV[0]) {
     shift @ARGV;
     if    (m/^--?verbose$/s)  { $verbose++; }
     elsif (m/^-v+$/)          { $verbose += length($_)-1; }
     elsif (m/^--?q(uiet)?$/s) { $verbose = 0; }
+    elsif (m/^-/s)            { usage(); }
     else                      { push @files, $_; }
   }
   usage() unless ($#files >= 0);
